@@ -351,10 +351,29 @@ async def create_user(user_data: UserCreate, current_user: dict = Depends(verify
     if existing:
         raise HTTPException(status_code=400, detail="Username already exists")
     
+    # Set default permissions if not provided
+    permissions = user_data.permissions
+    if permissions is None:
+        if user_data.role == "admin":
+            permissions = {
+                "basic_info": True,
+                "contact_info": True,
+                "dues_tracking": True,
+                "admin_actions": True
+            }
+        else:
+            permissions = {
+                "basic_info": True,
+                "contact_info": False,
+                "dues_tracking": False,
+                "admin_actions": False
+            }
+    
     user = User(
         username=user_data.username,
         password_hash=hash_password(user_data.password),
-        role=user_data.role
+        role=user_data.role,
+        permissions=permissions
     )
     doc = user.model_dump()
     doc['created_at'] = doc['created_at'].isoformat()
@@ -364,6 +383,7 @@ async def create_user(user_data: UserCreate, current_user: dict = Depends(verify
         id=user.id,
         username=user.username,
         role=user.role,
+        permissions=user.permissions,
         created_at=user.created_at
     )
 
