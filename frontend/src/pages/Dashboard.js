@@ -127,7 +127,26 @@ export default function Dashboard({ onLogout, userRole, userPermissions }) {
 
   useEffect(() => {
     fetchMembers();
-  }, []);
+    if (userRole === 'admin') {
+      fetchUnreadCount();
+      // Auto-refresh unread count every 30 seconds
+      const interval = setInterval(fetchUnreadCount, 30000);
+      return () => clearInterval(interval);
+    }
+  }, [userRole]);
+
+  const fetchUnreadCount = async () => {
+    if (userRole !== 'admin') return;
+    try {
+      const token = localStorage.getItem("token");
+      const response = await axios.get(`${API}/chat/unread_count`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setUnreadCount(response.data.unread_count);
+    } catch (error) {
+      console.error("Failed to fetch unread count:", error);
+    }
+  };
 
   // Update meeting dates whenever the year changes
   useEffect(() => {
