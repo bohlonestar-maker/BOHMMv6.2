@@ -402,7 +402,7 @@ export default function Dashboard({ onLogout, userRole }) {
 
           {loading ? (
             <div className="text-center py-12 text-slate-600">Loading members...</div>
-          ) : filteredMembers.length === 0 ? (
+          ) : sortedFilteredMembers.length === 0 ? (
             <div className="text-center py-12 text-slate-600">
               {searchTerm ? "No members found" : "No members yet. Add your first member!"}
             </div>
@@ -421,7 +421,7 @@ export default function Dashboard({ onLogout, userRole }) {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredMembers.map((member) => (
+                  {sortedFilteredMembers.map((member) => (
                     <TableRow key={member.id} data-testid={`member-row-${member.id}`}>
                       <TableCell className="font-medium">{member.chapter}</TableCell>
                       <TableCell>{member.title}</TableCell>
