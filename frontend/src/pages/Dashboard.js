@@ -647,6 +647,16 @@ export default function Dashboard({ onLogout, userRole, userPermissions }) {
                           </div>
                         </TableCell>
                       )}
+                      {hasPermission('meeting_attendance') && (
+                        <TableCell>
+                          <div className="flex items-center gap-1">
+                            <span className="text-xs text-slate-600">{member.meeting_attendance?.year || new Date().getFullYear()}</span>
+                            <span className="text-xs font-medium text-slate-700">
+                              {member.meeting_attendance?.meetings?.filter(p => p).length || 0}/24
+                            </span>
+                          </div>
+                        </TableCell>
+                      )}
                       {hasPermission('admin_actions') && (
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-2">
