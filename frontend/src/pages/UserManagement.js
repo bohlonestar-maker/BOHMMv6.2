@@ -339,6 +339,15 @@ export default function UserManagement({ onLogout }) {
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-lg font-semibold text-slate-900">System Users</h2>
             <div className="flex gap-3">
+              <Button
+                onClick={handleViewInvites}
+                variant="outline"
+                className="flex items-center gap-2"
+              >
+                <Mail className="w-4 h-4" />
+                Manage Invites
+              </Button>
+              
               <Dialog open={inviteDialogOpen} onOpenChange={(open) => {
                 setInviteDialogOpen(open);
                 if (!open) resetInviteForm();
