@@ -104,8 +104,14 @@ export default function Login({ onLogin }) {
         </div>
       </div>
       
-      <div className="absolute bottom-4 left-0 right-0 text-center">
+      <div className="absolute bottom-4 left-0 right-0 text-center space-y-2">
         <p className="text-slate-600 text-sm">Property of Brothers of the Highway TC</p>
+        <a 
+          href="mailto:bohlonestar@gmail.com?subject=Support Request - Brothers of the Highway Directory"
+          className="text-slate-600 text-sm hover:text-slate-800 underline inline-block"
+        >
+          Support
+        </a>
       </div>
     </div>
   );
