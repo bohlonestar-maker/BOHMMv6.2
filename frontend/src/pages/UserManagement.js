@@ -359,6 +359,15 @@ export default function UserManagement({ onLogout }) {
             <h2 className="text-lg font-semibold text-slate-900">System Users</h2>
             <div className="flex gap-3">
               <Button
+                onClick={handleViewLogs}
+                variant="outline"
+                className="flex items-center gap-2"
+              >
+                <Shield className="w-4 h-4" />
+                Activity Log
+              </Button>
+              
+              <Button
                 onClick={handleViewInvites}
                 variant="outline"
                 className="flex items-center gap-2"
