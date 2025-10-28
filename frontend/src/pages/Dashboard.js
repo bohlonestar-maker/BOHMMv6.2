@@ -516,17 +516,19 @@ export default function Dashboard({ onLogout, userRole, userPermissions }) {
                       <TableCell>{member.title}</TableCell>
                       <TableCell>{member.handle}</TableCell>
                       <TableCell>{member.name}</TableCell>
-                      <TableCell>
-                        <a
-                          href={`mailto:${member.email}`}
-                          className="flex items-center gap-1 text-blue-600 hover:underline text-sm"
-                          data-testid={`email-link-${member.id}`}
-                        >
-                          <Mail className="w-3 h-3" />
-                          {member.email}
-                        </a>
-                      </TableCell>
-                      {userRole === "admin" && (
+                      {hasPermission('contact_info') && (
+                        <TableCell>
+                          <a
+                            href={`mailto:${member.email}`}
+                            className="flex items-center gap-1 text-blue-600 hover:underline text-sm"
+                            data-testid={`email-link-${member.id}`}
+                          >
+                            <Mail className="w-3 h-3" />
+                            {member.email}
+                          </a>
+                        </TableCell>
+                      )}
+                      {hasPermission('contact_info') && (
                         <TableCell>
                           <a
                             href={`tel:${member.phone}`}
@@ -538,7 +540,7 @@ export default function Dashboard({ onLogout, userRole, userPermissions }) {
                           </a>
                         </TableCell>
                       )}
-                      {userRole === "admin" && (
+                      {hasPermission('contact_info') && (
                         <TableCell>
                           <a
                             href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
@@ -554,7 +556,7 @@ export default function Dashboard({ onLogout, userRole, userPermissions }) {
                           </a>
                         </TableCell>
                       )}
-                      {userRole === "admin" && (
+                      {hasPermission('dues_tracking') && (
                         <TableCell>
                           <div className="flex items-center gap-1">
                             <span className="text-xs text-slate-600">{member.dues?.year || new Date().getFullYear()}</span>
@@ -564,7 +566,7 @@ export default function Dashboard({ onLogout, userRole, userPermissions }) {
                           </div>
                         </TableCell>
                       )}
-                      {userRole === "admin" && (
+                      {hasPermission('admin_actions') && (
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-2">
                             <Button
