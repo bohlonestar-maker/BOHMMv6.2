@@ -703,13 +703,13 @@ export default function Dashboard({ onLogout, userRole, userPermissions }) {
                             <span className="text-xs text-slate-600">{member.meeting_attendance?.year || new Date().getFullYear()}</span>
                             <div className="flex items-center gap-1 text-xs">
                               <span className="text-green-600 font-medium">
-                                P:{member.meeting_attendance?.meetings?.filter(m => m === 1).length || 0}
+                                P:{member.meeting_attendance?.meetings?.filter(m => (typeof m === 'object' ? m.status === 1 : m === 1)).length || 0}
                               </span>
                               <span className="text-yellow-600 font-medium">
-                                E:{member.meeting_attendance?.meetings?.filter(m => m === 2).length || 0}
+                                E:{member.meeting_attendance?.meetings?.filter(m => (typeof m === 'object' ? m.status === 2 : m === 2)).length || 0}
                               </span>
                               <span className="text-slate-500">
-                                A:{member.meeting_attendance?.meetings?.filter(m => m === 0 || !m).length || 24}
+                                A:{member.meeting_attendance?.meetings?.filter(m => (typeof m === 'object' ? (m.status === 0 || !m.status) : (m === 0 || !m))).length || 24}
                               </span>
                             </div>
                           </div>
