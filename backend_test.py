@@ -134,6 +134,20 @@ class BOHDirectoryAPITester:
         if success and 'id' in created_member:
             member_id = created_member['id']
             print(f"   Created member ID: {member_id}")
+            
+            # Verify meeting_attendance structure
+            if 'meeting_attendance' in created_member:
+                attendance = created_member['meeting_attendance']
+                if 'year' in attendance and 'meetings' in attendance:
+                    meetings = attendance['meetings']
+                    if len(meetings) == 24:
+                        self.log_test("Member Created with Correct Meeting Attendance Structure", True, f"24 meetings found for year {attendance['year']}")
+                    else:
+                        self.log_test("Member Created with Correct Meeting Attendance Structure", False, f"Expected 24 meetings, got {len(meetings)}")
+                else:
+                    self.log_test("Member Created with Correct Meeting Attendance Structure", False, "Missing year or meetings in attendance")
+            else:
+                self.log_test("Member Created with Correct Meeting Attendance Structure", False, "No meeting_attendance field found")
         
         # Test get specific member
         if member_id:
