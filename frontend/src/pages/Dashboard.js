@@ -478,9 +478,8 @@ export default function Dashboard({ onLogout, userRole }) {
                     </form>
                   </DialogContent>
                 </Dialog>
-              )}
-            </div>
-          </div>
+              </div>
+            )}
 
           {loading ? (
             <div className="text-center py-12 text-slate-600">Loading members...</div>
