@@ -98,6 +98,7 @@ export default function Dashboard({ onLogout, userRole, userPermissions }) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingMember, setEditingMember] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [meetingDates, setMeetingDates] = useState([]);
   const navigate = useNavigate();
 
   // Helper to check permissions
