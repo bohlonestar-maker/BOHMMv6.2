@@ -169,6 +169,20 @@ export default function Dashboard({ onLogout, userRole }) {
     setEditingMember(null);
   };
 
+  const handleDuesToggle = (monthIndex) => {
+    const newMonths = [...formData.dues.months];
+    newMonths[monthIndex] = !newMonths[monthIndex];
+    setFormData({
+      ...formData,
+      dues: {
+        ...formData.dues,
+        months: newMonths
+      }
+    });
+  };
+
+  const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
   const handleExportCSV = async () => {
     const token = localStorage.getItem("token");
     try {
