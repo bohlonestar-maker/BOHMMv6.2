@@ -2,6 +2,8 @@
 @tailwind components;
 @tailwind utilities;
 
+@import './dark-theme.css';
+
 body {
     margin: 0;
     font-family:
