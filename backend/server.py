@@ -289,7 +289,19 @@ async def update_member_dues(member_id: str, dues_data: dict, current_user: dict
 
 # CSV Export endpoint
 @api_router.get("/members/export/csv")
-async def export_members_csv(current_user: dict = Depends(verify_admin)):
+async def export_members_csv(current_user: dict = Depends(verify_token)):
+    # Get user permissions
+    user = await db.users.find_one({"username": current_user["username"]}, {"_id": 0, "role": 1, "permissions": 1})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    permissions = user.get("permissions", {})
+    is_admin = user.get("role") == "admin"
+    
+    # Check if user has admin_actions permission (required to export)
+    if not is_admin and not permissions.get("admin_actions"):
+        raise HTTPException(status_code=403, detail="Admin actions permission required to export CSV")
+    
     members = await db.members.find({}, {"_id": 0}).to_list(10000)
     
     # Define sort order
@@ -307,30 +319,51 @@ async def export_members_csv(current_user: dict = Depends(verify_admin)):
     output = StringIO()
     writer = csv.writer(output)
     
-    # Write header
-    month_names = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-    header = ['Chapter', 'Title', 'Member Handle', 'Name', 'Email', 'Phone', 'Address', 'Dues Year'] + month_names
+    # Build header based on permissions
+    header = []
+    if is_admin or permissions.get("basic_info"):
+        header.extend(['Chapter', 'Title', 'Member Handle', 'Name'])
+    if is_admin or permissions.get("email"):
+        header.append('Email')
+    if is_admin or permissions.get("phone"):
+        header.append('Phone')
+    if is_admin or permissions.get("address"):
+        header.append('Address')
+    if is_admin or permissions.get("dues_tracking"):
+        month_names = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+        header.append('Dues Year')
+        header.extend(month_names)
+    
     writer.writerow(header)
     
-    # Write data
+    # Write data based on permissions
     for member in sorted_members:
-        dues = member.get('dues', {})
-        dues_year = dues.get('year', '') if dues else ''
-        dues_months = dues.get('months', [False] * 12) if dues else [False] * 12
+        row = []
         
-        # Convert boolean dues to Paid/Unpaid
-        dues_status = ['Paid' if paid else 'Unpaid' for paid in dues_months]
+        if is_admin or permissions.get("basic_info"):
+            row.extend([
+                member.get('chapter', ''),
+                member.get('title', ''),
+                member.get('handle', ''),
+                member.get('name', '')
+            ])
         
-        row = [
-            member.get('chapter', ''),
-            member.get('title', ''),
-            member.get('handle', ''),
-            member.get('name', ''),
-            member.get('email', ''),
-            member.get('phone', ''),
-            member.get('address', ''),
-            dues_year
-        ] + dues_status
+        if is_admin or permissions.get("email"):
+            row.append(member.get('email', ''))
+        
+        if is_admin or permissions.get("phone"):
+            row.append(member.get('phone', ''))
+        
+        if is_admin or permissions.get("address"):
+            row.append(member.get('address', ''))
+        
+        if is_admin or permissions.get("dues_tracking"):
+            dues = member.get('dues', {})
+            dues_year = dues.get('year', '') if dues else ''
+            dues_months = dues.get('months', [False] * 12) if dues else [False] * 12
+            dues_status = ['Paid' if paid else 'Unpaid' for paid in dues_months]
+            row.append(dues_year)
+            row.extend(dues_status)
         
         writer.writerow(row)
     
