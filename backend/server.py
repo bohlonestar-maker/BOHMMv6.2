@@ -103,6 +103,7 @@ class UserResponse(BaseModel):
     id: str
     username: str
     role: str
+    permissions: dict
     created_at: datetime
 
 class LoginRequest(BaseModel):
