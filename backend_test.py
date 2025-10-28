@@ -693,6 +693,12 @@ class BOHDirectoryAPITester:
         # Test member operations
         self.test_member_operations()
         
+        # Test meeting attendance functionality (Priority Test)
+        self.test_meeting_attendance()
+        
+        # Test meeting attendance permissions (Priority Test)
+        self.test_permissions_meeting_attendance()
+        
         # Test user management
         self.test_user_management()
         
