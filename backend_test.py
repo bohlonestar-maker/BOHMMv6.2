@@ -199,6 +199,290 @@ class BOHDirectoryAPITester:
         
         return member_id
 
+    def test_meeting_attendance(self):
+        """Test meeting attendance functionality with notes for Excused/Unexcused absences"""
+        print(f"\n📅 Testing Meeting Attendance with Notes...")
+        
+        # Create a test member first
+        test_member = {
+            "chapter": "National",
+            "title": "Prez",
+            "handle": "AttendanceTestRider",
+            "name": "Attendance Test User",
+            "email": "attendance@example.com",
+            "phone": "+1-555-0124",
+            "address": "124 Test Street, Test City, TC 12345"
+        }
+        
+        success, created_member = self.run_test(
+            "Create Member for Attendance Testing",
+            "POST",
+            "members",
+            201,
+            data=test_member
+        )
+        
+        member_id = None
+        if success and 'id' in created_member:
+            member_id = created_member['id']
+            print(f"   Created member ID for attendance testing: {member_id}")
+        else:
+            print("❌ Failed to create member for attendance testing")
+            return None
+        
+        # Test updating meeting attendance with different statuses and notes
+        attendance_data = {
+            "year": 2025,
+            "meetings": [
+                {"status": 0, "note": "Unexcused absence - no call"},  # Absent with note
+                {"status": 1, "note": ""},  # Present
+                {"status": 2, "note": "Family emergency"},  # Excused with note
+                {"status": 0, "note": "Work conflict"},  # Another absent with note
+                {"status": 1, "note": ""},  # Present
+                {"status": 2, "note": "Medical appointment"},  # Another excused with note
+            ] + [{"status": 0, "note": ""} for _ in range(18)]  # Fill remaining 18 meetings
+        }
+        
+        success, updated_member = self.run_test(
+            "Update Member Attendance with Notes",
+            "PUT",
+            f"members/{member_id}/attendance",
+            200,
+            data=attendance_data
+        )
+        
+        if success:
+            # Verify the attendance data was saved correctly
+            success, member = self.run_test(
+                "Get Member to Verify Attendance",
+                "GET",
+                f"members/{member_id}",
+                200
+            )
+            
+            if success and 'meeting_attendance' in member:
+                attendance = member['meeting_attendance']
+                meetings = attendance.get('meetings', [])
+                
+                # Check if we have 24 meetings
+                if len(meetings) == 24:
+                    self.log_test("Meeting Attendance - Correct Number of Meetings", True, "24 meetings found")
+                else:
+                    self.log_test("Meeting Attendance - Correct Number of Meetings", False, f"Expected 24, got {len(meetings)}")
+                
+                # Check specific meeting statuses and notes
+                test_cases = [
+                    (0, 0, "Unexcused absence - no call", "Absent with note"),
+                    (1, 1, "", "Present without note"),
+                    (2, 2, "Family emergency", "Excused with note"),
+                    (3, 0, "Work conflict", "Absent with note"),
+                    (4, 1, "", "Present without note"),
+                    (5, 2, "Medical appointment", "Excused with note")
+                ]
+                
+                for meeting_idx, expected_status, expected_note, description in test_cases:
+                    if meeting_idx < len(meetings):
+                        meeting = meetings[meeting_idx]
+                        actual_status = meeting.get('status', -1)
+                        actual_note = meeting.get('note', '')
+                        
+                        if actual_status == expected_status and actual_note == expected_note:
+                            self.log_test(f"Meeting {meeting_idx + 1} - {description}", True, f"Status: {actual_status}, Note: '{actual_note}'")
+                        else:
+                            self.log_test(f"Meeting {meeting_idx + 1} - {description}", False, f"Expected status {expected_status} with note '{expected_note}', got status {actual_status} with note '{actual_note}'")
+                    else:
+                        self.log_test(f"Meeting {meeting_idx + 1} - {description}", False, "Meeting not found")
+                
+                # Test that notes work for both Excused (status=2) and Unexcused (status=0) absences
+                excused_with_notes = [m for m in meetings if m.get('status') == 2 and m.get('note', '').strip()]
+                unexcused_with_notes = [m for m in meetings if m.get('status') == 0 and m.get('note', '').strip()]
+                
+                if len(excused_with_notes) >= 2:
+                    self.log_test("Notes for Excused Absences", True, f"Found {len(excused_with_notes)} excused absences with notes")
+                else:
+                    self.log_test("Notes for Excused Absences", False, f"Expected at least 2 excused absences with notes, found {len(excused_with_notes)}")
+                
+                if len(unexcused_with_notes) >= 2:
+                    self.log_test("Notes for Unexcused Absences", True, f"Found {len(unexcused_with_notes)} unexcused absences with notes")
+                else:
+                    self.log_test("Notes for Unexcused Absences", False, f"Expected at least 2 unexcused absences with notes, found {len(unexcused_with_notes)}")
+            else:
+                self.log_test("Verify Attendance Data Saved", False, "No meeting_attendance found in member data")
+        
+        # Test CSV export includes meeting attendance data
+        success, csv_data = self.run_test(
+            "CSV Export with Meeting Attendance",
+            "GET",
+            "members/export/csv",
+            200
+        )
+        
+        if success and isinstance(csv_data, str):
+            # Check if CSV contains meeting attendance columns
+            csv_lines = csv_data.split('\n')
+            if len(csv_lines) > 0:
+                header = csv_lines[0]
+                # Check for meeting attendance columns (Jan-1st, Jan-3rd, etc.)
+                meeting_columns = ['Jan-1st', 'Jan-3rd', 'Feb-1st', 'Feb-3rd', 'Mar-1st', 'Mar-3rd']
+                found_columns = [col for col in meeting_columns if col in header]
+                
+                if len(found_columns) >= 6:
+                    self.log_test("CSV Export - Meeting Attendance Columns", True, f"Found meeting columns: {found_columns}")
+                else:
+                    self.log_test("CSV Export - Meeting Attendance Columns", False, f"Expected meeting columns, found: {found_columns}")
+                
+                # Check if attendance year is included
+                if 'Attendance Year' in header:
+                    self.log_test("CSV Export - Attendance Year Column", True, "Attendance Year column found")
+                else:
+                    self.log_test("CSV Export - Attendance Year Column", False, "Attendance Year column not found")
+            else:
+                self.log_test("CSV Export - Meeting Attendance Data", False, "Empty CSV response")
+        
+        # Clean up test member
+        if member_id:
+            success, delete_response = self.run_test(
+                "Delete Attendance Test Member",
+                "DELETE",
+                f"members/{member_id}",
+                200
+            )
+        
+        return member_id
+
+    def test_permissions_meeting_attendance(self):
+        """Test that meeting_attendance permission is respected"""
+        print(f"\n🔐 Testing Meeting Attendance Permissions...")
+        
+        # Create a user with meeting_attendance permission
+        test_user_with_permission = {
+            "username": f"attendanceuser_{datetime.now().strftime('%H%M%S')}",
+            "password": "testpass123",
+            "role": "user",
+            "permissions": {
+                "basic_info": True,
+                "email": False,
+                "phone": False,
+                "address": False,
+                "dues_tracking": False,
+                "meeting_attendance": True,
+                "admin_actions": False
+            }
+        }
+        
+        success, created_user = self.run_test(
+            "Create User with Meeting Attendance Permission",
+            "POST",
+            "users",
+            201,
+            data=test_user_with_permission
+        )
+        
+        if not success:
+            return
+        
+        # Create a user without meeting_attendance permission
+        test_user_without_permission = {
+            "username": f"noattendanceuser_{datetime.now().strftime('%H%M%S')}",
+            "password": "testpass123",
+            "role": "user",
+            "permissions": {
+                "basic_info": True,
+                "email": False,
+                "phone": False,
+                "address": False,
+                "dues_tracking": False,
+                "meeting_attendance": False,
+                "admin_actions": False
+            }
+        }
+        
+        success, created_user_no_perm = self.run_test(
+            "Create User without Meeting Attendance Permission",
+            "POST",
+            "users",
+            201,
+            data=test_user_without_permission
+        )
+        
+        # Test CSV export with meeting_attendance permission
+        original_token = self.token
+        
+        # Login as user with permission
+        success, login_response = self.run_test(
+            "Login User with Meeting Attendance Permission",
+            "POST",
+            "auth/login",
+            200,
+            data={"username": test_user_with_permission["username"], "password": test_user_with_permission["password"]}
+        )
+        
+        if success and 'token' in login_response:
+            self.token = login_response['token']
+            
+            # Test CSV export (should include meeting attendance data)
+            success, csv_data = self.run_test(
+                "CSV Export with Meeting Attendance Permission",
+                "GET",
+                "members/export/csv",
+                200
+            )
+            
+            if success and isinstance(csv_data, str):
+                header = csv_data.split('\n')[0] if csv_data else ""
+                if 'Jan-1st' in header or 'Attendance Year' in header:
+                    self.log_test("Meeting Attendance Permission - CSV Includes Attendance", True, "Meeting attendance data found in CSV")
+                else:
+                    self.log_test("Meeting Attendance Permission - CSV Includes Attendance", False, "Meeting attendance data not found in CSV")
+        
+        # Login as user without permission
+        if created_user_no_perm:
+            success, login_response = self.run_test(
+                "Login User without Meeting Attendance Permission",
+                "POST",
+                "auth/login",
+                200,
+                data={"username": test_user_without_permission["username"], "password": test_user_without_permission["password"]}
+            )
+            
+            if success and 'token' in login_response:
+                self.token = login_response['token']
+                
+                # Test CSV export (should not include meeting attendance data)
+                success, csv_data = self.run_test(
+                    "CSV Export without Meeting Attendance Permission",
+                    "GET",
+                    "members/export/csv",
+                    200
+                )
+                
+                if success and isinstance(csv_data, str):
+                    header = csv_data.split('\n')[0] if csv_data else ""
+                    if 'Jan-1st' not in header and 'Attendance Year' not in header:
+                        self.log_test("Meeting Attendance Permission - CSV Excludes Attendance", True, "Meeting attendance data correctly excluded from CSV")
+                    else:
+                        self.log_test("Meeting Attendance Permission - CSV Excludes Attendance", False, "Meeting attendance data incorrectly included in CSV")
+        
+        # Restore admin token
+        self.token = original_token
+        
+        # Clean up test users
+        if created_user and 'id' in created_user:
+            success, response = self.run_test(
+                "Delete User with Meeting Attendance Permission",
+                "DELETE",
+                f"users/{created_user['id']}",
+                200
+            )
+        
+        if created_user_no_perm and 'id' in created_user_no_perm:
+            success, response = self.run_test(
+                "Delete User without Meeting Attendance Permission",
+                "DELETE",
+                f"users/{created_user_no_perm['id']}",
+                200
+            )
+
     def test_user_management(self):
         """Test user management operations"""
         print(f"\n👤 Testing User Management...")
