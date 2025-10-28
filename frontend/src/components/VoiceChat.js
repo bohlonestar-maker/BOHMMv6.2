@@ -406,38 +406,105 @@ export default function VoiceChat() {
       </div>
 
       {/* Controls */}
-      <div className="flex gap-2 mb-4">
+      <div className="space-y-2 mb-4">
+        <div className="flex gap-2">
+          <Button
+            onClick={toggleMute}
+            variant="outline"
+            size="sm"
+            className={`flex-1 ${
+              isMuted 
+                ? 'bg-red-500/20 border-red-500 text-red-400 hover:bg-red-500/30' 
+                : 'bg-slate-700 border-slate-600 text-slate-200 hover:bg-slate-600'
+            }`}
+          >
+            {isMuted ? (
+              <>
+                <MicOff className="w-4 h-4 mr-2" />
+                Unmute
+              </>
+            ) : (
+              <>
+                <Mic className="w-4 h-4 mr-2" />
+                Mute
+              </>
+            )}
+          </Button>
+          <Button
+            onClick={leaveCall}
+            variant="outline"
+            size="sm"
+            className="flex-1 bg-red-500/20 border-red-500 text-red-400 hover:bg-red-500/30"
+          >
+            <PhoneOff className="w-4 h-4 mr-2" />
+            Leave
+          </Button>
+        </div>
+
+        {/* Device Settings Toggle */}
         <Button
-          onClick={toggleMute}
+          onClick={() => setShowDeviceSettings(!showDeviceSettings)}
           variant="outline"
           size="sm"
-          className={`flex-1 ${
-            isMuted 
-              ? 'bg-red-500/20 border-red-500 text-red-400 hover:bg-red-500/30' 
-              : 'bg-slate-700 border-slate-600 text-slate-200 hover:bg-slate-600'
-          }`}
+          className="w-full border-slate-600 text-slate-300 hover:bg-slate-700"
         >
-          {isMuted ? (
-            <>
-              <MicOff className="w-4 h-4 mr-2" />
-              Unmute
-            </>
-          ) : (
-            <>
-              <Mic className="w-4 h-4 mr-2" />
-              Mute
-            </>
-          )}
+          <Settings className="w-4 h-4 mr-2" />
+          {showDeviceSettings ? 'Hide' : 'Change'} Audio Devices
         </Button>
-        <Button
-          onClick={leaveCall}
-          variant="outline"
-          size="sm"
-          className="flex-1 bg-red-500/20 border-red-500 text-red-400 hover:bg-red-500/30"
-        >
-          <PhoneOff className="w-4 h-4 mr-2" />
-          Leave
-        </Button>
+
+        {showDeviceSettings && (
+          <div className="space-y-3 p-3 bg-slate-900/50 rounded-lg">
+            <div>
+              <label className="text-xs text-slate-400 mb-1 block flex items-center gap-1">
+                <Mic className="w-3 h-3" />
+                Microphone
+              </label>
+              <Select value={selectedInputDevice} onValueChange={changeInputDevice}>
+                <SelectTrigger className="w-full bg-slate-800 border-slate-600 text-slate-200">
+                  <SelectValue placeholder="Select microphone" />
+                </SelectTrigger>
+                <SelectContent className="bg-slate-800 border-slate-600">
+                  {audioDevices.input.map((device) => (
+                    <SelectItem 
+                      key={device.deviceId} 
+                      value={device.deviceId}
+                      className="text-slate-200 hover:bg-slate-700"
+                    >
+                      {device.label || `Microphone ${device.deviceId.substring(0, 8)}`}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <label className="text-xs text-slate-400 mb-1 block flex items-center gap-1">
+                <Headphones className="w-3 h-3" />
+                Speaker / Headphones
+              </label>
+              <Select value={selectedOutputDevice} onValueChange={changeOutputDevice}>
+                <SelectTrigger className="w-full bg-slate-800 border-slate-600 text-slate-200">
+                  <SelectValue placeholder="Select speaker" />
+                </SelectTrigger>
+                <SelectContent className="bg-slate-800 border-slate-600">
+                  {audioDevices.output.map((device) => (
+                    <SelectItem 
+                      key={device.deviceId} 
+                      value={device.deviceId}
+                      className="text-slate-200 hover:bg-slate-700"
+                    >
+                      {device.label || `Speaker ${device.deviceId.substring(0, 8)}`}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <p className="text-xs text-slate-500 italic">
+              💡 Switch to Bluetooth devices on-the-fly
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Participants */}
