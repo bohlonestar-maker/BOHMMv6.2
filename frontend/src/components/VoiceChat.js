@@ -300,6 +300,74 @@ export default function VoiceChat() {
         <p className="text-sm text-slate-400 mb-4">
           Join the admin voice chat to talk with other admins in real-time.
         </p>
+
+        {/* Device Selection */}
+        <div className="mb-4 space-y-3">
+          <Button
+            onClick={() => setShowDeviceSettings(!showDeviceSettings)}
+            variant="outline"
+            size="sm"
+            className="w-full border-slate-600 text-slate-300 hover:bg-slate-700"
+          >
+            <Settings className="w-4 h-4 mr-2" />
+            {showDeviceSettings ? 'Hide' : 'Show'} Audio Settings
+          </Button>
+
+          {showDeviceSettings && (
+            <div className="space-y-3 p-3 bg-slate-900/50 rounded-lg">
+              <div>
+                <label className="text-xs text-slate-400 mb-1 block flex items-center gap-1">
+                  <Mic className="w-3 h-3" />
+                  Microphone
+                </label>
+                <Select value={selectedInputDevice} onValueChange={changeInputDevice}>
+                  <SelectTrigger className="w-full bg-slate-800 border-slate-600 text-slate-200">
+                    <SelectValue placeholder="Select microphone" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-slate-800 border-slate-600">
+                    {audioDevices.input.map((device) => (
+                      <SelectItem 
+                        key={device.deviceId} 
+                        value={device.deviceId}
+                        className="text-slate-200 hover:bg-slate-700"
+                      >
+                        {device.label || `Microphone ${device.deviceId.substring(0, 8)}`}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <label className="text-xs text-slate-400 mb-1 block flex items-center gap-1">
+                  <Headphones className="w-3 h-3" />
+                  Speaker / Headphones
+                </label>
+                <Select value={selectedOutputDevice} onValueChange={changeOutputDevice}>
+                  <SelectTrigger className="w-full bg-slate-800 border-slate-600 text-slate-200">
+                    <SelectValue placeholder="Select speaker" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-slate-800 border-slate-600">
+                    {audioDevices.output.map((device) => (
+                      <SelectItem 
+                        key={device.deviceId} 
+                        value={device.deviceId}
+                        className="text-slate-200 hover:bg-slate-700"
+                      >
+                        {device.label || `Speaker ${device.deviceId.substring(0, 8)}`}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <p className="text-xs text-slate-500 italic">
+                💡 Bluetooth devices will appear here when connected
+              </p>
+            </div>
+          )}
+        </div>
+
         <Button
           onClick={joinCall}
           disabled={callState === 'joining'}
