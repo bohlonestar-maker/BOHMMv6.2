@@ -32,7 +32,7 @@ import { useNavigate } from "react-router-dom";
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
-const CHAPTERS = ["National", "AD", "HA"];
+const CHAPTERS = ["National", "AD", "HA", "HS"];
 const TITLES = ["Prez", "VP", "S@A", "ENF", "SEC", "T", "CD", "CC", "CCLC", "MD", "PM"];
 
 export default function Dashboard({ onLogout, userRole }) {
