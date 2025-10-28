@@ -191,7 +191,7 @@ async def get_member(member_id: str, current_user: dict = Depends(verify_token))
         member['updated_at'] = datetime.fromisoformat(member['updated_at'])
     return member
 
-@api_router.post("/members", response_model=Member)
+@api_router.post("/members", response_model=Member, status_code=201)
 async def create_member(member_data: MemberCreate, current_user: dict = Depends(verify_admin)):
     member = Member(**member_data.model_dump())
     doc = member.model_dump()
