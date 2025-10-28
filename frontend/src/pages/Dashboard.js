@@ -378,13 +378,13 @@ export default function Dashboard({ onLogout, userRole, userPermissions }) {
   const sortedFilteredMembers = sortMembers([...filteredMembers]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
-      <nav className="bg-white border-b border-slate-200 shadow-sm">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+      <nav className="bg-slate-800 border-b border-slate-700 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-4">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-0">
-            <h1 className="text-xl sm:text-2xl font-bold text-slate-900">Brothers of the Highway</h1>
+            <h1 className="text-xl sm:text-2xl font-bold text-white">Brothers of the Highway</h1>
             <div className="flex items-center gap-2 flex-wrap w-full sm:w-auto">
-              <span className="text-xs sm:text-sm text-slate-600">
+              <span className="text-xs sm:text-sm text-slate-300">
                 {localStorage.getItem("username")} ({userRole})
               </span>
               {userRole === 'admin' && (
@@ -393,7 +393,7 @@ export default function Dashboard({ onLogout, userRole, userPermissions }) {
                     onClick={() => navigate("/prospects")}
                     variant="outline"
                     size="sm"
-                    className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm"
+                    className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm bg-slate-700 text-slate-200 border-slate-600 hover:bg-slate-600"
                   >
                     <Users className="w-3 h-3 sm:w-4 sm:h-4" />
                     <span className="hidden sm:inline">Prospects</span>
