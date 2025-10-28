@@ -927,6 +927,307 @@ class BOHDirectoryAPITester:
         print(f"   📧 Invite functionality testing completed")
         return invite_token
 
+    def test_prospects_functionality(self):
+        """Test Prospects (Hangarounds) functionality - NEW FEATURE"""
+        print(f"\n🏍️  Testing Prospects (Hangarounds) Functionality...")
+        
+        # Test 1: Create Prospect
+        test_prospect = {
+            "handle": "TestHandle",
+            "name": "Test Prospect",
+            "email": "test@example.com",
+            "phone": "555-1234",
+            "address": "123 Test St"
+        }
+        
+        success, created_prospect = self.run_test(
+            "Create Prospect",
+            "POST",
+            "prospects",
+            201,
+            data=test_prospect
+        )
+        
+        prospect_id = None
+        if success and 'id' in created_prospect:
+            prospect_id = created_prospect['id']
+            print(f"   Created prospect ID: {prospect_id}")
+            
+            # Verify meeting_attendance structure (24 meetings)
+            if 'meeting_attendance' in created_prospect:
+                attendance = created_prospect['meeting_attendance']
+                if 'year' in attendance and 'meetings' in attendance:
+                    meetings = attendance['meetings']
+                    if len(meetings) == 24:
+                        self.log_test("Prospect Created with 24 Meeting Structure", True, f"24 meetings found for year {attendance['year']}")
+                        
+                        # Verify each meeting has status and note fields
+                        all_meetings_valid = True
+                        for i, meeting in enumerate(meetings):
+                            if not isinstance(meeting, dict) or 'status' not in meeting or 'note' not in meeting:
+                                all_meetings_valid = False
+                                break
+                        
+                        if all_meetings_valid:
+                            self.log_test("Prospect Meeting Structure Validation", True, "All 24 meetings have status and note fields")
+                        else:
+                            self.log_test("Prospect Meeting Structure Validation", False, f"Meeting {i+1} missing status or note field")
+                    else:
+                        self.log_test("Prospect Created with 24 Meeting Structure", False, f"Expected 24 meetings, got {len(meetings)}")
+                else:
+                    self.log_test("Prospect Created with 24 Meeting Structure", False, "Missing year or meetings in attendance")
+            else:
+                self.log_test("Prospect Created with 24 Meeting Structure", False, "No meeting_attendance field found")
+            
+            # Verify all required fields are present
+            required_fields = ['handle', 'name', 'email', 'phone', 'address']
+            missing_fields = [field for field in required_fields if field not in created_prospect]
+            
+            if not missing_fields:
+                self.log_test("Prospect Creation - All Required Fields", True, f"All fields present: {required_fields}")
+            else:
+                self.log_test("Prospect Creation - All Required Fields", False, f"Missing fields: {missing_fields}")
+        
+        # Test 2: Get Prospects
+        success, prospects = self.run_test(
+            "Get Prospects",
+            "GET",
+            "prospects",
+            200
+        )
+        
+        if success:
+            if isinstance(prospects, list):
+                self.log_test("Get Prospects - Returns List", True, f"Found {len(prospects)} prospects")
+                
+                # Verify our created prospect is in the list
+                if prospect_id:
+                    found_prospect = None
+                    for prospect in prospects:
+                        if prospect.get('id') == prospect_id:
+                            found_prospect = prospect
+                            break
+                    
+                    if found_prospect:
+                        self.log_test("Get Prospects - Contains Created Prospect", True, f"Found prospect: {found_prospect.get('handle')}")
+                    else:
+                        self.log_test("Get Prospects - Contains Created Prospect", False, "Created prospect not found in list")
+            else:
+                self.log_test("Get Prospects - Returns List", False, f"Expected list, got {type(prospects)}")
+        
+        # Test 3: Update Prospect
+        if prospect_id:
+            update_data = {
+                "name": "Updated Test Prospect",
+                "phone": "555-5678",
+                "meeting_attendance": {
+                    "year": 2025,
+                    "meetings": [
+                        {"status": 1, "note": "Present at first meeting"},
+                        {"status": 2, "note": "Excused - family emergency"},
+                        {"status": 0, "note": "Unexcused absence"}
+                    ] + [{"status": 0, "note": ""} for _ in range(21)]
+                }
+            }
+            
+            success, updated_prospect = self.run_test(
+                "Update Prospect",
+                "PUT",
+                f"prospects/{prospect_id}",
+                200,
+                data=update_data
+            )
+            
+            if success:
+                # Verify changes were saved
+                if updated_prospect.get('name') == update_data['name']:
+                    self.log_test("Update Prospect - Name Changed", True, f"Name updated to: {updated_prospect['name']}")
+                else:
+                    self.log_test("Update Prospect - Name Changed", False, f"Expected: {update_data['name']}, got: {updated_prospect.get('name')}")
+                
+                if updated_prospect.get('phone') == update_data['phone']:
+                    self.log_test("Update Prospect - Phone Changed", True, f"Phone updated to: {updated_prospect['phone']}")
+                else:
+                    self.log_test("Update Prospect - Phone Changed", False, f"Expected: {update_data['phone']}, got: {updated_prospect.get('phone')}")
+                
+                # Verify meeting attendance was updated
+                if 'meeting_attendance' in updated_prospect:
+                    attendance = updated_prospect['meeting_attendance']
+                    meetings = attendance.get('meetings', [])
+                    
+                    if len(meetings) >= 3:
+                        # Check first three meetings
+                        test_cases = [
+                            (0, 1, "Present at first meeting"),
+                            (1, 2, "Excused - family emergency"),
+                            (2, 0, "Unexcused absence")
+                        ]
+                        
+                        for idx, expected_status, expected_note in test_cases:
+                            meeting = meetings[idx]
+                            if meeting.get('status') == expected_status and meeting.get('note') == expected_note:
+                                self.log_test(f"Update Prospect - Meeting {idx+1} Attendance", True, f"Status: {expected_status}, Note: '{expected_note}'")
+                            else:
+                                self.log_test(f"Update Prospect - Meeting {idx+1} Attendance", False, f"Expected status {expected_status} with note '{expected_note}', got status {meeting.get('status')} with note '{meeting.get('note')}'")
+                    else:
+                        self.log_test("Update Prospect - Meeting Attendance", False, f"Expected at least 3 meetings, got {len(meetings)}")
+                else:
+                    self.log_test("Update Prospect - Meeting Attendance", False, "No meeting_attendance found in updated prospect")
+        
+        # Test 4: CSV Export
+        success, csv_data = self.run_test(
+            "Export Prospects CSV",
+            "GET",
+            "prospects/export/csv",
+            200
+        )
+        
+        if success and isinstance(csv_data, str):
+            csv_lines = csv_data.split('\n')
+            if len(csv_lines) > 0:
+                header = csv_lines[0]
+                
+                # Check for required columns
+                required_columns = ['Handle', 'Name', 'Email', 'Phone', 'Address']
+                found_columns = [col for col in required_columns if col in header]
+                
+                if len(found_columns) == len(required_columns):
+                    self.log_test("CSV Export - Required Columns", True, f"All required columns found: {found_columns}")
+                else:
+                    missing = [col for col in required_columns if col not in found_columns]
+                    self.log_test("CSV Export - Required Columns", False, f"Missing columns: {missing}")
+                
+                # Check for meeting columns
+                meeting_columns = ['Jan-1st', 'Jan-3rd', 'Feb-1st', 'Feb-3rd']
+                found_meeting_columns = [col for col in meeting_columns if col in header]
+                
+                if len(found_meeting_columns) >= 4:
+                    self.log_test("CSV Export - Meeting Columns", True, f"Meeting columns found: {found_meeting_columns}")
+                else:
+                    self.log_test("CSV Export - Meeting Columns", False, f"Expected meeting columns, found: {found_meeting_columns}")
+                
+                # Check for Meeting Attendance Year column
+                if 'Meeting Attendance Year' in header:
+                    self.log_test("CSV Export - Attendance Year Column", True, "Meeting Attendance Year column found")
+                else:
+                    self.log_test("CSV Export - Attendance Year Column", False, "Meeting Attendance Year column not found")
+                
+                # Verify data rows contain our test prospect
+                if prospect_id and len(csv_lines) > 1:
+                    data_found = False
+                    for line in csv_lines[1:]:
+                        if 'TestHandle' in line or 'Updated Test Prospect' in line:
+                            data_found = True
+                            break
+                    
+                    if data_found:
+                        self.log_test("CSV Export - Contains Test Data", True, "Test prospect data found in CSV")
+                    else:
+                        self.log_test("CSV Export - Contains Test Data", False, "Test prospect data not found in CSV")
+            else:
+                self.log_test("CSV Export - Valid Format", False, "Empty CSV response")
+        else:
+            self.log_test("CSV Export - Valid Format", False, f"Expected string, got {type(csv_data)}")
+        
+        # Test 5: Delete Prospect
+        if prospect_id:
+            success, delete_response = self.run_test(
+                "Delete Prospect",
+                "DELETE",
+                f"prospects/{prospect_id}",
+                200
+            )
+            
+            if success:
+                # Verify prospect is actually deleted
+                success, get_response = self.run_test(
+                    "Verify Prospect Deleted",
+                    "GET",
+                    f"prospects",
+                    200
+                )
+                
+                if success and isinstance(get_response, list):
+                    deleted_prospect = None
+                    for prospect in get_response:
+                        if prospect.get('id') == prospect_id:
+                            deleted_prospect = prospect
+                            break
+                    
+                    if not deleted_prospect:
+                        self.log_test("Verify Prospect Deletion", True, "Prospect successfully removed from list")
+                    else:
+                        self.log_test("Verify Prospect Deletion", False, "Prospect still found in list after deletion")
+        
+        # Test 6: Admin-only Access (Test with non-admin user)
+        # Create a regular user for testing
+        test_user = {
+            "username": f"prospecttest_{datetime.now().strftime('%H%M%S')}",
+            "password": "testpass123",
+            "role": "user"
+        }
+        
+        success, created_user = self.run_test(
+            "Create Regular User for Prospect Access Test",
+            "POST",
+            "users",
+            201,
+            data=test_user
+        )
+        
+        if success and 'id' in created_user:
+            # Login as regular user
+            original_token = self.token
+            success, login_response = self.run_test(
+                "Login as Regular User for Prospect Test",
+                "POST",
+                "auth/login",
+                200,
+                data={"username": test_user["username"], "password": test_user["password"]}
+            )
+            
+            if success and 'token' in login_response:
+                self.token = login_response['token']
+                
+                # Test that regular user cannot access prospects
+                success, response = self.run_test(
+                    "Regular User - Access Prospects (Should Fail)",
+                    "GET",
+                    "prospects",
+                    403
+                )
+                
+                # Test that regular user cannot create prospects
+                success, response = self.run_test(
+                    "Regular User - Create Prospect (Should Fail)",
+                    "POST",
+                    "prospects",
+                    403,
+                    data=test_prospect
+                )
+                
+                # Test that regular user cannot export prospects CSV
+                success, response = self.run_test(
+                    "Regular User - Export Prospects CSV (Should Fail)",
+                    "GET",
+                    "prospects/export/csv",
+                    403
+                )
+            
+            # Restore admin token
+            self.token = original_token
+            
+            # Clean up test user
+            success, response = self.run_test(
+                "Delete Prospect Test User",
+                "DELETE",
+                f"users/{created_user['id']}",
+                200
+            )
+        
+        print(f"   🏍️  Prospects functionality testing completed")
+        return prospect_id
+
     def run_all_tests(self):
         """Run all tests"""
         print("🚀 Starting Brothers of the Highway Directory API Tests")
