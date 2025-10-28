@@ -1246,6 +1246,9 @@ class BOHDirectoryAPITester:
         # PRIORITY TEST: Email Invite Functionality
         self.test_invite_functionality()
         
+        # NEW FEATURE TEST: Prospects (Hangarounds) Functionality
+        self.test_prospects_functionality()
+        
         # Test member operations
         self.test_member_operations()
         
