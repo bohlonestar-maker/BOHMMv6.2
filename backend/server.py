@@ -254,7 +254,7 @@ async def update_member_dues(member_id: str, dues_data: dict, current_user: dict
 
 # CSV Export endpoint
 @api_router.get("/members/export/csv")
-async def export_members_csv(current_user: dict = Depends(verify_token)):
+async def export_members_csv(current_user: dict = Depends(verify_admin)):
     members = await db.members.find({}, {"_id": 0}).to_list(10000)
     
     # Define sort order
