@@ -45,10 +45,22 @@ export default function UserManagement({ onLogout }) {
     username: "",
     password: "",
     role: "user",
+    permissions: {
+      basic_info: true,
+      contact_info: false,
+      dues_tracking: false,
+      admin_actions: false
+    }
   });
 
   const [editFormData, setEditFormData] = useState({
     role: "user",
+    permissions: {
+      basic_info: true,
+      contact_info: false,
+      dues_tracking: false,
+      admin_actions: false
+    }
   });
 
   const [passwordFormData, setPasswordFormData] = useState({
