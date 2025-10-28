@@ -1021,6 +1021,82 @@ export default function UserManagement({ onLogout }) {
           )}
         </div>
       </div>
+
+      {/* Manage Invites Dialog */}
+      <Dialog open={invitesDialogOpen} onOpenChange={setInvitesDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Manage Invitation Links</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 mt-4">
+            <div className="flex justify-between items-center">
+              <p className="text-sm text-slate-600">
+                {invites.filter(i => !i.used).length} pending invite(s)
+              </p>
+              <Button
+                onClick={handleClearUnusedInvites}
+                variant="destructive"
+                size="sm"
+                disabled={invites.filter(i => !i.used).length === 0}
+              >
+                Clear All Unused
+              </Button>
+            </div>
+
+            {invites.length === 0 ? (
+              <p className="text-center text-slate-500 py-8">No invites found</p>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Role</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Created</TableHead>
+                    <TableHead>Expires</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {invites.map((invite) => (
+                    <TableRow key={invite.token}>
+                      <TableCell className="font-medium">{invite.email}</TableCell>
+                      <TableCell className="capitalize">{invite.role}</TableCell>
+                      <TableCell>
+                        <span className={`px-2 py-1 rounded text-xs font-medium ${
+                          invite.used 
+                            ? 'bg-green-100 text-green-800' 
+                            : new Date(invite.expires_at) < new Date()
+                            ? 'bg-red-100 text-red-800'
+                            : 'bg-yellow-100 text-yellow-800'
+                        }`}>
+                          {invite.used ? 'Used' : new Date(invite.expires_at) < new Date() ? 'Expired' : 'Pending'}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-sm text-slate-600">
+                        {new Date(invite.created_at).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell className="text-sm text-slate-600">
+                        {new Date(invite.expires_at).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          onClick={() => handleDeleteInvite(invite.token)}
+                          variant="ghost"
+                          size="sm"
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
