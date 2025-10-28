@@ -1194,6 +1194,55 @@ async def clear_unused_invites(current_user: dict = Depends(verify_admin)):
         "deleted_count": result.deleted_count
     }
 
+# Chat endpoints (admin only)
+@api_router.post("/chat/messages", response_model=ChatMessage)
+async def create_chat_message(message: ChatMessageCreate, current_user: dict = Depends(verify_admin)):
+    """Create a new chat message"""
+    chat_message = ChatMessage(
+        username=current_user['username'],
+        message=message.message,
+        timestamp=datetime.now(timezone.utc).isoformat(),
+        read_by=[current_user['username']]  # Mark as read by sender
+    )
+    
+    await db.chat_messages.insert_one(chat_message.model_dump())
+    
+    # Log activity
+    await log_activity(
+        username=current_user['username'],
+        action="chat_message",
+        details=f"Posted chat message"
+    )
+    
+    return chat_message
+
+@api_router.get("/chat/messages", response_model=List[ChatMessage])
+async def get_chat_messages(current_user: dict = Depends(verify_admin)):
+    """Get last 100 chat messages"""
+    messages = await db.chat_messages.find({}, {"_id": 0}).sort("timestamp", -1).limit(100).to_list(100)
+    # Reverse to show oldest first
+    messages.reverse()
+    return messages
+
+@api_router.get("/chat/unread_count")
+async def get_unread_count(current_user: dict = Depends(verify_admin)):
+    """Get count of unread messages for current user"""
+    username = current_user['username']
+    count = await db.chat_messages.count_documents({
+        "read_by": {"$ne": username}
+    })
+    return {"unread_count": count}
+
+@api_router.post("/chat/mark_read")
+async def mark_messages_read(current_user: dict = Depends(verify_admin)):
+    """Mark all messages as read for current user"""
+    username = current_user['username']
+    await db.chat_messages.update_many(
+        {"read_by": {"$ne": username}},
+        {"$push": {"read_by": username}}
+    )
+    return {"message": "Messages marked as read"}
+
 # Include the router in the main app
 app.include_router(api_router)
 
