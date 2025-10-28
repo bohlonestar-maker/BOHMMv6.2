@@ -264,15 +264,17 @@ export default function Dashboard({ onLogout, userRole }) {
               />
             </div>
             <div className="flex gap-3">
-              <Button
-                onClick={handleExportCSV}
-                variant="outline"
-                data-testid="export-csv-button"
-                className="flex items-center gap-2"
-              >
-                <Download className="w-4 h-4" />
-                Export CSV
-              </Button>
+              {userRole === "admin" && (
+                <Button
+                  onClick={handleExportCSV}
+                  variant="outline"
+                  data-testid="export-csv-button"
+                  className="flex items-center gap-2"
+                >
+                  <Download className="w-4 h-4" />
+                  Export CSV
+                </Button>
+              )}
               {userRole === "admin" && (
                 <Dialog open={dialogOpen} onOpenChange={(open) => {
                   setDialogOpen(open);
