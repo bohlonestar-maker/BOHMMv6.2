@@ -284,7 +284,7 @@ export default function Dashboard({ onLogout, userRole, userPermissions }) {
             </div>
           </div>
           
-          {userRole === "admin" && (
+          {hasPermission('admin_actions') && (
             <div className="flex gap-3 mb-6">
               <Button
                 onClick={handleExportCSV}
