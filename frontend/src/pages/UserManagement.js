@@ -374,11 +374,12 @@ export default function UserManagement({ onLogout }) {
               <Button
                 onClick={handleViewInvites}
                 variant="outline"
-                size="default"
-                className="flex items-center gap-2"
+                size="sm"
+                className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm flex-1 sm:flex-none"
               >
-                <Mail className="w-4 h-4" />
-                Manage Invites
+                <Mail className="w-3 h-3 sm:w-4 sm:h-4" />
+                <span className="hidden sm:inline">Manage Invites</span>
+                <span className="sm:hidden">Invites</span>
               </Button>
               
               {/* Add User Actions Group */}
@@ -390,16 +391,17 @@ export default function UserManagement({ onLogout }) {
                   <Button
                     data-testid="invite-user-button"
                     variant="outline"
-                    size="default"
-                    className="flex items-center gap-2"
+                    size="sm"
+                    className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm flex-1 sm:flex-none"
                   >
-                    <Mail className="w-4 h-4" />
-                    Invite User
+                    <Mail className="w-3 h-3 sm:w-4 sm:h-4" />
+                    <span className="hidden sm:inline">Invite User</span>
+                    <span className="sm:hidden">Invite</span>
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                <DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto">
                   <DialogHeader>
-                    <DialogTitle>Invite New User</DialogTitle>
+                    <DialogTitle className="text-lg sm:text-xl">Invite New User</DialogTitle>
                   </DialogHeader>
                   <form onSubmit={handleInviteSubmit} className="space-y-4 mt-4">
                     <div>
