@@ -14,7 +14,7 @@ import jwt
 from passlib.context import CryptContext
 import csv
 from io import StringIO
-from fastapi.responses import StreamingResponse
+from fastapi.responses import StreamingResponse, Response
 import aiosmtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
