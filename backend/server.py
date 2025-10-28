@@ -109,13 +109,17 @@ class LoginResponse(BaseModel):
 class Member(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    chapter: str  # National, AD, HA, HA
+    chapter: str  # National, AD, HA, HS
     title: str  # Prez, VP, S@A, ENF, SEC, T, CD, CC, CCLC, MD, PM
     handle: str
     name: str
     email: EmailStr
     phone: str
     address: str
+    dues: dict = Field(default_factory=lambda: {
+        "year": datetime.now(timezone.utc).year,
+        "months": [False] * 12  # Jan-Dec, False = unpaid, True = paid
+    })
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
