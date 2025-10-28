@@ -303,6 +303,17 @@ class ProspectUpdate(BaseModel):
     address: Optional[str] = None
     meeting_attendance: Optional[dict] = None
 
+class ChatMessage(BaseModel):
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    username: str
+    message: str
+    timestamp: str
+    read_by: List[str] = Field(default_factory=list)
+
+class ChatMessageCreate(BaseModel):
+    message: str
+
 # Initialize default admin user
 @app.on_event("startup")
 async def create_default_admin():
