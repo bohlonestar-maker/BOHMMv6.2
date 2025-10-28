@@ -1139,8 +1139,8 @@ export default function UserManagement({ onLogout }) {
 
       {/* Activity Log Dialog */}
       <Dialog open={logsDialogOpen} onOpenChange={setLogsDialogOpen}>
-        <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
+        <DialogContent className="max-w-[95vw] sm:max-w-6xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader className="flex flex-row items-center justify-between">
             <DialogTitle>Activity Log</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 mt-4">
