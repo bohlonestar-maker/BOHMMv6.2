@@ -576,7 +576,12 @@ async def export_members_csv(current_user: dict = Depends(verify_token)):
             first_str = first_wed.strftime("%m/%d") if first_wed else ""
             third_str = third_wed.strftime("%m/%d") if third_wed else ""
             
-            meeting_labels.extend([f'{month_name}-1st ({first_str})', f'{month_name}-3rd ({third_str})'])
+            meeting_labels.extend([
+                f'{month_name}-1st ({first_str})', 
+                f'{month_name}-1st Note',
+                f'{month_name}-3rd ({third_str})',
+                f'{month_name}-3rd Note'
+            ])
         
         header.append('Attendance Year')
         header.extend(meeting_labels)
