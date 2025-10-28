@@ -448,6 +448,12 @@ async def export_members_csv(current_user: dict = Depends(verify_token)):
         month_names = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
         header.append('Dues Year')
         header.extend(month_names)
+    if is_admin or permissions.get("meeting_attendance"):
+        meeting_labels = []
+        for month in ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']:
+            meeting_labels.extend([f'{month}-1st', f'{month}-3rd'])
+        header.append('Attendance Year')
+        header.extend(meeting_labels)
     
     writer.writerow(header)
     
