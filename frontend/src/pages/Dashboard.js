@@ -236,7 +236,7 @@ export default function Dashboard({ onLogout, userRole, userPermissions }) {
       },
       meeting_attendance: {
         year: new Date().getFullYear(),
-        meetings: Array(24).fill(false)
+        meetings: Array(24).fill(null).map(() => ({ status: 0, note: "" }))
       }
     });
     setEditingMember(null);
