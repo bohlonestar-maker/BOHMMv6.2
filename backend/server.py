@@ -606,10 +606,29 @@ async def export_members_csv(current_user: dict = Depends(verify_token)):
         
         if is_admin or permissions.get("dues_tracking"):
             dues = member.get('dues', {})
-            dues_year = dues.get('year', '') if dues else ''
-            dues_months = dues.get('months', [False] * 12) if dues else [False] * 12
+            
+            # Handle new format (dict with years as keys) and old format (has 'year' key)
+            if dues and isinstance(dues, dict):
+                if 'year' in dues:
+                    # Old format - convert
+                    old_year = str(dues.get('year', ''))
+                    old_months = dues.get('months', [False] * 12)
+                    dues = {old_year: old_months}
+                
+                # Get most recent year
+                years = sorted(dues.keys(), reverse=True)
+                if years:
+                    export_year = years[0]
+                    dues_months = dues.get(export_year, [False] * 12)
+                else:
+                    export_year = str(datetime.now(timezone.utc).year)
+                    dues_months = [False] * 12
+            else:
+                export_year = str(datetime.now(timezone.utc).year)
+                dues_months = [False] * 12
+            
             dues_status = ['Paid' if paid else 'Unpaid' for paid in dues_months]
-            row.append(dues_year)
+            row.append(export_year)
             row.extend(dues_status)
         
         if is_admin or permissions.get("meeting_attendance"):
