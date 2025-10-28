@@ -54,13 +54,19 @@ const sortMembers = (members) => {
   });
 };
 
-export default function Dashboard({ onLogout, userRole }) {
+export default function Dashboard({ onLogout, userRole, userPermissions }) {
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingMember, setEditingMember] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const navigate = useNavigate();
+
+  // Helper to check permissions
+  const hasPermission = (permission) => {
+    if (userRole === 'admin') return true;
+    return userPermissions?.[permission] === true;
+  };
 
   const [formData, setFormData] = useState({
     chapter: "",
