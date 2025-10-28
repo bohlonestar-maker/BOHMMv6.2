@@ -144,6 +144,10 @@ export default function Dashboard({ onLogout, userRole }) {
       email: member.email,
       phone: member.phone,
       address: member.address,
+      dues: member.dues || {
+        year: new Date().getFullYear(),
+        months: Array(12).fill(false)
+      }
     });
     setDialogOpen(true);
   };
