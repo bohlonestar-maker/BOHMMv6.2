@@ -942,6 +942,9 @@ class BOHDirectoryAPITester:
         # Test token verification
         self.test_auth_verify()
         
+        # PRIORITY TEST: Email Invite Functionality
+        self.test_invite_functionality()
+        
         # Test member operations
         self.test_member_operations()
         
