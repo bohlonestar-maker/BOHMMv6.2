@@ -1,15 +1,20 @@
-from fastapi import FastAPI, APIRouter
+from fastapi import FastAPI, APIRouter, HTTPException, Depends, status
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 import os
 import logging
 from pathlib import Path
-from pydantic import BaseModel, Field, ConfigDict
-from typing import List
+from pydantic import BaseModel, Field, ConfigDict, EmailStr
+from typing import List, Optional
 import uuid
-from datetime import datetime, timezone
-
+from datetime import datetime, timezone, timedelta
+import jwt
+from passlib.context import CryptContext
+import csv
+from io import StringIO
+from fastapi.responses import StreamingResponse
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -19,52 +24,302 @@ mongo_url = os.environ['MONGO_URL']
 client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ['DB_NAME']]
 
+# Security
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+security = HTTPBearer()
+SECRET_KEY = os.environ.get('SECRET_KEY', 'brothers-highway-secret-key-change-in-production')
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 480
+
 # Create the main app without a prefix
 app = FastAPI()
 
 # Create a router with the /api prefix
 api_router = APIRouter(prefix="/api")
 
+# Password hashing
+def hash_password(password: str) -> str:
+    return pwd_context.hash(password)
 
-# Define Models
-class StatusCheck(BaseModel):
-    model_config = ConfigDict(extra="ignore")  # Ignore MongoDB's _id field
-    
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    return pwd_context.verify(plain_password, hashed_password)
+
+# JWT token creation
+def create_access_token(data: dict) -> str:
+    to_encode = data.copy()
+    expire = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    to_encode.update({"exp": expire})
+    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    return encoded_jwt
+
+# Token verification
+async def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    try:
+        token = credentials.credentials
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        username = payload.get("sub")
+        role = payload.get("role")
+        if username is None:
+            raise HTTPException(status_code=401, detail="Invalid token")
+        return {"username": username, "role": role}
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail="Token expired")
+    except jwt.InvalidTokenError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+
+# Admin verification
+async def verify_admin(current_user: dict = Depends(verify_token)):
+    if current_user["role"] != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    return current_user
+
+# Models
+class User(BaseModel):
+    model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    client_name: str
-    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    username: str
+    password_hash: str
+    role: str = "user"  # admin or user
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
-class StatusCheckCreate(BaseModel):
-    client_name: str
+class UserCreate(BaseModel):
+    username: str
+    password: str
+    role: str = "user"
 
-# Add your routes to the router instead of directly to app
-@api_router.get("/")
-async def root():
-    return {"message": "Hello World"}
+class UserUpdate(BaseModel):
+    password: Optional[str] = None
+    role: Optional[str] = None
 
-@api_router.post("/status", response_model=StatusCheck)
-async def create_status_check(input: StatusCheckCreate):
-    status_dict = input.model_dump()
-    status_obj = StatusCheck(**status_dict)
-    
-    # Convert to dict and serialize datetime to ISO string for MongoDB
-    doc = status_obj.model_dump()
-    doc['timestamp'] = doc['timestamp'].isoformat()
-    
-    _ = await db.status_checks.insert_one(doc)
-    return status_obj
+class UserResponse(BaseModel):
+    id: str
+    username: str
+    role: str
+    created_at: datetime
 
-@api_router.get("/status", response_model=List[StatusCheck])
-async def get_status_checks():
-    # Exclude MongoDB's _id field from the query results
-    status_checks = await db.status_checks.find({}, {"_id": 0}).to_list(1000)
+class LoginRequest(BaseModel):
+    username: str
+    password: str
+
+class LoginResponse(BaseModel):
+    token: str
+    username: str
+    role: str
+
+class Member(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    chapter: str  # National, AD, HA, HA
+    title: str  # Prez, VP, S@A, ENF, SEC, T, CD, CC, CCLC, MD, PM
+    handle: str
+    name: str
+    email: EmailStr
+    phone: str
+    address: str
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class MemberCreate(BaseModel):
+    chapter: str
+    title: str
+    handle: str
+    name: str
+    email: EmailStr
+    phone: str
+    address: str
+
+class MemberUpdate(BaseModel):
+    chapter: Optional[str] = None
+    title: Optional[str] = None
+    handle: Optional[str] = None
+    name: Optional[str] = None
+    email: Optional[EmailStr] = None
+    phone: Optional[str] = None
+    address: Optional[str] = None
+
+# Initialize default admin user
+@app.on_event("startup")
+async def create_default_admin():
+    admin_exists = await db.users.find_one({"username": "admin"})
+    if not admin_exists:
+        admin_user = User(
+            username="admin",
+            password_hash=hash_password("admin123"),
+            role="admin"
+        )
+        doc = admin_user.model_dump()
+        doc['created_at'] = doc['created_at'].isoformat()
+        await db.users.insert_one(doc)
+        logger.info("Default admin user created: username=admin, password=admin123")
+
+# Auth endpoints
+@api_router.post("/auth/login", response_model=LoginResponse)
+async def login(login_data: LoginRequest):
+    user = await db.users.find_one({"username": login_data.username})
+    if not user:
+        raise HTTPException(status_code=401, detail="Invalid username or password")
     
-    # Convert ISO string timestamps back to datetime objects
-    for check in status_checks:
-        if isinstance(check['timestamp'], str):
-            check['timestamp'] = datetime.fromisoformat(check['timestamp'])
+    if not verify_password(login_data.password, user["password_hash"]):
+        raise HTTPException(status_code=401, detail="Invalid username or password")
     
-    return status_checks
+    token = create_access_token({"sub": user["username"], "role": user["role"]})
+    return LoginResponse(token=token, username=user["username"], role=user["role"])
+
+@api_router.get("/auth/verify")
+async def verify(current_user: dict = Depends(verify_token)):
+    return current_user
+
+# Member endpoints
+@api_router.get("/members", response_model=List[Member])
+async def get_members(current_user: dict = Depends(verify_token)):
+    members = await db.members.find({}, {"_id": 0}).to_list(10000)
+    for member in members:
+        if isinstance(member.get('created_at'), str):
+            member['created_at'] = datetime.fromisoformat(member['created_at'])
+        if isinstance(member.get('updated_at'), str):
+            member['updated_at'] = datetime.fromisoformat(member['updated_at'])
+    return members
+
+@api_router.get("/members/{member_id}", response_model=Member)
+async def get_member(member_id: str, current_user: dict = Depends(verify_token)):
+    member = await db.members.find_one({"id": member_id}, {"_id": 0})
+    if not member:
+        raise HTTPException(status_code=404, detail="Member not found")
+    if isinstance(member.get('created_at'), str):
+        member['created_at'] = datetime.fromisoformat(member['created_at'])
+    if isinstance(member.get('updated_at'), str):
+        member['updated_at'] = datetime.fromisoformat(member['updated_at'])
+    return member
+
+@api_router.post("/members", response_model=Member)
+async def create_member(member_data: MemberCreate, current_user: dict = Depends(verify_admin)):
+    member = Member(**member_data.model_dump())
+    doc = member.model_dump()
+    doc['created_at'] = doc['created_at'].isoformat()
+    doc['updated_at'] = doc['updated_at'].isoformat()
+    await db.members.insert_one(doc)
+    return member
+
+@api_router.put("/members/{member_id}", response_model=Member)
+async def update_member(member_id: str, member_data: MemberUpdate, current_user: dict = Depends(verify_admin)):
+    member = await db.members.find_one({"id": member_id}, {"_id": 0})
+    if not member:
+        raise HTTPException(status_code=404, detail="Member not found")
+    
+    update_data = {k: v for k, v in member_data.model_dump().items() if v is not None}
+    update_data['updated_at'] = datetime.now(timezone.utc).isoformat()
+    
+    await db.members.update_one({"id": member_id}, {"$set": update_data})
+    
+    updated_member = await db.members.find_one({"id": member_id}, {"_id": 0})
+    if isinstance(updated_member.get('created_at'), str):
+        updated_member['created_at'] = datetime.fromisoformat(updated_member['created_at'])
+    if isinstance(updated_member.get('updated_at'), str):
+        updated_member['updated_at'] = datetime.fromisoformat(updated_member['updated_at'])
+    return updated_member
+
+@api_router.delete("/members/{member_id}")
+async def delete_member(member_id: str, current_user: dict = Depends(verify_admin)):
+    result = await db.members.delete_one({"id": member_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Member not found")
+    return {"message": "Member deleted successfully"}
+
+# CSV Export endpoint
+@api_router.get("/members/export/csv")
+async def export_members_csv(current_user: dict = Depends(verify_token)):
+    members = await db.members.find({}, {"_id": 0}).to_list(10000)
+    
+    output = StringIO()
+    writer = csv.writer(output)
+    
+    # Write header
+    writer.writerow(['Chapter', 'Title', 'Member Handle', 'Name', 'Email', 'Phone', 'Address'])
+    
+    # Write data
+    for member in members:
+        writer.writerow([
+            member.get('chapter', ''),
+            member.get('title', ''),
+            member.get('handle', ''),
+            member.get('name', ''),
+            member.get('email', ''),
+            member.get('phone', ''),
+            member.get('address', '')
+        ])
+    
+    output.seek(0)
+    return StreamingResponse(
+        iter([output.getvalue()]),
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=members.csv"}
+    )
+
+# User management endpoints (admin only)
+@api_router.get("/users", response_model=List[UserResponse])
+async def get_users(current_user: dict = Depends(verify_admin)):
+    users = await db.users.find({}, {"_id": 0, "password_hash": 0}).to_list(1000)
+    for user in users:
+        if isinstance(user.get('created_at'), str):
+            user['created_at'] = datetime.fromisoformat(user['created_at'])
+    return users
+
+@api_router.post("/users", response_model=UserResponse)
+async def create_user(user_data: UserCreate, current_user: dict = Depends(verify_admin)):
+    # Check if username exists
+    existing = await db.users.find_one({"username": user_data.username})
+    if existing:
+        raise HTTPException(status_code=400, detail="Username already exists")
+    
+    user = User(
+        username=user_data.username,
+        password_hash=hash_password(user_data.password),
+        role=user_data.role
+    )
+    doc = user.model_dump()
+    doc['created_at'] = doc['created_at'].isoformat()
+    await db.users.insert_one(doc)
+    
+    return UserResponse(
+        id=user.id,
+        username=user.username,
+        role=user.role,
+        created_at=user.created_at
+    )
+
+@api_router.put("/users/{user_id}")
+async def update_user(user_id: str, user_data: UserUpdate, current_user: dict = Depends(verify_admin)):
+    user = await db.users.find_one({"id": user_id})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    update_data = {}
+    if user_data.password:
+        update_data['password_hash'] = hash_password(user_data.password)
+    if user_data.role:
+        update_data['role'] = user_data.role
+    
+    if update_data:
+        await db.users.update_one({"id": user_id}, {"$set": update_data})
+    
+    return {"message": "User updated successfully"}
+
+@api_router.delete("/users/{user_id}")
+async def delete_user(user_id: str, current_user: dict = Depends(verify_admin)):
+    user = await db.users.find_one({"id": user_id})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Prevent deleting the last admin
+    if user['role'] == 'admin':
+        admin_count = await db.users.count_documents({"role": "admin"})
+        if admin_count <= 1:
+            raise HTTPException(status_code=400, detail="Cannot delete the last admin user")
+    
+    result = await db.users.delete_one({"id": user_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="User not found")
+    return {"message": "User deleted successfully"}
 
 # Include the router in the main app
 app.include_router(api_router)
