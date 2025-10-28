@@ -591,32 +591,55 @@ async def export_members_csv(current_user: dict = Depends(verify_token)):
         
         if is_admin or permissions.get("meeting_attendance"):
             attendance = member.get('meeting_attendance', {})
-            attendance_year = attendance.get('year', '') if attendance else ''
-            meetings = attendance.get('meetings', [{"status": 0, "note": ""} for _ in range(24)]) if attendance else [{"status": 0, "note": ""} for _ in range(24)]
-            # Convert to status with notes
-            meeting_status = []
-            meeting_notes = []
-            for meeting in meetings:
-                # Handle both old format (int) and new format (dict)
-                if isinstance(meeting, dict):
-                    status = meeting.get('status', 0)
-                    note = meeting.get('note', '')
-                else:
-                    status = meeting
-                    note = ''
-                
-                if status == 1:
-                    meeting_status.append('Present')
-                elif status == 2:
-                    meeting_status.append('Excused')
-                else:
-                    meeting_status.append('Absent')
-                meeting_notes.append(note)
             
-            row.append(attendance_year)
-            row.extend(meeting_status)
-            row.append('Notes')
-            row.extend(meeting_notes)
+            # Handle new format (dict with years as keys) and old format (single year dict)
+            if attendance and isinstance(attendance, dict):
+                # Check if it's the new format (years as keys) or old format (has 'year' key)
+                if 'year' in attendance:
+                    # Old format - convert to new format
+                    old_year = str(attendance.get('year', ''))
+                    old_meetings = attendance.get('meetings', [])
+                    attendance = {old_year: old_meetings}
+                
+                # Get all years sorted
+                years = sorted(attendance.keys(), reverse=True)
+                
+                # Export most recent year
+                if years:
+                    current_year = years[0]
+                    meetings = attendance.get(current_year, [{"status": 0, "note": ""} for _ in range(24)])
+                else:
+                    current_year = str(datetime.now(timezone.utc).year)
+                    meetings = [{"status": 0, "note": ""} for _ in range(24)]
+                
+                meeting_status = []
+                meeting_notes = []
+                for meeting in meetings:
+                    if isinstance(meeting, dict):
+                        status = meeting.get('status', 0)
+                        note = meeting.get('note', '')
+                    else:
+                        status = meeting
+                        note = ''
+                    
+                    if status == 1:
+                        meeting_status.append('Present')
+                    elif status == 2:
+                        meeting_status.append('Excused')
+                    else:
+                        meeting_status.append('Absent')
+                    meeting_notes.append(note)
+                
+                row.append(current_year)
+                row.extend(meeting_status)
+                row.append('Notes')
+                row.extend(meeting_notes)
+            else:
+                # No attendance data
+                row.append('')
+                row.extend(['Absent'] * 24)
+                row.append('Notes')
+                row.extend([''] * 24)
         
         writer.writerow(row)
     
