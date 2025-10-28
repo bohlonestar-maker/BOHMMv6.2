@@ -26,7 +26,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { ArrowLeft, Plus, Trash2, Shield } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, Shield, Pencil, Key } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
@@ -36,12 +36,24 @@ export default function UserManagement({ onLogout }) {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState(null);
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
     username: "",
     password: "",
     role: "user",
+  });
+
+  const [editFormData, setEditFormData] = useState({
+    role: "user",
+  });
+
+  const [passwordFormData, setPasswordFormData] = useState({
+    newPassword: "",
+    confirmPassword: "",
   });
 
   useEffect(() => {
