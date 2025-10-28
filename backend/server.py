@@ -699,6 +699,13 @@ async def create_user(user_data: UserCreate, current_user: dict = Depends(verify
     doc['created_at'] = doc['created_at'].isoformat()
     await db.users.insert_one(doc)
     
+    # Log activity
+    await log_activity(
+        username=current_user["username"],
+        action="user_create",
+        details=f"Created user: {user.username} (role: {user.role})"
+    )
+    
     return UserResponse(
         id=user.id,
         username=user.username,
@@ -724,6 +731,21 @@ async def update_user(user_id: str, user_data: UserUpdate, current_user: dict = 
     if update_data:
         await db.users.update_one({"id": user_id}, {"$set": update_data})
     
+    # Log activity
+    updates = []
+    if user_data.password:
+        updates.append("password")
+    if user_data.role:
+        updates.append(f"role to {user_data.role}")
+    if user_data.permissions is not None:
+        updates.append("permissions")
+    
+    await log_activity(
+        username=current_user["username"],
+        action="user_update",
+        details=f"Updated user: {user['username']} - changed: {', '.join(updates)}"
+    )
+    
     return {"message": "User updated successfully"}
 
 @api_router.delete("/users/{user_id}")
@@ -741,6 +763,14 @@ async def delete_user(user_id: str, current_user: dict = Depends(verify_admin)):
     result = await db.users.delete_one({"id": user_id})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="User not found")
+    
+    # Log activity
+    await log_activity(
+        username=current_user["username"],
+        action="user_delete",
+        details=f"Deleted user: {user['username']} (role: {user['role']})"
+    )
+    
     return {"message": "User deleted successfully"}
 
 # Invite endpoints
