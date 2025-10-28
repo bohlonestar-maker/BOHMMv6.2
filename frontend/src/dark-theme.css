@@ -1,0 +1,63 @@
+/* Dark Theme Overrides */
+body {
+  background-color: #0f172a;
+  color: #e2e8f0;
+}
+
+/* Input fields */
+input, textarea, select {
+  background-color: #334155 !important;
+  border-color: #475569 !important;
+  color: #f1f5f9 !important;
+}
+
+input::placeholder, textarea::placeholder {
+  color: #94a3b8 !important;
+}
+
+input:focus, textarea:focus, select:focus {
+  border-color: #60a5fa !important;
+  ring-color: #60a5fa !important;
+}
+
+/* Tables */
+table {
+  background-color: #1e293b !important;
+}
+
+th {
+  background-color: #334155 !important;
+  color: #f1f5f9 !important;
+}
+
+tr {
+  border-color: #475569 !important;
+}
+
+tr:hover {
+  background-color: #334155 !important;
+}
+
+td {
+  color: #e2e8f0 !important;
+}
+
+/* Dialogs and Modals */
+[role="dialog"] {
+  background-color: #1e293b !important;
+  border-color: #475569 !important;
+}
+
+/* Labels */
+label {
+  color: #cbd5e1 !important;
+}
+
+/* Links */
+a {
+  color: #60a5fa !important;
+}
+
+a:hover {
+  color: #93c5fd !important;
+}
