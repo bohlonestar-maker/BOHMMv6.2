@@ -502,11 +502,11 @@ export default function Dashboard({ onLogout, userRole, userPermissions }) {
                     <TableHead>Title</TableHead>
                     <TableHead>Handle</TableHead>
                     <TableHead>Name</TableHead>
-                    <TableHead>Contact</TableHead>
-                    {userRole === "admin" && <TableHead>Phone</TableHead>}
-                    {userRole === "admin" && <TableHead>Address</TableHead>}
-                    {userRole === "admin" && <TableHead>Dues</TableHead>}
-                    {userRole === "admin" && <TableHead className="text-right">Actions</TableHead>}
+                    {hasPermission('contact_info') && <TableHead>Email</TableHead>}
+                    {hasPermission('contact_info') && <TableHead>Phone</TableHead>}
+                    {hasPermission('contact_info') && <TableHead>Address</TableHead>}
+                    {hasPermission('dues_tracking') && <TableHead>Dues</TableHead>}
+                    {hasPermission('admin_actions') && <TableHead className="text-right">Actions</TableHead>}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
