@@ -203,11 +203,17 @@ export default function VoiceChat() {
       setRoomUrl(tokenResponse.data.room_url);
       setMeetingToken(tokenResponse.data.token);
 
-      // Join the call
+      // Join the call with selected audio device
       await callObject.join({
         url: tokenResponse.data.room_url,
         token: tokenResponse.data.token,
+        audioSource: selectedInputDevice !== 'default' ? { deviceId: selectedInputDevice } : true,
       });
+
+      // Set output device after joining
+      if (selectedOutputDevice !== 'default') {
+        await callObject.setOutputDevice({ outputDeviceId: selectedOutputDevice });
+      }
 
     } catch (error) {
       console.error('Failed to join call:', error);
@@ -228,6 +234,45 @@ export default function VoiceChat() {
   };
 
   const toggleMute = async () => {
+    try {
+      const newState = !isMuted;
+      await callObject.setLocalAudio(!newState);
+      setIsMuted(newState);
+    } catch (error) {
+      console.error('Failed to toggle mute:', error);
+      toast.error('Failed to toggle mute');
+    }
+  };
+
+  // Change input device
+  const changeInputDevice = async (deviceId) => {
+    try {
+      setSelectedInputDevice(deviceId);
+      if (callState === 'joined' && callObject) {
+        await callObject.setInputDevicesAsync({
+          audioDeviceId: deviceId
+        });
+        toast.success('Microphone changed');
+      }
+    } catch (error) {
+      console.error('Failed to change input device:', error);
+      toast.error('Failed to change microphone');
+    }
+  };
+
+  // Change output device
+  const changeOutputDevice = async (deviceId) => {
+    try {
+      setSelectedOutputDevice(deviceId);
+      if (callState === 'joined' && callObject) {
+        await callObject.setOutputDevice({ outputDeviceId: deviceId });
+        toast.success('Speaker changed');
+      }
+    } catch (error) {
+      console.error('Failed to change output device:', error);
+      toast.error('Failed to change speaker');
+    }
+  };
     try {
       const newState = !isMuted;
       await callObject.setLocalAudio(!newState);
