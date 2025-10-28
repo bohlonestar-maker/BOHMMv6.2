@@ -514,8 +514,10 @@ export default function Dashboard({ onLogout, userRole, userPermissions }) {
                                 type="button"
                                 onClick={() => handleAttendanceToggle(monthIndex * 2)}
                                 className={`px-2 py-2 rounded text-xs font-medium transition-colors ${
-                                  formData.meeting_attendance.meetings[monthIndex * 2]
-                                    ? 'bg-blue-600 text-white hover:bg-blue-700'
+                                  formData.meeting_attendance.meetings[monthIndex * 2] === 1
+                                    ? 'bg-green-600 text-white hover:bg-green-700'
+                                    : formData.meeting_attendance.meetings[monthIndex * 2] === 2
+                                    ? 'bg-yellow-500 text-white hover:bg-yellow-600'
                                     : 'bg-slate-200 text-slate-700 hover:bg-slate-300'
                                 }`}
                                 data-testid={`attendance-${monthIndex}-1st`}
@@ -527,8 +529,10 @@ export default function Dashboard({ onLogout, userRole, userPermissions }) {
                                 type="button"
                                 onClick={() => handleAttendanceToggle(monthIndex * 2 + 1)}
                                 className={`px-2 py-2 rounded text-xs font-medium transition-colors ${
-                                  formData.meeting_attendance.meetings[monthIndex * 2 + 1]
-                                    ? 'bg-blue-600 text-white hover:bg-blue-700'
+                                  formData.meeting_attendance.meetings[monthIndex * 2 + 1] === 1
+                                    ? 'bg-green-600 text-white hover:bg-green-700'
+                                    : formData.meeting_attendance.meetings[monthIndex * 2 + 1] === 2
+                                    ? 'bg-yellow-500 text-white hover:bg-yellow-600'
                                     : 'bg-slate-200 text-slate-700 hover:bg-slate-300'
                                 }`}
                                 data-testid={`attendance-${monthIndex}-3rd`}
@@ -539,7 +543,7 @@ export default function Dashboard({ onLogout, userRole, userPermissions }) {
                           ))}
                         </div>
                         <p className="text-xs text-slate-600">
-                          Click meetings to mark attendance: Present (blue) or Absent (gray). Meetings on 1st & 3rd Wednesday of each month.
+                          Click to cycle: <span className="font-medium">Gray (Absent)</span> → <span className="font-medium text-green-600">Green (Present)</span> → <span className="font-medium text-yellow-600">Yellow (Excused)</span>
                         </p>
                       </div>
 
