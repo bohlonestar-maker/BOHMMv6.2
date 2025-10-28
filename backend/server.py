@@ -552,9 +552,33 @@ async def export_members_csv(current_user: dict = Depends(verify_token)):
         header.append('Dues Year')
         header.extend(month_names)
     if is_admin or permissions.get("meeting_attendance"):
+        # Helper function to get nth weekday of month
+        def get_nth_weekday(year, month, weekday, n):
+            from datetime import date, timedelta
+            d = date(year, month, 1)
+            count = 0
+            while d.month == month:
+                if d.weekday() == weekday:
+                    count += 1
+                    if count == n:
+                        return d
+                d += timedelta(days=1)
+            return None
+        
+        # Get current year
+        current_year = datetime.now(timezone.utc).year
+        
+        # Generate meeting dates for the year
         meeting_labels = []
-        for month in ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']:
-            meeting_labels.extend([f'{month}-1st', f'{month}-3rd'])
+        for month_idx, month_name in enumerate(['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'], start=1):
+            first_wed = get_nth_weekday(current_year, month_idx, 2, 1)  # Wednesday is 2
+            third_wed = get_nth_weekday(current_year, month_idx, 2, 3)
+            
+            first_str = first_wed.strftime("%m/%d") if first_wed else ""
+            third_str = third_wed.strftime("%m/%d") if third_wed else ""
+            
+            meeting_labels.extend([f'{month_name}-1st ({first_str})', f'{month_name}-3rd ({third_str})'])
+        
         header.append('Attendance Year')
         header.extend(meeting_labels)
     
