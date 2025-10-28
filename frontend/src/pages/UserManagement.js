@@ -573,7 +573,8 @@ export default function UserManagement({ onLogout }) {
                 <DialogTrigger asChild>
                   <Button
                     data-testid="add-user-button"
-                    className="flex items-center gap-2 bg-slate-800 hover:bg-slate-900"
+                    size="default"
+                    className="flex items-center gap-2 bg-slate-800 hover:bg-slate-900 text-white"
                   >
                     <Plus className="w-4 h-4" />
                     Add User
