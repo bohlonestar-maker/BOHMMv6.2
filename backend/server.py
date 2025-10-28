@@ -188,7 +188,21 @@ async def login(login_data: LoginRequest):
 
 @api_router.get("/auth/verify")
 async def verify(current_user: dict = Depends(verify_token)):
-    return current_user
+    # Get full user details including permissions
+    user = await db.users.find_one({"username": current_user["username"]}, {"_id": 0, "password_hash": 0})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    return {
+        "username": user["username"],
+        "role": user["role"],
+        "permissions": user.get("permissions", {
+            "basic_info": True,
+            "contact_info": False,
+            "dues_tracking": False,
+            "admin_actions": False
+        })
+    }
 
 # Member endpoints
 @api_router.get("/members", response_model=List[Member])
