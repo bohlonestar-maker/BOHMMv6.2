@@ -766,6 +766,37 @@ async def accept_invite(accept_data: InviteAccept):
         "role": user.role
     }
 
+@api_router.get("/invites")
+async def list_invites(current_user: dict = Depends(verify_admin)):
+    """List all invites (used and unused)"""
+    invites = await db.invites.find({}, {"_id": 0}).to_list(1000)
+    
+    # Convert datetime strings for display
+    for invite in invites:
+        if isinstance(invite.get('created_at'), str):
+            invite['created_at'] = invite['created_at']
+        if isinstance(invite.get('expires_at'), str):
+            invite['expires_at'] = invite['expires_at']
+    
+    return invites
+
+@api_router.delete("/invites/{token}")
+async def delete_invite(token: str, current_user: dict = Depends(verify_admin)):
+    """Delete a specific invite by token"""
+    result = await db.invites.delete_one({"token": token})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Invite not found")
+    return {"message": "Invite deleted successfully"}
+
+@api_router.delete("/invites/clear/unused")
+async def clear_unused_invites(current_user: dict = Depends(verify_admin)):
+    """Clear all unused invites"""
+    result = await db.invites.delete_many({"used": False})
+    return {
+        "message": f"Cleared {result.deleted_count} unused invite(s)",
+        "deleted_count": result.deleted_count
+    }
+
 # Include the router in the main app
 app.include_router(api_router)
 
