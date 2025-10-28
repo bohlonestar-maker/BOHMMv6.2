@@ -256,7 +256,6 @@ export default function Dashboard({ onLogout, userRole, userPermissions }) {
         [currentYear]: Array(24).fill(null).map(() => ({ status: 0, note: "" }))
       }
     });
-    });
     setEditingMember(null);
   };
 
