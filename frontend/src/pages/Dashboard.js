@@ -331,18 +331,30 @@ export default function Dashboard({ onLogout, userRole, userPermissions }) {
               <span className="text-xs sm:text-sm text-slate-600">
                 {localStorage.getItem("username")} ({userRole})
               </span>
-              {hasPermission('admin_actions') && (
-                <Button
-                  onClick={() => navigate("/users")}
-                  variant="outline"
-                  size="sm"
-                  data-testid="user-management-button"
-                  className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm"
-                >
-                  <Users className="w-3 h-3 sm:w-4 sm:h-4" />
-                  <span className="hidden sm:inline">Manage Users</span>
-                  <span className="sm:hidden">Users</span>
-                </Button>
+              {userRole === 'admin' && (
+                <>
+                  <Button
+                    onClick={() => navigate("/prospects")}
+                    variant="outline"
+                    size="sm"
+                    className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm"
+                  >
+                    <Users className="w-3 h-3 sm:w-4 sm:h-4" />
+                    <span className="hidden sm:inline">Prospects</span>
+                    <span className="sm:hidden">Prospects</span>
+                  </Button>
+                  <Button
+                    onClick={() => navigate("/users")}
+                    variant="outline"
+                    size="sm"
+                    data-testid="user-management-button"
+                    className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm"
+                  >
+                    <Users className="w-3 h-3 sm:w-4 sm:h-4" />
+                    <span className="hidden sm:inline">Manage Users</span>
+                    <span className="sm:hidden">Users</span>
+                  </Button>
+                </>
               )}
               <Button
                 onClick={onLogout}
