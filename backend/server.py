@@ -154,6 +154,7 @@ class User(BaseModel):
         "phone": False,            # Phone access
         "address": False,          # Address access
         "dues_tracking": False,    # View dues
+        "meeting_attendance": False, # View/manage meeting attendance
         "admin_actions": False     # Add/Edit/Delete, Export CSV, User Management
     })
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
