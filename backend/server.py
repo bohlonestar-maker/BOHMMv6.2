@@ -489,18 +489,31 @@ async def export_members_csv(current_user: dict = Depends(verify_token)):
         if is_admin or permissions.get("meeting_attendance"):
             attendance = member.get('meeting_attendance', {})
             attendance_year = attendance.get('year', '') if attendance else ''
-            meetings = attendance.get('meetings', [0] * 24) if attendance else [0] * 24
-            # Convert to status: 0=Absent, 1=Present, 2=Excused
+            meetings = attendance.get('meetings', [{"status": 0, "note": ""} for _ in range(24)]) if attendance else [{"status": 0, "note": ""} for _ in range(24)]
+            # Convert to status with notes
             meeting_status = []
-            for status in meetings:
+            meeting_notes = []
+            for meeting in meetings:
+                # Handle both old format (int) and new format (dict)
+                if isinstance(meeting, dict):
+                    status = meeting.get('status', 0)
+                    note = meeting.get('note', '')
+                else:
+                    status = meeting
+                    note = ''
+                
                 if status == 1:
                     meeting_status.append('Present')
                 elif status == 2:
                     meeting_status.append('Excused')
                 else:
                     meeting_status.append('Absent')
+                meeting_notes.append(note)
+            
             row.append(attendance_year)
             row.extend(meeting_status)
+            row.append('Notes')
+            row.extend(meeting_notes)
         
         writer.writerow(row)
     
