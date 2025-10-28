@@ -274,15 +274,32 @@ export default function Dashboard({ onLogout, userRole, userPermissions }) {
   };
 
   const handleDuesToggle = (monthIndex) => {
-    const newMonths = [...formData.dues.months];
+    const currentYear = selectedDuesYear.toString();
+    const yearMonths = formData.dues[currentYear] || Array(12).fill(false);
+    const newMonths = [...yearMonths];
     newMonths[monthIndex] = !newMonths[monthIndex];
+    
     setFormData({
       ...formData,
       dues: {
         ...formData.dues,
-        months: newMonths
+        [currentYear]: newMonths
       }
     });
+  };
+
+  const handleDuesYearChange = (newYear) => {
+    setSelectedDuesYear(newYear);
+    // Create year entry if doesn't exist
+    if (!formData.dues[newYear.toString()]) {
+      setFormData({
+        ...formData,
+        dues: {
+          ...formData.dues,
+          [newYear.toString()]: Array(12).fill(false)
+        }
+      });
+    }
   };
 
   const handleAttendanceToggle = (meetingIndex) => {
