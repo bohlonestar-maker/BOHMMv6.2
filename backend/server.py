@@ -202,7 +202,9 @@ async def verify(current_user: dict = Depends(verify_token)):
         "role": user["role"],
         "permissions": user.get("permissions", {
             "basic_info": True,
-            "contact_info": False,
+            "email": False,
+            "phone": False,
+            "address": False,
             "dues_tracking": False,
             "admin_actions": False
         })
