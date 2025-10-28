@@ -4,6 +4,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Login from "@/pages/Login";
 import Dashboard from "@/pages/Dashboard";
 import UserManagement from "@/pages/UserManagement";
+import AcceptInvite from "@/pages/AcceptInvite";
 import { Toaster } from "@/components/ui/sonner";
 
 function App() {
