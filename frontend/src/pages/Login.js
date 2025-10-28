@@ -47,13 +47,15 @@ export default function Login({ onLogin }) {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 relative">
       <div className="w-full max-w-md">
         <div className="bg-white rounded-2xl shadow-xl p-8 border border-slate-200">
           <div className="flex justify-center mb-6">
-            <div className="bg-slate-800 p-4 rounded-xl">
-              <Lock className="w-8 h-8 text-white" />
-            </div>
+            <img 
+              src="/brothers-logo.png" 
+              alt="Brothers of the Highway Logo" 
+              className="w-48 h-auto"
+            />
           </div>
           
           <h1 className="text-3xl font-bold text-center mb-2 text-slate-900">
@@ -100,6 +102,10 @@ export default function Login({ onLogin }) {
             </Button>
           </form>
         </div>
+      </div>
+      
+      <div className="absolute bottom-4 left-0 right-0 text-center">
+        <p className="text-slate-600 text-sm">Property of Brothers of the Highway TC</p>
       </div>
     </div>
   );
