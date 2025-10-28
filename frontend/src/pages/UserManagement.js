@@ -291,6 +291,72 @@ export default function UserManagement({ onLogout }) {
                     </Select>
                   </div>
 
+                  <div className="space-y-3">
+                    <Label>Permissions</Label>
+                    <div className="space-y-2 border rounded-lg p-4">
+                      <div className="flex items-center space-x-2">
+                        <Checkbox
+                          id="basic_info"
+                          checked={formData.permissions.basic_info}
+                          onCheckedChange={(checked) =>
+                            setFormData({
+                              ...formData,
+                              permissions: { ...formData.permissions, basic_info: checked }
+                            })
+                          }
+                        />
+                        <label htmlFor="basic_info" className="text-sm font-medium cursor-pointer">
+                          Basic Info (Chapter, Title, Handle, Name)
+                        </label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Checkbox
+                          id="contact_info"
+                          checked={formData.permissions.contact_info}
+                          onCheckedChange={(checked) =>
+                            setFormData({
+                              ...formData,
+                              permissions: { ...formData.permissions, contact_info: checked }
+                            })
+                          }
+                        />
+                        <label htmlFor="contact_info" className="text-sm font-medium cursor-pointer">
+                          Contact Info (Email, Phone, Address)
+                        </label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Checkbox
+                          id="dues_tracking"
+                          checked={formData.permissions.dues_tracking}
+                          onCheckedChange={(checked) =>
+                            setFormData({
+                              ...formData,
+                              permissions: { ...formData.permissions, dues_tracking: checked }
+                            })
+                          }
+                        />
+                        <label htmlFor="dues_tracking" className="text-sm font-medium cursor-pointer">
+                          Dues Tracking
+                        </label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Checkbox
+                          id="admin_actions"
+                          checked={formData.permissions.admin_actions}
+                          onCheckedChange={(checked) =>
+                            setFormData({
+                              ...formData,
+                              permissions: { ...formData.permissions, admin_actions: checked }
+                            })
+                          }
+                        />
+                        <label htmlFor="admin_actions" className="text-sm font-medium cursor-pointer">
+                          Admin Actions (Add/Edit/Delete, Export CSV, User Management)
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+
                   <div className="flex gap-3 justify-end pt-4">
                     <Button
                       type="button"
