@@ -111,7 +111,7 @@ backend:
     file: "/app/backend/server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: false
+    needs_retesting: true
     status_history:
       - working: true
         agent: "main"
@@ -119,6 +119,9 @@ backend:
       - working: true
         agent: "testing"
         comment: "COMPREHENSIVE TESTING COMPLETED - All backend functionality verified: ✅ User Authentication (login with testadmin/testpass123) ✅ Member CRUD with 24-meeting attendance structure ✅ Meeting attendance updates with status 0/1/2 and notes ✅ Notes working for both Excused (status=2) and Unexcused (status=0) absences ✅ Permission-based CSV export (users with meeting_attendance permission can export) ✅ CSV includes meeting attendance data with proper columns (Jan-1st, Jan-3rd, etc.) ✅ All 51 backend tests passed. Fixed member creation issue (dues field None handling) and CSV export permissions."
+      - working: "NA"
+        agent: "main"
+        comment: "ISSUE IDENTIFIED: MemberUpdate model was missing meeting_attendance field, causing attendance data to not be saved during member updates. FIXED: Added meeting_attendance: Optional[dict] = None to MemberUpdate model. Backend restarted successfully."
 
 frontend:
   - task: "Display meeting dates (1st and 3rd Wednesday) in attendance UI"
