@@ -25,7 +25,20 @@ export default function Login({ onLogin }) {
       });
 
       const { token, username: user, role } = response.data;
-      onLogin(token, user, role);
+      
+      // Fetch user permissions
+      const userResponse = await axios.get(`${API}/auth/verify`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      const permissions = userResponse.data.permissions || {
+        basic_info: true,
+        contact_info: false,
+        dues_tracking: false,
+        admin_actions: false
+      };
+      
+      onLogin(token, user, role, permissions);
       toast.success("Login successful!");
     } catch (error) {
       toast.error(error.response?.data?.detail || "Login failed. Please try again.");
