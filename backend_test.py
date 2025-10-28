@@ -80,16 +80,16 @@ class BOHDirectoryAPITester:
         """Test login and get token - try multiple credentials if first fails"""
         print(f"\n🔐 Testing Authentication...")
         
-        # Try multiple credential combinations
+        # Try multiple credential combinations based on existing users
         credentials_to_try = [
-            ("testadmin", "testpass123"),  # Our test admin
-            ("admin", "admin123"),
-            ("Admin", "admin123"),
-            ("admin", "password"),
-            ("Admin", "password"),
-            ("testuser", "password"),
-            ("Lonestar", "password"),
-            ("Lonestar ", "password")  # Note the space
+            ("testadmin", "testpass123"),  # Requested test admin
+            ("admin", "admin123"),         # Default admin
+            ("Lonestar", "password"),      # Existing admin user
+            ("Lonestar", "admin123"),      # Try different password
+            ("Lonestar", "testpass123"),   # Try test password
+            ("testuser", "password"),      # Existing regular user
+            ("testuser", "testpass123"),   # Try test password
+            ("admin", "password"),         # Try different password
         ]
         
         for user, pwd in credentials_to_try:
