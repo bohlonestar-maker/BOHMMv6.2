@@ -483,8 +483,9 @@ export default function Dashboard({ onLogout, userRole }) {
                     <TableHead>Handle</TableHead>
                     <TableHead>Name</TableHead>
                     <TableHead>Contact</TableHead>
-                    <TableHead>Address</TableHead>
-                    <TableHead>Dues Status</TableHead>
+                    {userRole === "admin" && <TableHead>Phone</TableHead>}
+                    {userRole === "admin" && <TableHead>Address</TableHead>}
+                    {userRole === "admin" && <TableHead>Dues</TableHead>}
                     {userRole === "admin" && <TableHead className="text-right">Actions</TableHead>}
                   </TableRow>
                 </TableHeader>
