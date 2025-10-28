@@ -243,8 +243,7 @@ class Member(BaseModel):
     phone: str
     address: str
     dues: dict = Field(default_factory=lambda: {
-        "year": datetime.now(timezone.utc).year,
-        "months": [False] * 12  # Jan-Dec, False = unpaid, True = paid
+        str(datetime.now(timezone.utc).year): [False] * 12  # Format: {"2025": [12 months], "2024": [12 months]}
     })
     meeting_attendance: dict = Field(default_factory=lambda: {
         str(datetime.now(timezone.utc).year): [{"status": 0, "note": ""} for _ in range(24)]
