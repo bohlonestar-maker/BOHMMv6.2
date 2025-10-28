@@ -535,40 +535,56 @@ export default function Dashboard({ onLogout, userRole, userPermissions }) {
                             Change Year
                           </Button>
                         </div>
-                        <div className="grid grid-cols-6 gap-2">
+                        <div className="space-y-3">
                           {monthNames.map((month, monthIndex) => (
-                            <>
-                              <button
-                                key={`${monthIndex}-1st`}
-                                type="button"
-                                onClick={() => handleAttendanceToggle(monthIndex * 2)}
-                                className={`px-2 py-2 rounded text-xs font-medium transition-colors ${
-                                  formData.meeting_attendance.meetings[monthIndex * 2] === 1
-                                    ? 'bg-green-600 text-white hover:bg-green-700'
-                                    : formData.meeting_attendance.meetings[monthIndex * 2] === 2
-                                    ? 'bg-yellow-500 text-white hover:bg-yellow-600'
-                                    : 'bg-slate-200 text-slate-700 hover:bg-slate-300'
-                                }`}
-                                data-testid={`attendance-${monthIndex}-1st`}
-                              >
-                                {month}-1st
-                              </button>
-                              <button
-                                key={`${monthIndex}-3rd`}
-                                type="button"
-                                onClick={() => handleAttendanceToggle(monthIndex * 2 + 1)}
-                                className={`px-2 py-2 rounded text-xs font-medium transition-colors ${
-                                  formData.meeting_attendance.meetings[monthIndex * 2 + 1] === 1
-                                    ? 'bg-green-600 text-white hover:bg-green-700'
-                                    : formData.meeting_attendance.meetings[monthIndex * 2 + 1] === 2
-                                    ? 'bg-yellow-500 text-white hover:bg-yellow-600'
-                                    : 'bg-slate-200 text-slate-700 hover:bg-slate-300'
-                                }`}
-                                data-testid={`attendance-${monthIndex}-3rd`}
-                              >
-                                {month}-3rd
-                              </button>
-                            </>
+                            <div key={month} className="space-y-2">
+                              <div className="grid grid-cols-2 gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => handleAttendanceToggle(monthIndex * 2)}
+                                  className={`px-2 py-2 rounded text-xs font-medium transition-colors ${
+                                    formData.meeting_attendance.meetings[monthIndex * 2].status === 1
+                                      ? 'bg-green-600 text-white hover:bg-green-700'
+                                      : formData.meeting_attendance.meetings[monthIndex * 2].status === 2
+                                      ? 'bg-yellow-500 text-white hover:bg-yellow-600'
+                                      : 'bg-slate-200 text-slate-700 hover:bg-slate-300'
+                                  }`}
+                                  data-testid={`attendance-${monthIndex}-1st`}
+                                >
+                                  {month}-1st
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleAttendanceToggle(monthIndex * 2 + 1)}
+                                  className={`px-2 py-2 rounded text-xs font-medium transition-colors ${
+                                    formData.meeting_attendance.meetings[monthIndex * 2 + 1].status === 1
+                                      ? 'bg-green-600 text-white hover:bg-green-700'
+                                      : formData.meeting_attendance.meetings[monthIndex * 2 + 1].status === 2
+                                      ? 'bg-yellow-500 text-white hover:bg-yellow-600'
+                                      : 'bg-slate-200 text-slate-700 hover:bg-slate-300'
+                                  }`}
+                                  data-testid={`attendance-${monthIndex}-3rd`}
+                                >
+                                  {month}-3rd
+                                </button>
+                              </div>
+                              {formData.meeting_attendance.meetings[monthIndex * 2].status === 0 && (
+                                <Input
+                                  placeholder={`${month}-1st note (unexcused absence)`}
+                                  value={formData.meeting_attendance.meetings[monthIndex * 2].note}
+                                  onChange={(e) => handleAttendanceNote(monthIndex * 2, e.target.value)}
+                                  className="text-xs"
+                                />
+                              )}
+                              {formData.meeting_attendance.meetings[monthIndex * 2 + 1].status === 0 && (
+                                <Input
+                                  placeholder={`${month}-3rd note (unexcused absence)`}
+                                  value={formData.meeting_attendance.meetings[monthIndex * 2 + 1].note}
+                                  onChange={(e) => handleAttendanceNote(monthIndex * 2 + 1, e.target.value)}
+                                  className="text-xs"
+                                />
+                              )}
+                            </div>
                           ))}
                         </div>
                         <p className="text-xs text-slate-600">
