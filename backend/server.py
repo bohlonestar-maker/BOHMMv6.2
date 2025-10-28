@@ -247,6 +247,7 @@ class MemberUpdate(BaseModel):
     phone: Optional[str] = None
     address: Optional[str] = None
     dues: Optional[dict] = None
+    meeting_attendance: Optional[dict] = None
 
 # Initialize default admin user
 @app.on_event("startup")
