@@ -1,7 +1,14 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import DailyIframe from '@daily-co/daily-js';
 import { Button } from "@/components/ui/button";
-import { Phone, PhoneOff, Mic, MicOff, Volume2 } from "lucide-react";
+import { Phone, PhoneOff, Mic, MicOff, Volume2, Headphones, Settings } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import axios from "axios";
 import { toast } from "sonner";
 
@@ -19,6 +26,10 @@ export default function VoiceChat() {
   const [audioLevels, setAudioLevels] = useState({});
   const [roomUrl, setRoomUrl] = useState(null);
   const [meetingToken, setMeetingToken] = useState(null);
+  const [audioDevices, setAudioDevices] = useState({ input: [], output: [] });
+  const [selectedInputDevice, setSelectedInputDevice] = useState('default');
+  const [selectedOutputDevice, setSelectedOutputDevice] = useState('default');
+  const [showDeviceSettings, setShowDeviceSettings] = useState(false);
 
   // Initialize call object (singleton)
   useEffect(() => {
@@ -30,8 +41,61 @@ export default function VoiceChat() {
     }
     setCallObject(sharedCallObject);
 
+    // Request microphone permissions to enumerate devices
+    requestDevicePermissions();
+
     return () => {
       // Don't destroy the call object on unmount to preserve state
+    };
+  }, []);
+
+  // Request device permissions and enumerate devices
+  const requestDevicePermissions = async () => {
+    try {
+      // Request permissions
+      await navigator.mediaDevices.getUserMedia({ audio: true });
+      // Enumerate devices after permission granted
+      enumerateAudioDevices();
+    } catch (error) {
+      console.error('Failed to get device permissions:', error);
+    }
+  };
+
+  // Enumerate audio devices
+  const enumerateAudioDevices = async () => {
+    try {
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const audioInputs = devices.filter(device => device.kind === 'audioinput');
+      const audioOutputs = devices.filter(device => device.kind === 'audiooutput');
+      
+      setAudioDevices({
+        input: audioInputs,
+        output: audioOutputs
+      });
+
+      // Set default devices if not already set
+      if (audioInputs.length > 0 && selectedInputDevice === 'default') {
+        setSelectedInputDevice(audioInputs[0].deviceId);
+      }
+      if (audioOutputs.length > 0 && selectedOutputDevice === 'default') {
+        setSelectedOutputDevice(audioOutputs[0].deviceId);
+      }
+    } catch (error) {
+      console.error('Failed to enumerate devices:', error);
+    }
+  };
+
+  // Listen for device changes (e.g., Bluetooth connected/disconnected)
+  useEffect(() => {
+    const handleDeviceChange = () => {
+      enumerateAudioDevices();
+      toast.info('Audio devices updated');
+    };
+
+    navigator.mediaDevices.addEventListener('devicechange', handleDeviceChange);
+
+    return () => {
+      navigator.mediaDevices.removeEventListener('devicechange', handleDeviceChange);
     };
   }, []);
 
