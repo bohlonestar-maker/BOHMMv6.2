@@ -486,6 +486,14 @@ async def export_members_csv(current_user: dict = Depends(verify_token)):
             row.append(dues_year)
             row.extend(dues_status)
         
+        if is_admin or permissions.get("meeting_attendance"):
+            attendance = member.get('meeting_attendance', {})
+            attendance_year = attendance.get('year', '') if attendance else ''
+            meetings = attendance.get('meetings', [False] * 24) if attendance else [False] * 24
+            meeting_status = ['Present' if attended else 'Absent' for attended in meetings]
+            row.append(attendance_year)
+            row.extend(meeting_status)
+        
         writer.writerow(row)
     
     output.seek(0)
