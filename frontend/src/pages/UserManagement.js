@@ -243,6 +243,21 @@ export default function UserManagement({ onLogout }) {
     });
   };
 
+  const resetInviteForm = () => {
+    setInviteFormData({
+      email: "",
+      role: "user",
+      permissions: {
+        basic_info: true,
+        email: false,
+        phone: false,
+        address: false,
+        dues_tracking: false,
+        admin_actions: false
+      }
+    });
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
       <nav className="bg-white border-b border-slate-200 shadow-sm">
