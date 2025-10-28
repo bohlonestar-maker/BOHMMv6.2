@@ -123,6 +123,12 @@ export default function UserManagement({ onLogout }) {
     setEditingUser(user);
     setEditFormData({
       role: user.role,
+      permissions: user.permissions || {
+        basic_info: true,
+        contact_info: false,
+        dues_tracking: false,
+        admin_actions: false
+      }
     });
     setEditDialogOpen(true);
   };
