@@ -207,7 +207,7 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Email invite functionality testing completed"
+    - "User Management button reorganization testing completed"
   stuck_tasks: []
   test_all: false
   test_priority: "completed"
