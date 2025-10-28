@@ -264,8 +264,7 @@ export default function Dashboard({ onLogout, userRole, userPermissions }) {
       phone: "",
       address: "",
       dues: {
-        year: new Date().getFullYear(),
-        months: Array(12).fill(false)
+        [currentYear]: Array(12).fill(false)
       },
       meeting_attendance: {
         [currentYear]: Array(24).fill(null).map(() => ({ status: 0, note: "" }))
