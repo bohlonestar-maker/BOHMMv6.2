@@ -638,6 +638,26 @@ async def get_users(current_user: dict = Depends(verify_admin)):
     
     return result
 
+# Audit Logs endpoints
+@api_router.get("/logs")
+async def get_logs(
+    limit: int = 100,
+    skip: int = 0,
+    username: str = None,
+    action: str = None,
+    current_user: dict = Depends(verify_admin)
+):
+    """Get audit logs with optional filters"""
+    query = {}
+    if username:
+        query["username"] = username
+    if action:
+        query["action"] = action
+    
+    logs = await db.audit_logs.find(query, {"_id": 0}).sort("timestamp", -1).skip(skip).limit(limit).to_list(limit)
+    
+    return logs
+
 @api_router.post("/users", response_model=UserResponse, status_code=201)
 async def create_user(user_data: UserCreate, current_user: dict = Depends(verify_admin)):
     # Check if username exists
