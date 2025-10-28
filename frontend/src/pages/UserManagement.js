@@ -57,6 +57,19 @@ export default function UserManagement({ onLogout }) {
     }
   });
 
+  const [inviteFormData, setInviteFormData] = useState({
+    email: "",
+    role: "user",
+    permissions: {
+      basic_info: true,
+      email: false,
+      phone: false,
+      address: false,
+      dues_tracking: false,
+      admin_actions: false
+    }
+  });
+
   const [editFormData, setEditFormData] = useState({
     role: "user",
     permissions: {
