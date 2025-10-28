@@ -207,6 +207,15 @@ class LoginResponse(BaseModel):
     username: str
     role: str
 
+class AuditLog(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    username: str
+    action: str  # e.g., "login", "member_create", "member_update", "user_delete"
+    details: str  # Additional information about the action
+    ip_address: Optional[str] = None
+
 class Member(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
