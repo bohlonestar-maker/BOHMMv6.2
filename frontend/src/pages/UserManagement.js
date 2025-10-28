@@ -335,38 +335,40 @@ export default function UserManagement({ onLogout }) {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
       <nav className="bg-white border-b border-slate-200 shadow-sm">
-        <div className="max-w-7xl mx-auto px-6 py-4">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-4">
           <div className="flex justify-between items-center">
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 sm:gap-4">
               <Button
                 onClick={() => navigate("/")}
                 variant="outline"
+                size="sm"
                 data-testid="back-button"
-                className="flex items-center gap-2"
+                className="flex items-center gap-1 sm:gap-2"
               >
-                <ArrowLeft className="w-4 h-4" />
-                Back
+                <ArrowLeft className="w-3 h-3 sm:w-4 sm:h-4" />
+                <span className="hidden sm:inline">Back</span>
               </Button>
-              <h1 className="text-2xl font-bold text-slate-900">User Management</h1>
+              <h1 className="text-lg sm:text-2xl font-bold text-slate-900">User Management</h1>
             </div>
           </div>
         </div>
       </nav>
 
-      <div className="max-w-7xl mx-auto px-6 py-8">
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-lg font-semibold text-slate-900">System Users</h2>
-            <div className="flex gap-2">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-8">
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 sm:p-6">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 sm:mb-6 gap-3 sm:gap-0">
+            <h2 className="text-base sm:text-lg font-semibold text-slate-900">System Users</h2>
+            <div className="flex flex-wrap gap-2 w-full sm:w-auto">
               {/* Management Buttons Group */}
               <Button
                 onClick={handleViewLogs}
                 variant="outline"
-                size="default"
-                className="flex items-center gap-2"
+                size="sm"
+                className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm flex-1 sm:flex-none"
               >
-                <Shield className="w-4 h-4" />
-                Activity Log
+                <Shield className="w-3 h-3 sm:w-4 sm:h-4" />
+                <span className="hidden sm:inline">Activity Log</span>
+                <span className="sm:hidden">Logs</span>
               </Button>
               
               <Button
