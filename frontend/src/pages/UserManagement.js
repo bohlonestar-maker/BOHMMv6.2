@@ -350,8 +350,8 @@ export default function UserManagement({ onLogout }) {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
-      <nav className="bg-white border-b border-slate-200 shadow-sm">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+      <nav className="bg-slate-800 border-b border-slate-700 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-4">
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-2 sm:gap-4">
@@ -360,13 +360,27 @@ export default function UserManagement({ onLogout }) {
                 variant="outline"
                 size="sm"
                 data-testid="back-button"
-                className="flex items-center gap-1 sm:gap-2"
+                className="flex items-center gap-1 sm:gap-2 border-slate-600 text-slate-200 hover:bg-slate-700"
               >
                 <ArrowLeft className="w-3 h-3 sm:w-4 sm:h-4" />
                 <span className="hidden sm:inline">Back</span>
               </Button>
-              <h1 className="text-lg sm:text-2xl font-bold text-slate-900">User Management</h1>
+              <h1 className="text-lg sm:text-2xl font-bold text-slate-100">User Management</h1>
             </div>
+            <Button
+              onClick={() => navigate("/chat")}
+              variant="outline"
+              size="sm"
+              className="relative flex items-center gap-1 sm:gap-2 text-xs sm:text-sm border-slate-600 text-slate-200 hover:bg-slate-700"
+            >
+              <MessageCircle className="w-3 h-3 sm:w-4 sm:h-4" />
+              <span className="hidden sm:inline">Chat</span>
+              {unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                  {unreadCount > 99 ? '99+' : unreadCount}
+                </span>
+              )}
+            </Button>
           </div>
         </div>
       </nav>
