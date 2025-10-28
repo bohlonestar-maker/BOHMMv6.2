@@ -283,19 +283,190 @@ export default function UserManagement({ onLogout }) {
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-lg font-semibold text-slate-900">System Users</h2>
-            <Dialog open={dialogOpen} onOpenChange={(open) => {
-              setDialogOpen(open);
-              if (!open) resetForm();
-            }}>
-              <DialogTrigger asChild>
-                <Button
-                  data-testid="add-user-button"
-                  className="flex items-center gap-2 bg-slate-800 hover:bg-slate-900"
-                >
-                  <Plus className="w-4 h-4" />
-                  Add User
-                </Button>
-              </DialogTrigger>
+            <div className="flex gap-3">
+              <Dialog open={inviteDialogOpen} onOpenChange={(open) => {
+                setInviteDialogOpen(open);
+                if (!open) resetInviteForm();
+              }}>
+                <DialogTrigger asChild>
+                  <Button
+                    data-testid="invite-user-button"
+                    variant="outline"
+                    className="flex items-center gap-2"
+                  >
+                    <Mail className="w-4 h-4" />
+                    Invite User
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle>Invite New User</DialogTitle>
+                  </DialogHeader>
+                  <form onSubmit={handleInviteSubmit} className="space-y-4 mt-4">
+                    <div>
+                      <Label>Email Address</Label>
+                      <Input
+                        data-testid="invite-email-input"
+                        type="email"
+                        value={inviteFormData.email}
+                        onChange={(e) =>
+                          setInviteFormData({ ...inviteFormData, email: e.target.value })
+                        }
+                        placeholder="user@example.com"
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <Label>Role</Label>
+                      <Select
+                        value={inviteFormData.role}
+                        onValueChange={(value) =>
+                          setInviteFormData({ ...inviteFormData, role: value })
+                        }
+                      >
+                        <SelectTrigger data-testid="invite-role-select">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="user">User</SelectItem>
+                          <SelectItem value="admin">Admin</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-3">
+                      <Label>Permissions</Label>
+                      <div className="space-y-2 border rounded-lg p-4">
+                        <div className="flex items-center space-x-2">
+                          <Checkbox
+                            id="invite_basic_info"
+                            checked={inviteFormData.permissions.basic_info}
+                            onCheckedChange={(checked) =>
+                              setInviteFormData({
+                                ...inviteFormData,
+                                permissions: { ...inviteFormData.permissions, basic_info: checked }
+                              })
+                            }
+                          />
+                          <label htmlFor="invite_basic_info" className="text-sm font-medium cursor-pointer">
+                            Basic Info (Chapter, Title, Handle, Name)
+                          </label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Checkbox
+                            id="invite_email"
+                            checked={inviteFormData.permissions.email}
+                            onCheckedChange={(checked) =>
+                              setInviteFormData({
+                                ...inviteFormData,
+                                permissions: { ...inviteFormData.permissions, email: checked }
+                              })
+                            }
+                          />
+                          <label htmlFor="invite_email" className="text-sm font-medium cursor-pointer">
+                            Email
+                          </label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Checkbox
+                            id="invite_phone"
+                            checked={inviteFormData.permissions.phone}
+                            onCheckedChange={(checked) =>
+                              setInviteFormData({
+                                ...inviteFormData,
+                                permissions: { ...inviteFormData.permissions, phone: checked }
+                              })
+                            }
+                          />
+                          <label htmlFor="invite_phone" className="text-sm font-medium cursor-pointer">
+                            Phone
+                          </label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Checkbox
+                            id="invite_address"
+                            checked={inviteFormData.permissions.address}
+                            onCheckedChange={(checked) =>
+                              setInviteFormData({
+                                ...inviteFormData,
+                                permissions: { ...inviteFormData.permissions, address: checked }
+                              })
+                            }
+                          />
+                          <label htmlFor="invite_address" className="text-sm font-medium cursor-pointer">
+                            Address
+                          </label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Checkbox
+                            id="invite_dues_tracking"
+                            checked={inviteFormData.permissions.dues_tracking}
+                            onCheckedChange={(checked) =>
+                              setInviteFormData({
+                                ...inviteFormData,
+                                permissions: { ...inviteFormData.permissions, dues_tracking: checked }
+                              })
+                            }
+                          />
+                          <label htmlFor="invite_dues_tracking" className="text-sm font-medium cursor-pointer">
+                            Dues Tracking
+                          </label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Checkbox
+                            id="invite_admin_actions"
+                            checked={inviteFormData.permissions.admin_actions}
+                            onCheckedChange={(checked) =>
+                              setInviteFormData({
+                                ...inviteFormData,
+                                permissions: { ...inviteFormData.permissions, admin_actions: checked }
+                              })
+                            }
+                          />
+                          <label htmlFor="invite_admin_actions" className="text-sm font-medium cursor-pointer">
+                            Admin Actions (Add/Edit/Delete, Export CSV, User Management)
+                          </label>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex gap-3 justify-end pt-4">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => {
+                          setInviteDialogOpen(false);
+                          resetInviteForm();
+                        }}
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        type="submit"
+                        data-testid="submit-invite-button"
+                        className="bg-slate-800 hover:bg-slate-900"
+                      >
+                        Send Invitation
+                      </Button>
+                    </div>
+                  </form>
+                </DialogContent>
+              </Dialog>
+
+              <Dialog open={dialogOpen} onOpenChange={(open) => {
+                setDialogOpen(open);
+                if (!open) resetForm();
+              }}>
+                <DialogTrigger asChild>
+                  <Button
+                    data-testid="add-user-button"
+                    className="flex items-center gap-2 bg-slate-800 hover:bg-slate-900"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Add User
+                  </Button>
+                </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
                   <DialogTitle>Add New User</DialogTitle>
