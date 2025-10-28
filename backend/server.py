@@ -605,6 +605,14 @@ async def get_users(current_user: dict = Depends(verify_admin)):
     # Convert and add default permissions if missing
     result = []
     for user in users:
+        # Add id if missing (for old users)
+        if 'id' not in user:
+            user['id'] = str(uuid.uuid4())
+            await db.users.update_one(
+                {"username": user['username']},
+                {"$set": {"id": user['id']}}
+            )
+        
         if isinstance(user.get('created_at'), str):
             user['created_at'] = datetime.fromisoformat(user['created_at'])
         
@@ -617,6 +625,7 @@ async def get_users(current_user: dict = Depends(verify_admin)):
                     "phone": True,
                     "address": True,
                     "dues_tracking": True,
+                    "meeting_attendance": True,
                     "admin_actions": True
                 }
             else:
@@ -626,6 +635,7 @@ async def get_users(current_user: dict = Depends(verify_admin)):
                     "phone": False,
                     "address": False,
                     "dues_tracking": False,
+                    "meeting_attendance": False,
                     "admin_actions": False
                 }
             # Update the user in database
