@@ -187,6 +187,9 @@ export default function Dashboard({ onLogout, userRole }) {
     );
   });
 
+  // Sort filtered members to maintain order
+  const sortedFilteredMembers = sortMembers([...filteredMembers]);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
       <nav className="bg-white border-b border-slate-200 shadow-sm">
