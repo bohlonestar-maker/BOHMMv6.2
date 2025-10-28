@@ -8,7 +8,7 @@ import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 class BOHDirectoryAPITester:
-    def __init__(self, base_url="https://road-roster.preview.emergentagent.com/api"):
+    def __init__(self, base_url="https://bikers-directory.preview.emergentagent.com/api"):
         self.base_url = base_url
         self.token = None
         self.tests_run = 0
@@ -736,7 +736,7 @@ class BOHDirectoryAPITester:
                     self.log_test("Create Invite - Token Extracted", True, f"Token: {invite_token[:20]}...")
                     
                     # Verify invite link format
-                    expected_base = "https://road-roster.preview.emergentagent.com/accept-invite?token="
+                    expected_base = "https://bikers-directory.preview.emergentagent.com/accept-invite?token="
                     if invite_link.startswith(expected_base):
                         self.log_test("Verify Invite Link Format", True, f"Link format correct: {invite_link[:60]}...")
                     else:
