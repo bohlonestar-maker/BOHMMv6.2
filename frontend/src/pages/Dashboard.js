@@ -158,9 +158,19 @@ export default function Dashboard({ onLogout, userRole, userPermissions }) {
         year: new Date().getFullYear(),
         months: Array(12).fill(false)
       },
-      meeting_attendance: member.meeting_attendance || {
+      meeting_attendance: member.meeting_attendance ? {
+        year: member.meeting_attendance.year || new Date().getFullYear(),
+        meetings: member.meeting_attendance.meetings ? member.meeting_attendance.meetings.map(m => {
+          // Handle both old format (number) and new format (object)
+          if (typeof m === 'object' && m !== null) {
+            return { status: m.status || 0, note: m.note || "" };
+          } else {
+            return { status: m || 0, note: "" };
+          }
+        }) : Array(24).fill(null).map(() => ({ status: 0, note: "" }))
+      } : {
         year: new Date().getFullYear(),
-        meetings: Array(24).fill(false)
+        meetings: Array(24).fill(null).map(() => ({ status: 0, note: "" }))
       }
     });
     setDialogOpen(true);
