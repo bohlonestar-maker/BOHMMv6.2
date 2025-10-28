@@ -324,31 +324,34 @@ export default function Dashboard({ onLogout, userRole, userPermissions }) {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
       <nav className="bg-white border-b border-slate-200 shadow-sm">
-        <div className="max-w-7xl mx-auto px-6 py-4">
-          <div className="flex justify-between items-center">
-            <h1 className="text-2xl font-bold text-slate-900">Brothers of the Highway</h1>
-            <div className="flex items-center gap-3">
-              <span className="text-sm text-slate-600">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-4">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-0">
+            <h1 className="text-xl sm:text-2xl font-bold text-slate-900">Brothers of the Highway</h1>
+            <div className="flex items-center gap-2 flex-wrap w-full sm:w-auto">
+              <span className="text-xs sm:text-sm text-slate-600">
                 {localStorage.getItem("username")} ({userRole})
               </span>
               {hasPermission('admin_actions') && (
                 <Button
                   onClick={() => navigate("/users")}
                   variant="outline"
+                  size="sm"
                   data-testid="user-management-button"
-                  className="flex items-center gap-2"
+                  className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm"
                 >
-                  <Users className="w-4 h-4" />
-                  Manage Users
+                  <Users className="w-3 h-3 sm:w-4 sm:h-4" />
+                  <span className="hidden sm:inline">Manage Users</span>
+                  <span className="sm:hidden">Users</span>
                 </Button>
               )}
               <Button
                 onClick={onLogout}
                 variant="outline"
+                size="sm"
                 data-testid="logout-button"
-                className="flex items-center gap-2"
+                className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm"
               >
-                <LogOut className="w-4 h-4" />
+                <LogOut className="w-3 h-3 sm:w-4 sm:h-4" />
                 Logout
               </Button>
             </div>
@@ -356,12 +359,12 @@ export default function Dashboard({ onLogout, userRole, userPermissions }) {
         </div>
       </nav>
 
-      <div className="max-w-7xl mx-auto px-6 py-8">
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-          <div className="mb-6">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-8">
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 sm:p-6">
+          <div className="mb-4 sm:mb-6">
             <div className="relative max-w-2xl">
               <svg
-                className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 pointer-events-none z-10"
+                className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-slate-400 pointer-events-none z-10"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
