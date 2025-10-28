@@ -282,20 +282,34 @@ export default function Prospects({ onLogout, userRole }) {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
-      <nav className="bg-white border-b border-slate-200 shadow-sm">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+      <nav className="bg-slate-800 border-b border-slate-700 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-4">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-0">
-            <h1 className="text-xl sm:text-2xl font-bold text-slate-900">Hangarounds/Prospects</h1>
+            <h1 className="text-xl sm:text-2xl font-bold text-slate-100">Hangarounds/Prospects</h1>
             <div className="flex items-center gap-2 flex-wrap w-full sm:w-auto">
-              <span className="text-xs sm:text-sm text-slate-600">
+              <span className="text-xs sm:text-sm text-slate-300">
                 {localStorage.getItem("username")} ({userRole})
               </span>
+              <Button
+                onClick={() => navigate("/chat")}
+                variant="outline"
+                size="sm"
+                className="relative flex items-center gap-1 sm:gap-2 text-xs sm:text-sm bg-slate-700 text-slate-200 border-slate-600 hover:bg-slate-600"
+              >
+                <MessageCircle className="w-3 h-3 sm:w-4 sm:h-4" />
+                <span className="hidden sm:inline">Chat</span>
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                    {unreadCount > 99 ? '99+' : unreadCount}
+                  </span>
+                )}
+              </Button>
               <Button
                 onClick={() => navigate("/")}
                 variant="outline"
                 size="sm"
-                className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm"
+                className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm bg-slate-700 text-slate-200 border-slate-600 hover:bg-slate-600"
               >
                 <Users className="w-3 h-3 sm:w-4 sm:h-4" />
                 <span className="hidden sm:inline">Members</span>
@@ -306,7 +320,7 @@ export default function Prospects({ onLogout, userRole }) {
                   onClick={() => navigate("/users")}
                   variant="outline"
                   size="sm"
-                  className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm"
+                  className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm bg-slate-700 text-slate-200 border-slate-600 hover:bg-slate-600"
                 >
                   <Users className="w-3 h-3 sm:w-4 sm:h-4" />
                   <span className="hidden sm:inline">Manage Users</span>
@@ -317,7 +331,7 @@ export default function Prospects({ onLogout, userRole }) {
                 onClick={onLogout}
                 variant="outline"
                 size="sm"
-                className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm"
+                className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm bg-slate-700 text-slate-200 border-slate-600 hover:bg-slate-600"
               >
                 <LogOut className="w-3 h-3 sm:w-4 sm:h-4" />
                 Logout
