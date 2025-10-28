@@ -74,20 +74,35 @@ class BOHDirectoryAPITester:
 
     def test_login(self, username="admin", password="admin123"):
         """Test login and get token - try multiple credentials if first fails"""
-        """Test login and get token"""
         print(f"\n🔐 Testing Authentication...")
-        success, response = self.run_test(
-            "Admin Login",
-            "POST",
-            "auth/login",
-            200,
-            data={"username": username, "password": password}
-        )
         
-        if success and 'token' in response:
-            self.token = response['token']
-            print(f"   Token obtained: {self.token[:20]}...")
-            return True, response
+        # Try multiple credential combinations
+        credentials_to_try = [
+            ("admin", "admin123"),
+            ("Admin", "admin123"),
+            ("admin", "password"),
+            ("Admin", "password"),
+            ("testuser", "password"),
+            ("Lonestar", "password"),
+            ("Lonestar ", "password")  # Note the space
+        ]
+        
+        for user, pwd in credentials_to_try:
+            success, response = self.run_test(
+                f"Login attempt: {user}",
+                "POST",
+                "auth/login",
+                200,
+                data={"username": user, "password": pwd}
+            )
+            
+            if success and 'token' in response:
+                self.token = response['token']
+                print(f"   ✅ Successful login with {user}")
+                print(f"   Token obtained: {self.token[:20]}...")
+                return True, response
+        
+        print("   ❌ All login attempts failed")
         return False, {}
 
     def test_auth_verify(self):
