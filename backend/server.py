@@ -659,8 +659,8 @@ async def export_members_csv(current_user: dict = Depends(verify_token)):
                     current_year = str(datetime.now(timezone.utc).year)
                     meetings = [{"status": 0, "note": ""} for _ in range(24)]
                 
-                meeting_status = []
-                meeting_notes = []
+                # Interleave status and notes for each meeting
+                meeting_data = []
                 for meeting in meetings:
                     if isinstance(meeting, dict):
                         status = meeting.get('status', 0)
@@ -670,23 +670,23 @@ async def export_members_csv(current_user: dict = Depends(verify_token)):
                         note = ''
                     
                     if status == 1:
-                        meeting_status.append('Present')
+                        status_text = 'Present'
                     elif status == 2:
-                        meeting_status.append('Excused')
+                        status_text = 'Excused'
                     else:
-                        meeting_status.append('Absent')
-                    meeting_notes.append(note)
+                        status_text = 'Absent'
+                    
+                    meeting_data.append(status_text)
+                    meeting_data.append(note)
                 
                 row.append(current_year)
-                row.extend(meeting_status)
-                row.append('Notes')
-                row.extend(meeting_notes)
+                row.extend(meeting_data)
             else:
-                # No attendance data
+                # No attendance data - interleave empty status and notes
                 row.append('')
-                row.extend(['Absent'] * 24)
-                row.append('Notes')
-                row.extend([''] * 24)
+                for _ in range(24):
+                    row.append('Absent')
+                    row.append('')
         
         writer.writerow(row)
     
