@@ -107,6 +107,7 @@ export default function Dashboard({ onLogout, userRole, userPermissions }) {
     return userPermissions?.[permission] === true;
   };
 
+  const [selectedDuesYear, setSelectedDuesYear] = useState(new Date().getFullYear());
   const [formData, setFormData] = useState({
     chapter: "",
     title: "",
@@ -116,8 +117,7 @@ export default function Dashboard({ onLogout, userRole, userPermissions }) {
     phone: "",
     address: "",
     dues: {
-      year: new Date().getFullYear(),
-      months: Array(12).fill(false)
+      [new Date().getFullYear().toString()]: Array(12).fill(false)
     },
     meeting_attendance: {
       [new Date().getFullYear().toString()]: Array(24).fill(null).map(() => ({ status: 0, note: "" }))
