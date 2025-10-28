@@ -232,7 +232,7 @@ export default function Dashboard({ onLogout, userRole, userPermissions }) {
               <span className="text-sm text-slate-600">
                 {localStorage.getItem("username")} ({userRole})
               </span>
-              {userRole === "admin" && (
+              {hasPermission('admin_actions') && (
                 <Button
                   onClick={() => navigate("/users")}
                   variant="outline"
