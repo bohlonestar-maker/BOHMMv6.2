@@ -596,7 +596,7 @@ export default function Dashboard({ onLogout, userRole, userPermissions }) {
                                   }`}
                                   data-testid={`attendance-${monthIndex}-1st`}
                                 >
-                                  {month}-1st
+                                  {month}-1st {meetingDates[monthIndex * 2] && `(${formatMeetingDate(meetingDates[monthIndex * 2])})`}
                                 </button>
                                 <button
                                   type="button"
@@ -610,7 +610,7 @@ export default function Dashboard({ onLogout, userRole, userPermissions }) {
                                   }`}
                                   data-testid={`attendance-${monthIndex}-3rd`}
                                 >
-                                  {month}-3rd
+                                  {month}-3rd {meetingDates[monthIndex * 2 + 1] && `(${formatMeetingDate(meetingDates[monthIndex * 2 + 1])})`}
                                 </button>
                               </div>
                               {(formData.meeting_attendance.meetings[monthIndex * 2].status === 0 || 
