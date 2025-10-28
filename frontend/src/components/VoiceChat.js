@@ -273,15 +273,6 @@ export default function VoiceChat() {
       toast.error('Failed to change speaker');
     }
   };
-    try {
-      const newState = !isMuted;
-      await callObject.setLocalAudio(!newState);
-      setIsMuted(newState);
-    } catch (error) {
-      console.error('Failed to toggle mute:', error);
-      toast.error('Failed to toggle mute');
-    }
-  };
 
   const getAudioIndicator = (sessionId) => {
     const level = audioLevels[sessionId] || 0;
