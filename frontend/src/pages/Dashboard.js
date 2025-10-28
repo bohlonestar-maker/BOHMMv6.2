@@ -107,7 +107,6 @@ export default function Dashboard({ onLogout, userRole, userPermissions }) {
     return userPermissions?.[permission] === true;
   };
 
-  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [formData, setFormData] = useState({
     chapter: "",
     title: "",
@@ -129,9 +128,10 @@ export default function Dashboard({ onLogout, userRole, userPermissions }) {
     fetchMembers();
   }, []);
 
-  // Update meeting dates whenever the selected year changes
+  // Update meeting dates whenever the year changes
   useEffect(() => {
-    const dates = getMeetingDates(selectedYear);
+    const currentYear = new Date().getFullYear();
+    const dates = getMeetingDates(currentYear);
     setMeetingDates(dates);
   }, [formData.meeting_attendance.year]);
 
