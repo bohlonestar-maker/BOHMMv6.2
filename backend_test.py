@@ -73,6 +73,7 @@ class BOHDirectoryAPITester:
             return False, {}
 
     def test_login(self, username="admin", password="admin123"):
+        """Test login and get token - try multiple credentials if first fails"""
         """Test login and get token"""
         print(f"\n🔐 Testing Authentication...")
         success, response = self.run_test(
