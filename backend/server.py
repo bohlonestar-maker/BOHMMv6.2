@@ -526,6 +526,7 @@ async def create_user(user_data: UserCreate, current_user: dict = Depends(verify
                 "phone": True,
                 "address": True,
                 "dues_tracking": True,
+                "meeting_attendance": True,
                 "admin_actions": True
             }
         else:
