@@ -97,6 +97,7 @@ class UserCreate(BaseModel):
 class UserUpdate(BaseModel):
     password: Optional[str] = None
     role: Optional[str] = None
+    permissions: Optional[dict] = None
 
 class UserResponse(BaseModel):
     id: str
