@@ -133,19 +133,6 @@ export default function Dashboard({ onLogout, userRole, userPermissions }) {
     return () => clearInterval(interval);
   }, [userRole]);
 
-  const fetchUnreadCount = async () => {
-    if (userRole !== 'admin') return;
-    try {
-      const token = localStorage.getItem("token");
-      const response = await axios.get(`${API}/chat/unread_count`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setUnreadCount(response.data.unread_count);
-    } catch (error) {
-      console.error("Failed to fetch unread count:", error);
-    }
-  };
-
   const fetchUnreadPrivateCount = async () => {
     try {
       const token = localStorage.getItem("token");
