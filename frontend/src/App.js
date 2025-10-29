@@ -7,6 +7,7 @@ import UserManagement from "@/pages/UserManagement";
 import AcceptInvite from "@/pages/AcceptInvite";
 import Prospects from "@/pages/Prospects";
 import Messages from "@/pages/Messages";
+import UpdateLog from "@/pages/UpdateLog";
 import { Toaster } from "@/components/ui/sonner";
 
 function App() {
