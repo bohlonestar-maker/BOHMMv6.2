@@ -158,13 +158,18 @@ export default function Dashboard({ onLogout, userRole, userPermissions }) {
   const fetchMembers = async () => {
     try {
       const token = localStorage.getItem("token");
+      console.log("Fetching members with token:", token ? token.substring(0, 20) + "..." : "NO TOKEN");
       const response = await axios.get(`${API}/members`, {
         headers: { Authorization: `Bearer ${token}` },
       });
+      console.log("Members loaded successfully:", response.data.length, "members");
       const sortedMembers = sortMembers(response.data);
       setMembers(sortedMembers);
     } catch (error) {
-      toast.error("Failed to load members");
+      console.error("Failed to load members:", error);
+      console.error("Error details:", error.response?.data);
+      console.error("Status code:", error.response?.status);
+      toast.error(`Failed to load members: ${error.response?.data?.detail || error.message}`);
     } finally {
       setLoading(false);
     }
