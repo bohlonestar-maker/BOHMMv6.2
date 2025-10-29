@@ -6,7 +6,6 @@ import Dashboard from "@/pages/Dashboard";
 import UserManagement from "@/pages/UserManagement";
 import AcceptInvite from "@/pages/AcceptInvite";
 import Prospects from "@/pages/Prospects";
-import Chat from "@/pages/Chat";
 import Messages from "@/pages/Messages";
 import { Toaster } from "@/components/ui/sonner";
 
