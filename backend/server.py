@@ -314,20 +314,6 @@ class ChatMessage(BaseModel):
 class ChatMessageCreate(BaseModel):
     message: str
 
-class VoiceRoomResponse(BaseModel):
-    room_name: str
-    room_url: str
-    created_at: str
-
-class MeetingTokenRequest(BaseModel):
-    room_name: str
-    user_name: str
-    is_owner: bool = True
-
-class MeetingTokenResponse(BaseModel):
-    token: str
-    room_url: str
-
 # Initialize default admin user
 @app.on_event("startup")
 async def create_default_admin():
