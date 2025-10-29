@@ -99,6 +99,56 @@ async def send_invite_email(email: str, token: str, role: str):
         logger.error(f"Failed to send email: {str(e)}")
         return False
 
+
+# Generic email sending function for support replies
+async def send_email(to_email: str, subject: str, body: str):
+    if not SMTP_EMAIL or not SMTP_PASSWORD:
+        logger.warning("SMTP credentials not configured")
+        return False
+    
+    message = MIMEMultipart("alternative")
+    message["Subject"] = subject
+    message["From"] = SMTP_EMAIL
+    message["To"] = to_email
+    
+    # Create plain text and HTML versions
+    html = f"""
+    <html>
+      <body>
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #1e293b;">Brothers of the Highway TC Support</h2>
+          <div style="background-color: #f8fafc; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            {body.replace(chr(10), '<br>')}
+          </div>
+          <p style="color: #64748b; font-size: 12px;">
+            This is an automated message from Brothers of the Highway TC Member Directory Support.
+          </p>
+        </div>
+      </body>
+    </html>
+    """
+    
+    part1 = MIMEText(body, "plain")
+    part2 = MIMEText(html, "html")
+    message.attach(part1)
+    message.attach(part2)
+    
+    try:
+        await aiosmtplib.send(
+            message,
+            hostname=SMTP_HOST,
+            port=SMTP_PORT,
+            username=SMTP_EMAIL,
+            password=SMTP_PASSWORD,
+            use_tls=True
+        )
+        logger.info(f"Email sent to {to_email}")
+        return True
+    except Exception as e:
+        logger.error(f"Failed to send email: {str(e)}")
+        return False
+
+
 # Create the main app without a prefix
 app = FastAPI()
 
