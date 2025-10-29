@@ -121,6 +121,16 @@ function App() {
               )
             }
           />
+          <Route
+            path="/support-center"
+            element={
+              isAuthenticated && localStorage.getItem("username") === "Lonestar" ? (
+                <SupportCenter onLogout={handleLogout} />
+              ) : (
+                <Navigate to="/" replace />
+              )
+            }
+          />
         </Routes>
       </BrowserRouter>
       <Toaster />
