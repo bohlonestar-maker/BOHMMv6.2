@@ -179,9 +179,32 @@ export default function SupportCenter({ onLogout }) {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-8">
         <div className="bg-slate-800 rounded-xl shadow-xl border border-slate-700 p-4 sm:p-6">
-          <h2 className="text-base sm:text-lg font-semibold text-slate-100 mb-4 sm:mb-6">
-            Support Messages
-          </h2>
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4 sm:mb-6">
+            <h2 className="text-base sm:text-lg font-semibold text-slate-100">
+              Support Messages
+            </h2>
+            <div className="flex gap-2">
+              <Button
+                onClick={handleExportCSV}
+                size="sm"
+                className="bg-green-600 hover:bg-green-700 text-white"
+                disabled={messages.length === 0}
+              >
+                <Download className="w-4 h-4 mr-2" />
+                Export CSV
+              </Button>
+              <Button
+                onClick={handleClearClosedMessages}
+                size="sm"
+                variant="outline"
+                className="text-white border-red-600 hover:bg-red-900"
+                disabled={messages.filter(m => m.status === "closed").length === 0}
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                Clear Closed
+              </Button>
+            </div>
+          </div>
 
           {loading ? (
             <p className="text-center text-slate-400 py-8">Loading messages...</p>
