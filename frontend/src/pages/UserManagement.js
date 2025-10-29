@@ -118,12 +118,17 @@ export default function UserManagement({ onLogout }) {
   const fetchUsers = async () => {
     try {
       const token = localStorage.getItem("token");
+      console.log("Fetching users with token:", token ? token.substring(0, 20) + "..." : "NO TOKEN");
       const response = await axios.get(`${API}/users`, {
         headers: { Authorization: `Bearer ${token}` },
       });
+      console.log("Users loaded successfully:", response.data.length, "users");
       setUsers(response.data);
     } catch (error) {
-      toast.error("Failed to load users");
+      console.error("Failed to load users:", error);
+      console.error("Error details:", error.response?.data);
+      console.error("Status code:", error.response?.status);
+      toast.error(`Failed to load users: ${error.response?.data?.detail || error.message}`);
     } finally {
       setLoading(false);
     }
