@@ -294,15 +294,35 @@ export default function Messages() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 h-[calc(100vh-180px)]">
           {/* Conversations List */}
           <div className="md:col-span-1 bg-slate-800 rounded-xl shadow-xl border border-slate-700 overflow-hidden flex flex-col">
-            <div className="p-4 border-b border-slate-700 flex justify-between items-center">
-              <h2 className="text-lg font-semibold text-slate-100">Conversations</h2>
-              <Button
-                onClick={() => setShowNewChat(!showNewChat)}
-                size="sm"
-                className="bg-blue-600 hover:bg-blue-700"
-              >
-                New Chat
-              </Button>
+            <div className="p-4 border-b border-slate-700">
+              <div className="flex justify-between items-center mb-3">
+                <h2 className="text-lg font-semibold text-slate-100">Conversations</h2>
+                <Button
+                  onClick={() => setShowNewChat(!showNewChat)}
+                  size="sm"
+                  className="bg-blue-600 hover:bg-blue-700"
+                >
+                  New Chat
+                </Button>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  onClick={() => setShowArchived(false)}
+                  size="sm"
+                  variant={!showArchived ? "default" : "outline"}
+                  className={!showArchived ? "bg-blue-600 hover:bg-blue-700" : "border-slate-600 text-slate-300 hover:bg-slate-700"}
+                >
+                  Active
+                </Button>
+                <Button
+                  onClick={() => setShowArchived(true)}
+                  size="sm"
+                  variant={showArchived ? "default" : "outline"}
+                  className={showArchived ? "bg-blue-600 hover:bg-blue-700" : "border-slate-600 text-slate-300 hover:bg-slate-700"}
+                >
+                  Archived
+                </Button>
+              </div>
             </div>
 
             {showNewChat && (
