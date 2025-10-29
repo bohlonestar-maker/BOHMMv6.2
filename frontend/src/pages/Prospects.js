@@ -84,28 +84,12 @@ export default function Prospects({ onLogout, userRole }) {
 
   useEffect(() => {
     fetchProspects();
-    fetchUnreadCount();
-    // Auto-refresh unread count every 30 seconds
-    const interval = setInterval(fetchUnreadCount, 30000);
-    return () => clearInterval(interval);
   }, []);
 
   useEffect(() => {
     const dates = getMeetingDates(formData.meeting_attendance.year);
     setMeetingDates(dates);
   }, [formData.meeting_attendance.year]);
-
-  const fetchUnreadCount = async () => {
-    try {
-      const token = localStorage.getItem("token");
-      const response = await axios.get(`${API}/chat/unread_count`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setUnreadCount(response.data.unread_count);
-    } catch (error) {
-      console.error("Failed to fetch unread count:", error);
-    }
-  };
 
   const fetchProspects = async () => {
     try {
