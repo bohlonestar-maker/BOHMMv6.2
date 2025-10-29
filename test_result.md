@@ -102,7 +102,7 @@
 # Testing Data - Main Agent and testing sub agent both should log testing data below this section
 #====================================================================================================
 
-user_problem_statement: "Brothers of the Highway Member Directory - Create admin chat feature with notifications and group voice chat with Bluetooth device support."
+user_problem_statement: "Brothers of the Highway Member Directory - Admin chat feature with text messaging and notifications for administrative discussions. Voice chat feature removed."
 
 backend:
   - task: "Admin chat API endpoints"
