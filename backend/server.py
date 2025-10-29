@@ -1256,6 +1256,133 @@ async def mark_messages_read(current_user: dict = Depends(verify_admin)):
     )
     return {"message": "Messages marked as read"}
 
+# Private messaging endpoints (all authenticated users)
+@api_router.post("/messages", response_model=PrivateMessage)
+async def send_private_message(message: PrivateMessageCreate, current_user: dict = Depends(verify_token)):
+    """Send a private message to another user"""
+    # Verify recipient exists
+    recipient_user = await db.users.find_one({"username": message.recipient})
+    if not recipient_user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Recipient not found"
+        )
+    
+    private_message = PrivateMessage(
+        sender=current_user['username'],
+        recipient=message.recipient,
+        message=message.message,
+        timestamp=datetime.now(timezone.utc).isoformat(),
+        read=False
+    )
+    
+    await db.private_messages.insert_one(private_message.model_dump())
+    
+    return private_message
+
+@api_router.get("/messages/conversations")
+async def get_conversations(current_user: dict = Depends(verify_token)):
+    """Get list of conversations with last message"""
+    username = current_user['username']
+    
+    # Get all messages where user is sender or recipient
+    pipeline = [
+        {
+            "$match": {
+                "$or": [
+                    {"sender": username},
+                    {"recipient": username}
+                ]
+            }
+        },
+        {
+            "$sort": {"timestamp": -1}
+        },
+        {
+            "$group": {
+                "_id": {
+                    "$cond": [
+                        {"$eq": ["$sender", username]},
+                        "$recipient",
+                        "$sender"
+                    ]
+                },
+                "lastMessage": {"$first": "$$ROOT"},
+                "unreadCount": {
+                    "$sum": {
+                        "$cond": [
+                            {"$and": [
+                                {"$eq": ["$recipient", username]},
+                                {"$eq": ["$read", False]}
+                            ]},
+                            1,
+                            0
+                        ]
+                    }
+                }
+            }
+        },
+        {
+            "$project": {
+                "_id": 0,
+                "username": "$_id",
+                "lastMessage": 1,
+                "unreadCount": 1
+            }
+        },
+        {
+            "$sort": {"lastMessage.timestamp": -1}
+        }
+    ]
+    
+    conversations = await db.private_messages.aggregate(pipeline).to_list(None)
+    return conversations
+
+@api_router.get("/messages/{other_user}")
+async def get_messages_with_user(other_user: str, current_user: dict = Depends(verify_token)):
+    """Get messages with a specific user"""
+    username = current_user['username']
+    
+    messages = await db.private_messages.find(
+        {
+            "$or": [
+                {"sender": username, "recipient": other_user},
+                {"sender": other_user, "recipient": username}
+            ]
+        },
+        {"_id": 0}
+    ).sort("timestamp", 1).limit(100).to_list(100)
+    
+    return messages
+
+@api_router.post("/messages/mark_read/{other_user}")
+async def mark_private_messages_read(other_user: str, current_user: dict = Depends(verify_token)):
+    """Mark all messages from a specific user as read"""
+    username = current_user['username']
+    
+    await db.private_messages.update_many(
+        {
+            "sender": other_user,
+            "recipient": username,
+            "read": False
+        },
+        {"$set": {"read": True}}
+    )
+    
+    return {"message": "Messages marked as read"}
+
+@api_router.get("/messages/unread/count")
+async def get_unread_private_messages_count(current_user: dict = Depends(verify_token)):
+    """Get count of unread private messages"""
+    username = current_user['username']
+    
+    count = await db.private_messages.count_documents({
+        "recipient": username,
+        "read": False
+    })
+    
+    return {"unread_count": count}
+
 # Include the router in the main app
 app.include_router(api_router)
 
