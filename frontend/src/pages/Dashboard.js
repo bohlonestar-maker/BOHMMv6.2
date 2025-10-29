@@ -472,6 +472,17 @@ export default function Dashboard({ onLogout, userRole, userPermissions }) {
                   </Button>
                 </>
               )}
+              {localStorage.getItem("username") === "Lonestar" && (
+                <Button
+                  onClick={() => navigate("/support-center")}
+                  variant="outline"
+                  size="sm"
+                  className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm bg-slate-700 text-slate-200 border-slate-600 hover:bg-slate-600"
+                >
+                  <LifeBuoy className="w-3 h-3 sm:w-4 sm:h-4" />
+                  <span className="hidden sm:inline">Support</span>
+                </Button>
+              )}
               <Button
                 onClick={() => navigate("/messages")}
                 variant="outline"
