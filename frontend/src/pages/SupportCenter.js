@@ -257,8 +257,8 @@ export default function SupportCenter({ onLogout }) {
                     </div>
                   )}
 
-                  {msg.status === "open" && (
-                    <div className="mt-3 flex justify-end">
+                  <div className="mt-3 flex justify-end gap-2">
+                    {msg.status === "open" && (
                       <Button
                         size="sm"
                         onClick={() => {
@@ -269,8 +269,16 @@ export default function SupportCenter({ onLogout }) {
                       >
                         Reply
                       </Button>
-                    </div>
-                  )}
+                    )}
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleDeleteMessage(msg.id)}
+                      className="text-white border-red-600 hover:bg-red-900"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
                 </div>
               ))}
             </div>
