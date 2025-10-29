@@ -353,7 +353,7 @@ export default function Prospects({ onLogout, userRole }) {
               <DialogTrigger asChild>
                 <Button
                   size="sm"
-                  className="flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-900 w-full sm:w-auto"
+                  className="flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-900 text-white w-full sm:w-auto"
                 >
                   <Plus className="w-4 h-4" />
                   Add Prospect
