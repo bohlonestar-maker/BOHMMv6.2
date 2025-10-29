@@ -1305,6 +1305,86 @@ async def get_unread_private_messages_count(current_user: dict = Depends(verify_
     
     return {"unread_count": count}
 
+@api_router.post("/messages/conversation/{other_user}/archive")
+async def archive_conversation(other_user: str, current_user: dict = Depends(verify_token)):
+    """Archive conversation with a specific user"""
+    username = current_user['username']
+    
+    # Add current user to archived_by list for all messages in this conversation
+    result = await db.private_messages.update_many(
+        {
+            "$or": [
+                {"sender": username, "recipient": other_user},
+                {"sender": other_user, "recipient": username}
+            ],
+            "archived_by": {"$ne": username}
+        },
+        {"$push": {"archived_by": username}}
+    )
+    
+    return {
+        "message": f"Conversation with {other_user} archived",
+        "modified_count": result.modified_count
+    }
+
+@api_router.post("/messages/conversation/{other_user}/unarchive")
+async def unarchive_conversation(other_user: str, current_user: dict = Depends(verify_token)):
+    """Unarchive conversation with a specific user"""
+    username = current_user['username']
+    
+    # Remove current user from archived_by list for all messages in this conversation
+    result = await db.private_messages.update_many(
+        {
+            "$or": [
+                {"sender": username, "recipient": other_user},
+                {"sender": other_user, "recipient": username}
+            ]
+        },
+        {"$pull": {"archived_by": username}}
+    )
+    
+    return {
+        "message": f"Conversation with {other_user} unarchived",
+        "modified_count": result.modified_count
+    }
+
+@api_router.get("/messages/conversations/archived")
+async def get_archived_conversations(current_user: dict = Depends(verify_token)):
+    """Get list of archived conversations"""
+    username = current_user['username']
+    
+    # Get all messages where user is sender or recipient AND has archived the conversation
+    messages = await db.private_messages.find(
+        {
+            "$or": [
+                {"sender": username},
+                {"recipient": username}
+            ],
+            "archived_by": username
+        },
+        {"_id": 0}
+    ).sort("timestamp", -1).to_list(None)
+    
+    # Group by conversation partner
+    conversations_dict = {}
+    for msg in messages:
+        other_user = msg['recipient'] if msg['sender'] == username else msg['sender']
+        
+        if other_user not in conversations_dict:
+            conversations_dict[other_user] = {
+                "username": other_user,
+                "lastMessage": msg,
+                "unreadCount": 0
+            }
+        
+        if msg['recipient'] == username and not msg['read']:
+            conversations_dict[other_user]['unreadCount'] += 1
+    
+    conversations = list(conversations_dict.values())
+    conversations.sort(key=lambda x: x['lastMessage']['timestamp'], reverse=True)
+    
+    return conversations
+
 @api_router.delete("/messages/conversation/{other_user}")
 async def delete_conversation(other_user: str, current_user: dict = Depends(verify_token)):
     """Delete entire conversation with a specific user"""
