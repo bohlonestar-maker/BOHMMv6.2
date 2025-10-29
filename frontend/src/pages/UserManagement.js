@@ -96,23 +96,7 @@ export default function UserManagement({ onLogout }) {
 
   useEffect(() => {
     fetchUsers();
-    fetchUnreadCount();
-    // Auto-refresh unread count every 30 seconds
-    const interval = setInterval(fetchUnreadCount, 30000);
-    return () => clearInterval(interval);
   }, []);
-
-  const fetchUnreadCount = async () => {
-    try {
-      const token = localStorage.getItem("token");
-      const response = await axios.get(`${API}/chat/unread_count`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setUnreadCount(response.data.unread_count);
-    } catch (error) {
-      console.error("Failed to fetch unread count:", error);
-    }
-  };
 
   const fetchUsers = async () => {
     try {
