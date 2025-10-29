@@ -45,7 +45,6 @@ export default function UserManagement({ onLogout }) {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
-  const [unreadCount, setUnreadCount] = useState(0);
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
