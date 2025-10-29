@@ -145,6 +145,39 @@ export default function Messages() {
     }
   };
 
+  const handleDeleteConversation = async () => {
+    if (!userToDelete) return;
+
+    const token = localStorage.getItem("token");
+
+    try {
+      await axios.delete(`${API}/messages/conversation/${userToDelete}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      
+      toast.success(`Conversation with ${userToDelete} deleted`);
+      
+      // Clear selection if we deleted the currently selected conversation
+      if (selectedUser === userToDelete) {
+        setSelectedUser(null);
+        setMessages([]);
+      }
+      
+      // Refresh conversations list
+      await fetchConversations();
+      
+      setDeleteDialogOpen(false);
+      setUserToDelete(null);
+    } catch (error) {
+      toast.error(error.response?.data?.detail || "Failed to delete conversation");
+    }
+  };
+
+  const confirmDeleteConversation = (username) => {
+    setUserToDelete(username);
+    setDeleteDialogOpen(true);
+  };
+
   const startNewConversation = (username) => {
     setSelectedUser(username);
     setShowNewChat(false);
