@@ -1326,7 +1326,14 @@ async def get_conversations(current_user: dict = Depends(verify_token)):
             "$project": {
                 "_id": 0,
                 "username": "$_id",
-                "lastMessage": 1,
+                "lastMessage": {
+                    "id": "$lastMessage.id",
+                    "sender": "$lastMessage.sender",
+                    "recipient": "$lastMessage.recipient",
+                    "message": "$lastMessage.message",
+                    "timestamp": "$lastMessage.timestamp",
+                    "read": "$lastMessage.read"
+                },
                 "unreadCount": 1
             }
         },
