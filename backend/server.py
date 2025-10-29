@@ -639,17 +639,32 @@ async def export_members_csv(current_user: dict = Depends(verify_token)):
                 years = sorted(dues.keys(), reverse=True)
                 if years:
                     export_year = years[0]
-                    dues_months = dues.get(export_year, [False] * 12)
+                    dues_months = dues.get(export_year, [{"status": "unpaid", "note": ""} for _ in range(12)])
                 else:
                     export_year = str(datetime.now(timezone.utc).year)
-                    dues_months = [False] * 12
+                    dues_months = [{"status": "unpaid", "note": ""} for _ in range(12)]
             else:
                 export_year = str(datetime.now(timezone.utc).year)
-                dues_months = [False] * 12
+                dues_months = [{"status": "unpaid", "note": ""} for _ in range(12)]
             
-            dues_status = ['Paid' if paid else 'Unpaid' for paid in dues_months]
+            # Convert dues to status strings with notes
+            dues_data = []
+            for month_due in dues_months:
+                if isinstance(month_due, dict):
+                    status = month_due.get('status', 'unpaid')
+                    note = month_due.get('note', '')
+                    if status == 'late' and note:
+                        dues_data.append(f'Late ({note})')
+                    else:
+                        dues_data.append(status.capitalize())
+                elif isinstance(month_due, bool):
+                    # Handle old boolean format for backward compatibility
+                    dues_data.append('Paid' if month_due else 'Unpaid')
+                else:
+                    dues_data.append('Unpaid')
+            
             row.append(export_year)
-            row.extend(dues_status)
+            row.extend(dues_data)
         
         if is_admin or permissions.get("meeting_attendance"):
             attendance = member.get('meeting_attendance', {})
