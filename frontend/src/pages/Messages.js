@@ -30,6 +30,8 @@ export default function Messages() {
   const [showNewChat, setShowNewChat] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [userToDelete, setUserToDelete] = useState(null);
+  const [showArchived, setShowArchived] = useState(false);
+  const [archivedConversations, setArchivedConversations] = useState([]);
   const messagesEndRef = useRef(null);
   const navigate = useNavigate();
 
