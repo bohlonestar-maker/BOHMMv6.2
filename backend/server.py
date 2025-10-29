@@ -364,11 +364,14 @@ async def create_default_admin():
 # Auth endpoints
 @api_router.post("/auth/login", response_model=LoginResponse)
 async def login(login_data: LoginRequest):
+    logger.info(f"Login attempt for username: '{login_data.username}'")
     user = await db.users.find_one({"username": login_data.username})
     if not user:
+        logger.info(f"User not found: '{login_data.username}'")
         raise HTTPException(status_code=401, detail="Invalid username or password")
     
     if not verify_password(login_data.password, user["password_hash"]):
+        logger.info(f"Password verification failed for: '{login_data.username}'")
         raise HTTPException(status_code=401, detail="Invalid username or password")
     
     token = create_access_token({"sub": user["username"], "role": user["role"]})
