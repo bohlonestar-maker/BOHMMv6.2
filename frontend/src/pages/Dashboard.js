@@ -792,6 +792,7 @@ export default function Dashboard({ onLogout, userRole, userPermissions }) {
                         <Button
                           type="button"
                           variant="outline"
+                          className="text-white"
                           onClick={() => {
                             setDialogOpen(false);
                             resetForm();
