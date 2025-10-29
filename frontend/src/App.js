@@ -110,6 +110,16 @@ function App() {
               )
             }
           />
+          <Route
+            path="/update-log"
+            element={
+              isAuthenticated && userRole === 'admin' ? (
+                <UpdateLog />
+              ) : (
+                <Navigate to="/" replace />
+              )
+            }
+          />
         </Routes>
       </BrowserRouter>
       <Toaster />
