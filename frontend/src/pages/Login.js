@@ -73,7 +73,7 @@ export default function Login({ onLogin }) {
             Brothers of the Highway
           </h1>
           <p className="text-center text-slate-300 mb-6 sm:mb-8 text-sm sm:text-base">
-            Member Directory <span className="text-slate-500 text-xs sm:text-sm ml-2">v.1.5b</span>
+            Member Directory <span className="text-slate-500 text-xs sm:text-sm ml-2">v.1.5c</span>
           </p>
 
           <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
