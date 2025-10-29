@@ -523,25 +523,34 @@ export default function Messages() {
         </div>
       </div>
 
-      {/* Delete Confirmation Dialog */}
+      {/* Delete/Archive Confirmation Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent className="bg-slate-800 border-slate-700">
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-slate-100">Delete Conversation</AlertDialogTitle>
+            <AlertDialogTitle className="text-slate-100">Manage Conversation</AlertDialogTitle>
             <AlertDialogDescription className="text-slate-400">
-              Are you sure you want to delete your conversation with <span className="font-semibold text-slate-200">{userToDelete}</span>? 
-              This will permanently delete all messages and cannot be undone.
+              What would you like to do with your conversation with <span className="font-semibold text-slate-200">{userToDelete}</span>?
+              <div className="mt-3 space-y-2">
+                <p className="text-sm"><strong className="text-slate-300">Archive:</strong> Hide the conversation but keep all messages. You can unarchive it later.</p>
+                <p className="text-sm"><strong className="text-slate-300">Delete:</strong> Permanently delete all messages. This cannot be undone.</p>
+              </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel className="bg-slate-700 text-slate-200 border-slate-600 hover:bg-slate-600">
+          <AlertDialogFooter className="flex-col sm:flex-row gap-2">
+            <AlertDialogCancel className="bg-slate-700 text-slate-200 border-slate-600 hover:bg-slate-600 m-0">
               Cancel
             </AlertDialogCancel>
+            <Button
+              onClick={handleArchiveConversation}
+              className="bg-blue-600 hover:bg-blue-700 text-white"
+            >
+              Archive
+            </Button>
             <AlertDialogAction 
               onClick={handleDeleteConversation}
-              className="bg-red-600 hover:bg-red-700 text-white"
+              className="bg-red-600 hover:bg-red-700 text-white m-0"
             >
-              Delete
+              Delete Permanently
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
