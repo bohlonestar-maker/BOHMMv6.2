@@ -314,6 +314,19 @@ class ChatMessage(BaseModel):
 class ChatMessageCreate(BaseModel):
     message: str
 
+class PrivateMessage(BaseModel):
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    sender: str
+    recipient: str
+    message: str
+    timestamp: str
+    read: bool = False
+
+class PrivateMessageCreate(BaseModel):
+    recipient: str
+    message: str
+
 # Initialize default admin user
 @app.on_event("startup")
 async def create_default_admin():
