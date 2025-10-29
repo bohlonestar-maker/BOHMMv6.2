@@ -1590,6 +1590,69 @@ Brothers of the Highway TC Support Team
         raise HTTPException(status_code=500, detail="Failed to send email reply")
 
 
+@api_router.delete("/support/messages/{message_id}")
+async def delete_support_message(message_id: str, current_user: dict = Depends(verify_token)):
+    """Delete a single support message (Lonestar only)"""
+    # Check if user is Lonestar
+    if current_user['username'] != "Lonestar":
+        raise HTTPException(status_code=403, detail="Access denied. This feature is only available to Lonestar.")
+    
+    result = await db.support_messages.delete_one({"id": message_id})
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Support message not found")
+    
+    return {"message": "Support message deleted successfully"}
+
+@api_router.delete("/support/messages/closed/all")
+async def delete_closed_messages(current_user: dict = Depends(verify_token)):
+    """Delete all closed/replied support messages (Lonestar only)"""
+    # Check if user is Lonestar
+    if current_user['username'] != "Lonestar":
+        raise HTTPException(status_code=403, detail="Access denied. This feature is only available to Lonestar.")
+    
+    result = await db.support_messages.delete_many({"status": "closed"})
+    
+    return {
+        "message": f"Deleted {result.deleted_count} closed messages",
+        "deleted_count": result.deleted_count
+    }
+
+@api_router.get("/support/messages/export")
+async def export_support_messages(current_user: dict = Depends(verify_token)):
+    """Export support messages to CSV (Lonestar only)"""
+    # Check if user is Lonestar
+    if current_user['username'] != "Lonestar":
+        raise HTTPException(status_code=403, detail="Access denied. This feature is only available to Lonestar.")
+    
+    messages = await db.support_messages.find({}).sort("timestamp", -1).to_list(length=None)
+    
+    if not messages:
+        raise HTTPException(status_code=404, detail="No messages to export")
+    
+    # Create CSV content
+    csv_content = "ID,Name,Email,Message,Status,Submitted At,Reply,Replied At\n"
+    
+    for msg in messages:
+        # Escape fields that might contain commas or quotes
+        name = msg.get('name', '').replace('"', '""')
+        email = msg.get('email', '').replace('"', '""')
+        message = msg.get('message', '').replace('"', '""').replace('\n', ' ')
+        status = msg.get('status', '')
+        timestamp = msg.get('timestamp', '')
+        reply = msg.get('reply_text', '').replace('"', '""').replace('\n', ' ') if msg.get('reply_text') else ''
+        replied_at = msg.get('replied_at', '') if msg.get('replied_at') else ''
+        
+        csv_content += f'"{msg.get("id", "")}","{name}","{email}","{message}","{status}","{timestamp}","{reply}","{replied_at}"\n'
+    
+    return Response(
+        content=csv_content,
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=support_messages.csv"}
+    )
+
+
+
 # Include the router in the main app
 app.include_router(api_router)
 
