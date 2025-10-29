@@ -311,6 +311,7 @@ class PrivateMessage(BaseModel):
     message: str
     timestamp: str
     read: bool = False
+    archived_by: List[str] = Field(default_factory=list)  # List of users who archived this conversation
 
 class PrivateMessageCreate(BaseModel):
     recipient: str
