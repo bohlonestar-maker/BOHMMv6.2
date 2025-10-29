@@ -473,6 +473,20 @@ export default function Dashboard({ onLogout, userRole, userPermissions }) {
                 </>
               )}
               <Button
+                onClick={() => navigate("/messages")}
+                variant="outline"
+                size="sm"
+                className="relative flex items-center gap-1 sm:gap-2 text-xs sm:text-sm bg-slate-700 text-slate-200 border-slate-600 hover:bg-slate-600"
+              >
+                <Mail className="w-3 h-3 sm:w-4 sm:h-4" />
+                <span className="hidden sm:inline">Messages</span>
+                {unreadPrivateCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                    {unreadPrivateCount > 99 ? '99+' : unreadPrivateCount}
+                  </span>
+                )}
+              </Button>
+              <Button
                 onClick={onLogout}
                 variant="outline"
                 size="sm"
