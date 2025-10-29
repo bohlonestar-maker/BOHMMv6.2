@@ -102,17 +102,22 @@ export default function Messages() {
   useEffect(() => {
     fetchConversations();
     fetchAllUsers();
+    fetchArchivedConversations();
     
     // Auto-refresh every 15 seconds
     const interval = setInterval(() => {
-      fetchConversations();
+      if (showArchived) {
+        fetchArchivedConversations();
+      } else {
+        fetchConversations();
+      }
       if (selectedUser) {
         fetchMessages(selectedUser);
       }
     }, 15000);
     
     return () => clearInterval(interval);
-  }, []);
+  }, [showArchived]);
 
   useEffect(() => {
     if (selectedUser) {
