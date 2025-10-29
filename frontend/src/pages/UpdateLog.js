@@ -152,7 +152,7 @@ export default function UpdateLog() {
           <h3 className="text-lg font-bold text-slate-100 mb-3">About This Application</h3>
           <p className="text-sm text-slate-300 mb-3">
             The Brothers of the Highway Member Directory is a comprehensive member management system 
-            designed specifically for motorcycle club organizations. It provides secure, role-based access 
+            designed specifically for Brothers of the Highway TC. It provides secure, role-based access 
             to member information, attendance tracking, dues management, and communication tools.
           </p>
           <div className="flex flex-wrap gap-2">
