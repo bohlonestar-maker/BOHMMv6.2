@@ -495,6 +495,7 @@ export default function Prospects({ onLogout, userRole }) {
                     <Button
                       type="button"
                       variant="outline"
+                      className="text-white"
                       onClick={() => {
                         setDialogOpen(false);
                         resetForm();
