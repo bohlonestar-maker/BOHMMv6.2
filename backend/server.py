@@ -1459,6 +1459,87 @@ async def delete_conversation(other_user: str, current_user: dict = Depends(veri
         "deleted_count": result.deleted_count
     }
 
+
+# Support Message endpoints
+@api_router.post("/support/messages")
+async def create_support_message(support_msg: SupportMessageCreate):
+    """Create a new support message (no authentication required)"""
+    message = SupportMessage(
+        name=support_msg.name,
+        email=support_msg.email,
+        message=support_msg.message,
+        timestamp=datetime.now(timezone.utc).isoformat()
+    )
+    
+    doc = message.model_dump()
+    await db.support_messages.insert_one(doc)
+    
+    return {"message": "Support message submitted successfully", "id": message.id}
+
+@api_router.get("/support/messages")
+async def get_support_messages(current_user: dict = Depends(verify_token)):
+    """Get all support messages (Lonestar only)"""
+    # Check if user is Lonestar
+    if current_user['username'] != "Lonestar":
+        raise HTTPException(status_code=403, detail="Access denied. This feature is only available to Lonestar.")
+    
+    messages = await db.support_messages.find({}).sort("timestamp", -1).to_list(length=None)
+    
+    for msg in messages:
+        msg.pop('_id', None)
+    
+    return messages
+
+@api_router.post("/support/messages/{message_id}/reply")
+async def reply_to_support_message(message_id: str, reply: SupportReply, current_user: dict = Depends(verify_token)):
+    """Reply to a support message and send email (Lonestar only)"""
+    # Check if user is Lonestar
+    if current_user['username'] != "Lonestar":
+        raise HTTPException(status_code=403, detail="Access denied. This feature is only available to Lonestar.")
+    
+    # Get the support message
+    message = await db.support_messages.find_one({"id": message_id})
+    if not message:
+        raise HTTPException(status_code=404, detail="Support message not found")
+    
+    # Update message with reply
+    await db.support_messages.update_one(
+        {"id": message_id},
+        {
+            "$set": {
+                "reply_text": reply.reply_text,
+                "replied_at": datetime.now(timezone.utc).isoformat(),
+                "status": "closed"
+            }
+        }
+    )
+    
+    # Send email reply
+    try:
+        await send_email(
+            to_email=message['email'],
+            subject=f"Re: Support Request - {message['name']}",
+            body=f"""Hello {message['name']},
+
+Thank you for contacting Brothers of the Highway TC support.
+
+Your message:
+{message['message']}
+
+Our response:
+{reply.reply_text}
+
+Best regards,
+Brothers of the Highway TC Support Team
+"""
+        )
+        
+        return {"message": "Reply sent successfully"}
+    except Exception as e:
+        logger.error(f"Failed to send email reply: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to send email reply")
+
+
 # Include the router in the main app
 app.include_router(api_router)
 
