@@ -1285,64 +1285,38 @@ async def get_conversations(current_user: dict = Depends(verify_token)):
     """Get list of conversations with last message"""
     username = current_user['username']
     
-    # Get all messages where user is sender or recipient
-    pipeline = [
+    # Get all messages where user is sender or recipient, sorted by timestamp
+    messages = await db.private_messages.find(
         {
-            "$match": {
-                "$or": [
-                    {"sender": username},
-                    {"recipient": username}
-                ]
-            }
+            "$or": [
+                {"sender": username},
+                {"recipient": username}
+            ]
         },
-        {
-            "$sort": {"timestamp": -1}
-        },
-        {
-            "$group": {
-                "_id": {
-                    "$cond": [
-                        {"$eq": ["$sender", username]},
-                        "$recipient",
-                        "$sender"
-                    ]
-                },
-                "lastMessage": {"$first": "$$ROOT"},
-                "unreadCount": {
-                    "$sum": {
-                        "$cond": [
-                            {"$and": [
-                                {"$eq": ["$recipient", username]},
-                                {"$eq": ["$read", False]}
-                            ]},
-                            1,
-                            0
-                        ]
-                    }
-                }
-            }
-        },
-        {
-            "$project": {
-                "_id": 0,
-                "username": "$_id",
-                "lastMessage": {
-                    "id": "$lastMessage.id",
-                    "sender": "$lastMessage.sender",
-                    "recipient": "$lastMessage.recipient",
-                    "message": "$lastMessage.message",
-                    "timestamp": "$lastMessage.timestamp",
-                    "read": "$lastMessage.read"
-                },
-                "unreadCount": 1
-            }
-        },
-        {
-            "$sort": {"lastMessage.timestamp": -1}
-        }
-    ]
+        {"_id": 0}  # Exclude MongoDB ObjectId
+    ).sort("timestamp", -1).to_list(None)
     
-    conversations = await db.private_messages.aggregate(pipeline).to_list(None)
+    # Group by conversation partner
+    conversations_dict = {}
+    for msg in messages:
+        # Determine the other user in the conversation
+        other_user = msg['recipient'] if msg['sender'] == username else msg['sender']
+        
+        if other_user not in conversations_dict:
+            conversations_dict[other_user] = {
+                "username": other_user,
+                "lastMessage": msg,
+                "unreadCount": 0
+            }
+        
+        # Count unread messages (where current user is recipient and message is unread)
+        if msg['recipient'] == username and not msg['read']:
+            conversations_dict[other_user]['unreadCount'] += 1
+    
+    # Convert dict to list and sort by last message timestamp
+    conversations = list(conversations_dict.values())
+    conversations.sort(key=lambda x: x['lastMessage']['timestamp'], reverse=True)
+    
     return conversations
 
 @api_router.get("/messages/{other_user}")
