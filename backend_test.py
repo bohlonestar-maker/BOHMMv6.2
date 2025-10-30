@@ -1691,6 +1691,416 @@ class BOHDirectoryAPITester:
         print(f"   🏍️  Prospects functionality testing completed")
         return prospect_id
 
+    def test_resend_invite_functionality(self):
+        """Test resend invite functionality - PRIORITY TEST"""
+        print(f"\n📧 Testing Resend Invite Functionality...")
+        
+        # Step 1: Create a test invite
+        invite_data = {
+            "email": f"resendtest_{datetime.now().strftime('%H%M%S')}@example.com",
+            "role": "user",
+            "permissions": {
+                "basic_info": True,
+                "email": False,
+                "phone": False,
+                "address": False,
+                "dues_tracking": False,
+                "meeting_attendance": False,
+                "admin_actions": False
+            }
+        }
+        
+        success, invite_response = self.run_test(
+            "Create Invite for Resend Testing",
+            "POST",
+            "invites",
+            200,
+            data=invite_data
+        )
+        
+        invite_token = None
+        if success and 'invite_link' in invite_response:
+            invite_link = invite_response['invite_link']
+            if '?token=' in invite_link:
+                invite_token = invite_link.split('?token=')[1]
+                print(f"   Created invite token: {invite_token[:20]}...")
+            else:
+                self.log_test("Extract Token from Invite Link", False, "No token found in invite_link")
+                return
+        else:
+            self.log_test("Create Invite for Resend Testing", False, "Failed to create invite or no invite_link in response")
+            return
+        
+        # Step 2: Test resending a valid pending invite (should succeed)
+        success, resend_response = self.run_test(
+            "Resend Valid Pending Invite",
+            "POST",
+            f"invites/{invite_token}/resend",
+            200
+        )
+        
+        if success:
+            # Verify response contains success message and email_sent flag
+            if 'message' in resend_response and 'email_sent' in resend_response:
+                self.log_test("Resend Response Format", True, f"Message: {resend_response['message']}, Email sent: {resend_response['email_sent']}")
+            else:
+                self.log_test("Resend Response Format", False, f"Missing message or email_sent in response: {resend_response}")
+        
+        # Step 3: Accept the invite to mark it as used
+        accept_data = {
+            "token": invite_token,
+            "username": f"resenduser_{datetime.now().strftime('%H%M%S')}",
+            "password": "testpass123"
+        }
+        
+        success, accept_response = self.run_test(
+            "Accept Invite to Mark as Used",
+            "POST",
+            "invites/accept",
+            200,
+            data=accept_data
+        )
+        
+        created_user_id = None
+        if success:
+            # Get user ID for cleanup
+            success_users, users = self.run_test(
+                "Get Users for Cleanup",
+                "GET",
+                "users",
+                200
+            )
+            
+            if success_users:
+                for user in users:
+                    if user.get('username') == accept_data['username']:
+                        created_user_id = user.get('id')
+                        break
+        
+        # Step 4: Test resending an already used invite (should fail with 400)
+        success, used_resend_response = self.run_test(
+            "Resend Used Invite (Should Fail)",
+            "POST",
+            f"invites/{invite_token}/resend",
+            400
+        )
+        
+        # Step 5: Test resending with invalid token (should fail with 404)
+        invalid_token = "00000000-0000-0000-0000-000000000000"
+        success, invalid_resend_response = self.run_test(
+            "Resend Invalid Token (Should Fail)",
+            "POST",
+            f"invites/{invalid_token}/resend",
+            404
+        )
+        
+        # Step 6: Test resending with malformed token (should fail with 404)
+        malformed_token = "not-a-valid-uuid"
+        success, malformed_resend_response = self.run_test(
+            "Resend Malformed Token (Should Fail)",
+            "POST",
+            f"invites/{malformed_token}/resend",
+            404
+        )
+        
+        # Clean up: Delete the created user
+        if created_user_id:
+            success, delete_response = self.run_test(
+                "Delete Created User (Cleanup)",
+                "DELETE",
+                f"users/{created_user_id}",
+                200
+            )
+        
+        print(f"   📧 Resend invite functionality testing completed")
+        return invite_token
+
+    def test_member_loading_regression(self):
+        """Test member loading regression for admin-only contact restriction - PRIORITY TEST"""
+        print(f"\n👥 Testing Member Loading Regression (Admin-Only Contact Restriction)...")
+        
+        # Step 1: Ensure we have test admin credentials
+        admin_credentials = {"username": "testadmin", "password": "testpass123"}
+        
+        # Try to create test admin if doesn't exist
+        admin_user = {
+            "username": "testadmin",
+            "password": "testpass123",
+            "role": "admin"
+        }
+        
+        success, created_admin = self.run_test(
+            "Create Test Admin User",
+            "POST",
+            "users",
+            201,
+            data=admin_user
+        )
+        
+        admin_user_id = None
+        if success and 'id' in created_admin:
+            admin_user_id = created_admin['id']
+            print(f"   Created test admin user ID: {admin_user_id}")
+        elif not success:
+            print("   Test admin user might already exist, continuing...")
+        
+        # Step 2: Create a regular user for testing
+        regular_user = {
+            "username": f"regularuser_{datetime.now().strftime('%H%M%S')}",
+            "password": "testpass123",
+            "role": "user"
+        }
+        
+        success, created_regular = self.run_test(
+            "Create Regular User for Testing",
+            "POST",
+            "users",
+            201,
+            data=regular_user
+        )
+        
+        regular_user_id = None
+        if success and 'id' in created_regular:
+            regular_user_id = created_regular['id']
+            print(f"   Created regular user ID: {regular_user_id}")
+        else:
+            print("❌ Failed to create regular user - cannot continue regression tests")
+            return
+        
+        # Step 3: Create test members
+        # National chapter member (contact info should be restricted for regular users)
+        national_member = {
+            "chapter": "National",
+            "title": "Prez",
+            "handle": f"NationalRegTest_{datetime.now().strftime('%H%M%S')}",
+            "name": "National Regression Test Member",
+            "email": "national.regression@test.com",
+            "phone": "555-1001",
+            "address": "123 National Regression Street, National City, NC 12345"
+        }
+        
+        success, created_national = self.run_test(
+            "Create National Chapter Member for Regression Test",
+            "POST",
+            "members",
+            201,
+            data=national_member
+        )
+        
+        national_member_id = None
+        if success and 'id' in created_national:
+            national_member_id = created_national['id']
+            print(f"   Created National member ID: {national_member_id}")
+        else:
+            print("❌ Failed to create National member - cannot continue regression tests")
+            return
+        
+        # Non-National chapter member (contact info should be visible to all users)
+        ad_member = {
+            "chapter": "AD",
+            "title": "VP",
+            "handle": f"ADRegTest_{datetime.now().strftime('%H%M%S')}",
+            "name": "AD Regression Test Member",
+            "email": "ad.regression@test.com",
+            "phone": "555-1002",
+            "address": "456 AD Regression Street, AD City, AD 67890"
+        }
+        
+        success, created_ad = self.run_test(
+            "Create AD Chapter Member for Regression Test",
+            "POST",
+            "members",
+            201,
+            data=ad_member
+        )
+        
+        ad_member_id = None
+        if success and 'id' in created_ad:
+            ad_member_id = created_ad['id']
+            print(f"   Created AD member ID: {ad_member_id}")
+        else:
+            print("❌ Failed to create AD member - cannot continue regression tests")
+            return
+        
+        # Save original admin token
+        original_token = self.token
+        
+        # Step 4: Test ADMIN user member loading
+        print(f"\n   🔑 Testing Admin User Member Loading...")
+        
+        # Login as admin
+        success, admin_login = self.run_test(
+            "Login as Test Admin",
+            "POST",
+            "auth/login",
+            200,
+            data=admin_credentials
+        )
+        
+        if success and 'token' in admin_login:
+            self.token = admin_login['token']
+            
+            # Test GET /api/members as admin
+            success, admin_members = self.run_test(
+                "Admin - Load All Members",
+                "GET",
+                "members",
+                200
+            )
+            
+            if success and isinstance(admin_members, list):
+                self.log_test("Admin - Members Load Successfully", True, f"Loaded {len(admin_members)} members without errors")
+                
+                # Find our test members and verify full contact info is visible
+                national_found = None
+                ad_found = None
+                
+                for member in admin_members:
+                    if member.get('id') == national_member_id:
+                        national_found = member
+                    elif member.get('id') == ad_member_id:
+                        ad_found = member
+                
+                # Verify National member shows FULL contact info for admin
+                if national_found:
+                    if (national_found.get('email') == 'national.regression@test.com' and 
+                        national_found.get('phone') == '555-1001' and 
+                        national_found.get('address') == '123 National Regression Street, National City, NC 12345'):
+                        self.log_test("Admin - National Member Full Contact Info Visible", True, "Admin can see full contact info for National member")
+                    else:
+                        self.log_test("Admin - National Member Full Contact Info Visible", False, f"Contact info restricted: email={national_found.get('email')}, phone={national_found.get('phone')}, address={national_found.get('address')}")
+                else:
+                    self.log_test("Admin - National Member Found", False, "National member not found in admin member list")
+                
+                # Verify AD member shows FULL contact info for admin
+                if ad_found:
+                    if (ad_found.get('email') == 'ad.regression@test.com' and 
+                        ad_found.get('phone') == '555-1002' and 
+                        ad_found.get('address') == '456 AD Regression Street, AD City, AD 67890'):
+                        self.log_test("Admin - AD Member Full Contact Info Visible", True, "Admin can see full contact info for AD member")
+                    else:
+                        self.log_test("Admin - AD Member Full Contact Info Visible", False, f"Contact info restricted: email={ad_found.get('email')}, phone={ad_found.get('phone')}, address={ad_found.get('address')}")
+                else:
+                    self.log_test("Admin - AD Member Found", False, "AD member not found in admin member list")
+            else:
+                self.log_test("Admin - Members Load Successfully", False, f"Failed to load members or invalid response type: {type(admin_members)}")
+        else:
+            self.log_test("Login as Test Admin", False, "Failed to login as admin")
+        
+        # Step 5: Test REGULAR user member loading
+        print(f"\n   👤 Testing Regular User Member Loading...")
+        
+        # Login as regular user
+        success, regular_login = self.run_test(
+            "Login as Regular User",
+            "POST",
+            "auth/login",
+            200,
+            data={"username": regular_user["username"], "password": regular_user["password"]}
+        )
+        
+        if success and 'token' in regular_login:
+            self.token = regular_login['token']
+            
+            # Test GET /api/members as regular user
+            success, regular_members = self.run_test(
+                "Regular User - Load All Members",
+                "GET",
+                "members",
+                200
+            )
+            
+            if success and isinstance(regular_members, list):
+                self.log_test("Regular User - Members Load Successfully (No Pydantic Errors)", True, f"Loaded {len(regular_members)} members without validation errors")
+                
+                # Find our test members and verify contact restriction
+                national_found = None
+                ad_found = None
+                
+                for member in regular_members:
+                    if member.get('id') == national_member_id:
+                        national_found = member
+                    elif member.get('id') == ad_member_id:
+                        ad_found = member
+                
+                # Verify National member shows RESTRICTED contact info for regular user
+                if national_found:
+                    if (national_found.get('email') == 'restricted@admin-only.local' and 
+                        national_found.get('phone') == 'Admin Only' and 
+                        national_found.get('address') == 'Admin Only'):
+                        self.log_test("Regular User - National Member Contact Restricted", True, "National member contact info properly restricted for regular user")
+                    else:
+                        self.log_test("Regular User - National Member Contact Restricted", False, f"Contact info not properly restricted: email={national_found.get('email')}, phone={national_found.get('phone')}, address={national_found.get('address')}")
+                else:
+                    self.log_test("Regular User - National Member Found", False, "National member not found in regular user member list")
+                
+                # Verify AD member shows FULL contact info for regular user
+                if ad_found:
+                    if (ad_found.get('email') == 'ad.regression@test.com' and 
+                        ad_found.get('phone') == '555-1002' and 
+                        ad_found.get('address') == '456 AD Regression Street, AD City, AD 67890'):
+                        self.log_test("Regular User - Non-National Member Full Contact Info", True, "Regular user can see full contact info for non-National member")
+                    else:
+                        self.log_test("Regular User - Non-National Member Full Contact Info", False, f"Contact info unexpectedly restricted: email={ad_found.get('email')}, phone={ad_found.get('phone')}, address={ad_found.get('address')}")
+                else:
+                    self.log_test("Regular User - AD Member Found", False, "AD member not found in regular user member list")
+                
+                # Step 6: Test data decryption is working properly
+                # Verify that basic info (non-sensitive fields) are properly decrypted and visible
+                if national_found:
+                    if (national_found.get('chapter') == 'National' and 
+                        national_found.get('title') == 'Prez' and 
+                        national_found.get('handle') and 
+                        national_found.get('name') == 'National Regression Test Member'):
+                        self.log_test("Regular User - Data Decryption Working", True, "Basic member info properly decrypted and visible")
+                    else:
+                        self.log_test("Regular User - Data Decryption Working", False, f"Basic info not properly decrypted: chapter={national_found.get('chapter')}, title={national_found.get('title')}, name={national_found.get('name')}")
+            else:
+                self.log_test("Regular User - Members Load Successfully (No Pydantic Errors)", False, f"Failed to load members or invalid response type: {type(regular_members)}")
+        else:
+            self.log_test("Login as Regular User", False, "Failed to login as regular user")
+        
+        # Restore original admin token
+        self.token = original_token
+        
+        # Clean up test data
+        print(f"\n   🧹 Cleaning up regression test data...")
+        
+        if national_member_id:
+            success, response = self.run_test(
+                "Delete National Test Member",
+                "DELETE",
+                f"members/{national_member_id}",
+                200
+            )
+        
+        if ad_member_id:
+            success, response = self.run_test(
+                "Delete AD Test Member",
+                "DELETE",
+                f"members/{ad_member_id}",
+                200
+            )
+        
+        if regular_user_id:
+            success, response = self.run_test(
+                "Delete Regular Test User",
+                "DELETE",
+                f"users/{regular_user_id}",
+                200
+            )
+        
+        if admin_user_id:
+            success, response = self.run_test(
+                "Delete Test Admin User",
+                "DELETE",
+                f"users/{admin_user_id}",
+                200
+            )
+        
+        print(f"   👥 Member loading regression testing completed")
+        return national_member_id, ad_member_id
+
     def run_all_tests(self):
         """Run all tests"""
         print("🚀 Starting Brothers of the Highway Directory API Tests")
