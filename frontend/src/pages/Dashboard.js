@@ -796,8 +796,8 @@ export default function Dashboard({ onLogout, userRole, userPermissions }) {
                                     yearMeetings[monthIndex * 2 + 1]?.status === 1
                                       ? 'bg-green-600 text-white hover:bg-green-700'
                                       : yearMeetings[monthIndex * 2 + 1]?.status === 2
-                                      ? 'bg-yellow-500 text-white hover:bg-yellow-600'
-                                      : 'bg-slate-200 text-slate-700 hover:bg-slate-300'
+                                      ? 'bg-orange-500 text-white hover:bg-orange-600'
+                                      : 'bg-red-600 text-white hover:bg-red-700'
                                   }`}
                                   data-testid={`attendance-${monthIndex}-3rd`}
                                 >
