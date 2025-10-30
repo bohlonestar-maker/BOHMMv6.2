@@ -2101,6 +2101,352 @@ class BOHDirectoryAPITester:
         print(f"   👥 Member loading regression testing completed")
         return national_member_id, ad_member_id
 
+    def test_message_monitoring_for_lonestar(self):
+        """Test Message Monitoring for Lonestar - NEW HIGH PRIORITY FEATURE"""
+        print(f"\n🔍 Testing Message Monitoring for Lonestar...")
+        
+        # Step 1: Create test users for messaging
+        print(f"\n   👥 Setting up test users...")
+        
+        # Create Lonestar user (if doesn't exist)
+        lonestar_user = {
+            "username": "Lonestar",
+            "password": "testpass123",
+            "role": "admin"
+        }
+        
+        success, created_lonestar = self.run_test(
+            "Create Lonestar User",
+            "POST",
+            "users",
+            201,
+            data=lonestar_user
+        )
+        
+        lonestar_user_id = None
+        if success and 'id' in created_lonestar:
+            lonestar_user_id = created_lonestar['id']
+            print(f"   Created Lonestar user ID: {lonestar_user_id}")
+        elif not success:
+            # Lonestar might already exist, try to login
+            print("   Lonestar user might already exist, continuing...")
+        
+        # Create regular test users for messaging
+        test_users = [
+            {"username": "testuser1", "password": "testpass123", "role": "user"},
+            {"username": "testuser2", "password": "testpass123", "role": "user"}
+        ]
+        
+        created_user_ids = []
+        for user_data in test_users:
+            success, created_user = self.run_test(
+                f"Create Test User: {user_data['username']}",
+                "POST",
+                "users",
+                201,
+                data=user_data
+            )
+            
+            if success and 'id' in created_user:
+                created_user_ids.append(created_user['id'])
+                print(f"   Created user ID: {created_user['id']}")
+            elif not success:
+                print(f"   User {user_data['username']} might already exist, continuing...")
+        
+        # Step 2: Create test messages between users
+        print(f"\n   💬 Creating test messages...")
+        
+        # Save original admin token
+        original_token = self.token
+        
+        # Login as testuser1 and send messages
+        success, user1_login = self.run_test(
+            "Login as testuser1",
+            "POST",
+            "auth/login",
+            200,
+            data={"username": "testuser1", "password": "testpass123"}
+        )
+        
+        if success and 'token' in user1_login:
+            self.token = user1_login['token']
+            
+            # Send message from testuser1 to testuser2
+            message_data = {
+                "recipient": "testuser2",
+                "message": "Hello from testuser1! This is a test message for monitoring."
+            }
+            
+            success, sent_message = self.run_test(
+                "Send Message: testuser1 → testuser2",
+                "POST",
+                "messages",
+                200,
+                data=message_data
+            )
+            
+            # Send another message with special characters
+            special_message_data = {
+                "recipient": "testuser2",
+                "message": "Special chars test: @#$%^&*()_+ 🏍️ Brothers of the Highway!"
+            }
+            
+            success, sent_special = self.run_test(
+                "Send Special Message: testuser1 → testuser2",
+                "POST",
+                "messages",
+                200,
+                data=special_message_data
+            )
+        
+        # Login as testuser2 and send reply
+        success, user2_login = self.run_test(
+            "Login as testuser2",
+            "POST",
+            "auth/login",
+            200,
+            data={"username": "testuser2", "password": "testpass123"}
+        )
+        
+        if success and 'token' in user2_login:
+            self.token = user2_login['token']
+            
+            # Send reply from testuser2 to testuser1
+            reply_data = {
+                "recipient": "testuser1",
+                "message": "Reply from testuser2! Thanks for the message."
+            }
+            
+            success, sent_reply = self.run_test(
+                "Send Reply: testuser2 → testuser1",
+                "POST",
+                "messages",
+                200,
+                data=reply_data
+            )
+        
+        # Login as testadmin and send message to testuser1
+        success, admin_login = self.run_test(
+            "Login as testadmin",
+            "POST",
+            "auth/login",
+            200,
+            data={"username": "testadmin", "password": "testpass123"}
+        )
+        
+        if success and 'token' in admin_login:
+            self.token = admin_login['token']
+            
+            # Send message from testadmin to testuser1
+            admin_message_data = {
+                "recipient": "testuser1",
+                "message": "Admin message to testuser1 for monitoring test."
+            }
+            
+            success, sent_admin_msg = self.run_test(
+                "Send Message: testadmin → testuser1",
+                "POST",
+                "messages",
+                200,
+                data=admin_message_data
+            )
+        
+        # Step 3: Test Access Restriction - Non-Lonestar User (testadmin)
+        print(f"\n   🚫 Testing Access Restriction for Non-Lonestar Users...")
+        
+        # testadmin should get 403 Forbidden
+        success, forbidden_response = self.run_test(
+            "Non-Lonestar Access (testadmin) - Should Get 403",
+            "GET",
+            "messages/monitor/all",
+            403
+        )
+        
+        if success:
+            self.log_test("Access Restriction - Non-Lonestar Gets 403", True, "testadmin correctly denied access with 403")
+        else:
+            self.log_test("Access Restriction - Non-Lonestar Gets 403", False, "testadmin should have been denied access")
+        
+        # Step 4: Test Lonestar Access
+        print(f"\n   ⭐ Testing Lonestar Access to Message Monitor...")
+        
+        # Login as Lonestar
+        success, lonestar_login = self.run_test(
+            "Login as Lonestar",
+            "POST",
+            "auth/login",
+            200,
+            data={"username": "Lonestar", "password": "testpass123"}
+        )
+        
+        if success and 'token' in lonestar_login:
+            self.token = lonestar_login['token']
+            
+            # Test Lonestar can access the monitoring endpoint
+            success, monitor_response = self.run_test(
+                "Lonestar Access - GET /api/messages/monitor/all",
+                "GET",
+                "messages/monitor/all",
+                200
+            )
+            
+            if success and isinstance(monitor_response, list):
+                self.log_test("Lonestar Access - Endpoint Returns 200", True, f"Successfully retrieved {len(monitor_response)} messages")
+                
+                # Step 5: Validate Message Data
+                print(f"\n   📋 Validating Message Data...")
+                
+                if len(monitor_response) > 0:
+                    # Check required fields in messages
+                    required_fields = ['sender', 'recipient', 'message', 'timestamp', 'read']
+                    
+                    all_messages_valid = True
+                    sample_message = monitor_response[0]
+                    
+                    missing_fields = [field for field in required_fields if field not in sample_message]
+                    
+                    if not missing_fields:
+                        self.log_test("Message Data - Required Fields Present", True, f"All required fields found: {required_fields}")
+                    else:
+                        self.log_test("Message Data - Required Fields Present", False, f"Missing fields: {missing_fields}")
+                        all_messages_valid = False
+                    
+                    # Verify message content is not encrypted/hidden
+                    messages_with_content = [msg for msg in monitor_response if msg.get('message', '').strip()]
+                    
+                    if len(messages_with_content) > 0:
+                        self.log_test("Message Data - Content Visibility", True, f"Found {len(messages_with_content)} messages with visible content")
+                        
+                        # Check for our test messages
+                        test_message_found = False
+                        special_chars_found = False
+                        
+                        for msg in monitor_response:
+                            if "Hello from testuser1! This is a test message for monitoring." in msg.get('message', ''):
+                                test_message_found = True
+                            if "Special chars test: @#$%^&*()_+ 🏍️ Brothers of the Highway!" in msg.get('message', ''):
+                                special_chars_found = True
+                        
+                        if test_message_found:
+                            self.log_test("Message Data - Test Message Found", True, "Test message from testuser1 found in monitoring data")
+                        else:
+                            self.log_test("Message Data - Test Message Found", False, "Test message from testuser1 not found")
+                        
+                        if special_chars_found:
+                            self.log_test("Message Data - Special Characters Handled", True, "Message with special characters found correctly")
+                        else:
+                            self.log_test("Message Data - Special Characters Handled", False, "Message with special characters not found")
+                    else:
+                        self.log_test("Message Data - Content Visibility", False, "No messages with visible content found")
+                    
+                    # Verify messages from different conversations are included
+                    senders = set(msg.get('sender', '') for msg in monitor_response)
+                    recipients = set(msg.get('recipient', '') for msg in monitor_response)
+                    
+                    expected_users = {'testuser1', 'testuser2', 'testadmin'}
+                    found_senders = senders.intersection(expected_users)
+                    found_recipients = recipients.intersection(expected_users)
+                    
+                    if len(found_senders) >= 2 and len(found_recipients) >= 2:
+                        self.log_test("Message Data - Multiple Conversations", True, f"Found messages from {len(found_senders)} senders to {len(found_recipients)} recipients")
+                    else:
+                        self.log_test("Message Data - Multiple Conversations", False, f"Expected multiple conversations, found senders: {found_senders}, recipients: {found_recipients}")
+                    
+                    # Verify timestamp format
+                    timestamps_valid = True
+                    for msg in monitor_response[:5]:  # Check first 5 messages
+                        timestamp = msg.get('timestamp', '')
+                        if not timestamp or not isinstance(timestamp, str):
+                            timestamps_valid = False
+                            break
+                    
+                    if timestamps_valid:
+                        self.log_test("Message Data - Timestamp Format", True, "All checked messages have valid timestamp format")
+                    else:
+                        self.log_test("Message Data - Timestamp Format", False, "Some messages have invalid timestamp format")
+                    
+                    # Verify read status is boolean
+                    read_status_valid = True
+                    for msg in monitor_response[:5]:  # Check first 5 messages
+                        read_status = msg.get('read')
+                        if not isinstance(read_status, bool):
+                            read_status_valid = False
+                            break
+                    
+                    if read_status_valid:
+                        self.log_test("Message Data - Read Status Format", True, "All checked messages have boolean read status")
+                    else:
+                        self.log_test("Message Data - Read Status Format", False, "Some messages have invalid read status format")
+                    
+                    # Test message limit (should be max 1000)
+                    if len(monitor_response) <= 1000:
+                        self.log_test("Message Data - Limit Respected", True, f"Message count ({len(monitor_response)}) within 1000 limit")
+                    else:
+                        self.log_test("Message Data - Limit Respected", False, f"Message count ({len(monitor_response)}) exceeds 1000 limit")
+                    
+                    # Test sorting (newest first)
+                    if len(monitor_response) >= 2:
+                        first_timestamp = monitor_response[0].get('timestamp', '')
+                        second_timestamp = monitor_response[1].get('timestamp', '')
+                        
+                        # Simple string comparison should work for ISO format timestamps
+                        if first_timestamp >= second_timestamp:
+                            self.log_test("Message Data - Sorted by Timestamp", True, "Messages appear to be sorted newest first")
+                        else:
+                            self.log_test("Message Data - Sorted by Timestamp", False, "Messages not sorted correctly")
+                    else:
+                        self.log_test("Message Data - Sorted by Timestamp", True, "Not enough messages to test sorting")
+                
+                else:
+                    # Empty database case
+                    self.log_test("Message Data - Empty Database Handling", True, "Empty message list returned correctly")
+            
+            else:
+                self.log_test("Lonestar Access - Endpoint Returns 200", False, f"Expected list response, got: {type(monitor_response)}")
+        
+        else:
+            print("❌ Failed to login as Lonestar - cannot test monitoring functionality")
+        
+        # Step 6: Test Edge Cases
+        print(f"\n   🧪 Testing Edge Cases...")
+        
+        # Test with different user (should still get 403)
+        if user1_login and 'token' in user1_login:
+            self.token = user1_login['token']
+            
+            success, user1_forbidden = self.run_test(
+                "Regular User Access (testuser1) - Should Get 403",
+                "GET",
+                "messages/monitor/all",
+                403
+            )
+        
+        # Restore original admin token
+        self.token = original_token
+        
+        # Step 7: Cleanup test data
+        print(f"\n   🧹 Cleaning up test data...")
+        
+        # Delete created users
+        if lonestar_user_id:
+            success, response = self.run_test(
+                "Delete Lonestar Test User",
+                "DELETE",
+                f"users/{lonestar_user_id}",
+                200
+            )
+        
+        for user_id in created_user_ids:
+            success, response = self.run_test(
+                f"Delete Test User (ID: {user_id})",
+                "DELETE",
+                f"users/{user_id}",
+                200
+            )
+        
+        print(f"   🔍 Message monitoring for Lonestar testing completed")
+        return lonestar_user_id
+
     def run_all_tests(self):
         """Run all tests"""
         print("🚀 Starting Brothers of the Highway Directory API Tests")
