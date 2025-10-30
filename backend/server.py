@@ -1413,6 +1413,41 @@ async def get_invite(token: str):
         "permissions": invite['permissions']
     }
 
+
+@api_router.post("/invites/{token}/resend")
+async def resend_invite(token: str, current_user: dict = Depends(verify_admin)):
+    """Resend an invitation email"""
+    invite = await db.invites.find_one({"token": token})
+    if not invite:
+        raise HTTPException(status_code=404, detail="Invitation not found")
+    
+    if invite['used']:
+        raise HTTPException(status_code=400, detail="This invitation has already been used")
+    
+    # Check if expired
+    expires_at = datetime.fromisoformat(invite['expires_at']) if isinstance(invite['expires_at'], str) else invite['expires_at']
+    if expires_at < datetime.now(timezone.utc):
+        raise HTTPException(status_code=400, detail="This invitation has expired. Please create a new one.")
+    
+    # Resend email
+    email_sent = await send_invite_email(invite['email'], invite['token'], invite['role'])
+    
+    if not email_sent:
+        raise HTTPException(status_code=500, detail="Failed to send invitation email")
+    
+    # Log activity
+    await log_activity(
+        username=current_user["username"],
+        action="invite_resend",
+        details=f"Resent invitation to {invite['email']}"
+    )
+    
+    return {
+        "message": "Invitation email resent successfully",
+        "email_sent": email_sent
+    }
+
+
 @api_router.post("/invites/accept")
 async def accept_invite(accept_data: InviteAccept):
     invite = await db.invites.find_one({"token": accept_data.token, "used": False})
