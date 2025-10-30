@@ -105,9 +105,17 @@ export default function Login({ onLogin }) {
           <h1 className="text-2xl sm:text-3xl font-bold text-center mb-2 text-white">
             Brothers of the Highway
           </h1>
-          <p className="text-center text-slate-300 mb-6 sm:mb-8 text-sm sm:text-base">
+          <p className="text-center text-slate-300 mb-2 text-sm sm:text-base">
             Member Directory <span className="text-slate-500 text-xs sm:text-sm ml-2">v.1.6</span>
           </p>
+          <div className="flex justify-center mb-6 sm:mb-8">
+            <span className="inline-flex items-center gap-1 px-3 py-1 bg-green-900 text-green-300 text-xs font-semibold rounded-full border border-green-700">
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+              </svg>
+              256-bit Encryption
+            </span>
+          </div>
 
           <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
             <div>
