@@ -1980,6 +1980,50 @@ LOGO ELEMENTS & MEANINGS:
 - Truck Number (2158): Alphanumeric identifier for BOH
 - TC: Truckers Club designation
 
+MEMBERSHIP PROCESS:
+1. Open Enrollment - Public recruiting phase
+2. Vetting - Initial interview with Training Chapter
+3. Hangaround Phase - Test commitment, chat activity
+4. Prospect Phase - 4-6 weeks with assignments, weekly meetings
+5. Brother - Full member after vote
+
+PROSPECT REQUIREMENTS:
+- Attend weekly meetings (Thursdays 4pm CST - MANDATORY)
+- Complete weekly assignments (essays, trash pickup, meet-ups)
+- Purchase 2 supporter gear items before membering
+- Learn: Mission Statement, Logo Elements, Chain of Command
+- 100% meeting attendance required
+- Active chat participation in Discord
+- Must memorize Chain of Command structure
+
+KEY BYLAWS:
+- No criminal activity, discrimination, or harassment
+- Respect all officers, members, prospects at all times
+- Follow Chain of Command always - MUST follow CoC without deviation
+- No 1% MC affiliation while in BOH
+- Class A CDL required (students with permit may prospect)
+- No sex offenders, no drug use/possession
+- No reckless driving or property damage
+
+MEET-UPS & EVENTS:
+- 3 annual sanctioned meet-ups
+- Driver appreciation events
+- Family days
+- Community service (trash pickups)
+
+SOCIAL MEDIA & COMMUNICATIONS:
+- Discord: Primary platform for voice/text chat
+- Facebook Family Page: Public outreach, professional posts only
+- TikTok: Recruiting tool, PG-level content, 21+ only
+- Respect and professional presentation required on all platforms
+
+If asked about something not covered in this knowledge base, politely say you don't have that information and suggest they contact their Chain of Command or check Discord channels.
+
+Be helpful, respectful, and direct. Use BOH terminology (handles, Chain of Command, COC, prospects, Brother, S@A, NPrez, NVP, etc.)."""
+
+        # Admin-only additional context
+        admin_context = """
+
 NATIONAL GOVERNING BODIES:
 - National Budget Committee: Oversees quarterly/annual budget, maintains IRS compliance
   Members: National President (Q-Ball), National Treasurer (California Kid), National Secretary (Lonestar)
@@ -2033,32 +2077,6 @@ ASPHALT DEMONS (AD) CHAPTER OFFICERS:
 - AD Sergeant at Arms (ADS@A): *Vacant*
 - AD Enforcer (ADENF): Rookie
 - AD Secretary (ADSEC): Two Stacks
-
-MEMBERSHIP PROCESS:
-1. Open Enrollment - Public recruiting phase
-2. Vetting - Initial interview with Training Chapter
-3. Hangaround Phase - Test commitment, chat activity
-4. Prospect Phase - 4-6 weeks with assignments, weekly meetings
-5. Brother - Full member after vote
-
-PROSPECT REQUIREMENTS:
-- Attend weekly meetings (Thursdays 4pm CST - MANDATORY)
-- Complete weekly assignments (essays, trash pickup, meet-ups)
-- Purchase 2 supporter gear items before membering
-- Learn: Mission Statement, Logo Elements, Chain of Command
-- 100% meeting attendance required
-- Active chat participation in Discord
-- Must memorize Chain of Command structure
-
-KEY BYLAWS:
-- No criminal activity, discrimination, or harassment
-- No fraternization with AOH members or member spouses
-- Respect all officers, members, prospects at all times
-- Follow Chain of Command always - MUST follow CoC without deviation
-- No 1% MC affiliation while in BOH
-- Class A CDL required (students with permit may prospect)
-- No sex offenders, no drug use/possession
-- No reckless driving or property damage
 
 OFFICER-SPECIFIC BYLAWS:
 - Officers serve at pleasure of National President and National Board
