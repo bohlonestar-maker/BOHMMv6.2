@@ -159,6 +159,20 @@ export default function UserManagement({ onLogout }) {
     }
   };
 
+
+  const handleResendInvite = async (inviteToken) => {
+    const token = localStorage.getItem("token");
+    try {
+      const response = await axios.post(`${API}/invites/${inviteToken}/resend`, {}, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      toast.success(response.data.message);
+    } catch (error) {
+      toast.error(error.response?.data?.detail || "Failed to resend invite");
+    }
+  };
+
+
   const handleViewInvites = () => {
     setInvitesDialogOpen(true);
     fetchInvites();
