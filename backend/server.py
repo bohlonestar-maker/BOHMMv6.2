@@ -54,6 +54,17 @@ def decrypt_data(encrypted_data: str) -> str:
         logger.debug(f"Decryption skipped (data not encrypted): {str(e)[:50]}")
         return encrypted_data
 
+
+def hash_for_duplicate_detection(data: str) -> str:
+    """Create a deterministic hash for duplicate detection of encrypted fields"""
+    if not data:
+        return ""
+    # Use SHA-256 hash for deterministic duplicate detection
+    # Lowercase email before hashing for case-insensitive duplicate detection
+    normalized_data = data.lower().strip()
+    return hashlib.sha256(normalized_data.encode()).hexdigest()
+
+
 # Security
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 security = HTTPBearer()
