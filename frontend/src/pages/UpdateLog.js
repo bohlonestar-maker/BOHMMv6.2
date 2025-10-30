@@ -123,7 +123,7 @@ export default function UpdateLog() {
               </Button>
               <div className="flex items-center gap-2">
                 <Clock className="w-5 h-5 sm:w-6 sm:h-6 text-blue-400" />
-                <h1 className="text-lg sm:text-2xl font-bold text-slate-100">Update Log</h1>
+                <h1 className="text-lg sm:text-2xl font-bold text-slate-100">Change Log</h1>
               </div>
             </div>
           </div>
