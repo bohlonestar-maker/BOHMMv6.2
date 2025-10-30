@@ -1979,6 +1979,8 @@ Chapter Officers:
 - Sergeant at Arms (S@A) - "Legal office" of chapter, knows and enforces By-laws, interprets By-laws, confers with National S@A for clarification, provides activity reports, assists Enforcer with prospect management
 - Enforcer - Prospect management
 - Secretary* - Administrative duties
+- Prospect Manager (PM) - Manages prospects for specific chapter (e.g., Highway Asylum Prospect Manager - HAPM: Phantom)
+(*Non-reporting positions)
 
 MEMBERSHIP PROCESS:
 1. Open Enrollment - Public recruiting phase
