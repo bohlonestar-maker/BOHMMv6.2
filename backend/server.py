@@ -1938,15 +1938,15 @@ class ChatMessage(BaseModel):
 async def chat_with_bot(chat_msg: ChatMessage, current_user: dict = Depends(verify_token)):
     """AI chatbot for BOH knowledge - authenticated users only"""
     try:
-        from emergentintegrations import OpenAI
+        from emergentintegrations.llm.openai import LlmChat
         
         # Get Emergent LLM key
         api_key = os.environ.get('EMERGENT_LLM_KEY')
         if not api_key:
             raise HTTPException(status_code=500, detail="LLM key not configured")
         
-        # Initialize OpenAI with Emergent key
-        client = OpenAI(api_key=api_key)
+        # Initialize LLM Chat with Emergent key
+        client = LlmChat(api_key=api_key)
         
         # BOH Knowledge context (summarized from extracted PDFs)
         system_context = """You are an AI assistant for Brothers of the Highway Trucker Club (BOH TC), a 501(c)(3) organization for professional truck drivers. Your role is to answer questions about the organization using ONLY the information provided below.
