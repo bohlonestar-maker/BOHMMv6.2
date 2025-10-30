@@ -57,25 +57,6 @@ export default function Login({ onLogin }) {
     }
   };
 
-  const handleSupportSubmit = async (e) => {
-    e.preventDefault();
-    
-    if (!supportForm.name || !supportForm.email || !supportForm.message) {
-      toast.error("Please fill in all fields");
-      return;
-    }
-    
-    try {
-      await axios.post(`${API}/support/messages`, supportForm);
-      toast.success("Support message sent successfully! We'll reply to your email.");
-      setSupportDialogOpen(false);
-      setSupportForm({ name: "", email: "", message: "" });
-    } catch (error) {
-      console.error("Support message error:", error);
-      toast.error("Failed to send support message. Please try again.");
-    }
-  };
-
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 relative px-4 sm:px-6 lg:px-8">
       <div className="w-full max-w-md">
