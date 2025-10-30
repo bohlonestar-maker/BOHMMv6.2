@@ -2012,6 +2012,13 @@ HIGHWAY ASYLUM (HA) CHAPTER OFFICERS:
 - HA Secretary (HASEC): Hee Haw
 - HA Prospect Manager (HAPM): Phantom
 
+HIGHWAY SOULS (HS) CHAPTER OFFICERS:
+- HS President (HSPrez): Bobkat
+- HS Vice President (HSVP): Graveyard
+- HS Sergeant at Arms (HSS@A): Trucker Dave
+- HS Enforcer (HSENF): Rainwater
+- HS Secretary (HSSEC): Sodbuster
+
 MEMBERSHIP PROCESS:
 1. Open Enrollment - Public recruiting phase
 2. Vetting - Initial interview with Training Chapter
