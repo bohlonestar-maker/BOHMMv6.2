@@ -1945,8 +1945,11 @@ async def chat_with_bot(chat_msg: ChatMessage, current_user: dict = Depends(veri
         if not api_key:
             raise HTTPException(status_code=500, detail="LLM key not configured")
         
-        # BOH Knowledge context (summarized from extracted PDFs)
-        system_context = """You are an AI assistant for Brothers of the Highway Trucker Club (BOH TC), a 501(c)(3) organization for professional truck drivers. Your role is to answer questions about the organization using ONLY the information provided below.
+        # Check if user is admin
+        is_admin = current_user.get('role') == 'admin'
+        
+        # Base knowledge for all users
+        base_context = """You are an AI assistant for Brothers of the Highway Trucker Club (BOH TC), a 501(c)(3) organization for professional truck drivers. Your role is to answer questions about the organization using ONLY the information provided below.
 
 ORGANIZATION OVERVIEW:
 - Brothers of the Highway TC is a men-only trucking organization
