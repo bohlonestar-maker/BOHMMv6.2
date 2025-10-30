@@ -168,6 +168,30 @@ backend:
         agent: "testing"
         comment: "EMAIL INVITE FUNCTIONALITY FULLY TESTED AND FIXED ✅ ISSUE IDENTIFIED AND RESOLVED: Backend was using incorrect frontend URL (localhost:3000) instead of production URL. FIXED: Added REACT_APP_BACKEND_URL=https://brothers-directory.preview.emergentagent.com to backend/.env ✅ COMPREHENSIVE TESTING COMPLETED (22/22 tests passed): 1) Create Invite: POST /api/invites successfully creates invites with proper email, role, and permissions 2) Retrieve Invite: GET /api/invites/{token} correctly returns invite details for unused invites 3) Accept Invite: POST /api/invites/accept successfully creates user accounts and marks invites as used 4) Invite Link Format: Links now correctly use https://brothers-directory.preview.emergentagent.com/accept-invite?token={uuid} 5) Token Validation: All tokens are valid UUIDs 6) Edge Cases Tested: ✅ Using same token twice (properly fails with 404) ✅ Accessing used invites (properly fails with 404) ✅ Invalid/malformed tokens (properly fail with 404) ✅ New user login verification after invite acceptance ✅ Proper cleanup of test data. Root cause of user's issue was incorrect frontend URL configuration - now resolved."
 
+  - task: "Resend invite functionality"
+    implemented: true
+    working: "NA"
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "RESEND INVITE BACKEND IMPLEMENTED ✅ Created POST /api/invites/{token}/resend endpoint. Functionality: 1) Validates invite exists (404 if not found) 2) Checks invite not already used (400 if used) 3) Checks invite not expired (400 if expired) 4) Calls send_invite_email() to resend the invitation 5) Logs activity via log_activity() 6) Returns success message. Endpoint requires admin authentication via verify_admin dependency. NEEDS TESTING: End-to-end resend email functionality including email delivery verification."
+
+  - task: "Member loading regression check (admin-only restriction)"
+    implemented: true
+    working: "NA"
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "REGRESSION INVESTIGATION ✅ Checked GET /api/members endpoint after admin-only contact restriction implementation. Code review shows: 1) Decrypt sensitive data for all members 2) For non-admin users viewing National chapter members, replace email with 'restricted@admin-only.local', phone and address with 'Admin Only' 3) Email format passes Pydantic EmailStr validation. ADMIN TESTING: Members load successfully for admin users (10 members loaded, verified via screenshot). NEEDS TESTING: Member loading for regular (non-admin) users to verify no Pydantic validation errors or other issues with restricted contact info."
+
   - task: "Prospects (Hangarounds) management functionality"
     implemented: true
     working: true
