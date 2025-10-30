@@ -623,6 +623,42 @@ async def update_member(member_id: str, member_data: MemberUpdate, current_user:
     if not member:
         raise HTTPException(status_code=404, detail="Member not found")
     
+    # Check for duplicate handle if being updated
+    if member_data.handle and member_data.handle != member.get('handle'):
+        existing_by_handle = await db.members.find_one({
+            "handle": member_data.handle,
+            "id": {"$ne": member_id}  # Exclude current member
+        })
+        if existing_by_handle:
+            raise HTTPException(
+                status_code=400,
+                detail=f"A member with handle '{member_data.handle}' already exists"
+            )
+    
+    # Check for duplicate email if being updated
+    if member_data.email:
+        # Decrypt current member's email for comparison
+        current_email = decrypt_data(member.get('email', ''))
+        
+        if member_data.email != current_email:
+            # Check both encrypted and unencrypted versions
+            existing_by_email = await db.members.find_one({
+                "email": member_data.email,
+                "id": {"$ne": member_id}
+            })
+            
+            encrypted_email = encrypt_data(member_data.email)
+            existing_by_encrypted_email = await db.members.find_one({
+                "email": encrypted_email,
+                "id": {"$ne": member_id}
+            })
+            
+            if existing_by_email or existing_by_encrypted_email:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"A member with email '{member_data.email}' already exists"
+                )
+    
     update_data = {k: v for k, v in member_data.model_dump().items() if v is not None}
     update_data['updated_at'] = datetime.now(timezone.utc).isoformat()
     
