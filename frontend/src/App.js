@@ -11,6 +11,7 @@ import Prospects from "@/pages/Prospects";
 import Messages from "@/pages/Messages";
 import UpdateLog from "@/pages/UpdateLog";
 import MessageMonitor from "@/pages/MessageMonitor";
+import ChatBot from "@/components/ChatBot";
 import { Toaster } from "@/components/ui/sonner";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
