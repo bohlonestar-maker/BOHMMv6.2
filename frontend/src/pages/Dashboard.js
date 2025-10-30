@@ -146,11 +146,9 @@ export default function Dashboard({ onLogout, userRole, userPermissions }) {
   useEffect(() => {
     fetchMembers();
     fetchUnreadPrivateCount();
-    fetchOpenSupportCount();
     // Auto-refresh counts every 30 seconds
     const interval = setInterval(() => {
       fetchUnreadPrivateCount();
-      fetchOpenSupportCount();
     }, 30000);
     return () => clearInterval(interval);
   }, [userRole]);
