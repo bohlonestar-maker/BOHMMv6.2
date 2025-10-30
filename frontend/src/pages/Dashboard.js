@@ -705,11 +705,12 @@ export default function Dashboard({ onLogout, userRole, userPermissions }) {
                             setFormData({ ...formData, email: e.target.value })
                           }
                           required
+                          className="text-white"
                         />
                       </div>
 
                       <div>
-                        <Label>Phone</Label>
+                        <Label className="text-white">Phone</Label>
                         <Input
                           data-testid="phone-input"
                           value={formData.phone}
@@ -717,11 +718,12 @@ export default function Dashboard({ onLogout, userRole, userPermissions }) {
                             setFormData({ ...formData, phone: e.target.value })
                           }
                           required
+                          className="text-white"
                         />
                       </div>
 
                       <div>
-                        <Label>Address</Label>
+                        <Label className="text-white">Address</Label>
                         <Input
                           data-testid="address-input"
                           value={formData.address}
@@ -729,19 +731,20 @@ export default function Dashboard({ onLogout, userRole, userPermissions }) {
                             setFormData({ ...formData, address: e.target.value })
                           }
                           required
+                          className="text-white"
                         />
                       </div>
 
                       <div className="space-y-3">
                         <div className="flex justify-between items-center">
-                          <Label>Dues Tracking</Label>
+                          <Label className="text-white">Dues Tracking</Label>
                           <div className="flex items-center gap-2">
-                            <Label className="text-sm">Year:</Label>
+                            <Label className="text-sm text-white">Year:</Label>
                             <Input
                               type="number"
                               value={selectedDuesYear}
                               onChange={(e) => handleDuesYearChange(parseInt(e.target.value))}
-                              className="w-24"
+                              className="w-24 text-white"
                               data-testid="dues-year-input"
                             />
                           </div>
