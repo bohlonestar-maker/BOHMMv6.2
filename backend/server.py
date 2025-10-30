@@ -1974,7 +1974,7 @@ LOGO ELEMENTS & MEANINGS:
 - Old School Truck: Represents Old School Trucking Ways
 - Chains: Represents Unity among members
 - Tombstones: Represents Our Fallen Brothers
-- Truck Number (2156): Alphanumeric identifier for BOH
+- Truck Number (2158): Alphanumeric identifier for BOH
 - TC: Truckers Club designation
 
 NATIONAL GOVERNING BODIES:
