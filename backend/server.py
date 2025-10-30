@@ -592,17 +592,12 @@ async def create_member(member_data: MemberCreate, current_user: dict = Depends(
             detail=f"A member with handle '{member_data.handle}' already exists"
         )
     
-    # Check for duplicate email if provided
+    # Check for duplicate email using hash comparison
     if member_data.email:
-        # Need to check against both encrypted and unencrypted emails
-        # First try exact match (for unencrypted)
-        existing_by_email = await db.members.find_one({"email": member_data.email})
+        email_hash = hash_for_duplicate_detection(member_data.email)
+        existing_by_email_hash = await db.members.find_one({"email_hash": email_hash})
         
-        # Also check encrypted version
-        encrypted_email = encrypt_data(member_data.email)
-        existing_by_encrypted_email = await db.members.find_one({"email": encrypted_email})
-        
-        if existing_by_email or existing_by_encrypted_email:
+        if existing_by_email_hash:
             raise HTTPException(
                 status_code=400,
                 detail=f"A member with email '{member_data.email}' already exists"
@@ -614,6 +609,10 @@ async def create_member(member_data: MemberCreate, current_user: dict = Depends(
     doc = member.model_dump()
     doc['created_at'] = doc['created_at'].isoformat()
     doc['updated_at'] = doc['updated_at'].isoformat()
+    
+    # Add email hash for duplicate detection before encryption
+    if doc.get('email'):
+        doc['email_hash'] = hash_for_duplicate_detection(doc['email'])
     
     # Encrypt sensitive data before storing
     doc = encrypt_member_sensitive_data(doc)
