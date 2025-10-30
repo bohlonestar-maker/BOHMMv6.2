@@ -18,6 +18,7 @@ from fastapi.responses import StreamingResponse, Response
 import aiosmtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+from cryptography.fernet import Fernet
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -26,6 +27,28 @@ load_dotenv(ROOT_DIR / '.env')
 mongo_url = os.environ['MONGO_URL']
 client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ['DB_NAME']]
+
+# Encryption setup (AES-256)
+ENCRYPTION_KEY = os.environ.get('ENCRYPTION_KEY')
+if not ENCRYPTION_KEY:
+    raise ValueError("ENCRYPTION_KEY not found in environment variables")
+cipher_suite = Fernet(ENCRYPTION_KEY.encode())
+
+def encrypt_data(data: str) -> str:
+    """Encrypt data using AES-256 encryption"""
+    if not data:
+        return ""
+    return cipher_suite.encrypt(data.encode()).decode()
+
+def decrypt_data(encrypted_data: str) -> str:
+    """Decrypt data using AES-256 encryption"""
+    if not encrypted_data:
+        return ""
+    try:
+        return cipher_suite.decrypt(encrypted_data.encode()).decode()
+    except Exception as e:
+        logger.error(f"Decryption error: {str(e)}")
+        return ""
 
 # Security
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
