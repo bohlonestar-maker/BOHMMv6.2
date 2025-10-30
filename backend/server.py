@@ -255,7 +255,11 @@ def create_access_token(data: dict) -> str:
 # Token verification
 async def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
     try:
-        token = credentials.credentials
+        encrypted_token = credentials.credentials
+        # Decrypt the token first
+        token = decrypt_data(encrypted_token)
+        if not token:
+            raise HTTPException(status_code=401, detail="Invalid token format")
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         username = payload.get("sub")
         role = payload.get("role")
@@ -265,6 +269,9 @@ async def verify_token(credentials: HTTPAuthorizationCredentials = Depends(secur
     except jwt.ExpiredSignatureError:
         raise HTTPException(status_code=401, detail="Token expired")
     except jwt.InvalidTokenError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    except Exception as e:
+        logger.error(f"Token verification error: {str(e)}")
         raise HTTPException(status_code=401, detail="Invalid token")
 
 # Admin verification
