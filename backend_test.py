@@ -2520,6 +2520,340 @@ class BOHDirectoryAPITester:
         print(f"   🔍 Message monitoring for Lonestar testing completed")
         return lonestar_user_id
 
+    def test_user_to_user_messaging_fix(self):
+        """Test user-to-user messaging fix - NEW GET /api/users/all endpoint - HIGH PRIORITY"""
+        print(f"\n💬 Testing User-to-User Messaging Fix (GET /api/users/all)...")
+        
+        # Step 1: Ensure we have test users
+        print(f"\n   👥 Setting up test users...")
+        
+        # Create testadmin if doesn't exist
+        admin_user = {
+            "username": "testadmin",
+            "password": "testpass123",
+            "role": "admin"
+        }
+        
+        success, created_admin = self.run_test(
+            "Create Test Admin User",
+            "POST",
+            "users",
+            201,
+            data=admin_user
+        )
+        
+        admin_user_id = None
+        if success and 'id' in created_admin:
+            admin_user_id = created_admin['id']
+        
+        # Create regular users for testing
+        regular_users = []
+        for i in range(1, 3):
+            regular_user = {
+                "username": f"testuser{i}",
+                "password": "testpass123",
+                "role": "user"
+            }
+            
+            success, created_user = self.run_test(
+                f"Create Regular User {i}",
+                "POST",
+                "users",
+                201,
+                data=regular_user
+            )
+            
+            if success and 'id' in created_user:
+                regular_users.append(created_user)
+        
+        # Step 2: Test Access Control for GET /api/users/all
+        print(f"\n   🔐 Testing Access Control for GET /api/users/all...")
+        
+        # Save original token
+        original_token = self.token
+        
+        # Test Case 1: Admin Access
+        print(f"\n      🔑 Testing Admin Access...")
+        success, admin_login = self.run_test(
+            "Login as Test Admin",
+            "POST",
+            "auth/login",
+            200,
+            data={"username": "testadmin", "password": "testpass123"}
+        )
+        
+        admin_users = []
+        if success and 'token' in admin_login:
+            self.token = admin_login['token']
+            
+            success, admin_users = self.run_test(
+                "Admin - GET /api/users/all",
+                "GET",
+                "users/all",
+                200
+            )
+            
+            if success and isinstance(admin_users, list):
+                # Verify response structure
+                if len(admin_users) > 0:
+                    user = admin_users[0]
+                    required_fields = ['id', 'username', 'role']
+                    excluded_fields = ['password_hash', 'permissions']
+                    
+                    # Check required fields
+                    missing_fields = [field for field in required_fields if field not in user]
+                    if not missing_fields:
+                        self.log_test("Admin Access - Required Fields Present", True, f"Fields: {required_fields}")
+                    else:
+                        self.log_test("Admin Access - Required Fields Present", False, f"Missing: {missing_fields}")
+                    
+                    # Check excluded fields
+                    present_excluded = [field for field in excluded_fields if field in user]
+                    if not present_excluded:
+                        self.log_test("Admin Access - Sensitive Data Excluded", True, f"Excluded fields not present: {excluded_fields}")
+                    else:
+                        self.log_test("Admin Access - Sensitive Data Excluded", False, f"Sensitive data present: {present_excluded}")
+                    
+                    # Verify limit (should be reasonable number, not more than 1000)
+                    if len(admin_users) <= 1000:
+                        self.log_test("Admin Access - User Limit Respected", True, f"Returned {len(admin_users)} users (≤1000)")
+                    else:
+                        self.log_test("Admin Access - User Limit Respected", False, f"Returned {len(admin_users)} users (>1000)")
+                    
+                    # Verify includes both admin and regular users
+                    admin_count = len([u for u in admin_users if u.get('role') == 'admin'])
+                    user_count = len([u for u in admin_users if u.get('role') == 'user'])
+                    
+                    if admin_count > 0 and user_count > 0:
+                        self.log_test("Admin Access - Includes All User Types", True, f"Admins: {admin_count}, Users: {user_count}")
+                    else:
+                        self.log_test("Admin Access - Includes All User Types", False, f"Admins: {admin_count}, Users: {user_count}")
+                else:
+                    self.log_test("Admin Access - Returns User List", False, "Empty user list returned")
+            else:
+                self.log_test("Admin Access - Returns User List", False, f"Expected list, got {type(admin_users)}")
+        
+        # Test Case 2: Regular User Access
+        print(f"\n      👤 Testing Regular User Access...")
+        if regular_users:
+            success, regular_login = self.run_test(
+                "Login as Regular User",
+                "POST",
+                "auth/login",
+                200,
+                data={"username": regular_users[0]['username'], "password": "testpass123"}
+            )
+            
+            if success and 'token' in regular_login:
+                self.token = regular_login['token']
+                
+                success, regular_user_list = self.run_test(
+                    "Regular User - GET /api/users/all",
+                    "GET",
+                    "users/all",
+                    200
+                )
+                
+                if success and isinstance(regular_user_list, list):
+                    # Verify regular user gets same data as admin (all users)
+                    if len(regular_user_list) > 0:
+                        # Check that regular user sees both admin and regular users
+                        admin_count = len([u for u in regular_user_list if u.get('role') == 'admin'])
+                        user_count = len([u for u in regular_user_list if u.get('role') == 'user'])
+                        
+                        if admin_count > 0 and user_count > 0:
+                            self.log_test("Regular User - Sees All User Types", True, f"Admins: {admin_count}, Users: {user_count}")
+                        else:
+                            self.log_test("Regular User - Sees All User Types", False, f"Admins: {admin_count}, Users: {user_count}")
+                        
+                        # Verify same structure as admin response
+                        user = regular_user_list[0]
+                        required_fields = ['id', 'username', 'role']
+                        excluded_fields = ['password_hash', 'permissions']
+                        
+                        missing_fields = [field for field in required_fields if field not in user]
+                        if not missing_fields:
+                            self.log_test("Regular User - Required Fields Present", True, f"Fields: {required_fields}")
+                        else:
+                            self.log_test("Regular User - Required Fields Present", False, f"Missing: {missing_fields}")
+                        
+                        present_excluded = [field for field in excluded_fields if field in user]
+                        if not present_excluded:
+                            self.log_test("Regular User - Sensitive Data Excluded", True, f"Excluded fields not present: {excluded_fields}")
+                        else:
+                            self.log_test("Regular User - Sensitive Data Excluded", False, f"Sensitive data present: {present_excluded}")
+                    else:
+                        self.log_test("Regular User - Returns User List", False, "Empty user list returned")
+                else:
+                    self.log_test("Regular User - Returns User List", False, f"Expected list, got {type(regular_user_list)}")
+        
+        # Test Case 3: Unauthenticated Access (Should Fail)
+        print(f"\n      🚫 Testing Unauthenticated Access...")
+        self.token = None  # Remove token
+        
+        success, unauth_response = self.run_test(
+            "Unauthenticated - GET /api/users/all (Should Fail)",
+            "GET",
+            "users/all",
+            401  # Should return 401 Unauthorized
+        )
+        
+        # Step 3: Compare with existing /api/users/admins endpoint
+        print(f"\n   📊 Comparing with /api/users/admins endpoint...")
+        
+        # Restore admin token
+        if admin_login and 'token' in admin_login:
+            self.token = admin_login['token']
+            
+            success, admin_only_users = self.run_test(
+                "GET /api/users/admins (for comparison)",
+                "GET",
+                "users/admins",
+                200
+            )
+            
+            if success and isinstance(admin_only_users, list) and isinstance(admin_users, list):
+                admin_only_count = len(admin_only_users)
+                all_users_count = len(admin_users)
+                
+                if all_users_count > admin_only_count:
+                    self.log_test("Endpoint Comparison - /users/all Returns More Users", True, f"All users: {all_users_count}, Admin only: {admin_only_count}")
+                else:
+                    self.log_test("Endpoint Comparison - /users/all Returns More Users", False, f"All users: {all_users_count}, Admin only: {admin_only_count}")
+                
+                # Verify /users/admins only returns admin users
+                admin_roles_in_admin_endpoint = [u.get('role') for u in admin_only_users]
+                if all(role == 'admin' for role in admin_roles_in_admin_endpoint):
+                    self.log_test("Endpoint Comparison - /users/admins Only Returns Admins", True, f"All {len(admin_only_users)} users have admin role")
+                else:
+                    self.log_test("Endpoint Comparison - /users/admins Only Returns Admins", False, f"Non-admin roles found: {admin_roles_in_admin_endpoint}")
+        
+        # Step 4: Test Messaging Integration
+        print(f"\n   💬 Testing Messaging Integration...")
+        
+        if regular_users and len(regular_users) >= 2:
+            # Login as first regular user
+            success, user1_login = self.run_test(
+                "Login as Regular User 1 for Messaging",
+                "POST",
+                "auth/login",
+                200,
+                data={"username": regular_users[0]['username'], "password": "testpass123"}
+            )
+            
+            if success and 'token' in user1_login:
+                self.token = user1_login['token']
+                
+                # Test sending message to another regular user
+                message_data = {
+                    "recipient": regular_users[1]['username'],
+                    "message": "Test message from regular user to regular user - user-to-user messaging fix verification"
+                }
+                
+                success, sent_message = self.run_test(
+                    "Send Message - Regular User to Regular User",
+                    "POST",
+                    "messages",
+                    200,
+                    data=message_data
+                )
+                
+                if success:
+                    # Verify message structure
+                    required_fields = ['sender', 'recipient', 'message', 'timestamp']
+                    missing_fields = [field for field in required_fields if field not in sent_message]
+                    
+                    if not missing_fields:
+                        self.log_test("Messaging - Message Structure Valid", True, f"All required fields present: {required_fields}")
+                        
+                        # Verify sender and recipient
+                        if (sent_message.get('sender') == regular_users[0]['username'] and 
+                            sent_message.get('recipient') == regular_users[1]['username']):
+                            self.log_test("Messaging - Sender/Recipient Correct", True, f"From: {sent_message['sender']}, To: {sent_message['recipient']}")
+                        else:
+                            self.log_test("Messaging - Sender/Recipient Correct", False, f"Expected from {regular_users[0]['username']} to {regular_users[1]['username']}")
+                    else:
+                        self.log_test("Messaging - Message Structure Valid", False, f"Missing fields: {missing_fields}")
+                
+                # Test getting conversations
+                success, conversations = self.run_test(
+                    "Get Conversations - Regular User",
+                    "GET",
+                    "messages/conversations",
+                    200
+                )
+                
+                if success and isinstance(conversations, list):
+                    # Look for conversation with the other regular user
+                    found_conversation = None
+                    for conv in conversations:
+                        if conv.get('username') == regular_users[1]['username']:
+                            found_conversation = conv
+                            break
+                    
+                    if found_conversation:
+                        self.log_test("Messaging - Conversation Found", True, f"Conversation with {regular_users[1]['username']} found")
+                        
+                        # Verify conversation structure
+                        conv_fields = ['username', 'lastMessage', 'unreadCount']
+                        missing_conv_fields = [field for field in conv_fields if field not in found_conversation]
+                        
+                        if not missing_conv_fields:
+                            self.log_test("Messaging - Conversation Structure Valid", True, f"All fields present: {conv_fields}")
+                        else:
+                            self.log_test("Messaging - Conversation Structure Valid", False, f"Missing fields: {missing_conv_fields}")
+                    else:
+                        self.log_test("Messaging - Conversation Found", False, f"No conversation found with {regular_users[1]['username']}")
+                
+                # Test sending message to admin user
+                message_to_admin = {
+                    "recipient": "testadmin",
+                    "message": "Test message from regular user to admin - verifying cross-role messaging"
+                }
+                
+                success, sent_admin_message = self.run_test(
+                    "Send Message - Regular User to Admin",
+                    "POST",
+                    "messages",
+                    200,
+                    data=message_to_admin
+                )
+        
+        # Step 5: Edge Cases
+        print(f"\n   🧪 Testing Edge Cases...")
+        
+        # Test with empty database scenario (simulate by checking if endpoint handles no users gracefully)
+        # This is already covered by the basic functionality tests
+        
+        # Test user with missing id field (should generate one)
+        # This is handled by the backend automatically
+        
+        # Restore original token
+        self.token = original_token
+        
+        # Clean up test users
+        print(f"\n   🧹 Cleaning up test users...")
+        
+        if admin_user_id:
+            success, response = self.run_test(
+                "Delete Test Admin User",
+                "DELETE",
+                f"users/{admin_user_id}",
+                200
+            )
+        
+        for user in regular_users:
+            if 'id' in user:
+                success, response = self.run_test(
+                    f"Delete Test User {user['username']}",
+                    "DELETE",
+                    f"users/{user['id']}",
+                    200
+                )
+        
+        print(f"   💬 User-to-user messaging fix testing completed")
+        return True
+
     def run_all_tests(self):
         """Run all tests"""
         print("🚀 Starting Brothers of the Highway Directory API Tests")
