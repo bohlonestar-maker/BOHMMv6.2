@@ -389,12 +389,15 @@ metadata:
   run_ui: false
 
 test_plan:
-  current_focus: []
+  current_focus:
+    - "User-to-user messaging (regular users can message all users)"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
 
 agent_communication:
+  - agent: "main"
+    message: "USER-TO-USER MESSAGING FIX ✅ ISSUE IDENTIFIED: Regular users could only see admin users in their messaging interface, preventing them from messaging other regular users. ROOT CAUSE: Frontend Messages.js was using endpoint /users/admins for regular users instead of fetching all users. FIXED: 1) Backend: Created new GET /api/users/all endpoint accessible to all authenticated users (uses verify_token) 2) Frontend: Updated fetchAllUsers() in Messages.js to use /users/all for all users, removing the role-based endpoint selection. Now all users can see and message all other users in the system. NEEDS TESTING: Verify regular users can see all users in messaging interface and send messages to other regular users."
   - agent: "main"
     message: "MESSAGE MONITORING FEATURE IMPLEMENTED ✅ Backend: GET /api/messages/monitor/all endpoint restricted to Lonestar only, fetches all private messages (limit 1000). Frontend: Created MessageMonitor.js page with conversation grouping, search functionality, conversation detail view, and read-only access. Added 'Monitor' navigation button (Lonestar only) next to Support button on Dashboard. Verified via screenshot - Monitor button only visible for Lonestar, not for other users like testadmin. NEEDS TESTING: 1) Backend access restriction (Lonestar vs non-Lonestar) 2) Message retrieval (all conversations) 3) Frontend search and filtering 4) Conversation detail view 5) Navigation button visibility."
   - agent: "main"
