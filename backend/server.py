@@ -1986,8 +1986,8 @@ NATIONAL GOVERNING BODIES:
 
 ADDITIONAL NATIONAL POSITIONS:
 - Club Chaplain (CC): Sancho
-- Chaplain/Memorial Director (CMD): Grizz
-- Chapter Liaison Coordinator (CCLC): Scar
+- Club Media Director (CMD): Grizz
+- Club Counselor & Life Coach (CCLC): Scar
 
 CHAIN OF COMMAND:
 National Officers: 
