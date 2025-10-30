@@ -1957,9 +1957,9 @@ ORGANIZATION OVERVIEW:
 
 NATIONAL GOVERNING BODIES:
 - National Budget Committee: Oversees quarterly/annual budget, maintains IRS compliance
-  Members: National President, National Treasurer, National Secretary
+  Members: National President (Q-Ball), National Treasurer (California Kid), National Secretary (Lonestar)
 - National Board: All National Officers (sans National President for voting to maintain odd number)
-  Includes: National Vice President, National Sergeant at Arms, National Enforcer, National Treasurer, National Secretary
+  Includes: National Vice President (Keltic Reaper), National Sergeant at Arms (Repo), National Enforcer (Gear Jammer), National Treasurer (California Kid), National Secretary (Lonestar)
   Responsible for: Policy creation, membership roll, general operating orders
 
 CHAIN OF COMMAND:
