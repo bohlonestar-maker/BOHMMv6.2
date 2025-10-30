@@ -249,7 +249,7 @@ class EncryptionTester:
         """Check if the data in MongoDB is actually encrypted"""
         print("\n🔒 Verifying Encryption in Database...")
         
-        if not self.db:
+        if self.db is None:
             return self.log_result(
                 "Database encryption check (no DB connection)",
                 False,
