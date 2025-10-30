@@ -387,13 +387,14 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Resend invite functionality"
-    - "Member loading for regular users (regression check)"
+    - "Message monitoring for Lonestar (backend and frontend)"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
 
 agent_communication:
+  - agent: "main"
+    message: "MESSAGE MONITORING FEATURE IMPLEMENTED ✅ Backend: GET /api/messages/monitor/all endpoint restricted to Lonestar only, fetches all private messages (limit 1000). Frontend: Created MessageMonitor.js page with conversation grouping, search functionality, conversation detail view, and read-only access. Added 'Monitor' navigation button (Lonestar only) next to Support button on Dashboard. Verified via screenshot - Monitor button only visible for Lonestar, not for other users like testadmin. NEEDS TESTING: 1) Backend access restriction (Lonestar vs non-Lonestar) 2) Message retrieval (all conversations) 3) Frontend search and filtering 4) Conversation detail view 5) Navigation button visibility."
   - agent: "main"
     message: "RESEND INVITE FEATURE IMPLEMENTED ✅ Backend: POST /api/invites/{token}/resend endpoint checks invite exists, not used, not expired, sends email, logs activity. Frontend: Added handleResendInvite function and Resend button (Mail icon) in Manage Invites dialog. Button only shows for unused and non-expired invites. Verified via screenshot - resend button appears for pending invites, hidden for used invites. NEEDS TESTING: 1) Resend email functionality end-to-end 2) Member loading for regular users (reported regression after admin-only contact restriction implementation). Members load successfully for admin users, need to verify for regular users."
   - agent: "main"
