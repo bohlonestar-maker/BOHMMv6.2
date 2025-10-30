@@ -2352,7 +2352,7 @@ class BOHDirectoryAPITester:
         
         success = lonestar_login is not None
         
-        if success and 'token' in lonestar_login:
+        if success and lonestar_login and 'token' in lonestar_login:
             self.token = lonestar_login['token']
             
             # Test Lonestar can access the monitoring endpoint
