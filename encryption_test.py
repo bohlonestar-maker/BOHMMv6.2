@@ -20,7 +20,7 @@ load_dotenv('/app/backend/.env')
 
 class EncryptionTester:
     def __init__(self):
-        self.base_url = "https://member-hub-29.preview.emergentagent.com/api"
+        self.base_url = "https://brothers-directory.preview.emergentagent.com/api"
         self.token = None
         self.mongo_client = None
         self.db = None
