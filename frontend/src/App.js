@@ -132,6 +132,16 @@ function App() {
               )
             }
           />
+          <Route
+            path="/message-monitor"
+            element={
+              isAuthenticated && localStorage.getItem("username") === "Lonestar" ? (
+                <MessageMonitor onLogout={handleLogout} />
+              ) : (
+                <Navigate to="/" replace />
+              )
+            }
+          />
         </Routes>
       </BrowserRouter>
       <Toaster />
