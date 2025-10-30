@@ -520,31 +520,15 @@ export default function Dashboard({ onLogout, userRole, userPermissions }) {
                   </>
                 )}
                 {localStorage.getItem("username") === "Lonestar" && (
-                  <>
-                    <Button
-                      onClick={() => navigate("/support-center")}
-                      variant="outline"
-                      size="sm"
-                      className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm bg-slate-700 text-slate-200 border-slate-600 hover:bg-slate-600 relative"
-                    >
-                      <LifeBuoy className="w-3 h-3 sm:w-4 sm:h-4" />
-                      <span className="hidden sm:inline">Support</span>
-                      {openSupportCount > 0 && (
-                        <span className="absolute -top-1 -right-1 bg-red-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                          {openSupportCount > 9 ? '9+' : openSupportCount}
-                        </span>
-                      )}
-                    </Button>
-                    <Button
-                      onClick={() => navigate("/message-monitor")}
-                      variant="outline"
-                      size="sm"
-                      className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm bg-slate-700 text-slate-200 border-slate-600 hover:bg-slate-600"
-                    >
-                      <MessageCircle className="w-3 h-3 sm:w-4 sm:h-4" />
-                      <span className="hidden sm:inline">Monitor</span>
-                    </Button>
-                  </>
+                  <Button
+                    onClick={() => navigate("/message-monitor")}
+                    variant="outline"
+                    size="sm"
+                    className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm bg-slate-700 text-slate-200 border-slate-600 hover:bg-slate-600"
+                  >
+                    <MessageCircle className="w-3 h-3 sm:w-4 sm:h-4" />
+                    <span className="hidden sm:inline">Monitor</span>
+                  </Button>
                 )}
                 <Button
                   onClick={() => navigate("/messages")}
