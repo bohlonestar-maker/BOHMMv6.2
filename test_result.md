@@ -243,6 +243,18 @@ backend:
         agent: "testing"
         comment: "MESSAGE MONITORING FUNCTIONALITY FULLY TESTED ✅ COMPREHENSIVE TESTING COMPLETED: ✅ Access Restriction Testing: Non-Lonestar users (testadmin, testuser1) correctly receive 403 Forbidden with proper error message 'Access denied. This feature is restricted to Lonestar only.' ✅ Lonestar Access: Successfully created new Lonestar user and verified access to GET /api/messages/monitor/all endpoint returns 200 status ✅ Message Retrieval: All private messages retrieved correctly with complete data including sender, recipient, message content, timestamp, read status ✅ Data Validation: All required fields present, no encryption/data hiding, full visibility of all conversations ✅ Message Content: Test messages found including special characters (@#$%^&*()_+ 🏍️), multiple conversations between testuser1↔testuser2, testadmin→testuser1 ✅ Edge Cases: Empty database handling, message limit (≤1000), timestamp sorting (newest first), proper boolean read status ✅ Security: Only username 'Lonestar' (case-sensitive) can access, all other users get 403. Feature is production-ready and working as specified."
 
+  - task: "User-to-user messaging for all users"
+    implemented: true
+    working: "NA"
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "USER-TO-USER MESSAGING FIX ✅ ISSUE: Regular users could only see admin users in messaging interface. SOLUTION: Created GET /api/users/all endpoint accessible to all authenticated users (uses verify_token, not verify_admin). Endpoint returns list of all users with id, username, and role fields (excludes password_hash and permissions for security). Limit 1000 users. NEEDS TESTING: Verify all authenticated users can access /api/users/all endpoint and receive list of all users for messaging purposes."
+
 frontend:
   - task: "Display meeting dates (1st and 3rd Wednesday) in attendance UI"
     implemented: true
