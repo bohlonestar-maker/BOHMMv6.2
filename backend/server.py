@@ -1222,6 +1222,24 @@ async def get_admin_users(current_user: dict = Depends(verify_token)):
         for user in admin_users
     ]
 
+@api_router.get("/users/all")
+async def get_all_users_for_messaging(current_user: dict = Depends(verify_token)):
+    """Get list of all users - accessible to all authenticated users for messaging"""
+    all_users = await db.users.find(
+        {},
+        {"_id": 0, "password_hash": 0, "permissions": 0}
+    ).to_list(1000)
+    
+    # Return simple user info for messaging
+    return [
+        {
+            "id": user.get("id", str(uuid.uuid4())),
+            "username": user["username"],
+            "role": user["role"]
+        }
+        for user in all_users
+    ]
+
 # Audit Logs endpoints
 @api_router.get("/logs")
 async def get_logs(
