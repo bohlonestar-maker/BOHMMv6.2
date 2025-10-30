@@ -548,13 +548,13 @@ async def verify(current_user: dict = Depends(verify_token)):
 @api_router.get("/members", response_model=List[Member])
 async def get_members(current_user: dict = Depends(verify_token)):
     members = await db.members.find({}, {"_id": 0}).to_list(10000)
-    for member in members:
+    for i, member in enumerate(members):
         # Decrypt sensitive data
-        member = decrypt_member_sensitive_data(member)
-        if isinstance(member.get('created_at'), str):
-            member['created_at'] = datetime.fromisoformat(member['created_at'])
-        if isinstance(member.get('updated_at'), str):
-            member['updated_at'] = datetime.fromisoformat(member['updated_at'])
+        members[i] = decrypt_member_sensitive_data(member)
+        if isinstance(members[i].get('created_at'), str):
+            members[i]['created_at'] = datetime.fromisoformat(members[i]['created_at'])
+        if isinstance(members[i].get('updated_at'), str):
+            members[i]['updated_at'] = datetime.fromisoformat(members[i]['updated_at'])
     return members
 
 @api_router.get("/members/{member_id}", response_model=Member)
