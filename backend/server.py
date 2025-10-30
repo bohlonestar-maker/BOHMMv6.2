@@ -1798,10 +1798,10 @@ async def get_support_messages(current_user: dict = Depends(verify_token)):
     
     messages = await db.support_messages.find({}).sort("timestamp", -1).to_list(length=None)
     
-    for msg in messages:
-        msg.pop('_id', None)
+    for i, msg in enumerate(messages):
+        messages[i].pop('_id', None)
         # Decrypt sensitive data
-        msg = decrypt_support_message(msg)
+        messages[i] = decrypt_support_message(messages[i])
     
     return messages
 
