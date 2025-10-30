@@ -1,6 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import "@/App.css";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useNavigate } from "react-router-dom";
+import axios from "axios";
+import { toast } from "sonner";
 import Login from "@/pages/Login";
 import Dashboard from "@/pages/Dashboard";
 import UserManagement from "@/pages/UserManagement";
@@ -10,6 +12,64 @@ import Messages from "@/pages/Messages";
 import UpdateLog from "@/pages/UpdateLog";
 import MessageMonitor from "@/pages/MessageMonitor";
 import { Toaster } from "@/components/ui/sonner";
+
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+const API = `${BACKEND_URL}/api`;
+
+// Component to handle message notifications
+function MessageNotifier() {
+  const previousUnreadCount = useRef(0);
+  const isFirstLoad = useRef(true);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const fetchUnreadCount = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        if (!token) return;
+
+        const response = await axios.get(`${API}/messages/unread/count`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const newCount = response.data.unread_count;
+
+        // Check if we have new messages (count increased)
+        // Don't show notification on first load
+        if (!isFirstLoad.current && newCount > previousUnreadCount.current) {
+          const newMessages = newCount - previousUnreadCount.current;
+          toast.info(
+            `You have ${newMessages} new private message${newMessages > 1 ? 's' : ''}!`,
+            {
+              duration: 5000,
+              action: {
+                label: 'View',
+                onClick: () => navigate('/messages')
+              }
+            }
+          );
+        }
+
+        // Update the counts
+        previousUnreadCount.current = newCount;
+
+        // Mark first load as complete
+        if (isFirstLoad.current) {
+          isFirstLoad.current = false;
+        }
+      } catch (error) {
+        console.error("Failed to fetch unread messages count:", error);
+      }
+    };
+
+    // Fetch immediately and then every 30 seconds
+    fetchUnreadCount();
+    const interval = setInterval(fetchUnreadCount, 30000);
+
+    return () => clearInterval(interval);
+  }, [navigate]);
+
+  return null;
+}
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
