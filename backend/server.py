@@ -1945,9 +1945,6 @@ async def chat_with_bot(chat_msg: ChatMessage, current_user: dict = Depends(veri
         if not api_key:
             raise HTTPException(status_code=500, detail="LLM key not configured")
         
-        # Initialize LLM Chat with Emergent key
-        client = LlmChat(api_key=api_key)
-        
         # BOH Knowledge context (summarized from extracted PDFs)
         system_context = """You are an AI assistant for Brothers of the Highway Trucker Club (BOH TC), a 501(c)(3) organization for professional truck drivers. Your role is to answer questions about the organization using ONLY the information provided below.
 
@@ -2012,18 +2009,16 @@ If asked about something not covered in this knowledge base, politely say you do
 
 Be helpful, respectful, and direct. Use BOH terminology (handles, Chain of Command, COC, prospects, etc.)."""
 
-        # Call OpenAI API
-        response = client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[
-                {"role": "system", "content": system_context},
-                {"role": "user", "content": chat_msg.message}
-            ],
-            max_tokens=500,
-            temperature=0.7
+        # Initialize LLM Chat with Emergent key
+        session_id = f"chat_{current_user['username']}_{hash(chat_msg.message) % 10000}"
+        client = LlmChat(
+            api_key=api_key,
+            session_id=session_id,
+            system_message=system_context
         )
         
-        bot_response = response.choices[0].message.content
+        # Send user message and get response
+        bot_response = client.send_message(chat_msg.message)
         
         return {"response": bot_response}
         
