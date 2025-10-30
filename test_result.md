@@ -228,6 +228,18 @@ backend:
         agent: "testing"
         comment: "HASH-BASED DUPLICATE PREVENTION TESTING COMPLETE ✅ CRITICAL ISSUE RESOLVED: Main agent implemented hash-based duplicate detection using SHA-256 hashing for case-insensitive email duplicate prevention. ✅ COMPREHENSIVE TESTING (14/14 tests passed): 1) Create First Member: Successfully created HashTest1 with email 'hashtest@example.com' 2) Duplicate Email Prevention: Correctly prevented creation of member with exact same email (400 error) 3) Case-Insensitive Prevention: Correctly prevented creation with 'HashTest@Example.COM' (400 error) 4) Valid Unique Creation: Successfully created member with unique email 'unique@example.com' 5) Update Duplicate Prevention: Correctly prevented updating member to duplicate email (400 error) 6) Case-Insensitive Update Prevention: Correctly prevented updating to 'HASHTEST@EXAMPLE.COM' (400 error) 7) Valid Email Update: Successfully updated member to 'newemail@example.com' 8) Email Reuse After Update: Successfully created new member with previously used 'unique@example.com' after it was freed up. Hash-based duplicate detection is working perfectly with proper case-insensitive email validation and cleanup functionality."
 
+  - task: "Message monitoring for Lonestar"
+    implemented: true
+    working: "NA"
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "MESSAGE MONITORING BACKEND IMPLEMENTED ✅ Created GET /api/messages/monitor/all endpoint. Functionality: 1) Restricted to username 'Lonestar' only (403 if not Lonestar) 2) Fetches all private messages from database (limit 1000, sorted by timestamp desc) 3) Returns complete message data including sender, recipient, message content, timestamp, read status 4) No modification capabilities (read-only access). Endpoint requires authentication via verify_token dependency. NEEDS TESTING: Verify access restriction, message retrieval, and that Lonestar can view all user conversations."
+
 frontend:
   - task: "Display meeting dates (1st and 3rd Wednesday) in attendance UI"
     implemented: true
