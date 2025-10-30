@@ -248,7 +248,9 @@ def create_access_token(data: dict) -> str:
     expire = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
-    return encoded_jwt
+    # Add encryption layer to JWT token
+    encrypted_token = encrypt_data(encoded_jwt)
+    return encrypted_token
 
 # Token verification
 async def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
