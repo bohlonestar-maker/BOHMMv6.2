@@ -927,6 +927,162 @@ class BOHDirectoryAPITester:
         print(f"   📧 Invite functionality testing completed")
         return invite_token
 
+    def test_duplicate_member_prevention(self):
+        """Test duplicate member prevention for handles and emails"""
+        print(f"\n🚫 Testing Duplicate Member Prevention...")
+        
+        # Test 1: Create first test member
+        first_member = {
+            "chapter": "National",
+            "title": "Prez",
+            "handle": "DuplicateTest1",
+            "name": "First Member",
+            "email": "duplicate@test.com",
+            "phone": "555-0001",
+            "address": "123 First Street"
+        }
+        
+        success, created_member = self.run_test(
+            "Create First Test Member",
+            "POST",
+            "members",
+            201,
+            data=first_member
+        )
+        
+        first_member_id = None
+        if success and 'id' in created_member:
+            first_member_id = created_member['id']
+            print(f"   Created first member ID: {first_member_id}")
+        else:
+            print("❌ Failed to create first member - cannot continue duplicate tests")
+            return
+        
+        # Test 2: Try to create duplicate with same handle (should fail)
+        duplicate_handle_member = {
+            "chapter": "AD",
+            "title": "VP",
+            "handle": "DuplicateTest1",  # Same handle as first member
+            "name": "Second Member",
+            "email": "different@test.com",  # Different email
+            "phone": "555-0002",
+            "address": "456 Second Street"
+        }
+        
+        success, response = self.run_test(
+            "Create Member with Duplicate Handle (Should Fail)",
+            "POST",
+            "members",
+            400,  # Should fail with 400 error
+            data=duplicate_handle_member
+        )
+        
+        # Test 3: Try to create duplicate with same email (should fail)
+        duplicate_email_member = {
+            "chapter": "HA",
+            "title": "S@A",
+            "handle": "DifferentHandle",  # Different handle
+            "name": "Third Member",
+            "email": "duplicate@test.com",  # Same email as first member
+            "phone": "555-0003",
+            "address": "789 Third Street"
+        }
+        
+        success, response = self.run_test(
+            "Create Member with Duplicate Email (Should Fail)",
+            "POST",
+            "members",
+            400,  # Should fail with 400 error
+            data=duplicate_email_member
+        )
+        
+        # Test 4: Create valid second member (different handle and email - should succeed)
+        valid_second_member = {
+            "chapter": "HS",
+            "title": "ENF",
+            "handle": "DuplicateTest2",  # Different handle
+            "name": "Valid Second Member",
+            "email": "unique@test.com",  # Different email
+            "phone": "555-0004",
+            "address": "101 Fourth Street"
+        }
+        
+        success, created_second_member = self.run_test(
+            "Create Valid Second Member (Should Succeed)",
+            "POST",
+            "members",
+            201,
+            data=valid_second_member
+        )
+        
+        second_member_id = None
+        if success and 'id' in created_second_member:
+            second_member_id = created_second_member['id']
+            print(f"   Created second member ID: {second_member_id}")
+        
+        # Test 5: Try to update first member to duplicate handle (should fail)
+        if first_member_id and second_member_id:
+            update_to_duplicate_handle = {
+                "handle": "DuplicateTest2"  # Try to change to second member's handle
+            }
+            
+            success, response = self.run_test(
+                "Update First Member to Duplicate Handle (Should Fail)",
+                "PUT",
+                f"members/{first_member_id}",
+                400,  # Should fail with 400 error
+                data=update_to_duplicate_handle
+            )
+        
+        # Test 6: Try to update first member to duplicate email (should fail)
+        if first_member_id and second_member_id:
+            update_to_duplicate_email = {
+                "email": "unique@test.com"  # Try to change to second member's email
+            }
+            
+            success, response = self.run_test(
+                "Update First Member to Duplicate Email (Should Fail)",
+                "PUT",
+                f"members/{first_member_id}",
+                400,  # Should fail with 400 error
+                data=update_to_duplicate_email
+            )
+        
+        # Test 7: Valid update (should succeed)
+        if first_member_id:
+            valid_update = {
+                "name": "Updated First Member",
+                "phone": "555-9999"
+            }
+            
+            success, response = self.run_test(
+                "Valid Update of First Member (Should Succeed)",
+                "PUT",
+                f"members/{first_member_id}",
+                200,
+                data=valid_update
+            )
+        
+        # Clean up test members
+        if first_member_id:
+            success, response = self.run_test(
+                "Delete First Test Member (Cleanup)",
+                "DELETE",
+                f"members/{first_member_id}",
+                200
+            )
+        
+        if second_member_id:
+            success, response = self.run_test(
+                "Delete Second Test Member (Cleanup)",
+                "DELETE",
+                f"members/{second_member_id}",
+                200
+            )
+        
+        print(f"   🚫 Duplicate member prevention testing completed")
+        return first_member_id, second_member_id
+
     def test_prospects_functionality(self):
         """Test Prospects (Hangarounds) functionality - NEW FEATURE"""
         print(f"\n🏍️  Testing Prospects (Hangarounds) Functionality...")
