@@ -602,9 +602,14 @@ async def update_member(member_id: str, member_data: MemberUpdate, current_user:
     update_data = {k: v for k, v in member_data.model_dump().items() if v is not None}
     update_data['updated_at'] = datetime.now(timezone.utc).isoformat()
     
+    # Encrypt sensitive fields in update data
+    update_data = encrypt_member_sensitive_data(update_data)
+    
     await db.members.update_one({"id": member_id}, {"$set": update_data})
     
     updated_member = await db.members.find_one({"id": member_id}, {"_id": 0})
+    # Decrypt for response
+    updated_member = decrypt_member_sensitive_data(updated_member)
     if isinstance(updated_member.get('created_at'), str):
         updated_member['created_at'] = datetime.fromisoformat(updated_member['created_at'])
     if isinstance(updated_member.get('updated_at'), str):
