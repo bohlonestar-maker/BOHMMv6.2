@@ -68,12 +68,9 @@ export default function Messages() {
   const fetchAllUsers = async () => {
     try {
       const token = localStorage.getItem("token");
-      const userRole = localStorage.getItem("role");
       
-      // Admins can see all users, regular users can only see admins
-      const endpoint = userRole === 'admin' ? `${API}/users` : `${API}/users/admins`;
-      
-      const response = await axios.get(endpoint, {
+      // All users can see all users for messaging
+      const response = await axios.get(`${API}/users/all`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       
@@ -82,17 +79,7 @@ export default function Messages() {
       setAllUsers(response.data.filter(u => u.username !== currentUser));
     } catch (error) {
       console.error("Failed to load users:", error);
-      // If admin endpoint fails, try to fetch admin users
-      try {
-        const token = localStorage.getItem("token");
-        const response = await axios.get(`${API}/users/admins`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        const currentUser = localStorage.getItem("username");
-        setAllUsers(response.data.filter(u => u.username !== currentUser));
-      } catch (err) {
-        console.error("Failed to load admin users:", err);
-      }
+      toast.error("Failed to load users");
     }
   };
 
