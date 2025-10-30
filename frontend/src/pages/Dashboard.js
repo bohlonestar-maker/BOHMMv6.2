@@ -205,19 +205,9 @@ export default function Dashboard({ onLogout, userRole, userPermissions }) {
       const sortedMembers = sortMembers(response.data);
       setMembers(sortedMembers);
     } catch (error) {
-      console.error("Failed to load members:", error);
-      console.error("Error details:", error.response?.data);
-      console.error("Status code:", error.response?.status);
-      
-      // Handle token expiration
-      if (error.response?.status === 401) {
-        toast.error("Session expired. Please log in again.");
-        setTimeout(() => {
-          onLogout();
-        }, 1500);
+      if (handleApiError(error, "Failed to load members")) {
         return;
       }
-      
       toast.error(`Failed to load members: ${error.response?.data?.detail || error.message}`);
     } finally {
       setLoading(false);
