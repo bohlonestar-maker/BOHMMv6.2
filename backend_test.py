@@ -1408,6 +1408,9 @@ class BOHDirectoryAPITester:
         # Test member operations
         self.test_member_operations()
         
+        # PRIORITY TEST: Duplicate Member Prevention
+        self.test_duplicate_member_prevention()
+        
         # Test meeting attendance functionality (Priority Test)
         self.test_meeting_attendance()
         
