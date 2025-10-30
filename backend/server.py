@@ -2018,7 +2018,9 @@ Be helpful, respectful, and direct. Use BOH terminology (handles, Chain of Comma
         )
         
         # Send user message and get response
-        bot_response = client.send_message(chat_msg.message)
+        from emergentintegrations.llm.openai import UserMessage
+        user_msg = UserMessage(text=chat_msg.message)
+        bot_response = await client.send_message(user_msg)
         
         return {"response": bot_response}
         
