@@ -45,10 +45,13 @@ def decrypt_data(encrypted_data: str) -> str:
     if not encrypted_data:
         return ""
     try:
+        # Try to decrypt - if it fails, data might not be encrypted yet
         return cipher_suite.decrypt(encrypted_data.encode()).decode()
     except Exception as e:
-        logger.error(f"Decryption error: {str(e)}")
-        return ""
+        # If decryption fails, assume data is not encrypted and return as-is
+        # This provides backward compatibility with existing unencrypted data
+        logger.debug(f"Decryption skipped (data not encrypted): {str(e)[:50]}")
+        return encrypted_data
 
 # Security
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
