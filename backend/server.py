@@ -1953,61 +1953,102 @@ ORGANIZATION OVERVIEW:
 - Mission: Support and unite professional truck drivers
 - Requirements: Must have Class A CDL, cannot be in 1% MC clubs
 - Structure: National Board oversees Chapters (National, AD, HA, HS)
+- Legal Status: 501(c)(3) non-profit organization
+
+NATIONAL GOVERNING BODIES:
+- National Budget Committee: Oversees quarterly/annual budget, maintains IRS compliance
+  Members: National President, National Treasurer, National Secretary
+- National Board: All National Officers (sans National President for voting to maintain odd number)
+  Includes: National Vice President, National Sergeant at Arms, National Enforcer, National Treasurer, National Secretary
+  Responsible for: Policy creation, membership roll, general operating orders
 
 CHAIN OF COMMAND:
-National Officers: National President → National Vice President → National Sergeant at Arms → National Enforcer → National Treasurer* → National Secretary*
-Chapter Officers: President → Vice President → Sergeant at Arms → Enforcer → Secretary*
+National Officers: 
+- National President (NPrez) - CEO, Chairman of National Board, handles external relations, can issue Executive Orders/Vetoes, acts as liaison with law enforcement and public relations
+- National Vice President (NVP) - Relays info between NPrez and Chapters, second in command, assumes NPrez duties in absence
+- National Sergeant at Arms (NS@A) - "Legal office" of organization, enforces and interprets By-laws, confers with Chapter S@A, provides monthly/weekly/daily activity reports
+- National Enforcer (NENF) - Prospect management oversight
+- National Treasurer* - Budget Committee member, handles finances
+- National Secretary* - Budget Committee member, administrative duties
 (*Non-reporting positions)
+
+Chapter Officers: 
+- President - Chapter leader
+- Vice President - Second in command
+- Sergeant at Arms (S@A) - "Legal office" of chapter, knows and enforces By-laws, interprets By-laws, confers with National S@A for clarification, provides activity reports, assists Enforcer with prospect management
+- Enforcer - Prospect management
+- Secretary* - Administrative duties
 
 MEMBERSHIP PROCESS:
 1. Open Enrollment - Public recruiting phase
 2. Vetting - Initial interview with Training Chapter
 3. Hangaround Phase - Test commitment, chat activity
-4. Prospect Phase - 4-6 weeks with assignments
+4. Prospect Phase - 4-6 weeks with assignments, weekly meetings
 5. Brother - Full member after vote
 
 PROSPECT REQUIREMENTS:
-- Attend weekly meetings (Thursdays 4pm CST)
+- Attend weekly meetings (Thursdays 4pm CST - MANDATORY)
 - Complete weekly assignments (essays, trash pickup, meet-ups)
 - Purchase 2 supporter gear items before membering
 - Learn: Mission Statement, Logo Elements, Chain of Command
 - 100% meeting attendance required
-- Active chat participation
+- Active chat participation in Discord
+- Must memorize Chain of Command structure
 
 KEY BYLAWS:
 - No criminal activity, discrimination, or harassment
 - No fraternization with AOH members or member spouses
-- Respect all officers, members, prospects
-- Follow Chain of Command always
+- Respect all officers, members, prospects at all times
+- Follow Chain of Command always - MUST follow CoC without deviation
 - No 1% MC affiliation while in BOH
-- Class A CDL required
+- Class A CDL required (students with permit may prospect)
+- No sex offenders, no drug use/possession
+- No reckless driving or property damage
 
 MEETINGS:
 - National Officer: Wednesdays 3pm EST
 - Chapter Officer: Wednesdays 5pm EST  
-- Prospect: Thursdays 4pm CST (mandatory)
+- Prospect: Thursdays 4pm CST (mandatory, 100% attendance)
 - Member meetings vary by chapter
+- Meeting rules: Microphones muted in app, cameras on (when <20 people), follow Robert's Rules of Order
 
-SANCTIONS:
-1. Verbal Warning - Least severe
-2. Written Warning - Progressive step
-3. Strike - Most severe (3 strikes = removal)
-Officers have 2 strikes max vs 3 for members
+SANCTIONS (Progressive Discipline):
+1. Verbal Warning - Least severe, discussion with Officer
+2. Written Warning - Progressive step, documented in Member file
+3. Strike - Most severe (3 strikes for members = removal, 2 strikes for Officers = removal)
+- Special Assignments may be given instead of standard sanctions
+- Chapter Presidents approve sanctions with ½ majority of Officer corp vote
+- Prospects can appeal sanctions to National Board
 
 FINANCIAL:
 - Monthly member dues (National + Chapter)
-- Financial Assistance Program available
+- Financial Assistance Program available for hardship cases
 - Financial Hardship applications reviewed by Budget Committee
+- Merchandise: 2 supporter items required for prospects before membering
+- All merchandise sold only on sanctioned BOH platforms
 
-MEET-UPS:
+MEET-UPS & EVENTS:
 - 3 annual sanctioned meet-ups
 - Driver appreciation events
 - Family days
 - Community service (trash pickups)
+- Tagging protocol: Can tag members' trucks at meet-ups (steps, catwalk, mirrors only)
+
+SOCIAL MEDIA & COMMUNICATIONS:
+- Discord: Primary platform for voice/text chat
+- Facebook Family Page: Public outreach, professional posts only
+- TikTok: Recruiting tool, PG-level content, 21+ only
+- No friend requests to members (unless pre-existing friendship)
+- Respect and professional presentation required on all platforms
+
+ADDITIONAL OFFICER DUTIES:
+- Sergeant at Arms: Activity reports (monthly/weekly/daily), By-law enforcement, interpretation guidance
+- National President: External liaison, Executive Orders, conflict resolution
+- National Vice President: Information relay, assumes duties in absences
 
 If asked about something not covered in this knowledge base, politely say you don't have that information and suggest they contact their Chain of Command or check Discord channels.
 
-Be helpful, respectful, and direct. Use BOH terminology (handles, Chain of Command, COC, prospects, etc.)."""
+Be helpful, respectful, and direct. Use BOH terminology (handles, Chain of Command, COC, prospects, Brother, S@A, NPrez, NVP, etc.)."""
 
         # Initialize LLM Chat with Emergent key
         session_id = f"chat_{current_user['username']}_{hash(chat_msg.message) % 10000}"
