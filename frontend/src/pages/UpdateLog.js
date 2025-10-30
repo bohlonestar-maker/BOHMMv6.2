@@ -8,6 +8,16 @@ export default function UpdateLog() {
 
   const updates = [
     {
+      version: "v.1.7a",
+      date: "October 30, 2025",
+      changes: [
+        "Meeting Attendance Colors: Updated to traffic light system - Present (Green), Excused (Orange), Unexcused (Red)",
+        "Visual Clarity: Improved meeting attendance tracking with clear color-coded status indicators",
+        "Highway Asylum Officers: Added HA chapter leadership to AI chatbot knowledge base",
+        "Enhanced Chatbot: Can now answer questions about Highway Asylum chapter officers and structure"
+      ]
+    },
+    {
       version: "v.1.7",
       date: "October 30, 2025",
       changes: [
