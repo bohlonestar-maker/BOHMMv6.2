@@ -2057,6 +2057,20 @@ KEY BYLAWS:
 - No sex offenders, no drug use/possession
 - No reckless driving or property damage
 
+OFFICER-SPECIFIC BYLAWS:
+- Officers serve at pleasure of National President and National Board
+- 7-day observation period for newly promoted officers (no authority during this time)
+- 90-day probationary period with training and evaluation
+- Officers limited to 2 strikes (vs 3 for members)
+- 100% attendance required at officer meetings
+- Officer meetings: National (Wed 3pm EST), Chapter (Wed 5pm EST)
+- Voting: Officers cannot vote for themselves for promotion/demotion/removal
+- Sanctions must be requested within 72 hours of infraction
+- Officers can resign at any time (notify NS@A and NRC via email)
+- No solicitation, special favors, or use of BOH for personal gain
+- Higher standard of conduct at public events
+- Retired National Presidents (2+ years service) become "BOH NP(r)" or "OG Legacy President"
+
 MEETINGS:
 - National Officer: Wednesdays 3pm EST
 - Chapter Officer: Wednesdays 5pm EST  
