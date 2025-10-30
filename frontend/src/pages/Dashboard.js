@@ -837,7 +837,7 @@ export default function Dashboard({ onLogout, userRole, userPermissions }) {
                                   placeholder={`${month}-1st note (${yearMeetings[monthIndex * 2]?.status === 2 ? 'excused' : 'unexcused'} absence)`}
                                   value={yearMeetings[monthIndex * 2]?.note || ''}
                                   onChange={(e) => handleAttendanceNote(monthIndex * 2, e.target.value)}
-                                  className="text-xs"
+                                  className="text-xs text-white"
                                 />
                               )}
                               {(yearMeetings[monthIndex * 2 + 1]?.status === 0 || yearMeetings[monthIndex * 2 + 1]?.status === 2) && (
@@ -845,7 +845,7 @@ export default function Dashboard({ onLogout, userRole, userPermissions }) {
                                   placeholder={`${month}-3rd note (${yearMeetings[monthIndex * 2 + 1]?.status === 2 ? 'excused' : 'unexcused'} absence)`}
                                   value={yearMeetings[monthIndex * 2 + 1]?.note || ''}
                                   onChange={(e) => handleAttendanceNote(monthIndex * 2 + 1, e.target.value)}
-                                  className="text-xs"
+                                  className="text-xs text-white"
                                 />
                               )}
                             </div>
