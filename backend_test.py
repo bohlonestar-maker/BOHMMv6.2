@@ -894,11 +894,11 @@ class BOHDirectoryAPITester:
                     elif member.get('id') == ad_member_id:
                         ad_found = member
                 
-                # Verify National member shows "[ADMIN ONLY]" for contact info
+                # Verify National member shows "restricted@admin-only.com" for contact info
                 if national_found:
-                    if (national_found.get('email') == '[ADMIN ONLY]' and 
-                        national_found.get('phone') == '[ADMIN ONLY]' and 
-                        national_found.get('address') == '[ADMIN ONLY]'):
+                    if (national_found.get('email') == 'restricted@admin-only.com' and 
+                        national_found.get('phone') == 'Admin Only' and 
+                        national_found.get('address') == 'Admin Only'):
                         self.log_test("Regular User - National Member Contact Redacted", True, "National member contact info properly redacted for regular user")
                     else:
                         self.log_test("Regular User - National Member Contact Redacted", False, f"Contact info not redacted: email={national_found.get('email')}, phone={national_found.get('phone')}, address={national_found.get('address')}")
