@@ -100,7 +100,6 @@ export default function Dashboard({ onLogout, userRole, userPermissions }) {
   const [searchTerm, setSearchTerm] = useState("");
   const [meetingDates, setMeetingDates] = useState([]);
   const [unreadPrivateCount, setUnreadPrivateCount] = useState(0);
-  const [openSupportCount, setOpenSupportCount] = useState(0);
   const navigate = useNavigate();
 
   // Helper to check permissions
