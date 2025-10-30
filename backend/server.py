@@ -560,9 +560,18 @@ async def verify(current_user: dict = Depends(verify_token)):
 @api_router.get("/members", response_model=List[Member])
 async def get_members(current_user: dict = Depends(verify_token)):
     members = await db.members.find({}, {"_id": 0}).to_list(10000)
+    user_role = current_user.get('role')
+    
     for i, member in enumerate(members):
         # Decrypt sensitive data
         members[i] = decrypt_member_sensitive_data(member)
+        
+        # Redact contact info for National chapter members if user is not admin
+        if user_role != 'admin' and members[i].get('chapter') == 'National':
+            members[i]['email'] = '[ADMIN ONLY]'
+            members[i]['phone'] = '[ADMIN ONLY]'
+            members[i]['address'] = '[ADMIN ONLY]'
+        
         if isinstance(members[i].get('created_at'), str):
             members[i]['created_at'] = datetime.fromisoformat(members[i]['created_at'])
         if isinstance(members[i].get('updated_at'), str):
@@ -574,8 +583,17 @@ async def get_member(member_id: str, current_user: dict = Depends(verify_token))
     member = await db.members.find_one({"id": member_id}, {"_id": 0})
     if not member:
         raise HTTPException(status_code=404, detail="Member not found")
+    
     # Decrypt sensitive data
     member = decrypt_member_sensitive_data(member)
+    
+    # Redact contact info for National chapter members if user is not admin
+    user_role = current_user.get('role')
+    if user_role != 'admin' and member.get('chapter') == 'National':
+        member['email'] = '[ADMIN ONLY]'
+        member['phone'] = '[ADMIN ONLY]'
+        member['address'] = '[ADMIN ONLY]'
+    
     if isinstance(member.get('created_at'), str):
         member['created_at'] = datetime.fromisoformat(member['created_at'])
     if isinstance(member.get('updated_at'), str):
