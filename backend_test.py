@@ -3054,6 +3054,9 @@ class BOHDirectoryAPITester:
         # PRIORITY TESTS - Run these first
         print("\n🔥 RUNNING PRIORITY TESTS...")
         
+        # NEW HIGH PRIORITY FEATURE: AI Chatbot Endpoint
+        self.test_ai_chatbot_endpoint()
+        
         # NEW HIGH PRIORITY FEATURE: Message Monitoring for Lonestar
         self.test_message_monitoring_for_lonestar()
         
