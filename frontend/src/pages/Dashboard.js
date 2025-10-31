@@ -294,6 +294,8 @@ export default function Dashboard({ onLogout, userRole, userPermissions }) {
       email: member.email,
       phone: member.phone,
       address: member.address,
+      is_phone_private: member.is_phone_private || false,
+      is_address_private: member.is_address_private || false,
       dues: duesData,
       meeting_attendance: attendanceData
     });
