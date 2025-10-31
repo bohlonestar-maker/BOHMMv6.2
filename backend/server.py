@@ -1613,6 +1613,8 @@ async def clear_unused_invites(current_user: dict = Depends(verify_admin)):
 @api_router.post("/messages", response_model=PrivateMessage)
 async def send_private_message(message: PrivateMessageCreate, current_user: dict = Depends(verify_token)):
     """Send a private message to another user"""
+    user_role = current_user.get('role')
+    
     # Verify recipient exists
     recipient_user = await db.users.find_one({"username": message.recipient})
     if not recipient_user:
@@ -1620,6 +1622,15 @@ async def send_private_message(message: PrivateMessageCreate, current_user: dict
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Recipient not found"
         )
+    
+    # If sender is prospect, verify recipient is HA chapter officer
+    if user_role == 'prospect':
+        ha_officers = ['Chap', 'Sancho', 'Tapeworm', 'Hee Haw', 'Phantom']
+        if message.recipient not in ha_officers:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Prospects can only message Highway Asylum chapter officers"
+            )
     
     private_message = PrivateMessage(
         sender=current_user['username'],
