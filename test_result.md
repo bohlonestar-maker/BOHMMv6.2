@@ -270,6 +270,18 @@ backend:
         agent: "testing"
         comment: "AI CHATBOT ENDPOINT TESTING COMPLETE ✅ NEW HIGH PRIORITY FEATURE FULLY TESTED: Comprehensive testing of POST /api/chat endpoint for BOH knowledge base chatbot. ✅ AUTHENTICATION VERIFIED: Successfully tested with testadmin/testpass123 credentials (200 status), unauthorized access properly blocked (403 status). ✅ FUNCTIONALITY TESTING PASSED: All test questions answered correctly - 'What is the Chain of Command?', 'What are the prospect requirements?', 'When are prospect meetings?' - all returned detailed, accurate BOH-specific responses. ✅ RESPONSE VALIDATION CONFIRMED: All responses contain required 'response' field with string content, proper BOH terminology usage (Chain of Command, COC, prospect, Brother, BOH, meeting, attendance), and helpful detailed answers. ✅ OUT-OF-SCOPE HANDLING VERIFIED: Non-BOH questions (weather, cooking) properly handled with appropriate responses directing users to contact Chain of Command or check Discord channels. ✅ EDGE CASES TESTED: Empty messages, very long messages, various authentication scenarios all handled appropriately. ✅ BOH KNOWLEDGE BASE INTEGRATION: Chatbot demonstrates comprehensive knowledge of organization structure, prospect requirements, meeting schedules, chain of command, and proper BOH terminology. The AI chatbot endpoint is production-ready and provides accurate, helpful responses for BOH members and prospects."
 
+  - task: "Contact privacy options (phone and address)"
+    implemented: true
+    working: "NA"
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "CONTACT PRIVACY BACKEND IMPLEMENTED ✅ Added is_phone_private and is_address_private boolean fields to Member model with default value of False. Updated GET /api/members endpoint to respect privacy settings - non-admin users see 'Private' text for private phone/address fields instead of actual values. Admins can always view all contact information regardless of privacy settings. NEEDS TESTING: 1) Create member with private phone/address 2) Verify admins see actual values 3) Verify non-admins see 'Private' text 4) Update existing member privacy settings 5) Verify privacy flags persist correctly in database."
+
 frontend:
   - task: "Display meeting dates (1st and 3rd Wednesday) in attendance UI"
     implemented: true
