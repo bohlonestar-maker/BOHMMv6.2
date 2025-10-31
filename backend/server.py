@@ -332,7 +332,7 @@ class User(BaseModel):
 class UserCreate(BaseModel):
     username: str
     password: str
-    role: str = "user"
+    role: str = "member"
     permissions: Optional[dict] = None
 
 class UserUpdate(BaseModel):
