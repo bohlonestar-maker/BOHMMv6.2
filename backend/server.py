@@ -2069,8 +2069,6 @@ Be helpful, respectful, and direct. Use BOH terminology (handles, Chain of Comma
         # Admin-only additional context
         admin_context = """
 
-GENERAL RULES OF ORDER (OFFICER BYLAWS):
-
 ARTICLE I: GENERAL RULES OF ORDER
 - Voting: Officers cannot vote for themselves for promotion/demotion/removal
 - Service: Officers serve at pleasure of NPrez and National Board
