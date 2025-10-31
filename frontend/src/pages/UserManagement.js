@@ -50,7 +50,7 @@ export default function UserManagement({ onLogout }) {
   const [formData, setFormData] = useState({
     username: "",
     password: "",
-    role: "user",
+    role: "member",
     permissions: {
       basic_info: true,
       email: false,
@@ -64,7 +64,7 @@ export default function UserManagement({ onLogout }) {
 
   const [inviteFormData, setInviteFormData] = useState({
     email: "",
-    role: "user",
+    role: "member",
     permissions: {
       basic_info: true,
       email: false,
@@ -77,7 +77,7 @@ export default function UserManagement({ onLogout }) {
   });
 
   const [editFormData, setEditFormData] = useState({
-    role: "user",
+    role: "member",
     permissions: {
       basic_info: true,
       email: false,
