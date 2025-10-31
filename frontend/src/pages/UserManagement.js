@@ -402,6 +402,40 @@ export default function UserManagement({ onLogout }) {
       </nav>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-8">
+        {/* Analytics Section */}
+        <div className="mb-6">
+          <h2 className="text-xl font-bold text-slate-100 mb-4">Member Analytics</h2>
+          
+          {/* Total Members Card */}
+          <div className="bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg shadow-lg p-6 mb-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-blue-100 text-sm font-medium mb-1">Total Members</p>
+                <p className="text-white text-4xl font-bold">{totalMembers}</p>
+              </div>
+              <Users className="w-16 h-16 text-blue-200 opacity-50" />
+            </div>
+          </div>
+
+          {/* Chapter Breakdown */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {Object.entries(chapterCounts).sort((a, b) => b[1] - a[1]).map(([chapter, count]) => (
+              <div 
+                key={chapter}
+                className="bg-slate-800 border border-slate-700 rounded-lg shadow-md p-4 hover:border-slate-600 transition-colors"
+              >
+                <p className="text-slate-400 text-sm font-medium mb-2">{chapter}</p>
+                <div className="flex items-baseline gap-2">
+                  <p className="text-slate-100 text-3xl font-bold">{count}</p>
+                  <p className="text-slate-500 text-sm">
+                    {totalMembers > 0 ? `${Math.round((count / totalMembers) * 100)}%` : '0%'}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
         <div className="bg-slate-800 rounded-xl shadow-xl border border-slate-700 p-4 sm:p-6">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 sm:mb-6 gap-3 sm:gap-0">
             <h2 className="text-base sm:text-lg font-semibold text-slate-100">System Users</h2>
