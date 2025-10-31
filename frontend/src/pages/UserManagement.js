@@ -97,6 +97,7 @@ export default function UserManagement({ onLogout }) {
 
   useEffect(() => {
     fetchUsers();
+    fetchMembers();
   }, []);
 
   const fetchUsers = async () => {
@@ -115,6 +116,18 @@ export default function UserManagement({ onLogout }) {
       toast.error(`Failed to load users: ${error.response?.data?.detail || error.message}`);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchMembers = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const response = await axios.get(`${API}/members`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setMembers(response.data);
+    } catch (error) {
+      console.error("Failed to load members:", error);
     }
   };
 
