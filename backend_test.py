@@ -3036,6 +3036,412 @@ class BOHDirectoryAPITester:
         print(f"   🤖 AI Chatbot endpoint testing completed")
         return True
 
+    def test_contact_privacy_functionality(self):
+        """Test contact privacy options for phone and address - NEW FEATURE"""
+        print(f"\n🔒 Testing Contact Privacy Functionality...")
+        
+        # Test 1: Create Member with Privacy Settings
+        print(f"\n   📝 Test 1: Create Member with Privacy Settings...")
+        
+        member_with_privacy = {
+            "chapter": "AD",
+            "title": "Prez",
+            "handle": "PrivacyTestRider",
+            "name": "Privacy Test Member",
+            "email": "privacy@test.com",
+            "phone": "555-PRIVATE",
+            "address": "123 Private Street, Private City, PC 12345",
+            "phone_private": True,
+            "address_private": True
+        }
+        
+        success, created_member = self.run_test(
+            "Create Member with Privacy Settings",
+            "POST",
+            "members",
+            201,
+            data=member_with_privacy
+        )
+        
+        privacy_member_id = None
+        if success and 'id' in created_member:
+            privacy_member_id = created_member['id']
+            print(f"   Created privacy member ID: {privacy_member_id}")
+            
+            # Verify privacy flags are saved
+            if (created_member.get('phone_private') == True and 
+                created_member.get('address_private') == True):
+                self.log_test("Privacy Flags Saved in Database", True, "Both phone_private and address_private set to True")
+            else:
+                self.log_test("Privacy Flags Saved in Database", False, f"phone_private: {created_member.get('phone_private')}, address_private: {created_member.get('address_private')}")
+        else:
+            print("❌ Failed to create member with privacy settings")
+            return
+        
+        # Test 2: Create Regular User for Non-Admin Testing
+        print(f"\n   👤 Test 2: Create Regular User for Testing...")
+        
+        regular_user = {
+            "username": "privacyuser",
+            "password": "testpass123",
+            "role": "user"
+        }
+        
+        success, created_user = self.run_test(
+            "Create Regular User for Privacy Testing",
+            "POST",
+            "users",
+            201,
+            data=regular_user
+        )
+        
+        regular_user_id = None
+        if success and 'id' in created_user:
+            regular_user_id = created_user['id']
+        elif not success:
+            print("   Regular user might already exist, continuing...")
+        
+        # Save original admin token
+        original_token = self.token
+        
+        # Test 3: Admin Access - View Private Contact Info
+        print(f"\n   🔑 Test 3: Admin Access - View Private Contact Info...")
+        
+        # Ensure we're logged in as admin
+        success, admin_login = self.run_test(
+            "Login as Admin for Privacy Test",
+            "POST",
+            "auth/login",
+            200,
+            data={"username": "testadmin", "password": "testpass123"}
+        )
+        
+        if success and 'token' in admin_login:
+            self.token = admin_login['token']
+        
+        # Get all members as admin
+        success, admin_members = self.run_test(
+            "Admin - Get Members with Privacy Settings",
+            "GET",
+            "members",
+            200
+        )
+        
+        if success and isinstance(admin_members, list):
+            privacy_member_found = None
+            for member in admin_members:
+                if member.get('id') == privacy_member_id:
+                    privacy_member_found = member
+                    break
+            
+            if privacy_member_found:
+                # Admin should see ACTUAL values even when privacy flags are true
+                if (privacy_member_found.get('phone') == '555-PRIVATE' and 
+                    privacy_member_found.get('address') == '123 Private Street, Private City, PC 12345'):
+                    self.log_test("Admin Can See Private Contact Info", True, "Admin sees actual phone and address values despite privacy flags")
+                else:
+                    self.log_test("Admin Can See Private Contact Info", False, f"Admin sees: phone='{privacy_member_found.get('phone')}', address='{privacy_member_found.get('address')}'")
+            else:
+                self.log_test("Admin - Find Privacy Member", False, "Privacy member not found in admin member list")
+        
+        # Test 4: Non-Admin Access - View Private Contact Info
+        print(f"\n   👤 Test 4: Non-Admin Access - View Private Contact Info...")
+        
+        # Login as regular user
+        success, regular_login = self.run_test(
+            "Login as Regular User for Privacy Test",
+            "POST",
+            "auth/login",
+            200,
+            data={"username": "privacyuser", "password": "testpass123"}
+        )
+        
+        if success and 'token' in regular_login:
+            self.token = regular_login['token']
+            
+            # Get all members as regular user
+            success, regular_members = self.run_test(
+                "Regular User - Get Members with Privacy Settings",
+                "GET",
+                "members",
+                200
+            )
+            
+            if success and isinstance(regular_members, list):
+                privacy_member_found = None
+                for member in regular_members:
+                    if member.get('id') == privacy_member_id:
+                        privacy_member_found = member
+                        break
+                
+                if privacy_member_found:
+                    # Regular user should see 'Private' text instead of actual values
+                    if (privacy_member_found.get('phone') == 'Private' and 
+                        privacy_member_found.get('address') == 'Private'):
+                        self.log_test("Non-Admin Sees 'Private' Text", True, "Regular user sees 'Private' for both phone and address")
+                    else:
+                        self.log_test("Non-Admin Sees 'Private' Text", False, f"Regular user sees: phone='{privacy_member_found.get('phone')}', address='{privacy_member_found.get('address')}'")
+                else:
+                    self.log_test("Regular User - Find Privacy Member", False, "Privacy member not found in regular user member list")
+        
+        # Test 5: Update Member Privacy Settings
+        print(f"\n   🔄 Test 5: Update Member Privacy Settings...")
+        
+        # Switch back to admin
+        self.token = admin_login['token'] if admin_login and 'token' in admin_login else original_token
+        
+        if privacy_member_id:
+            # Update to toggle privacy settings
+            update_privacy_data = {
+                "phone_private": False,  # Make phone public
+                "address_private": True   # Keep address private
+            }
+            
+            success, updated_member = self.run_test(
+                "Update Member Privacy Settings",
+                "PUT",
+                f"members/{privacy_member_id}",
+                200,
+                data=update_privacy_data
+            )
+            
+            if success:
+                # Verify changes persisted
+                success, member_check = self.run_test(
+                    "Get Member to Verify Privacy Update",
+                    "GET",
+                    f"members/{privacy_member_id}",
+                    200
+                )
+                
+                if success:
+                    if (member_check.get('phone_private') == False and 
+                        member_check.get('address_private') == True):
+                        self.log_test("Privacy Settings Update Persisted", True, "phone_private=False, address_private=True")
+                    else:
+                        self.log_test("Privacy Settings Update Persisted", False, f"phone_private={member_check.get('phone_private')}, address_private={member_check.get('address_private')}")
+        
+        # Test 6: Mixed Privacy Settings - Non-Admin View
+        print(f"\n   🔀 Test 6: Mixed Privacy Settings - Non-Admin View...")
+        
+        # Login as regular user again
+        if regular_login and 'token' in regular_login:
+            self.token = regular_login['token']
+            
+            # Get members to check mixed privacy settings
+            success, mixed_members = self.run_test(
+                "Regular User - Get Members with Mixed Privacy",
+                "GET",
+                "members",
+                200
+            )
+            
+            if success and isinstance(mixed_members, list):
+                privacy_member_found = None
+                for member in mixed_members:
+                    if member.get('id') == privacy_member_id:
+                        privacy_member_found = member
+                        break
+                
+                if privacy_member_found:
+                    # Should see actual phone (not private) but 'Private' for address
+                    if (privacy_member_found.get('phone') == '555-PRIVATE' and 
+                        privacy_member_found.get('address') == 'Private'):
+                        self.log_test("Mixed Privacy Settings Work", True, "Phone visible, address shows 'Private'")
+                    else:
+                        self.log_test("Mixed Privacy Settings Work", False, f"Expected phone='555-PRIVATE' and address='Private', got phone='{privacy_member_found.get('phone')}', address='{privacy_member_found.get('address')}'")
+        
+        # Test 7: Create Member with Only Phone Private
+        print(f"\n   📱 Test 7: Create Member with Only Phone Private...")
+        
+        # Switch back to admin
+        self.token = admin_login['token'] if admin_login and 'token' in admin_login else original_token
+        
+        phone_only_private = {
+            "chapter": "HA",
+            "title": "VP",
+            "handle": "PhonePrivateRider",
+            "name": "Phone Private Member",
+            "email": "phoneonly@test.com",
+            "phone": "555-PHONE-ONLY",
+            "address": "456 Public Address Street",
+            "phone_private": True,
+            "address_private": False
+        }
+        
+        success, phone_private_member = self.run_test(
+            "Create Member with Only Phone Private",
+            "POST",
+            "members",
+            201,
+            data=phone_only_private
+        )
+        
+        phone_private_member_id = None
+        if success and 'id' in phone_private_member:
+            phone_private_member_id = phone_private_member['id']
+        
+        # Test 8: Create Member with Only Address Private
+        print(f"\n   🏠 Test 8: Create Member with Only Address Private...")
+        
+        address_only_private = {
+            "chapter": "HS",
+            "title": "S@A",
+            "handle": "AddressPrivateRider",
+            "name": "Address Private Member",
+            "email": "addressonly@test.com",
+            "phone": "555-PUBLIC-PHONE",
+            "address": "789 Private Address Lane",
+            "phone_private": False,
+            "address_private": True
+        }
+        
+        success, address_private_member = self.run_test(
+            "Create Member with Only Address Private",
+            "POST",
+            "members",
+            201,
+            data=address_only_private
+        )
+        
+        address_private_member_id = None
+        if success and 'id' in address_private_member:
+            address_private_member_id = address_private_member['id']
+        
+        # Test 9: Verify Individual Privacy Settings as Non-Admin
+        print(f"\n   🔍 Test 9: Verify Individual Privacy Settings as Non-Admin...")
+        
+        # Login as regular user
+        if regular_login and 'token' in regular_login:
+            self.token = regular_login['token']
+            
+            # Get all members to check individual privacy settings
+            success, individual_members = self.run_test(
+                "Regular User - Get Members for Individual Privacy Check",
+                "GET",
+                "members",
+                200
+            )
+            
+            if success and isinstance(individual_members, list):
+                phone_only_found = None
+                address_only_found = None
+                
+                for member in individual_members:
+                    if member.get('id') == phone_private_member_id:
+                        phone_only_found = member
+                    elif member.get('id') == address_private_member_id:
+                        address_only_found = member
+                
+                # Check phone-only private member
+                if phone_only_found:
+                    if (phone_only_found.get('phone') == 'Private' and 
+                        phone_only_found.get('address') == '456 Public Address Street'):
+                        self.log_test("Phone-Only Private Member", True, "Phone shows 'Private', address is visible")
+                    else:
+                        self.log_test("Phone-Only Private Member", False, f"Expected phone='Private' and address='456 Public Address Street', got phone='{phone_only_found.get('phone')}', address='{phone_only_found.get('address')}'")
+                
+                # Check address-only private member
+                if address_only_found:
+                    if (address_only_found.get('phone') == '555-PUBLIC-PHONE' and 
+                        address_only_found.get('address') == 'Private'):
+                        self.log_test("Address-Only Private Member", True, "Phone is visible, address shows 'Private'")
+                    else:
+                        self.log_test("Address-Only Private Member", False, f"Expected phone='555-PUBLIC-PHONE' and address='Private', got phone='{address_only_found.get('phone')}', address='{address_only_found.get('address')}'")
+        
+        # Test 10: Edge Case - Create Member Without Privacy Fields (Should Default to False)
+        print(f"\n   🔧 Test 10: Edge Case - Default Privacy Settings...")
+        
+        # Switch back to admin
+        self.token = admin_login['token'] if admin_login and 'token' in admin_login else original_token
+        
+        default_privacy_member = {
+            "chapter": "National",
+            "title": "ENF",
+            "handle": "DefaultPrivacyRider",
+            "name": "Default Privacy Member",
+            "email": "default@test.com",
+            "phone": "555-DEFAULT",
+            "address": "999 Default Street"
+            # Note: No phone_private or address_private fields specified
+        }
+        
+        success, default_member = self.run_test(
+            "Create Member Without Privacy Fields",
+            "POST",
+            "members",
+            201,
+            data=default_privacy_member
+        )
+        
+        default_member_id = None
+        if success and 'id' in default_member:
+            default_member_id = default_member['id']
+            
+            # Verify defaults to false
+            if (default_member.get('phone_private') == False and 
+                default_member.get('address_private') == False):
+                self.log_test("Privacy Fields Default to False", True, "Both privacy fields default to False when not specified")
+            else:
+                self.log_test("Privacy Fields Default to False", False, f"phone_private={default_member.get('phone_private')}, address_private={default_member.get('address_private')}")
+        
+        # Test 11: Backward Compatibility - Old Members Without Privacy Fields
+        print(f"\n   ⏮️  Test 11: Backward Compatibility Check...")
+        
+        # Login as regular user to check if old members work correctly
+        if regular_login and 'token' in regular_login:
+            self.token = regular_login['token']
+            
+            # Get all members to check backward compatibility
+            success, compat_members = self.run_test(
+                "Regular User - Get Members for Backward Compatibility",
+                "GET",
+                "members",
+                200
+            )
+            
+            if success and isinstance(compat_members, list):
+                default_found = None
+                for member in compat_members:
+                    if member.get('id') == default_member_id:
+                        default_found = member
+                        break
+                
+                if default_found:
+                    # Should see actual values since privacy defaults to false
+                    if (default_found.get('phone') == '555-DEFAULT' and 
+                        default_found.get('address') == '999 Default Street'):
+                        self.log_test("Backward Compatibility Works", True, "Members without privacy fields show actual contact info")
+                    else:
+                        self.log_test("Backward Compatibility Works", False, f"Expected actual values, got phone='{default_found.get('phone')}', address='{default_found.get('address')}'")
+        
+        # Restore original admin token
+        self.token = original_token
+        
+        # Clean up test data
+        print(f"\n   🧹 Cleaning up privacy test data...")
+        
+        test_member_ids = [privacy_member_id, phone_private_member_id, address_private_member_id, default_member_id]
+        for i, member_id in enumerate(test_member_ids, 1):
+            if member_id:
+                success, response = self.run_test(
+                    f"Delete Privacy Test Member {i}",
+                    "DELETE",
+                    f"members/{member_id}",
+                    200
+                )
+        
+        if regular_user_id:
+            success, response = self.run_test(
+                "Delete Privacy Test User",
+                "DELETE",
+                f"users/{regular_user_id}",
+                200
+            )
+        
+        print(f"   🔒 Contact privacy functionality testing completed")
+        return privacy_member_id
+
     def run_all_tests(self):
         """Run all tests"""
         print("🚀 Starting Brothers of the Highway Directory API Tests")
