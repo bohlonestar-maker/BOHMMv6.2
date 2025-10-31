@@ -1375,6 +1375,41 @@ async def delete_user(user_id: str, current_user: dict = Depends(verify_admin)):
     
     return {"message": "User deleted successfully"}
 
+# Password change endpoint
+class PasswordChange(BaseModel):
+    new_password: str
+
+@api_router.put("/users/{user_id}/password")
+async def change_user_password(user_id: str, password_data: PasswordChange, current_user: dict = Depends(verify_admin)):
+    """Change password for a user - admin only"""
+    # Validate password
+    if len(password_data.new_password) < 8:
+        raise HTTPException(status_code=400, detail="Password must be at least 8 characters")
+    
+    # Hash new password
+    password_hash = bcrypt.hashpw(password_data.new_password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+    
+    # Update user password
+    result = await db.users.update_one(
+        {"id": user_id},
+        {"$set": {"password_hash": password_hash}}
+    )
+    
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Get username for logging
+    user = await db.users.find_one({"id": user_id})
+    
+    # Log activity
+    await log_activity(
+        username=current_user["username"],
+        action="password_change",
+        details=f"Changed password for user: {user['username']}"
+    )
+    
+    return {"message": "Password changed successfully"}
+
 # Invite endpoints
 @api_router.post("/invites")
 async def create_invite(invite_data: InviteCreate, current_user: dict = Depends(verify_admin)):
