@@ -8,6 +8,16 @@ export default function UpdateLog() {
 
   const updates = [
     {
+      version: "v.1.7c",
+      date: "October 31, 2025",
+      changes: [
+        "General Rules of Order: Added complete officer bylaws to chatbot (7 articles covering all officer regulations)",
+        "Role-Based Chatbot Access: Officer information, chain of command, and bylaws now restricted to admin users only",
+        "Enhanced Security: Regular users see organization overview, mission, and public information only",
+        "Comprehensive Officer Rules: Includes observation periods, disciplinary process, resignation procedures, and all officer expectations"
+      ]
+    },
+    {
       version: "v.1.7b",
       date: "October 31, 2025",
       changes: [
