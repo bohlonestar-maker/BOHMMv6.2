@@ -2105,7 +2105,9 @@ CHAPTER OFFICER STRUCTURE:
 - Sergeant at Arms (S@A) - "Legal office" of chapter, enforces By-laws
 - Enforcer - Prospect management
 - Secretary - Administrative duties
-- Prospect Manager (PM) - Manages prospects (last in CoC reporting structure)
+- Prospect Manager (PM) - Manages prospects (only HA chapter has this position)
+
+NOTE: Prospect Manager position exists only in Highway Asylum (HA) chapter. Other chapters (HS, AD) do not have this position.
 
 PROSPECT REQUIREMENTS:
 - Attend weekly meetings (Thursdays 4pm CST - MANDATORY)
