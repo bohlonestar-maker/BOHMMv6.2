@@ -210,6 +210,11 @@ export default function UserManagement({ onLogout }) {
     fetchLogs();
   };
 
+  const handleViewAnalytics = () => {
+    setAnalyticsDialogOpen(true);
+    fetchMembers();
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     const token = localStorage.getItem("token");
