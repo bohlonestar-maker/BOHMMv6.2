@@ -8,6 +8,16 @@ export default function UpdateLog() {
 
   const updates = [
     {
+      version: "v.1.7d",
+      date: "October 31, 2025",
+      changes: [
+        "Chain of Command Access: CoC structure and all officer positions now available to all users (not just admins)",
+        "Enhanced Transparency: All members can now see National and Chapter officer names and positions",
+        "HAPM Position Correction: Highway Asylum Prospect Manager properly positioned after Secretary in CoC",
+        "Improved Chatbot Access: Better information availability while keeping detailed officer bylaws admin-only"
+      ]
+    },
+    {
       version: "v.1.7c",
       date: "October 31, 2025",
       changes: [
