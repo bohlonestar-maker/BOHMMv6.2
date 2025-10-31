@@ -3469,6 +3469,9 @@ class BOHDirectoryAPITester:
         # NEW HIGH PRIORITY FEATURE: User-to-User Messaging Fix
         self.test_user_to_user_messaging_fix()
         
+        # NEW HIGH PRIORITY FEATURE: Contact Privacy Options
+        self.test_contact_privacy_functionality()
+        
         self.test_resend_invite_functionality()
         self.test_member_loading_regression()
         
