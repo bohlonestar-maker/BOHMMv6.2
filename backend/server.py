@@ -2002,13 +2002,13 @@ ADDITIONAL NATIONAL POSITIONS:
 - Club Media Director (CMD): Grizz
 - Club Counselor & Life Coach (CCLC): Scar
 
-HIGHWAY ASYLUM (HA) CHAPTER OFFICERS:
+HIGHWAY ASYLUM (HA) CHAPTER OFFICERS (Chain of Command):
 - HA President (HAPrez): Chap
 - HA Vice President (HAVP): Sancho
 - HA Sergeant at Arms (HAS@A): Tapeworm
 - HA Enforcer (HAENF): *Vacant*
-- HA Secretary (HASEC): Hee Haw
 - HA Prospect Manager (HAPM): Phantom
+- HA Secretary (HASEC): Hee Haw
 
 HIGHWAY SOULS (HS) CHAPTER OFFICERS:
 - HS President (HSPrez): Bobkat
