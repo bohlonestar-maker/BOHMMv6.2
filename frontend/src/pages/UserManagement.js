@@ -294,8 +294,8 @@ export default function UserManagement({ onLogout }) {
       return;
     }
 
-    if (passwordFormData.newPassword.length < 6) {
-      toast.error("Password must be at least 6 characters");
+    if (passwordFormData.newPassword.length < 8) {
+      toast.error("Password must be at least 8 characters");
       return;
     }
 
@@ -303,8 +303,8 @@ export default function UserManagement({ onLogout }) {
 
     try {
       await axios.put(
-        `${API}/users/${editingUser.id}`,
-        { password: passwordFormData.newPassword },
+        `${API}/users/${editingUser.id}/password`,
+        { new_password: passwordFormData.newPassword },
         {
           headers: { Authorization: `Bearer ${token}` },
         }
