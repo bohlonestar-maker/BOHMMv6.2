@@ -798,6 +798,112 @@ export default function Prospects({ onLogout, userRole }) {
             )}
           </DialogContent>
         </Dialog>
+
+        {/* Actions Dialog */}
+        <Dialog open={actionsDialogOpen} onOpenChange={setActionsDialogOpen}>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Actions History - {selectedProspect?.handle}</DialogTitle>
+            </DialogHeader>
+            {selectedProspect && (
+              <div className="space-y-6 mt-4">
+                {/* Existing Actions List */}
+                <div>
+                  <h3 className="text-lg font-semibold text-slate-100 mb-3">History</h3>
+                  {selectedProspect.actions && selectedProspect.actions.length > 0 ? (
+                    <div className="space-y-2">
+                      {selectedProspect.actions.sort((a, b) => new Date(b.date) - new Date(a.date)).map((action) => (
+                        <div key={action.id} className="bg-slate-800 border border-slate-700 rounded-lg p-4">
+                          <div className="flex justify-between items-start mb-2">
+                            <div className="flex items-center gap-2">
+                              <span className={`px-2 py-1 rounded text-xs font-semibold ${
+                                action.type === 'merit' ? 'bg-green-600 text-white' :
+                                action.type === 'promotion' ? 'bg-blue-600 text-white' :
+                                'bg-red-600 text-white'
+                              }`}>
+                                {action.type.toUpperCase()}
+                              </span>
+                              <span className="text-slate-400 text-sm">{action.date}</span>
+                            </div>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="text-red-600 hover:text-red-700"
+                              onClick={() => handleDeleteAction(action.id)}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                          <p className="text-slate-200 text-sm mb-2">{action.description}</p>
+                          <p className="text-slate-500 text-xs">
+                            Added by {action.added_by} on {new Date(action.added_at).toLocaleDateString()}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-slate-400 text-sm">No actions recorded yet.</p>
+                  )}
+                </div>
+
+                {/* Add New Action Form */}
+                <div className="border-t border-slate-700 pt-6">
+                  <h3 className="text-lg font-semibold text-slate-100 mb-3">Add New Action</h3>
+                  <form onSubmit={handleAddAction} className="space-y-4">
+                    <div>
+                      <Label>Type</Label>
+                      <Select
+                        value={actionForm.type}
+                        onValueChange={(value) => setActionForm({ ...actionForm, type: value })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="merit">Merit</SelectItem>
+                          <SelectItem value="promotion">Promotion</SelectItem>
+                          <SelectItem value="disciplinary">Disciplinary</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div>
+                      <Label>Date</Label>
+                      <Input
+                        type="date"
+                        value={actionForm.date}
+                        onChange={(e) => setActionForm({ ...actionForm, date: e.target.value })}
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <Label>Description</Label>
+                      <Textarea
+                        value={actionForm.description}
+                        onChange={(e) => setActionForm({ ...actionForm, description: e.target.value })}
+                        placeholder="Enter action details..."
+                        rows={4}
+                        required
+                      />
+                    </div>
+
+                    <div className="flex gap-3 justify-end">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => setActionsDialogOpen(false)}
+                      >
+                        Close
+                      </Button>
+                      <Button type="submit">Add Action</Button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
