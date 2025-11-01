@@ -503,7 +503,7 @@ export default function Prospects({ onLogout, userRole }) {
       </nav>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-8">
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 sm:p-6">
+        <div className="bg-slate-800 rounded-xl shadow-sm border border-slate-700 p-4 sm:p-6">
           <div className="mb-4 sm:mb-6">
             <div className="relative max-w-2xl">
               <svg
@@ -523,7 +523,7 @@ export default function Prospects({ onLogout, userRole }) {
                 placeholder="Search by name or handle..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 py-4 sm:py-6 text-sm sm:text-base border-2 border-slate-300 focus:border-slate-600 rounded-lg"
+                className="w-full pl-10 py-4 sm:py-6 text-sm sm:text-base bg-slate-900 border-2 border-slate-700 text-slate-100 focus:border-slate-600 rounded-lg placeholder:text-slate-400"
               />
             </div>
           </div>
