@@ -74,8 +74,11 @@ export default function Prospects({ onLogout, userRole }) {
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [promoteDialogOpen, setPromoteDialogOpen] = useState(false);
+  const [actionsDialogOpen, setActionsDialogOpen] = useState(false);
   const [editingProspect, setEditingProspect] = useState(null);
   const [promotingProspect, setPromotingProspect] = useState(null);
+  const [selectedProspect, setSelectedProspect] = useState(null);
+  const [actionForm, setActionForm] = useState({ type: "merit", date: "", description: "" });
   const [searchTerm, setSearchTerm] = useState("");
   const [meetingDates, setMeetingDates] = useState([]);
   const navigate = useNavigate();
@@ -86,6 +89,8 @@ export default function Prospects({ onLogout, userRole }) {
     email: "",
     phone: "",
     address: "",
+    dob: "",
+    join_date: "",
     meeting_attendance: {
       year: new Date().getFullYear(),
       meetings: Array(24).fill(null).map(() => ({ status: 0, note: "" }))
