@@ -450,6 +450,9 @@ class Prospect(BaseModel):
     email: EmailStr
     phone: str
     address: str
+    dob: Optional[str] = None  # Date of Birth (YYYY-MM-DD format)
+    join_date: Optional[str] = None  # Date joined as prospect (YYYY-MM-DD format)
+    actions: list = Field(default_factory=list)  # Merit, Promotion, Disciplinary actions
     meeting_attendance: dict = Field(default_factory=lambda: {
         str(datetime.now(timezone.utc).year): [{"status": 0, "note": ""} for _ in range(24)]
     })  # Format: {"2025": [meetings], "2024": [meetings], ...}
@@ -462,6 +465,8 @@ class ProspectCreate(BaseModel):
     email: EmailStr
     phone: str
     address: str
+    dob: Optional[str] = None
+    join_date: Optional[str] = None
     meeting_attendance: Optional[dict] = None
 
 class ProspectUpdate(BaseModel):
