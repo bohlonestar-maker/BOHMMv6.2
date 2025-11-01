@@ -1279,6 +1279,48 @@ export default function Dashboard({ onLogout, userRole, userPermissions }) {
             )}
           </DialogContent>
         </Dialog>
+
+        {/* Delete Confirmation Dialog */}
+        <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Archive Member</DialogTitle>
+            </DialogHeader>
+            {memberToDelete && (
+              <div className="space-y-4 mt-4">
+                <p className="text-slate-200">
+                  You are about to archive <span className="font-semibold">{memberToDelete.handle} - {memberToDelete.name}</span>. 
+                  This action will move the member to the archived records.
+                </p>
+                <div>
+                  <Label>Reason for Archiving *</Label>
+                  <Textarea
+                    value={deleteReason}
+                    onChange={(e) => setDeleteReason(e.target.value)}
+                    placeholder="Enter reason for archiving..."
+                    rows={3}
+                    required
+                  />
+                </div>
+                <div className="flex gap-3 justify-end">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setDeleteDialogOpen(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    onClick={handleConfirmDelete}
+                  >
+                    Archive Member
+                  </Button>
+                </div>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
