@@ -636,7 +636,7 @@ export default function Prospects({ onLogout, userRole }) {
                     />
                   </div>
 
-                  <div className="border-t pt-4">
+                  <div className="border-t border-slate-700 pt-4">
                     <div className="flex justify-between items-center mb-3">
                       <Label className="text-base font-semibold">Meeting Attendance</Label>
                       <div className="flex items-center gap-2">
@@ -658,8 +658,8 @@ export default function Prospects({ onLogout, userRole }) {
 
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 max-h-96 overflow-y-auto">
                       {["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"].map((month, monthIndex) => (
-                        <div key={month} className="border rounded p-3">
-                          <p className="text-sm font-medium mb-2">{month}</p>
+                        <div key={month} className="border border-slate-700 rounded p-3 bg-slate-900">
+                          <p className="text-sm font-medium mb-2 text-slate-200">{month}</p>
                           <div className="space-y-2">
                             <div>
                               <button
