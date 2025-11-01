@@ -1024,6 +1024,142 @@ async def export_members_csv(current_user: dict = Depends(verify_token)):
         headers={"Content-Disposition": "attachment; filename=members.csv"}
     )
 
+# Member Actions endpoints (admin only)
+@api_router.post("/members/{member_id}/actions")
+async def add_member_action(
+    member_id: str,
+    action_type: str,
+    date: str,
+    description: str,
+    current_user: dict = Depends(verify_admin)
+):
+    """Add a merit, promotion, or disciplinary action to a member"""
+    member = await db.members.find_one({"id": member_id}, {"_id": 0})
+    if not member:
+        raise HTTPException(status_code=404, detail="Member not found")
+    
+    # Create action record
+    action = {
+        "id": str(uuid.uuid4()),
+        "type": action_type,  # merit, promotion, disciplinary
+        "date": date,
+        "description": description,
+        "added_by": current_user["username"],
+        "added_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    # Add action to member's actions list
+    actions = member.get("actions", [])
+    actions.append(action)
+    
+    await db.members.update_one(
+        {"id": member_id},
+        {"$set": {"actions": actions, "updated_at": datetime.now(timezone.utc)}}
+    )
+    
+    await log_activity(
+        current_user["username"],
+        "add_action",
+        f"Added {action_type} action for member {member['handle']}"
+    )
+    
+    return {"message": "Action added successfully", "action": action}
+
+@api_router.delete("/members/{member_id}/actions/{action_id}")
+async def delete_member_action(
+    member_id: str,
+    action_id: str,
+    current_user: dict = Depends(verify_admin)
+):
+    """Delete an action from a member"""
+    member = await db.members.find_one({"id": member_id}, {"_id": 0})
+    if not member:
+        raise HTTPException(status_code=404, detail="Member not found")
+    
+    actions = member.get("actions", [])
+    actions = [a for a in actions if a.get("id") != action_id]
+    
+    await db.members.update_one(
+        {"id": member_id},
+        {"$set": {"actions": actions, "updated_at": datetime.now(timezone.utc)}}
+    )
+    
+    await log_activity(
+        current_user["username"],
+        "delete_action",
+        f"Deleted action from member {member['handle']}"
+    )
+    
+    return {"message": "Action deleted successfully"}
+
+# Prospect Actions endpoints (admin only)
+@api_router.post("/prospects/{prospect_id}/actions")
+async def add_prospect_action(
+    prospect_id: str,
+    action_type: str,
+    date: str,
+    description: str,
+    current_user: dict = Depends(verify_admin)
+):
+    """Add a merit, promotion, or disciplinary action to a prospect"""
+    prospect = await db.prospects.find_one({"id": prospect_id}, {"_id": 0})
+    if not prospect:
+        raise HTTPException(status_code=404, detail="Prospect not found")
+    
+    # Create action record
+    action = {
+        "id": str(uuid.uuid4()),
+        "type": action_type,  # merit, promotion, disciplinary
+        "date": date,
+        "description": description,
+        "added_by": current_user["username"],
+        "added_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    # Add action to prospect's actions list
+    actions = prospect.get("actions", [])
+    actions.append(action)
+    
+    await db.prospects.update_one(
+        {"id": prospect_id},
+        {"$set": {"actions": actions, "updated_at": datetime.now(timezone.utc)}}
+    )
+    
+    await log_activity(
+        current_user["username"],
+        "add_action",
+        f"Added {action_type} action for prospect {prospect['handle']}"
+    )
+    
+    return {"message": "Action added successfully", "action": action}
+
+@api_router.delete("/prospects/{prospect_id}/actions/{action_id}")
+async def delete_prospect_action(
+    prospect_id: str,
+    action_id: str,
+    current_user: dict = Depends(verify_admin)
+):
+    """Delete an action from a prospect"""
+    prospect = await db.prospects.find_one({"id": prospect_id}, {"_id": 0})
+    if not prospect:
+        raise HTTPException(status_code=404, detail="Prospect not found")
+    
+    actions = prospect.get("actions", [])
+    actions = [a for a in actions if a.get("id") != action_id]
+    
+    await db.prospects.update_one(
+        {"id": prospect_id},
+        {"$set": {"actions": actions, "updated_at": datetime.now(timezone.utc)}}
+    )
+    
+    await log_activity(
+        current_user["username"],
+        "delete_action",
+        f"Deleted action from prospect {prospect['handle']}"
+    )
+    
+    return {"message": "Action deleted successfully"}
+
 # Prospect management endpoints (admin only)
 @api_router.get("/prospects", response_model=List[Prospect])
 async def get_prospects(current_user: dict = Depends(verify_admin)):
