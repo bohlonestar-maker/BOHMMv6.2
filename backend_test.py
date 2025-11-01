@@ -76,6 +76,47 @@ class BOHDirectoryAPITester:
             self.log_test(name, False, f"Exception: {str(e)}")
             return False, {}
 
+    def run_test_bulk_promote(self, name, prospect_ids, chapter, title, expected_status):
+        """Run bulk promotion test with correct API format"""
+        url = f"{self.base_url}/prospects/bulk-promote"
+        test_headers = {'Content-Type': 'application/json'}
+        
+        if self.token:
+            test_headers['Authorization'] = f'Bearer {self.token}'
+
+        params = {
+            'chapter': chapter,
+            'title': title
+        }
+
+        try:
+            response = requests.post(url, params=params, json=prospect_ids, headers=test_headers, verify=False)
+
+            success = response.status_code == expected_status
+            details = f"Status: {response.status_code}"
+            
+            if not success:
+                details += f" (Expected: {expected_status})"
+                try:
+                    error_data = response.json()
+                    details += f" - {error_data.get('detail', 'No error details')}"
+                except:
+                    details += f" - Response: {response.text[:100]}"
+
+            self.log_test(name, success, details)
+            
+            if success:
+                try:
+                    return True, response.json()
+                except:
+                    return True, response.text
+            else:
+                return False, {}
+
+        except Exception as e:
+            self.log_test(name, False, f"Exception: {str(e)}")
+            return False, {}
+
     def test_login(self, username="admin", password="admin123"):
         """Test login and get token - try multiple credentials if first fails"""
         print(f"\n🔐 Testing Authentication...")
