@@ -475,6 +475,8 @@ class ProspectUpdate(BaseModel):
     email: Optional[EmailStr] = None
     phone: Optional[str] = None
     address: Optional[str] = None
+    dob: Optional[str] = None
+    join_date: Optional[str] = None
     meeting_attendance: Optional[dict] = None
 
 class PrivateMessage(BaseModel):
