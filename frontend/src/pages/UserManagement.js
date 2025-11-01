@@ -218,6 +218,25 @@ export default function UserManagement({ onLogout }) {
     fetchMembers();
   };
 
+  const handleViewArchived = async () => {
+    setArchivedDialogOpen(true);
+    const token = localStorage.getItem("token");
+    try {
+      const [membersRes, prospectsRes] = await Promise.all([
+        axios.get(`${API}/archived/members`, {
+          headers: { Authorization: `Bearer ${token}` }
+        }),
+        axios.get(`${API}/archived/prospects`, {
+          headers: { Authorization: `Bearer ${token}` }
+        })
+      ]);
+      setArchivedMembers(membersRes.data);
+      setArchivedProspects(prospectsRes.data);
+    } catch (error) {
+      toast.error("Failed to load archived records");
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     const token = localStorage.getItem("token");
