@@ -74,10 +74,12 @@ export default function Prospects({ onLogout, userRole }) {
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [promoteDialogOpen, setPromoteDialogOpen] = useState(false);
+  const [bulkPromoteDialogOpen, setBulkPromoteDialogOpen] = useState(false);
   const [actionsDialogOpen, setActionsDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [editingProspect, setEditingProspect] = useState(null);
   const [promotingProspect, setPromotingProspect] = useState(null);
+  const [selectedProspects, setSelectedProspects] = useState([]);
   const [prospectToDelete, setProspectToDelete] = useState(null);
   const [deleteReason, setDeleteReason] = useState("");
   const [selectedProspect, setSelectedProspect] = useState(null);
