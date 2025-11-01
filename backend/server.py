@@ -1328,8 +1328,11 @@ async def promote_prospect_to_member(
         "email": prospect["email"],
         "phone": prospect["phone"],
         "address": prospect["address"],
+        "dob": prospect.get("dob"),
+        "join_date": prospect.get("join_date"),
         "phone_private": False,
         "address_private": False,
+        "actions": prospect.get("actions", []),  # Carry over actions history
         "dues": {
             str(datetime.now(timezone.utc).year): [{"status": "unpaid", "note": ""} for _ in range(12)]
         },
