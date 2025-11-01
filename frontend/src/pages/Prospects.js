@@ -174,6 +174,8 @@ export default function Prospects({ onLogout, userRole }) {
       email: prospect.email,
       phone: prospect.phone,
       address: prospect.address,
+      dob: prospect.dob || "",
+      join_date: prospect.join_date || "",
       meeting_attendance: {
         year: attendanceData.year || new Date().getFullYear(),
         meetings: meetings
