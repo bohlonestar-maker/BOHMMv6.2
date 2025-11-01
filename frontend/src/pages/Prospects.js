@@ -648,6 +648,89 @@ export default function Prospects({ onLogout, userRole }) {
             </div>
           )}
         </div>
+
+        {/* Promote Dialog */}
+        <Dialog open={promoteDialogOpen} onOpenChange={setPromoteDialogOpen}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Promote to Member</DialogTitle>
+            </DialogHeader>
+            {promotingProspect && (
+              <form onSubmit={handlePromoteSubmit} className="space-y-4 mt-4">
+                <div className="bg-slate-100 p-3 rounded-md">
+                  <p className="text-sm text-slate-600">Promoting:</p>
+                  <p className="font-semibold text-slate-900">{promotingProspect.handle} - {promotingProspect.name}</p>
+                </div>
+
+                <div>
+                  <Label>Chapter *</Label>
+                  <Select
+                    value={promoteFormData.chapter}
+                    onValueChange={(value) =>
+                      setPromoteFormData({ ...promoteFormData, chapter: value })
+                    }
+                    required
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select chapter" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="National">National</SelectItem>
+                      <SelectItem value="AD">AD - Asphalt Demons</SelectItem>
+                      <SelectItem value="HA">HA - Highway Asylum</SelectItem>
+                      <SelectItem value="HS">HS - Highway Souls</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label>Title *</Label>
+                  <Select
+                    value={promoteFormData.title}
+                    onValueChange={(value) =>
+                      setPromoteFormData({ ...promoteFormData, title: value })
+                    }
+                    required
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select title" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Prez">Prez - President</SelectItem>
+                      <SelectItem value="VP">VP - Vice President</SelectItem>
+                      <SelectItem value="S@A">S@A - Sergeant at Arms</SelectItem>
+                      <SelectItem value="ENF">ENF - Enforcer</SelectItem>
+                      <SelectItem value="SEC">SEC - Secretary</SelectItem>
+                      <SelectItem value="T">T - Treasurer</SelectItem>
+                      <SelectItem value="CD">CD - Club Doctor</SelectItem>
+                      <SelectItem value="CC">CC - Club Chaplain</SelectItem>
+                      <SelectItem value="CCLC">CCLC - Club Counselor & Life Coach</SelectItem>
+                      <SelectItem value="MD">MD - Media Director</SelectItem>
+                      <SelectItem value="PM">PM - Prospect Manager</SelectItem>
+                      <SelectItem value="Member">Member</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="flex gap-3 justify-end pt-4">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setPromoteDialogOpen(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="submit"
+                    className="bg-green-600 hover:bg-green-700 text-white"
+                  >
+                    Promote to Member
+                  </Button>
+                </div>
+              </form>
+            )}
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
