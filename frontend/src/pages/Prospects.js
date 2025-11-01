@@ -256,6 +256,66 @@ export default function Prospects({ onLogout, userRole }) {
     }
   };
 
+  const handleToggleSelect = (prospectId) => {
+    setSelectedProspects(prev => 
+      prev.includes(prospectId) 
+        ? prev.filter(id => id !== prospectId)
+        : [...prev, prospectId]
+    );
+  };
+
+  const handleSelectAll = () => {
+    if (selectedProspects.length === filteredProspects.length) {
+      setSelectedProspects([]);
+    } else {
+      setSelectedProspects(filteredProspects.map(p => p.id));
+    }
+  };
+
+  const handleBulkPromote = () => {
+    if (selectedProspects.length === 0) {
+      toast.error("Please select prospects to promote");
+      return;
+    }
+    setPromoteFormData({ chapter: "", title: "" });
+    setBulkPromoteDialogOpen(true);
+  };
+
+  const handleBulkPromoteSubmit = async (e) => {
+    e.preventDefault();
+    
+    if (!promoteFormData.chapter || !promoteFormData.title) {
+      toast.error("Please select both chapter and title");
+      return;
+    }
+
+    const token = localStorage.getItem("token");
+    try {
+      const response = await axios.post(
+        `${API}/prospects/bulk-promote`,
+        {
+          prospect_ids: selectedProspects,
+          chapter: promoteFormData.chapter,
+          title: promoteFormData.title
+        },
+        {
+          headers: { Authorization: `Bearer ${token}` }
+        }
+      );
+      
+      toast.success(`Successfully promoted ${response.data.promoted_count} prospects!`);
+      if (response.data.failed_count > 0) {
+        toast.error(`Failed to promote ${response.data.failed_count} prospects`);
+      }
+      
+      setBulkPromoteDialogOpen(false);
+      setSelectedProspects([]);
+      fetchProspects();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || "Failed to bulk promote prospects");
+    }
+  };
+
   const handleOpenActions = (prospect) => {
     setSelectedProspect(prospect);
     setActionForm({ type: "merit", date: new Date().toISOString().split('T')[0], description: "" });
