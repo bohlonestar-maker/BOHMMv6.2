@@ -708,37 +708,47 @@ export default function Prospects({ onLogout, userRole }) {
                         </a>
                       </TableCell>
                       <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
+                        <div className="flex justify-end gap-1.5">
+                          {/* Promote Action */}
                           <Button
                             size="sm"
                             variant="ghost"
-                            className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                            className="text-green-600 hover:text-green-700 hover:bg-green-950/50 h-8 w-8 p-0"
                             onClick={() => handlePromote(prospect)}
                             title="Promote to Member"
                           >
                             <UserPlus className="w-4 h-4" />
                           </Button>
+                          
+                          {/* Info/Edit Group */}
+                          <div className="flex gap-1 p-1 bg-slate-700/20 rounded border border-slate-600/30">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="text-blue-500 hover:text-blue-600 hover:bg-blue-950/50 h-8 w-8 p-0"
+                              onClick={() => handleOpenActions(prospect)}
+                              title="View/Add Actions"
+                            >
+                              <FileText className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="text-slate-300 hover:text-white hover:bg-slate-600 h-8 w-8 p-0"
+                              onClick={() => handleEdit(prospect)}
+                              title="Edit Prospect"
+                            >
+                              <Pencil className="w-4 h-4" />
+                            </Button>
+                          </div>
+                          
+                          {/* Delete Action */}
                           <Button
                             size="sm"
                             variant="ghost"
-                            className="text-blue-600 hover:text-blue-700"
-                            onClick={() => handleOpenActions(prospect)}
-                            title="View/Add Actions"
-                          >
-                            <FileText className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => handleEdit(prospect)}
-                          >
-                            <Pencil className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="text-red-600 hover:text-red-700"
+                            className="text-red-500 hover:text-red-600 hover:bg-red-950/50 h-8 w-8 p-0"
                             onClick={() => handleDelete(prospect)}
+                            title="Archive Prospect"
                           >
                             <Trash2 className="w-4 h-4" />
                           </Button>
