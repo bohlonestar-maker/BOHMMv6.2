@@ -94,6 +94,21 @@ def encrypt_member_sensitive_data(member_data: dict) -> dict:
     
     return encrypted
 
+def format_phone_number(phone: str) -> str:
+    """Format phone number to (xxx) xxx-xxxx format"""
+    if not phone:
+        return phone
+    
+    # Remove all non-digit characters
+    digits = ''.join(c for c in phone if c.isdigit())
+    
+    # Format if we have 10 digits
+    if len(digits) == 10:
+        return f"({digits[:3]}) {digits[3:6]}-{digits[6:]}"
+    
+    # Return original if not 10 digits
+    return phone
+
 def decrypt_member_sensitive_data(member_data: dict) -> dict:
     """Decrypt sensitive member fields"""
     decrypted = member_data.copy()
@@ -102,7 +117,8 @@ def decrypt_member_sensitive_data(member_data: dict) -> dict:
     if 'email' in decrypted and decrypted['email']:
         decrypted['email'] = decrypt_data(decrypted['email'])
     if 'phone' in decrypted and decrypted['phone']:
-        decrypted['phone'] = decrypt_data(decrypted['phone'])
+        decrypted_phone = decrypt_data(decrypted['phone'])
+        decrypted['phone'] = format_phone_number(decrypted_phone)
     if 'address' in decrypted and decrypted['address']:
         decrypted['address'] = decrypt_data(decrypted['address'])
     
