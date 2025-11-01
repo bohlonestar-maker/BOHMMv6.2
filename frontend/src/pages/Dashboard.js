@@ -297,6 +297,8 @@ export default function Dashboard({ onLogout, userRole, userPermissions }) {
       email: member.email,
       phone: member.phone,
       address: member.address,
+      dob: member.dob || "",
+      join_date: member.join_date || "",
       phone_private: member.phone_private || false,
       address_private: member.address_private || false,
       dues: duesData,
@@ -315,6 +317,8 @@ export default function Dashboard({ onLogout, userRole, userPermissions }) {
       email: "",
       phone: "",
       address: "",
+      dob: "",
+      join_date: "",
       phone_private: false,
       address_private: false,
       dues: {
