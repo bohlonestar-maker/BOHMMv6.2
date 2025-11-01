@@ -1189,6 +1189,41 @@ async def promote_prospect_to_member(
     member_data = decrypt_member_sensitive_data(member_data)
     
     return member_data
+
+@api_router.get("/prospects/export/csv-continued")
+async def export_prospects_csv_continued(current_user: dict = Depends(verify_admin)):
+    prospects = await db.prospects.find({}, {"_id": 0}).to_list(1000)
+    
+    # Helper function to get nth weekday of month
+    def get_nth_weekday(year, month, weekday, n):
+        from datetime import date, timedelta
+        d = date(year, month, 1)
+        count = 0
+        while d.month == month:
+            if d.weekday() == weekday:
+                count += 1
+                if count == n:
+                    return d
+            d += timedelta(days=1)
+        return None
+    
+    # Get current year or most recent year from data
+    current_year = datetime.now(timezone.utc).year
+    
+    # Generate meeting dates for the year
+    months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+    meeting_dates = []
+    for month_idx in range(1, 13):
+        first_wed = get_nth_weekday(current_year, month_idx, 2, 1)  # Wednesday is 2
+        third_wed = get_nth_weekday(current_year, month_idx, 2, 3)
+        meeting_dates.append((first_wed, third_wed))
+    
+    # Create CSV header with dates
+    csv_content = "Handle,Name,Email,Phone,Address,Meeting Attendance Year"
+    
+    for idx, month in enumerate(months):
+        first_date, third_date = meeting_dates[idx]
+        first_str = first_date.strftime("%m/%d") if first_date else ""
         third_str = third_date.strftime("%m/%d") if third_date else ""
         csv_content += f",{month}-1st ({first_str}),{month}-1st Note,{month}-3rd ({third_str}),{month}-3rd Note"
     csv_content += "\n"
