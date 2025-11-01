@@ -3726,8 +3726,8 @@ class BOHDirectoryAPITester:
                 else:
                     self.log_test("Bulk Promotion - Failed Count", False, f"Expected 0, got {promotion_response.get('failed_count')}")
                 
-                # Store promoted handles for verification
-                promoted_handles = [f"BulkTest{i}" for i in range(1, 4)]
+                # Store promoted handles for verification (get actual handles from created prospects)
+                promoted_handles = [test_prospects[i]['handle'] for i in range(3)]
                 
             else:
                 self.log_test("Bulk Promotion - Response Format", False, f"Missing fields: {missing_fields}")
