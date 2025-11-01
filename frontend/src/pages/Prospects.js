@@ -72,7 +72,9 @@ export default function Prospects({ onLogout, userRole }) {
   const [prospects, setProspects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [promoteDialogOpen, setPromoteDialogOpen] = useState(false);
   const [editingProspect, setEditingProspect] = useState(null);
+  const [promotingProspect, setPromotingProspect] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [meetingDates, setMeetingDates] = useState([]);
   const navigate = useNavigate();
@@ -87,6 +89,11 @@ export default function Prospects({ onLogout, userRole }) {
       year: new Date().getFullYear(),
       meetings: Array(24).fill(null).map(() => ({ status: 0, note: "" }))
     }
+  });
+
+  const [promoteFormData, setPromoteFormData] = useState({
+    chapter: "",
+    title: ""
   });
 
   useEffect(() => {
