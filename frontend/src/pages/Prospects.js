@@ -187,18 +187,31 @@ export default function Prospects({ onLogout, userRole }) {
     setDialogOpen(true);
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this prospect?")) return;
+  const handleDelete = (prospect) => {
+    setProspectToDelete(prospect);
+    setDeleteReason("");
+    setDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteReason.trim()) {
+      toast.error("Please provide a reason for archiving");
+      return;
+    }
 
     const token = localStorage.getItem("token");
     try {
-      await axios.delete(`${API}/prospects/${id}`, {
+      await axios.delete(`${API}/prospects/${prospectToDelete.id}`, {
+        params: { reason: deleteReason },
         headers: { Authorization: `Bearer ${token}` },
       });
-      toast.success("Prospect deleted successfully");
+      toast.success("Prospect archived successfully");
+      setDeleteDialogOpen(false);
+      setProspectToDelete(null);
+      setDeleteReason("");
       fetchProspects();
     } catch (error) {
-      toast.error("Failed to delete prospect");
+      toast.error("Failed to archive prospect");
     }
   };
 
