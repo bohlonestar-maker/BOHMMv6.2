@@ -1313,7 +1313,7 @@ async def export_prospects_csv(current_user: dict = Depends(verify_admin)):
     csv_content += "\n"
     
     # Add data rows
-    for prospect in prospects:
+    for prospect in decrypted_prospects:
         attendance = prospect.get('meeting_attendance', {})
         
         # Handle new format (dict with years as keys) and old format (single year dict)
