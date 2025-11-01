@@ -231,18 +231,31 @@ export default function Dashboard({ onLogout, userRole, userPermissions }) {
     }
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this member?")) return;
+  const handleDelete = (member) => {
+    setMemberToDelete(member);
+    setDeleteReason("");
+    setDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteReason.trim()) {
+      toast.error("Please provide a reason for archiving");
+      return;
+    }
 
     const token = localStorage.getItem("token");
     try {
-      await axios.delete(`${API}/members/${id}`, {
+      await axios.delete(`${API}/members/${memberToDelete.id}`, {
+        params: { reason: deleteReason },
         headers: { Authorization: `Bearer ${token}` },
       });
-      toast.success("Member deleted successfully");
+      toast.success("Member archived successfully");
+      setDeleteDialogOpen(false);
+      setMemberToDelete(null);
+      setDeleteReason("");
       fetchMembers();
     } catch (error) {
-      toast.error("Failed to delete member");
+      toast.error("Failed to archive member");
     }
   };
 
