@@ -509,69 +509,68 @@ export default function UserManagement({ onLogout }) {
         <div className="bg-slate-800 rounded-xl shadow-xl border border-slate-700 p-4 sm:p-6">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 sm:mb-6 gap-3 sm:gap-0">
             <h2 className="text-base sm:text-lg font-semibold text-slate-100">System Users</h2>
-            <div className="flex flex-wrap gap-2 w-full sm:w-auto">
-              {/* Management Buttons Group */}
-              <Button
-                onClick={handleViewLogs}
-                variant="outline"
-                size="sm"
-                className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm flex-1 sm:flex-none border-slate-600 text-slate-200 hover:bg-slate-700"
-              >
-                <Shield className="w-3 h-3 sm:w-4 sm:h-4" />
-                <span className="hidden sm:inline">Activity Log</span>
-                <span className="sm:hidden">Logs</span>
-              </Button>
-              
-              <Button
-                onClick={handleViewInvites}
-                variant="outline"
-                size="sm"
-                className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm flex-1 sm:flex-none border-slate-600 text-slate-200 hover:bg-slate-700"
-              >
-                <Mail className="w-3 h-3 sm:w-4 sm:h-4" />
-                <span className="hidden sm:inline">Manage Invites</span>
-                <span className="sm:hidden">Invites</span>
-              </Button>
-              
-              <Button
-                onClick={handleViewAnalytics}
-                variant="outline"
-                size="sm"
-                className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm flex-1 sm:flex-none border-slate-600 text-slate-200 hover:bg-slate-700"
-              >
-                <BarChart3 className="w-3 h-3 sm:w-4 sm:h-4" />
-                <span className="hidden sm:inline">Analytics</span>
-                <span className="sm:hidden">Stats</span>
-              </Button>
+            
+            {/* Button Groups */}
+            <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+              {/* View/Info Buttons Group */}
+              <div className="flex gap-2 p-2 bg-slate-700/30 rounded-lg border border-slate-600/50">
+                <Button
+                  onClick={handleViewLogs}
+                  variant="ghost"
+                  size="sm"
+                  className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm text-slate-200 hover:bg-slate-600"
+                >
+                  <Shield className="w-3 h-3 sm:w-4 sm:h-4" />
+                  <span className="hidden sm:inline">Activity</span>
+                </Button>
+                
+                <Button
+                  onClick={handleViewInvites}
+                  variant="ghost"
+                  size="sm"
+                  className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm text-slate-200 hover:bg-slate-600"
+                >
+                  <Mail className="w-3 h-3 sm:w-4 sm:h-4" />
+                  <span className="hidden sm:inline">Invites</span>
+                </Button>
+                
+                <Button
+                  onClick={handleViewAnalytics}
+                  variant="ghost"
+                  size="sm"
+                  className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm text-slate-200 hover:bg-slate-600"
+                >
+                  <BarChart3 className="w-3 h-3 sm:w-4 sm:h-4" />
+                  <span className="hidden sm:inline">Analytics</span>
+                </Button>
 
-              <Button
-                onClick={handleViewArchived}
-                variant="outline"
-                size="sm"
-                className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm flex-1 sm:flex-none border-slate-600 text-slate-200 hover:bg-slate-700"
-              >
-                <Users className="w-3 h-3 sm:w-4 sm:h-4" />
-                <span className="hidden sm:inline">Archived</span>
-                <span className="sm:hidden">Archive</span>
-              </Button>
-              
-              {/* Add User Actions Group */}
-              <Dialog open={inviteDialogOpen} onOpenChange={(open) => {
-                setInviteDialogOpen(open);
-                if (!open) resetInviteForm();
-              }}>
-                <DialogTrigger asChild>
-                  <Button
-                    data-testid="invite-user-button"
-                    variant="outline"
-                    size="sm"
-                    className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm flex-1 sm:flex-none text-white"
-                  >
-                    <Mail className="w-3 h-3 sm:w-4 sm:h-4" />
-                    <span className="hidden sm:inline">Invite User</span>
-                    <span className="sm:hidden">Invite</span>
-                  </Button>
-                </DialogTrigger>
+                <Button
+                  onClick={handleViewArchived}
+                  variant="ghost"
+                  size="sm"
+                  className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm text-slate-200 hover:bg-slate-600"
+                >
+                  <Users className="w-3 h-3 sm:w-4 sm:h-4" />
+                  <span className="hidden sm:inline">Archived</span>
+                </Button>
+              </div>
+
+              {/* Action Buttons Group */}
+              <div className="flex gap-2">
+                <Dialog open={inviteDialogOpen} onOpenChange={(open) => {
+                  setInviteDialogOpen(open);
+                  if (!open) resetInviteForm();
+                }}>
+                  <DialogTrigger asChild>
+                    <Button
+                      size="sm"
+                      className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm bg-blue-600 hover:bg-blue-700"
+                    >
+                      <Mail className="w-3 h-3 sm:w-4 sm:h-4" />
+                      <span className="hidden sm:inline">Invite User</span>
+                      <span className="sm:hidden">Invite</span>
+                    </Button>
+                  </DialogTrigger>
                 <DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto">
                   <DialogHeader>
                     <DialogTitle className="text-lg sm:text-xl">Invite New User</DialogTitle>
