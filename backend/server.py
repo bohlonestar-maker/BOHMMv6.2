@@ -420,6 +420,8 @@ class MemberCreate(BaseModel):
     email: EmailStr
     phone: str
     address: str
+    dob: Optional[str] = None
+    join_date: Optional[str] = None
     phone_private: bool = False
     address_private: bool = False
     dues: Optional[dict] = None
@@ -432,6 +434,8 @@ class MemberUpdate(BaseModel):
     email: Optional[EmailStr] = None
     phone: Optional[str] = None
     address: Optional[str] = None
+    dob: Optional[str] = None
+    join_date: Optional[str] = None
     phone_private: Optional[bool] = None
     address_private: Optional[bool] = None
     dues: Optional[dict] = None
