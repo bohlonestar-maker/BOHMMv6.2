@@ -1292,6 +1292,67 @@ export default function UserManagement({ onLogout }) {
         </DialogContent>
       </Dialog>
 
+      {/* Archived Records Dialog */}
+      <Dialog open={archivedDialogOpen} onOpenChange={setArchivedDialogOpen}>
+        <DialogContent className="max-w-[95vw] sm:max-w-6xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Archived Records</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-6 mt-4">
+            {/* Archived Members */}
+            <div>
+              <h3 className="text-lg font-semibold text-slate-100 mb-3">Archived Members ({archivedMembers.length})</h3>
+              {archivedMembers.length > 0 ? (
+                <div className="space-y-2">
+                  {archivedMembers.map((member) => (
+                    <div key={member.id} className="bg-slate-800 border border-slate-700 rounded-lg p-4">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <p className="font-semibold text-slate-100">{member.handle} - {member.name}</p>
+                          <p className="text-sm text-slate-400">{member.chapter} | {member.title}</p>
+                          <p className="text-sm text-slate-300 mt-2"><span className="font-medium">Reason:</span> {member.deletion_reason}</p>
+                        </div>
+                        <div className="text-right text-sm text-slate-500">
+                          <p>Archived by {member.deleted_by}</p>
+                          <p>{new Date(member.deleted_at).toLocaleDateString()}</p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-slate-400">No archived members</p>
+              )}
+            </div>
+
+            {/* Archived Prospects */}
+            <div className="border-t border-slate-700 pt-6">
+              <h3 className="text-lg font-semibold text-slate-100 mb-3">Archived Prospects ({archivedProspects.length})</h3>
+              {archivedProspects.length > 0 ? (
+                <div className="space-y-2">
+                  {archivedProspects.map((prospect) => (
+                    <div key={prospect.id} className="bg-slate-800 border border-slate-700 rounded-lg p-4">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <p className="font-semibold text-slate-100">{prospect.handle} - {prospect.name}</p>
+                          <p className="text-sm text-slate-300 mt-2"><span className="font-medium">Reason:</span> {prospect.deletion_reason}</p>
+                        </div>
+                        <div className="text-right text-sm text-slate-500">
+                          <p>Archived by {prospect.deleted_by}</p>
+                          <p>{new Date(prospect.deleted_at).toLocaleDateString()}</p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-slate-400">No archived prospects</p>
+              )}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Activity Log Dialog */}
       <Dialog open={logsDialogOpen} onOpenChange={setLogsDialogOpen}>
         <DialogContent className="max-w-[95vw] sm:max-w-6xl max-h-[90vh] overflow-y-auto">
