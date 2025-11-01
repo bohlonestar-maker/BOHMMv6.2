@@ -564,7 +564,12 @@ export default function Prospects({ onLogout, userRole }) {
                     </Button>
                   </DialogTrigger>
                 </Dialog>
-              </div>
+            </div>
+
+            <Dialog open={dialogOpen} onOpenChange={(open) => {
+              setDialogOpen(open);
+              if (!open) resetForm();
+            }}>
               <DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle className="text-lg sm:text-xl">
