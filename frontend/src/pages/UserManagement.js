@@ -467,6 +467,17 @@ export default function UserManagement({ onLogout }) {
                 <span className="hidden sm:inline">Analytics</span>
                 <span className="sm:hidden">Stats</span>
               </Button>
+
+              <Button
+                onClick={handleViewArchived}
+                variant="outline"
+                size="sm"
+                className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm flex-1 sm:flex-none border-slate-600 text-slate-200 hover:bg-slate-700"
+              >
+                <Users className="w-3 h-3 sm:w-4 sm:h-4" />
+                <span className="hidden sm:inline">Archived</span>
+                <span className="sm:hidden">Archive</span>
+              </Button>
               
               {/* Add User Actions Group */}
               <Dialog open={inviteDialogOpen} onOpenChange={(open) => {
