@@ -1275,6 +1275,9 @@ async def delete_prospect(
 async def export_prospects_csv(current_user: dict = Depends(verify_admin)):
     prospects = await db.prospects.find({}, {"_id": 0}).to_list(1000)
     
+    # Decrypt sensitive data for all prospects
+    decrypted_prospects = [decrypt_member_sensitive_data(prospect) for prospect in prospects]
+    
     # Helper function to get nth weekday of month
     def get_nth_weekday(year, month, weekday, n):
         from datetime import date, timedelta
