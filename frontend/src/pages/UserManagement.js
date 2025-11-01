@@ -743,21 +743,21 @@ export default function UserManagement({ onLogout }) {
                 </DialogContent>
               </Dialog>
 
-              <Dialog open={dialogOpen} onOpenChange={(open) => {
-                setDialogOpen(open);
-                if (!open) resetForm();
-              }}>
-                <DialogTrigger asChild>
-                  <Button
-                    data-testid="add-user-button"
-                    size="sm"
-                    className="flex items-center gap-1 sm:gap-2 bg-slate-800 hover:bg-slate-900 text-white text-xs sm:text-sm flex-1 sm:flex-none"
-                  >
-                    <Plus className="w-3 h-3 sm:w-4 sm:h-4" />
-                    <span className="hidden sm:inline">Add User</span>
-                    <span className="sm:hidden">Add</span>
-                  </Button>
-                </DialogTrigger>
+                <Dialog open={dialogOpen} onOpenChange={(open) => {
+                  setDialogOpen(open);
+                  if (!open) resetForm();
+                }}>
+                  <DialogTrigger asChild>
+                    <Button
+                      data-testid="add-user-button"
+                      size="sm"
+                      className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm bg-green-600 hover:bg-green-700"
+                    >
+                      <Plus className="w-3 h-3 sm:w-4 sm:h-4" />
+                      <span className="hidden sm:inline">Add User</span>
+                      <span className="sm:hidden">Add</span>
+                    </Button>
+                  </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
                   <DialogTitle>Add New User</DialogTitle>
