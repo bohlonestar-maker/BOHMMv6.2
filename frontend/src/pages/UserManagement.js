@@ -939,7 +939,9 @@ export default function UserManagement({ onLogout }) {
                   </div>
                 </form>
               </DialogContent>
-            </Dialog>
+                </Dialog>
+              </div>
+            </div>
           </div>
 
           {/* Edit User Dialog */}
