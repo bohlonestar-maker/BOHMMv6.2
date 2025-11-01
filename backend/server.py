@@ -1947,10 +1947,13 @@ async def export_archived_members_csv(current_user: dict = Depends(verify_admin)
     """Export archived members to CSV"""
     archived = await db.archived_members.find({}, {"_id": 0}).to_list(1000)
     
+    # Decrypt sensitive data for all archived members
+    decrypted_archived = [decrypt_member_sensitive_data(member) for member in archived]
+    
     # Create CSV content
     csv_content = "Handle,Name,Email,Phone,Address,Chapter,Title,Date of Birth,Join Date,Deletion Reason,Archived By,Archived At (CST)\n"
     
-    for member in archived:
+    for member in decrypted_archived:
         # Convert archived timestamp to CST
         deleted_at = member.get('deleted_at', '')
         if deleted_at:
