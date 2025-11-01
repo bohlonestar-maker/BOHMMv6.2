@@ -237,6 +237,38 @@ export default function UserManagement({ onLogout }) {
     }
   };
 
+  const handleRestoreMember = async (memberId, memberName) => {
+    if (!window.confirm(`Are you sure you want to restore ${memberName}?`)) return;
+
+    const token = localStorage.getItem("token");
+    try {
+      await axios.post(`${API}/archived/members/${memberId}/restore`, null, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      toast.success("Member restored successfully");
+      // Refresh archived list
+      handleViewArchived();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || "Failed to restore member");
+    }
+  };
+
+  const handleRestoreProspect = async (prospectId, prospectName) => {
+    if (!window.confirm(`Are you sure you want to restore ${prospectName}?`)) return;
+
+    const token = localStorage.getItem("token");
+    try {
+      await axios.post(`${API}/archived/prospects/${prospectId}/restore`, null, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      toast.success("Prospect restored successfully");
+      // Refresh archived list
+      handleViewArchived();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || "Failed to restore prospect");
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     const token = localStorage.getItem("token");
