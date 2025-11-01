@@ -772,7 +772,7 @@ export default function Prospects({ onLogout, userRole }) {
                       <TableCell>
                         <a
                           href={`mailto:${prospect.email}`}
-                          className="flex items-center gap-1 text-blue-600 hover:underline text-sm"
+                          className="flex items-center gap-1 text-blue-400 hover:text-blue-300 hover:underline text-sm"
                         >
                           <Mail className="w-3 h-3" />
                           {prospect.email}
@@ -781,7 +781,7 @@ export default function Prospects({ onLogout, userRole }) {
                       <TableCell>
                         <a
                           href={`tel:${prospect.phone}`}
-                          className="flex items-center gap-1 text-blue-600 hover:underline text-sm"
+                          className="flex items-center gap-1 text-blue-400 hover:text-blue-300 hover:underline text-sm"
                         >
                           <Phone className="w-3 h-3" />
                           {prospect.phone}
@@ -792,7 +792,7 @@ export default function Prospects({ onLogout, userRole }) {
                           href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(prospect.address)}`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="flex items-center gap-1 text-blue-600 hover:underline text-sm"
+                          className="flex items-center gap-1 text-blue-400 hover:text-blue-300 hover:underline text-sm"
                         >
                           <MapPin className="w-3 h-3" />
                           {prospect.address}
