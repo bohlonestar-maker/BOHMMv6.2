@@ -1137,29 +1137,38 @@ export default function Dashboard({ onLogout, userRole, userPermissions }) {
                       )}
                       {hasPermission('admin_actions') && (
                         <TableCell className="text-right">
-                          <div className="flex justify-end gap-2">
+                          <div className="flex justify-end gap-1.5">
+                            {/* Info/View Group */}
+                            <div className="flex gap-1 p-1 bg-slate-700/20 rounded border border-slate-600/30">
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="text-blue-500 hover:text-blue-600 hover:bg-blue-950/50 h-8 w-8 p-0"
+                                onClick={() => handleOpenActions(member)}
+                                title="View/Add Actions"
+                              >
+                                <FileText className="w-4 h-4" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="text-slate-300 hover:text-white hover:bg-slate-600 h-8 w-8 p-0"
+                                onClick={() => handleEdit(member)}
+                                data-testid={`edit-member-${member.id}`}
+                                title="Edit Member"
+                              >
+                                <Pencil className="w-4 h-4" />
+                              </Button>
+                            </div>
+                            
+                            {/* Delete Action */}
                             <Button
                               size="sm"
-                              variant="outline"
-                              className="text-blue-600 hover:text-blue-700"
-                              onClick={() => handleOpenActions(member)}
-                              title="View/Add Actions"
-                            >
-                              <FileText className="w-4 h-4" />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleEdit(member)}
-                              data-testid={`edit-member-${member.id}`}
-                            >
-                              <Pencil className="w-4 h-4" />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="destructive"
+                              variant="ghost"
+                              className="text-red-500 hover:text-red-600 hover:bg-red-950/50 h-8 w-8 p-0"
                               onClick={() => handleDelete(member)}
                               data-testid={`delete-member-${member.id}`}
+                              title="Archive Member"
                             >
                               <Trash2 className="w-4 h-4" />
                             </Button>
