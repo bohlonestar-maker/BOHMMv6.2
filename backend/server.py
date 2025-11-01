@@ -334,6 +334,8 @@ class User(BaseModel):
     username: str
     password_hash: str
     role: str = "member"  # admin, member, or prospect
+    chapter: Optional[str] = None  # National, AD, HA, HS
+    title: Optional[str] = None  # Prez, VP, S@A, Member, etc.
     permissions: dict = Field(default_factory=lambda: {
         "basic_info": True,        # Chapter, Title, Handle, Name
         "email": False,            # Email access
@@ -349,17 +351,23 @@ class UserCreate(BaseModel):
     username: str
     password: str
     role: str = "member"
+    chapter: Optional[str] = None
+    title: Optional[str] = None
     permissions: Optional[dict] = None
 
 class UserUpdate(BaseModel):
     password: Optional[str] = None
     role: Optional[str] = None
+    chapter: Optional[str] = None
+    title: Optional[str] = None
     permissions: Optional[dict] = None
 
 class UserResponse(BaseModel):
     id: str
     username: str
     role: str
+    chapter: Optional[str] = None
+    title: Optional[str] = None
     permissions: dict
     created_at: datetime
 
