@@ -1874,6 +1874,68 @@ async def get_archived_prospects(current_user: dict = Depends(verify_admin)):
     archived.sort(key=lambda x: x.get('deleted_at', ''), reverse=True)
     return archived
 
+@api_router.post("/archived/members/{member_id}/restore")
+async def restore_archived_member(member_id: str, current_user: dict = Depends(verify_admin)):
+    """Restore an archived member back to active members"""
+    # Get archived member
+    archived_member = await db.archived_members.find_one({"id": member_id}, {"_id": 0})
+    if not archived_member:
+        raise HTTPException(status_code=404, detail="Archived member not found")
+    
+    # Remove archive-specific fields
+    archived_member.pop("deletion_reason", None)
+    archived_member.pop("deleted_by", None)
+    archived_member.pop("deleted_at", None)
+    
+    # Update timestamps
+    archived_member["updated_at"] = datetime.now(timezone.utc).isoformat()
+    
+    # Move back to active members
+    await db.members.insert_one(archived_member)
+    
+    # Remove from archived collection
+    await db.archived_members.delete_one({"id": member_id})
+    
+    # Log activity
+    await log_activity(
+        username=current_user["username"],
+        action="member_restore",
+        details=f"Restored member: {archived_member.get('name', 'Unknown')} ({archived_member.get('handle', 'Unknown')})"
+    )
+    
+    return {"message": "Member restored successfully"}
+
+@api_router.post("/archived/prospects/{prospect_id}/restore")
+async def restore_archived_prospect(prospect_id: str, current_user: dict = Depends(verify_admin)):
+    """Restore an archived prospect back to active prospects"""
+    # Get archived prospect
+    archived_prospect = await db.archived_prospects.find_one({"id": prospect_id}, {"_id": 0})
+    if not archived_prospect:
+        raise HTTPException(status_code=404, detail="Archived prospect not found")
+    
+    # Remove archive-specific fields
+    archived_prospect.pop("deletion_reason", None)
+    archived_prospect.pop("deleted_by", None)
+    archived_prospect.pop("deleted_at", None)
+    
+    # Update timestamps
+    archived_prospect["updated_at"] = datetime.now(timezone.utc).isoformat()
+    
+    # Move back to active prospects
+    await db.prospects.insert_one(archived_prospect)
+    
+    # Remove from archived collection
+    await db.archived_prospects.delete_one({"id": prospect_id})
+    
+    # Log activity
+    await log_activity(
+        username=current_user["username"],
+        action="prospect_restore",
+        details=f"Restored prospect: {archived_prospect.get('name', 'Unknown')} ({archived_prospect.get('handle', 'Unknown')})"
+    )
+    
+    return {"message": "Prospect restored successfully"}
+
 # Private messaging endpoints (all authenticated users)
 @api_router.post("/messages", response_model=PrivateMessage)
 async def send_private_message(message: PrivateMessageCreate, current_user: dict = Depends(verify_token)):
