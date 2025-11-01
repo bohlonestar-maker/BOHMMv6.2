@@ -738,6 +738,13 @@ export default function Prospects({ onLogout, userRole }) {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="w-12">
+                      <Checkbox
+                        checked={selectedProspects.length === filteredProspects.length && filteredProspects.length > 0}
+                        onCheckedChange={handleSelectAll}
+                        aria-label="Select all"
+                      />
+                    </TableHead>
                     <TableHead>Handle</TableHead>
                     <TableHead>Name</TableHead>
                     <TableHead>Email</TableHead>
@@ -749,6 +756,13 @@ export default function Prospects({ onLogout, userRole }) {
                 <TableBody>
                   {filteredProspects.map((prospect) => (
                     <TableRow key={prospect.id}>
+                      <TableCell>
+                        <Checkbox
+                          checked={selectedProspects.includes(prospect.id)}
+                          onCheckedChange={() => handleToggleSelect(prospect.id)}
+                          aria-label={`Select ${prospect.handle}`}
+                        />
+                      </TableCell>
                       <TableCell>{prospect.handle}</TableCell>
                       <TableCell>{prospect.name}</TableCell>
                       <TableCell>
