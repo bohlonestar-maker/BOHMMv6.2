@@ -36,6 +36,8 @@ const API = `${BACKEND_URL}/api`;
 export default function UserManagement({ onLogout }) {
   const [users, setUsers] = useState([]);
   const [members, setMembers] = useState([]);
+  const [archivedMembers, setArchivedMembers] = useState([]);
+  const [archivedProspects, setArchivedProspects] = useState([]);
   const [invites, setInvites] = useState([]);
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -44,6 +46,7 @@ export default function UserManagement({ onLogout }) {
   const [invitesDialogOpen, setInvitesDialogOpen] = useState(false);
   const [logsDialogOpen, setLogsDialogOpen] = useState(false);
   const [analyticsDialogOpen, setAnalyticsDialogOpen] = useState(false);
+  const [archivedDialogOpen, setArchivedDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
