@@ -3077,19 +3077,19 @@ async def send_discord_notification(event: dict, hours_before: int):
         if hours_before == 0:
             color = 0x0099ff  # Blue for manual/immediate
             footer_text = "Manual notification"
-            content = f"@everyone **Event Announcement!** 🏍️"
+            content = f"@everyone **Event Announcement!** 🚛"
         elif hours_before == 24:
             color = 0x00ff00  # Green for 24h
             footer_text = "Tomorrow!"
-            content = f"@everyone **Reminder: Event tomorrow!** 🏍️"
+            content = f"@everyone **Reminder: Event tomorrow!** 🚛"
         else:  # 3 hours
             color = 0xff9900  # Orange for 3h
             footer_text = "Starting soon!"
-            content = f"@everyone **Event starting in 3 hours!** ⏰🏍️"
+            content = f"@everyone **Event starting in 3 hours!** ⏰"
         
         # Create embed for Discord
         embed = {
-            "title": f"🏍️ {event['title']}",
+            "title": f"🚛 {event['title']}",
             "description": event.get('description', 'No description provided'),
             "color": color,
             "fields": [
