@@ -3255,7 +3255,7 @@ async def check_and_send_event_notifications():
                     print(f"📢 [SCHEDULER] Sending 24h notification for: {event['title']}", file=sys.stderr, flush=True)
                     success = await send_discord_notification(event, 24)
                     if success:
-                        await db.events.update_one(
+                        await scheduler_db.events.update_one(
                             {"id": event['id']},
                             {"$set": {"notification_24h_sent": True}}
                         )
@@ -3268,7 +3268,7 @@ async def check_and_send_event_notifications():
                     print(f"📢 [SCHEDULER] Sending 3h notification for: {event['title']}", file=sys.stderr, flush=True)
                     success = await send_discord_notification(event, 3)
                     if success:
-                        await db.events.update_one(
+                        await scheduler_db.events.update_one(
                             {"id": event['id']},
                             {"$set": {"notification_3h_sent": True}}
                         )
