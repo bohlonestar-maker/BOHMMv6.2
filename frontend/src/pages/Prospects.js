@@ -1137,7 +1137,7 @@ export default function Prospects({ onLogout, userRole }) {
                     <SelectItem value="ENF">ENF - Enforcer</SelectItem>
                     <SelectItem value="SEC">SEC - Secretary</SelectItem>
                     <SelectItem value="T">T - Treasurer</SelectItem>
-                    <SelectItem value="CD">CD - Club Doctor</SelectItem>
+                    <SelectItem value="CD">CD - Club Director</SelectItem>
                     <SelectItem value="CC">CC - Club Chaplain</SelectItem>
                     <SelectItem value="CCLC">CCLC - Club Counselor & Life Coach</SelectItem>
                     <SelectItem value="MD">MD - Media Director</SelectItem>
