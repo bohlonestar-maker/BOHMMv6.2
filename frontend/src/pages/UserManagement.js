@@ -54,6 +54,7 @@ export default function UserManagement({ onLogout }) {
 
   const [formData, setFormData] = useState({
     username: "",
+    email: "",
     password: "",
     role: "member",
     chapter: "",
@@ -86,6 +87,7 @@ export default function UserManagement({ onLogout }) {
   });
 
   const [editFormData, setEditFormData] = useState({
+    email: "",
     role: "member",
     chapter: "",
     title: "",
