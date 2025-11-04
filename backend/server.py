@@ -2945,6 +2945,7 @@ async def create_event(event_data: EventCreate, current_user: dict = Depends(ver
         location=event_data.location,
         chapter=event_data.chapter,
         title_filter=event_data.title_filter,
+        discord_notifications_enabled=event_data.discord_notifications_enabled,
         created_by=current_user["username"]
     )
     
