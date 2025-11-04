@@ -369,6 +369,23 @@ export default function EventCalendar() {
                     </div>
                   </div>
 
+                  {/* Discord Notifications Toggle */}
+                  <div className="flex items-center space-x-2 bg-slate-700/30 p-4 rounded-lg">
+                    <Checkbox
+                      id="discord-notifications"
+                      checked={formData.discord_notifications_enabled}
+                      onCheckedChange={(checked) =>
+                        setFormData({ ...formData, discord_notifications_enabled: checked })
+                      }
+                    />
+                    <label
+                      htmlFor="discord-notifications"
+                      className="text-sm font-medium leading-none cursor-pointer"
+                    >
+                      📢 Send Discord notifications (24 hours & 3 hours before event)
+                    </label>
+                  </div>
+
                   <div className="flex justify-end gap-2 mt-6">
                     <Button
                       type="button"
