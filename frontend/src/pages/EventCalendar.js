@@ -325,7 +325,7 @@ export default function EventCalendar() {
                       />
                     </div>
                     <div>
-                      <Label>Time</Label>
+                      <Label>Time (Central Time - CST/CDT)</Label>
                       <Input
                         type="time"
                         value={formData.time}
