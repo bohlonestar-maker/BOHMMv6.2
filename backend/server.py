@@ -1730,6 +1730,12 @@ async def update_user(user_id: str, user_data: UserUpdate, current_user: dict = 
         raise HTTPException(status_code=404, detail="User not found")
     
     update_data = {}
+    if user_data.email:
+        # Check if email is already used by another user
+        existing_email = await db.users.find_one({"email": user_data.email, "id": {"$ne": user_id}})
+        if existing_email:
+            raise HTTPException(status_code=400, detail="Email already exists")
+        update_data['email'] = user_data.email
     if user_data.password:
         update_data['password_hash'] = hash_password(user_data.password)
     if user_data.role:
@@ -1746,6 +1752,8 @@ async def update_user(user_id: str, user_data: UserUpdate, current_user: dict = 
     
     # Log activity
     updates = []
+    if user_data.email:
+        updates.append(f"email to {user_data.email}")
     if user_data.password:
         updates.append("password")
     if user_data.role:
