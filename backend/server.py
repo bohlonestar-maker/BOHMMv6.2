@@ -418,6 +418,37 @@ class AuditLog(BaseModel):
     details: str  # Additional information about the action
     ip_address: Optional[str] = None
 
+class Event(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    title: str
+    description: Optional[str] = None
+    date: str  # ISO date string (YYYY-MM-DD)
+    time: Optional[str] = None  # Time in HH:MM format
+    location: Optional[str] = None
+    chapter: Optional[str] = None  # National, AD, HA, HS, or None for all chapters
+    title_filter: Optional[str] = None  # Prez, VP, etc., or None for all titles
+    created_by: str
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class EventCreate(BaseModel):
+    title: str
+    description: Optional[str] = None
+    date: str  # ISO date string (YYYY-MM-DD)
+    time: Optional[str] = None
+    location: Optional[str] = None
+    chapter: Optional[str] = None
+    title_filter: Optional[str] = None
+
+class EventUpdate(BaseModel):
+    title: Optional[str] = None
+    description: Optional[str] = None
+    date: Optional[str] = None
+    time: Optional[str] = None
+    location: Optional[str] = None
+    chapter: Optional[str] = None
+    title_filter: Optional[str] = None
+
 class Member(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
