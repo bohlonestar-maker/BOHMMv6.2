@@ -813,6 +813,50 @@ export default function UserManagement({ onLogout }) {
                     </Select>
                   </div>
 
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label>Chapter</Label>
+                      <Select
+                        value={formData.chapter}
+                        onValueChange={(value) =>
+                          setFormData({ ...formData, chapter: value })
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select chapter" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="National">National</SelectItem>
+                          <SelectItem value="AD">Asphalt Demons</SelectItem>
+                          <SelectItem value="HA">Highway Asylum</SelectItem>
+                          <SelectItem value="HS">Highway Souls</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div>
+                      <Label>Title</Label>
+                      <Select
+                        value={formData.title}
+                        onValueChange={(value) =>
+                          setFormData({ ...formData, title: value })
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select title" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Prez">Prez</SelectItem>
+                          <SelectItem value="VP">VP</SelectItem>
+                          <SelectItem value="S@A">S@A</SelectItem>
+                          <SelectItem value="Secretary">Secretary</SelectItem>
+                          <SelectItem value="Member">Member</SelectItem>
+                          <SelectItem value="Prospect">Prospect</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
                   <div className="space-y-3">
                     <Label>Permissions</Label>
                     <div className="space-y-2 border rounded-lg p-4">
