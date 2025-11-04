@@ -3128,12 +3128,6 @@ async def send_discord_notification(event: dict, hours_before: int):
                 "inline": True
             })
         
-        # Notification message
-        if hours_before == 24:
-            content = f"@everyone **Reminder: Event tomorrow!** 🏍️"
-        else:
-            content = f"@everyone **Event starting in 3 hours!** ⏰🏍️"
-        
         payload = {
             "content": content,
             "embeds": [embed]
@@ -3142,7 +3136,8 @@ async def send_discord_notification(event: dict, hours_before: int):
         response = requests.post(DISCORD_WEBHOOK_URL, json=payload)
         
         if response.status_code == 204:
-            print(f"✅ Discord notification sent for event: {event['title']} ({hours_before}h before)")
+            hours_text = "now" if hours_before == 0 else f"{hours_before}h before"
+            print(f"✅ Discord notification sent for event: {event['title']} ({hours_text})")
             return True
         else:
             print(f"❌ Discord notification failed: {response.status_code} - {response.text}")
