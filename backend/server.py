@@ -3272,30 +3272,20 @@ async def check_and_send_event_notifications():
         traceback.print_exc(file=sys.stderr)
 
 def run_notification_check():
-    """Wrapper to run async notification check in sync context"""
+    """Wrapper to run async notification check in sync context (called by scheduler in thread)"""
     import asyncio
     import sys
     try:
         print(f"🚀 [SCHEDULER] Starting notification check job...", file=sys.stderr, flush=True)
         
-        # Try to get the existing event loop
+        # APScheduler runs this in a separate thread, so we need a new event loop
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
         try:
-            loop = asyncio.get_event_loop()
-            if loop.is_running():
-                # If loop is running, schedule the coroutine as a task
-                asyncio.create_task(check_and_send_event_notifications())
-                print(f"📝 [SCHEDULER] Notification check scheduled as task", file=sys.stderr, flush=True)
-            else:
-                # If loop exists but not running, use it
-                loop.run_until_complete(check_and_send_event_notifications())
-                print(f"✅ [SCHEDULER] Notification check job completed", file=sys.stderr, flush=True)
-        except RuntimeError:
-            # No event loop exists, create one
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
             loop.run_until_complete(check_and_send_event_notifications())
-            loop.close()
             print(f"✅ [SCHEDULER] Notification check job completed", file=sys.stderr, flush=True)
+        finally:
+            loop.close()
             
     except Exception as e:
         print(f"❌ [SCHEDULER] Error running notification check: {str(e)}", file=sys.stderr, flush=True)
