@@ -1020,9 +1020,9 @@ export default function UserManagement({ onLogout }) {
         </div>
       </div>
 
-          {/* Edit User Dialog */}
-          <Dialog open={editDialogOpen} onOpenChange={(open) => {
-            setEditDialogOpen(open);
+      {/* Edit User Dialog */}
+      <Dialog open={editDialogOpen} onOpenChange={(open) => {
+        setEditDialogOpen(open);
             if (!open) setEditingUser(null);
           }}>
             <DialogContent>
