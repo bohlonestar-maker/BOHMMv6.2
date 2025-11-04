@@ -39,7 +39,9 @@ export default function EventCalendar() {
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [detailDialogOpen, setDetailDialogOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState(null);
+  const [selectedEvent, setSelectedEvent] = useState(null);
   
   const [chapterFilter, setChapterFilter] = useState("");
   const [titleFilter, setTitleFilter] = useState("");
