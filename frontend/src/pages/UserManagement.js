@@ -770,7 +770,7 @@ export default function UserManagement({ onLogout }) {
                     <span className="sm:hidden">Add</span>
                   </Button>
                 </DialogTrigger>
-              <DialogContent>
+              <DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle>Add New User</DialogTitle>
                 </DialogHeader>
