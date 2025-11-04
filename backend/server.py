@@ -3183,14 +3183,17 @@ async def send_discord_notification(event: dict, hours_before: int):
 async def check_and_send_event_notifications():
     """Check for upcoming events and send notifications"""
     try:
-        now = datetime.now(timezone.utc)
+        # Use Central Time for all event calculations
+        import pytz
+        central = pytz.timezone('America/Chicago')
+        now = datetime.now(central)
         
         # Get all events
         events = await db.events.find({}, {"_id": 0}).to_list(length=None)
         
         for event in events:
             try:
-                # Parse event date and time
+                # Parse event date and time in Central Time
                 event_date = datetime.strptime(event['date'], '%Y-%m-%d')
                 
                 # If time is specified, add it
@@ -3204,8 +3207,8 @@ async def check_and_send_event_notifications():
                     # Default to noon if no time specified
                     event_date = event_date.replace(hour=12, minute=0)
                 
-                # Make timezone aware
-                event_date = event_date.replace(tzinfo=timezone.utc)
+                # Make timezone aware as Central Time
+                event_date = central.localize(event_date)
                 
                 # Calculate time until event
                 time_until_event = event_date - now
