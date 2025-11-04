@@ -3016,6 +3016,175 @@ async def delete_event(event_id: str, current_user: dict = Depends(verify_admin)
     return {"message": "Event deleted successfully"}
 
 
+
+# ==================== DISCORD NOTIFICATION SYSTEM ====================
+
+import requests
+from apscheduler.schedulers.background import BackgroundScheduler
+from datetime import timedelta
+
+DISCORD_WEBHOOK_URL = os.environ.get('DISCORD_WEBHOOK_URL')
+
+async def send_discord_notification(event: dict, hours_before: int):
+    """Send Discord notification for an event"""
+    if not DISCORD_WEBHOOK_URL:
+        logger.warning("Discord webhook URL not configured")
+        return False
+    
+    try:
+        # Format the event time
+        event_datetime_str = f"{event['date']}"
+        if event.get('time'):
+            event_datetime_str += f" at {event['time']}"
+        
+        # Create embed for Discord
+        embed = {
+            "title": f"🏍️ {event['title']}",
+            "description": event.get('description', 'No description provided'),
+            "color": 0x00ff00 if hours_before == 24 else 0xff9900,  # Green for 24h, Orange for 3h
+            "fields": [
+                {
+                    "name": "📅 Date & Time",
+                    "value": event_datetime_str,
+                    "inline": True
+                }
+            ],
+            "footer": {
+                "text": f"{'Tomorrow!' if hours_before == 24 else 'Starting soon!'}"
+            }
+        }
+        
+        # Add location if available
+        if event.get('location'):
+            embed["fields"].append({
+                "name": "📍 Location",
+                "value": event['location'],
+                "inline": True
+            })
+        
+        # Add chapter filter if specified
+        if event.get('chapter'):
+            embed["fields"].append({
+                "name": "🏴 Chapter",
+                "value": event['chapter'],
+                "inline": True
+            })
+        
+        # Add title filter if specified
+        if event.get('title_filter'):
+            embed["fields"].append({
+                "name": "👥 For",
+                "value": event['title_filter'],
+                "inline": True
+            })
+        
+        # Notification message
+        if hours_before == 24:
+            content = f"@everyone **Reminder: Event tomorrow!** 🏍️"
+        else:
+            content = f"@everyone **Event starting in 3 hours!** ⏰🏍️"
+        
+        payload = {
+            "content": content,
+            "embeds": [embed]
+        }
+        
+        response = requests.post(DISCORD_WEBHOOK_URL, json=payload)
+        
+        if response.status_code == 204:
+            logger.info(f"Discord notification sent for event: {event['title']} ({hours_before}h before)")
+            return True
+        else:
+            logger.error(f"Discord notification failed: {response.status_code} - {response.text}")
+            return False
+            
+    except Exception as e:
+        logger.error(f"Error sending Discord notification: {str(e)}")
+        return False
+
+async def check_and_send_event_notifications():
+    """Check for upcoming events and send notifications"""
+    try:
+        now = datetime.now(timezone.utc)
+        
+        # Get all events
+        events = await db.events.find({}, {"_id": 0}).to_list(length=None)
+        
+        for event in events:
+            try:
+                # Parse event date and time
+                event_date = datetime.strptime(event['date'], '%Y-%m-%d')
+                
+                # If time is specified, add it
+                if event.get('time'):
+                    time_parts = event['time'].split(':')
+                    event_date = event_date.replace(
+                        hour=int(time_parts[0]),
+                        minute=int(time_parts[1])
+                    )
+                else:
+                    # Default to noon if no time specified
+                    event_date = event_date.replace(hour=12, minute=0)
+                
+                # Make timezone aware
+                event_date = event_date.replace(tzinfo=timezone.utc)
+                
+                # Calculate time until event
+                time_until_event = event_date - now
+                hours_until_event = time_until_event.total_seconds() / 3600
+                
+                # Check for 24-hour notification (between 23.5 and 24.5 hours)
+                if 23.5 <= hours_until_event <= 24.5 and not event.get('notification_24h_sent'):
+                    logger.info(f"Sending 24h notification for: {event['title']}")
+                    success = await send_discord_notification(event, 24)
+                    if success:
+                        await db.events.update_one(
+                            {"id": event['id']},
+                            {"$set": {"notification_24h_sent": True}}
+                        )
+                
+                # Check for 3-hour notification (between 2.5 and 3.5 hours)
+                elif 2.5 <= hours_until_event <= 3.5 and not event.get('notification_3h_sent'):
+                    logger.info(f"Sending 3h notification for: {event['title']}")
+                    success = await send_discord_notification(event, 3)
+                    if success:
+                        await db.events.update_one(
+                            {"id": event['id']},
+                            {"$set": {"notification_3h_sent": True}}
+                        )
+                        
+            except Exception as e:
+                logger.error(f"Error processing event {event.get('id')}: {str(e)}")
+                continue
+                
+    except Exception as e:
+        logger.error(f"Error in check_and_send_event_notifications: {str(e)}")
+
+def run_notification_check():
+    """Wrapper to run async notification check in sync context"""
+    import asyncio
+    try:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        loop.run_until_complete(check_and_send_event_notifications())
+        loop.close()
+    except Exception as e:
+        logger.error(f"Error running notification check: {str(e)}")
+
+# Initialize scheduler
+scheduler = BackgroundScheduler()
+scheduler.add_job(
+    run_notification_check,
+    'interval',
+    minutes=30,  # Check every 30 minutes
+    id='event_notifications',
+    replace_existing=True
+)
+scheduler.start()
+
+logger.info("Discord event notification system started (checking every 30 minutes)")
+
+
 # Include the router in the main app
 app.include_router(api_router)
 
