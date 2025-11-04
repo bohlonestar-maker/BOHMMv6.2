@@ -164,6 +164,16 @@ function App() {
             }
           />
           <Route
+            path="/events"
+            element={
+              isAuthenticated ? (
+                <EventCalendar onLogout={handleLogout} />
+              ) : (
+                <Navigate to="/" replace />
+              )
+            }
+          />
+          <Route
             path="/messages"
             element={
               isAuthenticated ? (
