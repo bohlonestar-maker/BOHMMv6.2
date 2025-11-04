@@ -1280,6 +1280,7 @@ export default function UserManagement({ onLogout }) {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Username</TableHead>
+                    <TableHead>Email</TableHead>
                     <TableHead>Role</TableHead>
                     <TableHead>Chapter</TableHead>
                     <TableHead>Title</TableHead>
@@ -1291,6 +1292,7 @@ export default function UserManagement({ onLogout }) {
                   {users.map((user) => (
                     <TableRow key={user.id} data-testid={`user-row-${user.id}`}>
                       <TableCell className="font-medium">{user.username}</TableCell>
+                      <TableCell>{user.email || "-"}</TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
                           {user.role === "admin" && (
