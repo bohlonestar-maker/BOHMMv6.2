@@ -810,8 +810,28 @@ export default function EventCalendar() {
                 </div>
 
                 {/* Created By */}
-                <div className="text-sm text-slate-500 pt-4 border-t border-slate-700">
-                  Created by {selectedEvent.created_by} on {new Date(selectedEvent.created_at).toLocaleDateString()}
+                <div className="bg-slate-700/30 p-4 rounded-lg">
+                  <div className="text-sm text-slate-400 mb-2">Created By</div>
+                  <div className="space-y-1">
+                    {selectedEvent.creator_chapter && (
+                      <div className="text-base">
+                        <span className="text-slate-400">Chapter:</span> <span className="font-semibold text-slate-200">{selectedEvent.creator_chapter}</span>
+                      </div>
+                    )}
+                    {selectedEvent.creator_title && (
+                      <div className="text-base">
+                        <span className="text-slate-400">Title:</span> <span className="font-semibold text-slate-200">{selectedEvent.creator_title}</span>
+                      </div>
+                    )}
+                    {selectedEvent.creator_handle && (
+                      <div className="text-base">
+                        <span className="text-slate-400">Handle:</span> <span className="font-semibold text-slate-200">{selectedEvent.creator_handle}</span>
+                      </div>
+                    )}
+                    <div className="text-sm text-slate-500 mt-2">
+                      {selectedEvent.created_by} on {new Date(selectedEvent.created_at).toLocaleDateString()}
+                    </div>
+                  </div>
                 </div>
 
                 {/* Action Buttons */}
