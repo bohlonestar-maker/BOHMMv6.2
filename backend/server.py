@@ -380,6 +380,8 @@ class Invite(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     email: EmailStr
     role: str
+    chapter: Optional[str] = None
+    title: Optional[str] = None
     permissions: dict
     token: str = Field(default_factory=lambda: str(uuid.uuid4()))
     expires_at: datetime
@@ -389,6 +391,8 @@ class Invite(BaseModel):
 class InviteCreate(BaseModel):
     email: EmailStr
     role: str
+    chapter: Optional[str] = None
+    title: Optional[str] = None
     permissions: dict
 
 class InviteAccept(BaseModel):
