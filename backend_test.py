@@ -4319,12 +4319,12 @@ class BOHDirectoryAPITester:
         print(f"   24h test event time CST: {event_24h_time_cst.strftime('%Y-%m-%d %H:%M:%S')} CST")
         print(f"   3h test event time CST: {event_3h_time_cst.strftime('%Y-%m-%d %H:%M:%S')} CST")
         
-        # Test 1: Create event exactly 24 hours from now
+        # Test 1: Create event exactly 24 hours from now (CST)
         event_24h_data = {
             "title": "24h Notification Test Event",
             "description": "This event is scheduled exactly 24 hours from now to test scheduled Discord notifications",
-            "date": event_24h_time.strftime('%Y-%m-%d'),
-            "time": event_24h_time.strftime('%H:%M'),
+            "date": event_24h_time_cst.strftime('%Y-%m-%d'),
+            "time": event_24h_time_cst.strftime('%H:%M'),
             "location": "Test Location",
             "chapter": None,
             "title_filter": None,
