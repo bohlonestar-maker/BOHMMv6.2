@@ -3145,6 +3145,22 @@ async def send_discord_notification(event: dict, hours_before: int):
                 "inline": True
             })
         
+        # Add creator information
+        creator_parts = []
+        if event.get('creator_chapter'):
+            creator_parts.append(event['creator_chapter'])
+        if event.get('creator_title'):
+            creator_parts.append(event['creator_title'])
+        if event.get('creator_handle'):
+            creator_parts.append(event['creator_handle'])
+        
+        if creator_parts:
+            embed["fields"].append({
+                "name": "📋 Created By",
+                "value": " | ".join(creator_parts),
+                "inline": False
+            })
+        
         payload = {
             "content": content,
             "embeds": [embed]
