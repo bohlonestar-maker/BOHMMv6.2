@@ -121,8 +121,15 @@ export default function EventCalendar() {
     e.preventDefault();
     const token = localStorage.getItem("token");
 
+    // Convert "all" to null for API
+    const apiData = {
+      ...formData,
+      chapter: formData.chapter === "all" ? null : formData.chapter,
+      title_filter: formData.title_filter === "all" ? null : formData.title_filter,
+    };
+
     try {
-      await axios.post(`${API}/api/events`, formData, {
+      await axios.post(`${API}/api/events`, apiData, {
         headers: { Authorization: `Bearer ${token}` },
       });
       toast.success("Event created successfully");
