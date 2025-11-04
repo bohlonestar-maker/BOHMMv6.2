@@ -430,6 +430,7 @@ class Event(BaseModel):
     title_filter: Optional[str] = None  # Prez, VP, etc., or None for all titles
     created_by: str
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    discord_notifications_enabled: bool = True  # Allow Discord notifications for this event
     notification_24h_sent: bool = False  # Track if 24h notification was sent
     notification_3h_sent: bool = False   # Track if 3h notification was sent
 
@@ -441,6 +442,7 @@ class EventCreate(BaseModel):
     location: Optional[str] = None
     chapter: Optional[str] = None
     title_filter: Optional[str] = None
+    discord_notifications_enabled: bool = True
 
 class EventUpdate(BaseModel):
     title: Optional[str] = None
@@ -450,6 +452,7 @@ class EventUpdate(BaseModel):
     location: Optional[str] = None
     chapter: Optional[str] = None
     title_filter: Optional[str] = None
+    discord_notifications_enabled: Optional[bool] = None
 
 class Member(BaseModel):
     model_config = ConfigDict(extra="ignore")
