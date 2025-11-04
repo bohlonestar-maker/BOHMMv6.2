@@ -29,7 +29,7 @@ import {
   TableHeader,
   TableRow,
 } from "../components/ui/table";
-import { Calendar, Plus, Edit, Trash2, MapPin, Clock, Users, ArrowLeft, Filter } from "lucide-react";
+import { Calendar, Plus, Edit, Trash2, MapPin, Clock, Users, ArrowLeft, Filter, Send } from "lucide-react";
 
 const API = process.env.REACT_APP_BACKEND_URL || "";
 
