@@ -50,8 +50,8 @@ export default function EventCalendar() {
     date: "",
     time: "",
     location: "",
-    chapter: "",
-    title_filter: "",
+    chapter: "all",
+    title_filter: "all",
   });
 
   const [editFormData, setEditFormData] = useState({
@@ -60,8 +60,8 @@ export default function EventCalendar() {
     date: "",
     time: "",
     location: "",
-    chapter: "",
-    title_filter: "",
+    chapter: "all",
+    title_filter: "all",
   });
 
   useEffect(() => {
