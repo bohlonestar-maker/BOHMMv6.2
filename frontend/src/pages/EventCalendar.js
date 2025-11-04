@@ -652,6 +652,109 @@ export default function EventCalendar() {
             </form>
           </DialogContent>
         </Dialog>
+
+        {/* Event Detail View Dialog */}
+        <Dialog open={detailDialogOpen} onOpenChange={setDetailDialogOpen}>
+          <DialogContent className="max-w-3xl">
+            <DialogHeader>
+              <DialogTitle className="text-2xl font-bold">Event Details</DialogTitle>
+            </DialogHeader>
+            {selectedEvent && (
+              <div className="space-y-6 mt-4">
+                {/* Event Title and Status */}
+                <div>
+                  <h2 className="text-3xl font-bold text-slate-100 mb-2">
+                    {selectedEvent.title}
+                  </h2>
+                  {isUpcoming(selectedEvent.date) && (
+                    <span className="inline-block bg-green-600 text-white text-xs font-bold px-3 py-1 rounded-full">
+                      UPCOMING
+                    </span>
+                  )}
+                </div>
+
+                {/* Date and Time */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="flex items-start gap-3 bg-slate-700/30 p-4 rounded-lg">
+                    <Calendar className="w-6 h-6 text-blue-400 mt-1" />
+                    <div>
+                      <div className="text-sm text-slate-400 mb-1">Date</div>
+                      <div className="text-lg font-semibold">{formatDate(selectedEvent.date)}</div>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3 bg-slate-700/30 p-4 rounded-lg">
+                    <Clock className="w-6 h-6 text-blue-400 mt-1" />
+                    <div>
+                      <div className="text-sm text-slate-400 mb-1">Time</div>
+                      <div className="text-lg font-semibold">
+                        {selectedEvent.time || <span className="text-slate-500">Not specified</span>}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Location */}
+                {selectedEvent.location && (
+                  <div className="flex items-start gap-3 bg-slate-700/30 p-4 rounded-lg">
+                    <MapPin className="w-6 h-6 text-blue-400 mt-1" />
+                    <div>
+                      <div className="text-sm text-slate-400 mb-1">Location</div>
+                      <div className="text-lg">{selectedEvent.location}</div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Description */}
+                {selectedEvent.description && (
+                  <div className="bg-slate-700/30 p-4 rounded-lg">
+                    <div className="text-sm text-slate-400 mb-2">Description</div>
+                    <div className="text-base leading-relaxed whitespace-pre-wrap">
+                      {selectedEvent.description}
+                    </div>
+                  </div>
+                )}
+
+                {/* Chapter and Title Filters */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="flex items-start gap-3 bg-slate-700/30 p-4 rounded-lg">
+                    <Users className="w-6 h-6 text-blue-400 mt-1" />
+                    <div>
+                      <div className="text-sm text-slate-400 mb-1">Chapter</div>
+                      <div className="text-lg font-semibold">
+                        {selectedEvent.chapter || <span className="text-slate-400">All Chapters</span>}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3 bg-slate-700/30 p-4 rounded-lg">
+                    <Users className="w-6 h-6 text-blue-400 mt-1" />
+                    <div>
+                      <div className="text-sm text-slate-400 mb-1">Title</div>
+                      <div className="text-lg font-semibold">
+                        {selectedEvent.title_filter || <span className="text-slate-400">All Titles</span>}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Created By */}
+                <div className="text-sm text-slate-500 pt-4 border-t border-slate-700">
+                  Created by {selectedEvent.created_by} on {new Date(selectedEvent.created_at).toLocaleDateString()}
+                </div>
+
+                {/* Close Button */}
+                <div className="flex justify-end pt-4">
+                  <Button
+                    variant="outline"
+                    onClick={() => setDetailDialogOpen(false)}
+                    className="bg-slate-700 hover:bg-slate-600"
+                  >
+                    Close
+                  </Button>
+                </div>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
