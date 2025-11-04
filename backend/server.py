@@ -3003,6 +3003,31 @@ async def update_event(
     
     return {"message": "Event updated successfully"}
 
+@api_router.post("/events/{event_id}/send-discord-notification")
+async def send_event_discord_notification_now(event_id: str, current_user: dict = Depends(verify_admin)):
+    """Manually send Discord notification for an event immediately (admin only)"""
+    event = await db.events.find_one({"id": event_id})
+    if not event:
+        raise HTTPException(status_code=404, detail="Event not found")
+    
+    # Check if Discord notifications are enabled for this event
+    if not event.get('discord_notifications_enabled', True):
+        raise HTTPException(status_code=400, detail="Discord notifications are disabled for this event")
+    
+    # Send notification immediately (0 means "now")
+    success = await send_discord_notification(event, 0)
+    
+    if success:
+        # Log activity
+        await log_activity(
+            username=current_user["username"],
+            action="event_discord_manual",
+            details=f"Manually sent Discord notification for event: {event.get('title', event_id)}"
+        )
+        return {"message": "Discord notification sent successfully"}
+    else:
+        raise HTTPException(status_code=500, detail="Failed to send Discord notification")
+
 @api_router.delete("/events/{event_id}")
 async def delete_event(event_id: str, current_user: dict = Depends(verify_admin)):
     """Delete an event (admin only)"""
