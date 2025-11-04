@@ -8,6 +8,24 @@ export default function UpdateLog() {
 
   const updates = [
     {
+      version: "v.2.1",
+      date: "November 4, 2025",
+      changes: [
+        "Event Calendar: Complete event management system with date, time, location, description, chapter and title filtering",
+        "Event Badge Counter: Green badge on Dashboard shows upcoming events count, auto-refreshes every 30 seconds",
+        "Event Detail View: Click any event for large, comprehensive view with all details and metadata",
+        "Discord Integration: Automatic notifications sent to Discord 24 hours and 3 hours before events",
+        "Discord Toggle: Per-event checkbox to enable/disable Discord notifications (checked by default)",
+        "Send Now Button: Green send button in table and detail view to manually trigger Discord notifications",
+        "Discord Embeds: Rich formatted notifications with color coding (green=24h, orange=3h, blue=manual)",
+        "User Email Field: Added required email field to all users with validation and uniqueness check",
+        "Chapter & Title Assignment: Assign chapters (National, AD, HA, HS) and titles (Prez, VP, S@A, etc.) to users",
+        "User Management Columns: Added Email, Chapter, and Title columns to user management table",
+        "Chatbot Optimization: Fully responsive design - full screen on mobile, floating corner on tablets/desktops",
+        "Mobile-First Design: Touch-friendly buttons, optimized text sizes, and proper padding for all screen sizes"
+      ]
+    },
+    {
       version: "v.2.0",
       date: "November 1, 2025",
       changes: [
