@@ -157,6 +157,7 @@ export default function EventCalendar() {
       location: event.location || "",
       chapter: event.chapter || "all",
       title_filter: event.title_filter || "all",
+      discord_notifications_enabled: event.discord_notifications_enabled !== false,
     });
     setEditDialogOpen(true);
   };
