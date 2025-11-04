@@ -318,6 +318,18 @@ backend:
         agent: "testing"
         comment: "USER CHAPTER AND TITLE ASSIGNMENT FULLY IMPLEMENTED AND TESTED ✅ BACKEND FIX COMPLETED: Updated PUT /api/users/{user_id} endpoint to properly handle chapter and title fields. Changes: 1) Added chapter and title processing in update_data logic 2) Updated activity logging to include chapter/title changes 3) Modified return statement to return complete updated user object instead of just success message ✅ COMPREHENSIVE TESTING (12/12 tests passed): 1) GET /api/users - Verified chapter/title fields present in response 2) Created testchat and testmember users for testing 3) PUT /api/users/{testchat_id} with chapter='HA', title='Member' - Success (200) 4) Verified testchat update persisted in database 5) PUT /api/users/{testmember_id} with chapter='National', title='VP' - Success (200) 6) Final verification confirmed both users have correct assignments ✅ AUTHENTICATION: Successfully tested with testadmin/testpass123 credentials ✅ DATA PERSISTENCE: All chapter/title assignments properly saved and persist across API calls ✅ API RESPONSE: Endpoint returns complete user object with updated chapter/title values ✅ ACTIVITY LOGGING: User updates properly logged with chapter/title change details. The user chapter and title assignment feature is production-ready and working perfectly."
 
+  - task: "Event calendar functionality"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "EVENT CALENDAR FUNCTIONALITY TESTING COMPLETE ✅ DEMONSTRATION EVENT CREATED SUCCESSFULLY: Created 'BOH National Rally 2025' test event as requested for UI demonstration. ✅ COMPREHENSIVE TESTING COMPLETED: 1) Authentication: Successfully logged in with testadmin/testpass123 credentials 2) Event Creation: POST /api/events successfully created demo event with all required fields (title, description, date, time, location, chapter, title_filter) 3) Event Verification: GET /api/events confirmed event exists with correct data - Event ID: a33cb71c-7aab-4da8-b18f-9bfcdc0b65f0, Title: 'BOH National Rally 2025', Date: 2025-12-15, Time: 10:00, Location: 'Sturgis Rally Grounds, SD', Description: 'Annual brothers gathering with rides, food, and live music. All chapters welcome!' 4) Event Metadata: Verified created_by field (testadmin) and created_at timestamp present 5) Event Filtering: Confirmed chapter=None events appear in all chapter filters (available to all chapters) ✅ API ENDPOINTS VERIFIED: All event endpoints working correctly - GET /api/events (retrieve all events), POST /api/events (create new events), GET /api/events/upcoming-count (count upcoming events), chapter filtering via query parameters. ✅ DEMO EVENT READY: Event 'BOH National Rally 2025' is now available for UI testing and demonstration purposes. The event calendar feature is production-ready and fully functional."
+
 frontend:
   - task: "Display meeting dates (1st and 3rd Wednesday) in attendance UI"
     implemented: true
