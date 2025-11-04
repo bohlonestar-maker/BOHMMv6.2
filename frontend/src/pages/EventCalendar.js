@@ -210,6 +210,29 @@ export default function EventCalendar() {
     }
   };
 
+  const handleSendDiscordNow = async (event, e) => {
+    e.stopPropagation(); // Prevent row click
+    
+    if (!event.discord_notifications_enabled) {
+      toast.error("Discord notifications are disabled for this event");
+      return;
+    }
+
+    if (!window.confirm(`Send Discord notification for "${event.title}" now?`)) {
+      return;
+    }
+
+    const token = localStorage.getItem("token");
+    try {
+      await axios.post(`${API}/api/events/${event.id}/send-discord-notification`, {}, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      toast.success("Discord notification sent successfully!");
+    } catch (error) {
+      toast.error(error.response?.data?.detail || "Failed to send Discord notification");
+    }
+  };
+
   const formatDate = (dateStr) => {
     const date = new Date(dateStr);
     return date.toLocaleDateString("en-US", {
