@@ -3288,6 +3288,7 @@ def run_notification_check():
         traceback.print_exc(file=sys.stderr)
 
 # Initialize scheduler
+import sys
 scheduler = BackgroundScheduler()
 scheduler.add_job(
     run_notification_check,
@@ -3298,7 +3299,14 @@ scheduler.add_job(
 )
 scheduler.start()
 
-print("✅ Discord event notification system started (checking every 30 minutes)")
+print("✅ [SCHEDULER] Discord event notification system started (checking every 30 minutes)", file=sys.stderr, flush=True)
+print("🔄 [SCHEDULER] Running initial notification check...", file=sys.stderr, flush=True)
+
+# Run an immediate check on startup
+try:
+    run_notification_check()
+except Exception as e:
+    print(f"❌ [SCHEDULER] Error in initial notification check: {str(e)}", file=sys.stderr, flush=True)
 
 
 # Include the router in the main app
