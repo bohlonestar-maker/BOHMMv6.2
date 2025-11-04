@@ -3085,10 +3085,12 @@ async def send_discord_notification(event: dict, hours_before: int):
         return False
     
     try:
-        # Format the event time
+        # Format the event time with Central Time indicator
         event_datetime_str = f"{event['date']}"
         if event.get('time'):
-            event_datetime_str += f" at {event['time']}"
+            event_datetime_str += f" at {event['time']} CST"
+        else:
+            event_datetime_str += " (Time TBD)"
         
         # Determine color and footer based on hours_before
         if hours_before == 0:
