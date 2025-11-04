@@ -516,8 +516,7 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Bulk promotion of prospects to members"
-    - "Bulk promotion UI for prospects"
+    - "User chapter and title assignment"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
