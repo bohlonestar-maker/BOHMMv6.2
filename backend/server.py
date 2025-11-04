@@ -3182,7 +3182,7 @@ scheduler.add_job(
 )
 scheduler.start()
 
-logger.info("Discord event notification system started (checking every 30 minutes)")
+print("✅ Discord event notification system started (checking every 30 minutes)")
 
 
 # Include the router in the main app
