@@ -4297,6 +4297,243 @@ class BOHDirectoryAPITester:
         
         return event_id
 
+    def test_scheduled_discord_notifications(self):
+        """Test scheduled Discord event notifications (24h/3h before events) - PRIORITY TEST"""
+        print(f"\n🔔 Testing Scheduled Discord Event Notifications...")
+        
+        from datetime import datetime, timedelta
+        import time
+        
+        # Calculate exact times for testing
+        now = datetime.utcnow()
+        event_24h_time = now + timedelta(hours=24)
+        event_3h_time = now + timedelta(hours=3)
+        
+        print(f"   Current time: {now.strftime('%Y-%m-%d %H:%M:%S')} UTC")
+        print(f"   24h test event time: {event_24h_time.strftime('%Y-%m-%d %H:%M:%S')} UTC")
+        print(f"   3h test event time: {event_3h_time.strftime('%Y-%m-%d %H:%M:%S')} UTC")
+        
+        # Test 1: Create event exactly 24 hours from now
+        event_24h_data = {
+            "title": "24h Notification Test Event",
+            "description": "This event is scheduled exactly 24 hours from now to test scheduled Discord notifications",
+            "date": event_24h_time.strftime('%Y-%m-%d'),
+            "time": event_24h_time.strftime('%H:%M'),
+            "location": "Test Location",
+            "chapter": None,
+            "title_filter": None,
+            "discord_notifications_enabled": True
+        }
+        
+        success, created_event_24h = self.run_test(
+            "Create 24h Test Event",
+            "POST",
+            "events",
+            200,
+            data=event_24h_data
+        )
+        
+        event_24h_id = None
+        if success and 'id' in created_event_24h:
+            event_24h_id = created_event_24h['id']
+            print(f"   Created 24h test event ID: {event_24h_id}")
+            
+            # Verify event has correct notification flags (should be False initially)
+            if (created_event_24h.get('notification_24h_sent') == False and 
+                created_event_24h.get('notification_3h_sent') == False):
+                self.log_test("24h Event - Initial Notification Flags", True, "Both notification flags are False initially")
+            else:
+                self.log_test("24h Event - Initial Notification Flags", False, f"24h_sent: {created_event_24h.get('notification_24h_sent')}, 3h_sent: {created_event_24h.get('notification_3h_sent')}")
+        else:
+            print("❌ Failed to create 24h test event - cannot continue notification tests")
+            return
+        
+        # Test 2: Create event exactly 3 hours from now (optional)
+        event_3h_data = {
+            "title": "3h Notification Test Event", 
+            "description": "This event is scheduled exactly 3 hours from now to test scheduled Discord notifications",
+            "date": event_3h_time.strftime('%Y-%m-%d'),
+            "time": event_3h_time.strftime('%H:%M'),
+            "location": "Test Location 3h",
+            "chapter": None,
+            "title_filter": None,
+            "discord_notifications_enabled": True
+        }
+        
+        success, created_event_3h = self.run_test(
+            "Create 3h Test Event",
+            "POST", 
+            "events",
+            200,
+            data=event_3h_data
+        )
+        
+        event_3h_id = None
+        if success and 'id' in created_event_3h:
+            event_3h_id = created_event_3h['id']
+            print(f"   Created 3h test event ID: {event_3h_id}")
+        
+        # Test 3: Manually trigger notification check
+        print(f"\n   🔄 Manually triggering scheduler notification check...")
+        
+        success, trigger_response = self.run_test(
+            "Trigger Notification Check",
+            "POST",
+            "events/trigger-notification-check",
+            200
+        )
+        
+        if success:
+            self.log_test("Manual Scheduler Trigger", True, f"Scheduler triggered successfully: {trigger_response}")
+            
+            # Give scheduler a moment to process
+            print("   ⏳ Waiting 3 seconds for scheduler to process...")
+            time.sleep(3)
+        else:
+            self.log_test("Manual Scheduler Trigger", False, "Failed to trigger scheduler")
+        
+        # Test 4: Check backend logs for scheduler activity
+        print(f"\n   📋 Checking backend logs for scheduler activity...")
+        
+        try:
+            import subprocess
+            result = subprocess.run(
+                ["tail", "-n", "50", "/var/log/supervisor/backend.err.log"],
+                capture_output=True,
+                text=True,
+                timeout=10
+            )
+            
+            if result.returncode == 0:
+                log_content = result.stdout
+                
+                # Look for scheduler log entries
+                scheduler_logs = [line for line in log_content.split('\n') if '[SCHEDULER]' in line]
+                
+                if scheduler_logs:
+                    self.log_test("Backend Logs - Scheduler Activity Found", True, f"Found {len(scheduler_logs)} scheduler log entries")
+                    
+                    # Check for specific log patterns
+                    running_check = any("Running notification check" in log for log in scheduler_logs)
+                    found_events = any("Found" in log and "total events" in log for log in scheduler_logs)
+                    notification_sent = any("notification sent successfully" in log for log in scheduler_logs)
+                    
+                    if running_check:
+                        self.log_test("Scheduler Logs - Running Check", True, "Found 'Running notification check' log")
+                    else:
+                        self.log_test("Scheduler Logs - Running Check", False, "Missing 'Running notification check' log")
+                    
+                    if found_events:
+                        self.log_test("Scheduler Logs - Found Events", True, "Found 'Found X total events' log")
+                    else:
+                        self.log_test("Scheduler Logs - Found Events", False, "Missing 'Found X total events' log")
+                    
+                    # Print recent scheduler logs for debugging
+                    print("   📝 Recent scheduler logs:")
+                    for log in scheduler_logs[-5:]:  # Show last 5 scheduler logs
+                        print(f"      {log}")
+                        
+                else:
+                    self.log_test("Backend Logs - Scheduler Activity Found", False, "No [SCHEDULER] logs found in recent entries")
+                    
+            else:
+                self.log_test("Backend Logs - Access", False, f"Failed to read logs: {result.stderr}")
+                
+        except Exception as e:
+            self.log_test("Backend Logs - Access", False, f"Exception reading logs: {str(e)}")
+        
+        # Test 5: Verify event notification flags updated
+        print(f"\n   ✅ Verifying notification flags updated...")
+        
+        if event_24h_id:
+            # Get all events to find our test event
+            success, all_events = self.run_test(
+                "Get All Events - Check 24h Notification Flag",
+                "GET",
+                "events",
+                200
+            )
+            
+            if success and isinstance(all_events, list):
+                event_24h_updated = None
+                for event in all_events:
+                    if event.get('id') == event_24h_id:
+                        event_24h_updated = event
+                        break
+                
+                if event_24h_updated:
+                    # Check if 24h notification flag was set
+                    if event_24h_updated.get('notification_24h_sent') == True:
+                        self.log_test("24h Event - Notification Flag Updated", True, "notification_24h_sent flag set to True")
+                    else:
+                        self.log_test("24h Event - Notification Flag Updated", False, f"notification_24h_sent still: {event_24h_updated.get('notification_24h_sent')}")
+                    
+                    # 3h flag should still be False
+                    if event_24h_updated.get('notification_3h_sent') == False:
+                        self.log_test("24h Event - 3h Flag Still False", True, "notification_3h_sent flag still False as expected")
+                    else:
+                        self.log_test("24h Event - 3h Flag Still False", False, f"notification_3h_sent unexpectedly: {event_24h_updated.get('notification_3h_sent')}")
+                else:
+                    self.log_test("24h Event - Find Updated Event", False, "Could not find 24h test event in updated list")
+        
+        if event_3h_id:
+            # Check 3h event notification flag
+            success, all_events = self.run_test(
+                "Get All Events - Check 3h Notification Flag", 
+                "GET",
+                "events",
+                200
+            )
+            
+            if success and isinstance(all_events, list):
+                event_3h_updated = None
+                for event in all_events:
+                    if event.get('id') == event_3h_id:
+                        event_3h_updated = event
+                        break
+                
+                if event_3h_updated:
+                    # Check if 3h notification flag was set
+                    if event_3h_updated.get('notification_3h_sent') == True:
+                        self.log_test("3h Event - Notification Flag Updated", True, "notification_3h_sent flag set to True")
+                    else:
+                        self.log_test("3h Event - Notification Flag Updated", False, f"notification_3h_sent still: {event_3h_updated.get('notification_3h_sent')}")
+        
+        # Test 6: Verify scheduler endpoint exists and is accessible
+        success, scheduler_status = self.run_test(
+            "Scheduler Endpoint Accessibility",
+            "POST",
+            "events/trigger-notification-check",
+            200
+        )
+        
+        if success:
+            self.log_test("Scheduler Endpoint - Accessibility", True, "Trigger endpoint is accessible and returns 200")
+        else:
+            self.log_test("Scheduler Endpoint - Accessibility", False, "Trigger endpoint not accessible or returns error")
+        
+        # Clean up test events
+        print(f"\n   🧹 Cleaning up test events...")
+        
+        if event_24h_id:
+            success, response = self.run_test(
+                "Delete 24h Test Event (Cleanup)",
+                "DELETE",
+                f"events/{event_24h_id}",
+                200
+            )
+        
+        if event_3h_id:
+            success, response = self.run_test(
+                "Delete 3h Test Event (Cleanup)",
+                "DELETE", 
+                f"events/{event_3h_id}",
+                200
+            )
+        
+        print(f"   🔔 Scheduled Discord notification testing completed")
+        return event_24h_id, event_3h_id
+
     def run_all_tests(self):
         """Run all tests"""
         print("🚀 Starting Brothers of the Highway Directory API Tests")
