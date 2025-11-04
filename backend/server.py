@@ -3283,11 +3283,19 @@ async def check_and_send_event_notifications():
                 continue
         
         print(f"✅ [SCHEDULER] Notification check completed", file=sys.stderr, flush=True)
+        
+        # Close the scheduler-specific client
+        scheduler_client.close()
                 
     except Exception as e:
         print(f"❌ [SCHEDULER] Error in check_and_send_event_notifications: {str(e)}", file=sys.stderr, flush=True)
         import traceback
         traceback.print_exc(file=sys.stderr)
+        # Ensure client is closed even on error
+        try:
+            scheduler_client.close()
+        except:
+            pass
 
 def run_notification_check():
     """Wrapper to run async notification check in sync context (called by scheduler in thread)"""
