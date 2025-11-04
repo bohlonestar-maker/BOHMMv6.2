@@ -2878,6 +2878,142 @@ ADDITIONAL OFFICER DUTIES:
         raise HTTPException(status_code=500, detail=f"Chat error: {str(e)}")
 
 
+# ==================== EVENT ENDPOINTS ====================
+
+@api_router.get("/events")
+async def get_events(
+    chapter: Optional[str] = None,
+    title_filter: Optional[str] = None,
+    current_user: dict = Depends(verify_token)
+):
+    """Get all events, optionally filtered by chapter and title"""
+    query = {}
+    
+    # Filter by chapter if specified
+    if chapter:
+        query["$or"] = [{"chapter": chapter}, {"chapter": None}]
+    
+    # Filter by title if specified
+    if title_filter:
+        if "$or" not in query:
+            query["$or"] = []
+        query["$or"].append({"title_filter": title_filter})
+        query["$or"].append({"title_filter": None})
+    
+    events = await db.events.find(query, {"_id": 0}).to_list(length=None)
+    
+    # Convert datetime objects to ISO strings
+    for event in events:
+        if isinstance(event.get('created_at'), datetime):
+            event['created_at'] = event['created_at'].isoformat()
+    
+    # Sort by date (newest first)
+    events.sort(key=lambda x: x.get('date', ''), reverse=False)
+    
+    return events
+
+@api_router.get("/events/upcoming-count")
+async def get_upcoming_events_count(current_user: dict = Depends(verify_token)):
+    """Get count of upcoming events for badge"""
+    from datetime import date
+    today = date.today().isoformat()
+    
+    # Build query based on user's chapter and title
+    query = {"date": {"$gte": today}}
+    
+    # If user has a chapter, show events for their chapter or all chapters
+    user_chapter = current_user.get("chapter")
+    if user_chapter:
+        query["$or"] = [{"chapter": user_chapter}, {"chapter": None}]
+    
+    count = await db.events.count_documents(query)
+    return {"count": count}
+
+@api_router.post("/events")
+async def create_event(event_data: EventCreate, current_user: dict = Depends(verify_admin)):
+    """Create a new event (admin only)"""
+    event = Event(
+        title=event_data.title,
+        description=event_data.description,
+        date=event_data.date,
+        time=event_data.time,
+        location=event_data.location,
+        chapter=event_data.chapter,
+        title_filter=event_data.title_filter,
+        created_by=current_user["username"]
+    )
+    
+    doc = event.model_dump()
+    doc['created_at'] = doc['created_at'].isoformat()
+    await db.events.insert_one(doc)
+    
+    # Log activity
+    await log_activity(
+        username=current_user["username"],
+        action="event_create",
+        details=f"Created event: {event.title} on {event.date}"
+    )
+    
+    return {"message": "Event created successfully", "id": event.id}
+
+@api_router.put("/events/{event_id}")
+async def update_event(
+    event_id: str,
+    event_data: EventUpdate,
+    current_user: dict = Depends(verify_admin)
+):
+    """Update an event (admin only)"""
+    event = await db.events.find_one({"id": event_id})
+    if not event:
+        raise HTTPException(status_code=404, detail="Event not found")
+    
+    update_data = {}
+    if event_data.title:
+        update_data['title'] = event_data.title
+    if event_data.description is not None:
+        update_data['description'] = event_data.description
+    if event_data.date:
+        update_data['date'] = event_data.date
+    if event_data.time is not None:
+        update_data['time'] = event_data.time
+    if event_data.location is not None:
+        update_data['location'] = event_data.location
+    if event_data.chapter is not None:
+        update_data['chapter'] = event_data.chapter
+    if event_data.title_filter is not None:
+        update_data['title_filter'] = event_data.title_filter
+    
+    if update_data:
+        await db.events.update_one({"id": event_id}, {"$set": update_data})
+    
+    # Log activity
+    await log_activity(
+        username=current_user["username"],
+        action="event_update",
+        details=f"Updated event: {event.get('title', event_id)}"
+    )
+    
+    return {"message": "Event updated successfully"}
+
+@api_router.delete("/events/{event_id}")
+async def delete_event(event_id: str, current_user: dict = Depends(verify_admin)):
+    """Delete an event (admin only)"""
+    event = await db.events.find_one({"id": event_id})
+    if not event:
+        raise HTTPException(status_code=404, detail="Event not found")
+    
+    await db.events.delete_one({"id": event_id})
+    
+    # Log activity
+    await log_activity(
+        username=current_user["username"],
+        action="event_delete",
+        details=f"Deleted event: {event.get('title', event_id)}"
+    )
+    
+    return {"message": "Event deleted successfully"}
+
+
 # Include the router in the main app
 app.include_router(api_router)
 
