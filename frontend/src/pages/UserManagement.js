@@ -864,10 +864,17 @@ export default function UserManagement({ onLogout }) {
                           <SelectValue placeholder="Select title" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="Prez">Prez</SelectItem>
-                          <SelectItem value="VP">VP</SelectItem>
-                          <SelectItem value="S@A">S@A</SelectItem>
-                          <SelectItem value="Secretary">Secretary</SelectItem>
+                          <SelectItem value="Prez">Prez - President</SelectItem>
+                          <SelectItem value="VP">VP - Vice President</SelectItem>
+                          <SelectItem value="S@A">S@A - Sergeant at Arms</SelectItem>
+                          <SelectItem value="ENF">ENF - Enforcer</SelectItem>
+                          <SelectItem value="SEC">SEC - Secretary</SelectItem>
+                          <SelectItem value="T">T - Treasurer</SelectItem>
+                          <SelectItem value="CD">CD - Club Doctor</SelectItem>
+                          <SelectItem value="CC">CC - Club Chaplain</SelectItem>
+                          <SelectItem value="CCLC">CCLC - Club Counselor & Life Coach</SelectItem>
+                          <SelectItem value="MD">MD - Media Director</SelectItem>
+                          <SelectItem value="PM">PM - Prospect Manager</SelectItem>
                           <SelectItem value="Member">Member</SelectItem>
                           <SelectItem value="Prospect">Prospect</SelectItem>
                         </SelectContent>
