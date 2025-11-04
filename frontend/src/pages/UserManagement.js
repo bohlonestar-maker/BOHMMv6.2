@@ -372,6 +372,7 @@ export default function UserManagement({ onLogout }) {
   const handleEdit = (user) => {
     setEditingUser(user);
     setEditFormData({
+      email: user.email || "",
       role: user.role,
       chapter: user.chapter || "",
       title: user.title || "",
