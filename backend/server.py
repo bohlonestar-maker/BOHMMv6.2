@@ -3057,7 +3057,12 @@ from datetime import timedelta
 DISCORD_WEBHOOK_URL = os.environ.get('DISCORD_WEBHOOK_URL')
 
 async def send_discord_notification(event: dict, hours_before: int):
-    """Send Discord notification for an event"""
+    """Send Discord notification for an event
+    
+    Args:
+        event: Event dictionary
+        hours_before: 24, 3, or 0 (0 = send now/manual trigger)
+    """
     if not DISCORD_WEBHOOK_URL:
         print("⚠️  Discord webhook URL not configured")
         return False
@@ -3068,11 +3073,25 @@ async def send_discord_notification(event: dict, hours_before: int):
         if event.get('time'):
             event_datetime_str += f" at {event['time']}"
         
+        # Determine color and footer based on hours_before
+        if hours_before == 0:
+            color = 0x0099ff  # Blue for manual/immediate
+            footer_text = "Manual notification"
+            content = f"@everyone **Event Announcement!** 🏍️"
+        elif hours_before == 24:
+            color = 0x00ff00  # Green for 24h
+            footer_text = "Tomorrow!"
+            content = f"@everyone **Reminder: Event tomorrow!** 🏍️"
+        else:  # 3 hours
+            color = 0xff9900  # Orange for 3h
+            footer_text = "Starting soon!"
+            content = f"@everyone **Event starting in 3 hours!** ⏰🏍️"
+        
         # Create embed for Discord
         embed = {
             "title": f"🏍️ {event['title']}",
             "description": event.get('description', 'No description provided'),
-            "color": 0x00ff00 if hours_before == 24 else 0xff9900,  # Green for 24h, Orange for 3h
+            "color": color,
             "fields": [
                 {
                     "name": "📅 Date & Time",
@@ -3081,7 +3100,7 @@ async def send_discord_notification(event: dict, hours_before: int):
                 }
             ],
             "footer": {
-                "text": f"{'Tomorrow!' if hours_before == 24 else 'Starting soon!'}"
+                "text": footer_text
             }
         }
         
