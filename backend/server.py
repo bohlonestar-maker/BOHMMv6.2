@@ -3274,13 +3274,18 @@ async def check_and_send_event_notifications():
 def run_notification_check():
     """Wrapper to run async notification check in sync context"""
     import asyncio
+    import sys
     try:
+        print(f"🚀 [SCHEDULER] Starting notification check job...", file=sys.stderr, flush=True)
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         loop.run_until_complete(check_and_send_event_notifications())
         loop.close()
+        print(f"✅ [SCHEDULER] Notification check job completed", file=sys.stderr, flush=True)
     except Exception as e:
-        print(f"❌ Error running notification check: {str(e)}")
+        print(f"❌ [SCHEDULER] Error running notification check: {str(e)}", file=sys.stderr, flush=True)
+        import traceback
+        traceback.print_exc(file=sys.stderr)
 
 # Initialize scheduler
 scheduler = BackgroundScheduler()
