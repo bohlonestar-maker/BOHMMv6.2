@@ -1751,7 +1751,12 @@ async def update_user(user_id: str, user_data: UserUpdate, current_user: dict = 
         details=f"Updated user: {user['username']} - changed: {', '.join(updates)}"
     )
     
-    return {"message": "User updated successfully"}
+    # Get updated user data to return
+    updated_user = await db.users.find_one({"id": user_id}, {"_id": 0, "password_hash": 0})
+    if isinstance(updated_user.get('created_at'), str):
+        updated_user['created_at'] = datetime.fromisoformat(updated_user['created_at'])
+    
+    return updated_user
 
 @api_router.delete("/users/{user_id}")
 async def delete_user(user_id: str, current_user: dict = Depends(verify_admin)):
