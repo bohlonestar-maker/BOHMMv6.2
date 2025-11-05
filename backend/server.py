@@ -24,7 +24,12 @@ from dotenv import load_dotenv
 sys.stderr.write("  [INIT] Importing CORS...\n")
 sys.stderr.flush()
 from starlette.middleware.cors import CORSMiddleware
+sys.stderr.write("  [INIT] Importing Motor (MongoDB async)...\n")
+sys.stderr.flush()
 from motor.motor_asyncio import AsyncIOMotorClient
+
+sys.stderr.write("  [INIT] Importing logging & pathlib...\n")
+sys.stderr.flush()
 import os
 import logging
 from pathlib import Path
