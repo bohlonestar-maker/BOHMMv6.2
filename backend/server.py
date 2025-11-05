@@ -3402,3 +3402,6 @@ async def shutdown_db_client():
     
     # Close MongoDB client
     client.close()
+
+
+print("✅ [INIT] Server module fully loaded and ready", file=sys.stderr, flush=True)
