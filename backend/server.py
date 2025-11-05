@@ -771,8 +771,10 @@ async def get_members(current_user: dict = Depends(verify_token)):
         # Decrypt sensitive data
         members[i] = decrypt_member_sensitive_data(member)
         
-        # Redact contact info for National chapter members if user is not admin
-        if user_role != 'admin' and members[i].get('chapter') == 'National':
+        # Redact contact info for National chapter members if user is not admin OR National Chapter admin
+        user_chapter = current_user.get('chapter')
+        is_national_admin = user_role == 'admin' and user_chapter == 'National'
+        if user_role != 'admin' and not is_national_admin and members[i].get('chapter') == 'National':
             members[i]['email'] = 'restricted@admin-only.com'
             members[i]['phone'] = 'Admin Only'
             members[i]['address'] = 'Admin Only'
