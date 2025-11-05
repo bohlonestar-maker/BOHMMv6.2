@@ -1,5 +1,16 @@
 import sys
-print("🚀 [INIT] Starting server.py module import...", file=sys.stderr, flush=True)
+import os
+
+# Critical: Write to stderr immediately to test if module is loading
+sys.stderr.write("🚀 [INIT] Starting server.py module import...\n")
+sys.stderr.flush()
+
+# Also try writing to a file as a fallback
+try:
+    with open('/tmp/server_import.log', 'w') as f:
+        f.write("server.py module is being imported\n")
+except:
+    pass
 
 from fastapi import FastAPI, APIRouter, HTTPException, Depends, status, Response
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
