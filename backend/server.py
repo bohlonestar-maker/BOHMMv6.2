@@ -47,6 +47,8 @@ from datetime import datetime, timezone, timedelta
 sys.stderr.write("  [INIT] Importing JWT...\n")
 sys.stderr.flush()
 import jwt
+sys.stderr.write("  [INIT] Importing passlib (bcrypt)...\n")
+sys.stderr.flush()
 from passlib.context import CryptContext
 import csv
 from io import StringIO
