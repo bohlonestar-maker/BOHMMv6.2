@@ -21,6 +21,8 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 sys.stderr.write("  [INIT] Importing dotenv...\n")
 sys.stderr.flush()
 from dotenv import load_dotenv
+sys.stderr.write("  [INIT] Importing CORS...\n")
+sys.stderr.flush()
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 import os
