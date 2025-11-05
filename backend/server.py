@@ -3421,4 +3421,5 @@ async def shutdown_db_client():
     client.close()
 
 
-print("✅ [INIT] Server module fully loaded and ready", file=sys.stderr, flush=True)
+sys.stderr.write("✅ [INIT] Server module fully loaded and ready\n")
+sys.stderr.flush()
