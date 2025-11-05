@@ -21,7 +21,8 @@ import os
 import logging
 from pathlib import Path
 
-print("✅ [INIT] Core imports successful", file=sys.stderr, flush=True)
+sys.stderr.write("✅ [INIT] Core imports successful\n")
+sys.stderr.flush()
 from pydantic import BaseModel, Field, ConfigDict, EmailStr
 from typing import List, Optional
 import uuid
