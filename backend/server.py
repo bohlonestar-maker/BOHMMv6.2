@@ -57,6 +57,8 @@ from io import StringIO
 sys.stderr.write("  [INIT] Importing responses...\n")
 sys.stderr.flush()
 from fastapi.responses import StreamingResponse, Response
+sys.stderr.write("  [INIT] Importing aiosmtplib...\n")
+sys.stderr.flush()
 import aiosmtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
