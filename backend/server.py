@@ -594,25 +594,37 @@ class SupportReply(BaseModel):
 # Initialize default admin user
 @app.on_event("startup")
 async def create_default_admin():
-    admin_exists = await db.users.find_one({"username": "admin"})
-    if not admin_exists:
-        admin_user = User(
-            username="admin",
-            password_hash=hash_password("admin123"),
-            role="admin",
-            permissions={
-                "basic_info": True,
-                "email": True,
-                "phone": True,
-                "address": True,
-                "dues_tracking": True,
-                "admin_actions": True
-            }
-        )
-        doc = admin_user.model_dump()
-        doc['created_at'] = doc['created_at'].isoformat()
-        await db.users.insert_one(doc)
-        logger.info("Default admin user created: username=admin, password=admin123")
+    try:
+        import sys
+        print("🔧 [STARTUP] Checking for default admin user...", file=sys.stderr, flush=True)
+        admin_exists = await db.users.find_one({"username": "admin"})
+        if not admin_exists:
+            print("🔧 [STARTUP] Creating default admin user...", file=sys.stderr, flush=True)
+            admin_user = User(
+                username="admin",
+                password_hash=hash_password("admin123"),
+                role="admin",
+                permissions={
+                    "basic_info": True,
+                    "email": True,
+                    "phone": True,
+                    "address": True,
+                    "dues_tracking": True,
+                    "admin_actions": True
+                }
+            )
+            doc = admin_user.model_dump()
+            doc['created_at'] = doc['created_at'].isoformat()
+            await db.users.insert_one(doc)
+            logger.info("Default admin user created: username=admin, password=admin123")
+            print("✅ [STARTUP] Default admin user created", file=sys.stderr, flush=True)
+        else:
+            print("✅ [STARTUP] Default admin user already exists", file=sys.stderr, flush=True)
+    except Exception as e:
+        print(f"❌ [STARTUP] Error in create_default_admin: {str(e)}", file=sys.stderr, flush=True)
+        import traceback
+        traceback.print_exc(file=sys.stderr)
+        raise
 
 @app.on_event("startup")
 async def start_scheduler():
