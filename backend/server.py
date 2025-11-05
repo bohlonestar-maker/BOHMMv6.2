@@ -50,6 +50,8 @@ import jwt
 sys.stderr.write("  [INIT] Importing passlib (bcrypt)...\n")
 sys.stderr.flush()
 from passlib.context import CryptContext
+sys.stderr.write("  [INIT] Importing CSV & IO...\n")
+sys.stderr.flush()
 import csv
 from io import StringIO
 from fastapi.responses import StreamingResponse, Response
