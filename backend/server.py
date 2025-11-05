@@ -60,6 +60,8 @@ from fastapi.responses import StreamingResponse, Response
 sys.stderr.write("  [INIT] Importing aiosmtplib...\n")
 sys.stderr.flush()
 import aiosmtplib
+sys.stderr.write("  [INIT] Importing email MIME...\n")
+sys.stderr.flush()
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from cryptography.fernet import Fernet
