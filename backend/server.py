@@ -607,6 +607,27 @@ async def create_default_admin():
         await db.users.insert_one(doc)
         logger.info("Default admin user created: username=admin, password=admin123")
 
+@app.on_event("startup")
+async def start_scheduler():
+    """Start the APScheduler for Discord event notifications"""
+    global scheduler
+    try:
+        scheduler = BackgroundScheduler()
+        scheduler.add_job(
+            run_notification_check,
+            'interval',
+            minutes=30,  # Check every 30 minutes
+            id='event_notifications',
+            replace_existing=True
+        )
+        scheduler.start()
+        print("✅ [SCHEDULER] Discord event notification system started (checking every 30 minutes)", file=sys.stderr, flush=True)
+    except Exception as e:
+        print(f"❌ [SCHEDULER] Failed to start scheduler: {str(e)}", file=sys.stderr, flush=True)
+        # Don't crash the application if scheduler fails to start
+        import traceback
+        traceback.print_exc(file=sys.stderr)
+
 # Auth endpoints
 @api_router.post("/auth/login", response_model=LoginResponse)
 async def login(login_data: LoginRequest):
