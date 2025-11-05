@@ -30,9 +30,11 @@ ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
 # MongoDB connection
+print("🔧 [INIT] Connecting to MongoDB...", file=sys.stderr, flush=True)
 mongo_url = os.environ['MONGO_URL']
 client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ['DB_NAME']]
+print("✅ [INIT] MongoDB client initialized", file=sys.stderr, flush=True)
 
 # Encryption setup (AES-256)
 ENCRYPTION_KEY = os.environ.get('ENCRYPTION_KEY')
