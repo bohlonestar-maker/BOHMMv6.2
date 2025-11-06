@@ -1102,9 +1102,11 @@ async def export_members_csv(current_user: dict = Depends(verify_token)):
         # Get current year
         current_year = datetime.now(timezone.utc).year
         
-        # Generate meeting dates for the year
+        # Generate meeting dates for the year with better formatting
         meeting_labels = []
-        for month_idx, month_name in enumerate(['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'], start=1):
+        full_month_names = ['January', 'February', 'March', 'April', 'May', 'June', 
+                           'July', 'August', 'September', 'October', 'November', 'December']
+        for month_idx, month_name in enumerate(full_month_names, start=1):
             first_wed = get_nth_weekday(current_year, month_idx, 2, 1)  # Wednesday is 2
             third_wed = get_nth_weekday(current_year, month_idx, 2, 3)
             
@@ -1112,13 +1114,13 @@ async def export_members_csv(current_user: dict = Depends(verify_token)):
             third_str = third_wed.strftime("%m/%d") if third_wed else ""
             
             meeting_labels.extend([
-                f'{month_name}-1st ({first_str})', 
-                f'{month_name}-1st Note',
-                f'{month_name}-3rd ({third_str})',
-                f'{month_name}-3rd Note'
+                f'📋 {month_name} 1st Wed ({first_str})', 
+                f'📝 {month_name} 1st Note',
+                f'📋 {month_name} 3rd Wed ({third_str})',
+                f'📝 {month_name} 3rd Note'
             ])
         
-        header.append('Attendance Year')
+        header.append('📅 Attendance Year')
         header.extend(meeting_labels)
     
     writer.writerow(header)
