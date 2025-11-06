@@ -363,9 +363,10 @@ async def verify_token(credentials: HTTPAuthorizationCredentials = Depends(secur
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         username = payload.get("sub")
         role = payload.get("role")
+        chapter = payload.get("chapter")
         if username is None:
             raise HTTPException(status_code=401, detail="Invalid token")
-        return {"username": username, "role": role}
+        return {"username": username, "role": role, "chapter": chapter}
     except jwt.ExpiredSignatureError:
         raise HTTPException(status_code=401, detail="Token expired")
     except jwt.InvalidTokenError:
