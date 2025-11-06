@@ -783,8 +783,9 @@ async def get_members(current_user: dict = Depends(verify_token)):
         if user_role == 'prospect':
             members[i]['name'] = 'Hidden'
         
-        # Apply privacy settings (hide phone/address if marked private and user is not admin)
-        if user_role != 'admin':
+        # Apply privacy settings (hide phone/address if marked private and user is not National Chapter admin)
+        # Only National Chapter admins can see private contact info
+        if not is_national_admin:
             if members[i].get('phone_private', False):
                 members[i]['phone'] = 'Private'
             if members[i].get('address_private', False):
