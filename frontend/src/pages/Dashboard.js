@@ -812,20 +812,34 @@ export default function Dashboard({ onLogout, userRole, userPermissions }) {
                   padding: 20px;
                 }
                 
+                .header {
+                  padding: 20px 25px;
+                }
+                
                 h1 {
                   font-size: 1.75rem;
-                  padding-bottom: 12px;
-                  margin-bottom: 20px;
                 }
                 
-                .info {
-                  padding: 12px 16px;
+                .subtitle {
+                  font-size: 0.875rem;
+                }
+                
+                .stats-grid {
+                  grid-template-columns: repeat(3, 1fr);
+                  gap: 15px;
+                }
+                
+                .stat-card {
+                  padding: 15px;
+                }
+                
+                .stat-value {
+                  font-size: 1.75rem;
+                }
+                
+                .search-input {
                   font-size: 0.9375rem;
-                }
-                
-                .info-mobile {
-                  flex-direction: row;
-                  gap: 16px;
+                  padding: 12px 15px;
                 }
                 
                 .controls {
@@ -840,12 +854,16 @@ export default function Dashboard({ onLogout, userRole, userPermissions }) {
                   min-width: 150px;
                 }
                 
+                .table-container {
+                  max-height: calc(100vh - 400px);
+                }
+                
                 table {
                   font-size: 0.8125rem;
                 }
                 
                 th, td {
-                  padding: 12px 8px;
+                  padding: 12px 10px;
                   font-size: 0.8125rem;
                 }
                 
