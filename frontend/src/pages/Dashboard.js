@@ -669,11 +669,11 @@ export default function Dashboard({ onLogout, userRole, userPermissions }) {
               }
               
               button {
-                background: #10b981;
+                background: linear-gradient(135deg, #10b981 0%, #059669 100%);
                 color: white;
                 border: none;
                 padding: 10px 16px;
-                border-radius: 6px;
+                border-radius: 8px;
                 cursor: pointer;
                 font-weight: 600;
                 font-size: 0.875rem;
@@ -681,11 +681,26 @@ export default function Dashboard({ onLogout, userRole, userPermissions }) {
                 min-width: 120px;
                 touch-action: manipulation;
                 -webkit-tap-highlight-color: transparent;
+                box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+                transition: all 0.2s;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 8px;
               }
               
               button:active {
-                background: #059669;
                 transform: scale(0.98);
+                box-shadow: 0 1px 4px rgba(16, 185, 129, 0.4);
+              }
+              
+              button i {
+                font-size: 1rem;
+              }
+              
+              .btn-secondary {
+                background: linear-gradient(135deg, #475569 0%, #334155 100%);
+                box-shadow: 0 2px 8px rgba(71, 85, 105, 0.3);
               }
               
               .table-container {
