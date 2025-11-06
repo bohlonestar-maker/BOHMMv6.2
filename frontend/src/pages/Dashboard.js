@@ -646,15 +646,15 @@ export default function Dashboard({ onLogout, userRole, userPermissions }) {
             </style>
           </head>
           <body>
-            <h1>🏍️ Members Export - Brothers of the Highway</h1>
+            <h1>Members Export - Brothers of the Highway</h1>
             <div class="info">
               <strong>Total Members:</strong> <span id="memberCount">Loading...</span> | 
               <strong>Export Date:</strong> ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}
             </div>
             <div class="controls">
-              <button onclick="downloadFullCSV()">📥 Download Complete CSV</button>
-              <button onclick="toggleView()">🔄 Toggle Raw View</button>
-              <button onclick="window.print()">🖨️ Print</button>
+              <button onclick="downloadFullCSV()">Download Complete CSV</button>
+              <button onclick="toggleView()">Toggle Raw View</button>
+              <button onclick="window.print()">Print</button>
             </div>
             <div id="content" class="table-container">
               <table id="csvTable"></table>
