@@ -291,6 +291,18 @@ backend:
         agent: "testing"
         comment: "CRITICAL PRIVACY BUG IDENTIFIED ❌ NATIONAL CHAPTER ADMIN ACCESS NOT WORKING: Comprehensive testing revealed that National Chapter admins cannot see private contact information as intended. ✅ WORKING CORRECTLY: 1) Non-National admins see 'Private' text for private fields ✅ 2) Regular members see 'Private' text for private fields ✅ 3) Non-private members show actual contact info to all users ✅ 4) Privacy flags save and persist correctly ✅ ❌ CRITICAL BUG: National Chapter admins also see 'Private' instead of actual contact info. ROOT CAUSE: JWT token only contains username and role, but NOT chapter field. Backend code tries to get user_chapter from current_user.get('chapter') which returns None, making is_national_admin always False. FIX NEEDED: Backend must look up user's chapter from database when checking privacy permissions, not rely on JWT token. IMPACT: Privacy feature partially broken - National Chapter admins cannot access private contact info as designed. 22/24 tests passed (91.7% success rate)."
 
+  - task: "Members CSV export functionality"
+    implemented: true
+    working: false
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: false
+        agent: "testing"
+        comment: "CSV EXPORT COMPREHENSIVE TESTING COMPLETED ❌ CRITICAL ISSUES IDENTIFIED: Comprehensive testing of GET /api/members/export/csv endpoint revealed multiple critical issues with meeting attendance export functionality. ✅ WORKING CORRECTLY: 1) CSV Export Response - Status 200, Content-Type text/csv, Content-Disposition header with members.csv ✅ 2) CSV Structure - All 69 columns present including basic info (Chapter, Title, Member Handle, Name, Email, Phone, Address), Dues Year + 12 month columns, Attendance Year column ✅ 3) Basic Data Export - Chapter, Title, Handle, Name all exported correctly ✅ 4) Phone Formatting - Phone numbers properly formatted as (555) 123-4567 ✅ 5) Dues Tracking Export - Dues year (2025), Jan=Paid, Feb=Unpaid, Mar=Late (Payment delayed) all exported correctly with 3-state system ❌ CRITICAL ISSUES: 1) Meeting Attendance Columns - Only 12 meeting-related columns found instead of expected 48 (24 meetings × 2 for status+note) 2) Meeting Attendance Data - Test member created with Jan-1st=Present, Jan-3rd=Excused with 'Doctor appointment' note, but CSV shows Jan-1st=Absent, Jan-3rd=Absent, empty notes 3) Meeting Attendance Structure - Backend not properly handling the 24-meeting attendance structure in CSV export. ROOT CAUSE: CSV export logic for meeting attendance appears to have issues with the meeting attendance data structure conversion and column generation. IMPACT: Meeting attendance data is not being exported correctly, making the CSV export incomplete for attendance tracking purposes. 15/19 comprehensive tests passed (78.9% success rate)."
+
   - task: "Bulk promotion of prospects to members"
     implemented: true
     working: true
