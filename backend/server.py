@@ -1243,10 +1243,16 @@ async def export_members_csv(current_user: dict = Depends(verify_token)):
         writer.writerow(row)
     
     output.seek(0)
+    # Add UTF-8 BOM for proper encoding detection in Excel/Google Sheets
+    csv_content = '\ufeff' + output.getvalue()
+    
     return StreamingResponse(
-        iter([output.getvalue()]),
-        media_type="text/csv",
-        headers={"Content-Disposition": "attachment; filename=members.csv"}
+        iter([csv_content]),
+        media_type="text/csv; charset=utf-8",
+        headers={
+            "Content-Disposition": "attachment; filename=members.csv",
+            "Content-Type": "text/csv; charset=utf-8"
+        }
     )
 
 # Member Actions endpoints (admin only)
