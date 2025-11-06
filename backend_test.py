@@ -5723,6 +5723,9 @@ class BOHDirectoryAPITester:
         # PRIORITY TEST: Scheduled Discord Event Notifications
         self.test_scheduled_discord_notifications()
         
+        # NEW: CSV Export Comprehensive Testing (Review Request)
+        self.test_csv_export_comprehensive()
+        
         # Test member operations
         self.test_member_operations()
         
