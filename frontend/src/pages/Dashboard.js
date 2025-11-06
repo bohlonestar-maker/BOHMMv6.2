@@ -1047,8 +1047,10 @@ export default function Dashboard({ onLogout, userRole, userPermissions }) {
                 
                 // Create body
                 const tbody = document.createElement('tbody');
+                tbody.id = 'tableBody';
                 for (let i = 1; i < csvData.length; i++) {
                   const tr = document.createElement('tr');
+                  tr.setAttribute('data-row', i);
                   csvData[i].forEach(cell => {
                     const td = document.createElement('td');
                     td.textContent = cell;
@@ -1057,6 +1059,9 @@ export default function Dashboard({ onLogout, userRole, userPermissions }) {
                   tbody.appendChild(tr);
                 }
                 table.appendChild(tbody);
+                
+                // Store csvData globally for search
+                window.csvData = csvData;
 
                 function downloadFullCSV() {
                   // Create blob with the complete CSV data
