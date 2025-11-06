@@ -8,6 +8,22 @@ export default function UpdateLog() {
 
   const updates = [
     {
+      version: "v.2.2",
+      date: "November 5, 2025",
+      changes: [
+        "Privacy Feature: Reimplemented member privacy controls - phone and address can be marked private",
+        "National Admin Access: Only National Chapter admins can see private contact information",
+        "JWT Enhancement: Added chapter field to authentication tokens for proper access control",
+        "Privacy Logic: Non-National admins, members, and prospects see 'Private' text for private fields",
+        "Password Change Fix: Resolved 500 error - now properly uses hash_password helper function",
+        "Password Security: All password changes properly validated (8-char minimum) and bcrypt hashed",
+        "Activity Logging: Password changes logged in audit trail with admin and target user details",
+        "Default Admin Setup: Fixed required email field and added all permissions including meeting_attendance",
+        "Deployment Fixes: Resolved module import issues, added comprehensive logging for production debugging",
+        "Scheduler Optimization: Moved APScheduler to startup event with fault-tolerant error handling"
+      ]
+    },
+    {
       version: "v.2.1",
       date: "November 4, 2025",
       changes: [
