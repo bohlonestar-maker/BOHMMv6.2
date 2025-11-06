@@ -5314,6 +5314,358 @@ class BOHDirectoryAPITester:
         print(f"   🔑 Password change functionality testing completed")
         return user_id
 
+    def test_csv_export_comprehensive(self):
+        """Test comprehensive CSV export functionality as requested in review"""
+        print(f"\n📊 Testing CSV Export Functionality (Comprehensive Review)...")
+        
+        # Test 1: Export CSV - Admin User
+        print(f"\n   📋 Test 1: Export CSV - Admin User...")
+        
+        # Make sure we're logged in as admin
+        if not self.token:
+            success, response = self.test_login("testadmin", "testpass123")
+            if not success:
+                print("❌ Cannot test CSV export without admin login")
+                return
+        
+        # Test CSV export endpoint
+        url = f"{self.base_url}/members/export/csv"
+        headers = {
+            'Authorization': f'Bearer {self.token}'
+        }
+        
+        try:
+            response = requests.get(url, headers=headers, verify=False)
+            
+            # Verify response status 200
+            if response.status_code == 200:
+                self.log_test("CSV Export - Status 200", True, f"Status: {response.status_code}")
+            else:
+                self.log_test("CSV Export - Status 200", False, f"Expected 200, got {response.status_code}")
+                return
+            
+            # Verify Content-Type is text/csv
+            content_type = response.headers.get('Content-Type', '')
+            if 'text/csv' in content_type:
+                self.log_test("CSV Export - Content-Type", True, f"Content-Type: {content_type}")
+            else:
+                self.log_test("CSV Export - Content-Type", False, f"Expected text/csv, got: {content_type}")
+            
+            # Verify Content-Disposition header contains "members.csv"
+            content_disposition = response.headers.get('Content-Disposition', '')
+            if 'members.csv' in content_disposition:
+                self.log_test("CSV Export - Content-Disposition", True, f"Content-Disposition: {content_disposition}")
+            else:
+                self.log_test("CSV Export - Content-Disposition", False, f"Expected members.csv in header, got: {content_disposition}")
+            
+            # Get CSV content
+            csv_content = response.text
+            csv_lines = csv_content.split('\n')
+            
+            if len(csv_lines) > 0:
+                header_line = csv_lines[0]
+                header_columns = [col.strip() for col in header_line.split(',')]
+                
+                print(f"   📋 CSV Header Analysis:")
+                print(f"      Total columns found: {len(header_columns)}")
+                print(f"      First 10 columns: {header_columns[:10]}")
+                
+                # Test 2: Verify CSV structure with all expected columns
+                print(f"\n   📋 Test 2: Verify CSV Structure...")
+                
+                # Expected basic columns
+                expected_basic = ['Chapter', 'Title', 'Member Handle', 'Name', 'Email', 'Phone', 'Address']
+                basic_found = [col for col in expected_basic if col in header_columns]
+                
+                if len(basic_found) == len(expected_basic):
+                    self.log_test("CSV Structure - Basic Info Columns", True, f"Found: {basic_found}")
+                else:
+                    missing_basic = [col for col in expected_basic if col not in header_columns]
+                    self.log_test("CSV Structure - Basic Info Columns", False, f"Missing: {missing_basic}")
+                
+                # Expected dues columns
+                if 'Dues Year' in header_columns:
+                    self.log_test("CSV Structure - Dues Year Column", True, "Dues Year column present")
+                else:
+                    self.log_test("CSV Structure - Dues Year Column", False, "Dues Year column missing")
+                
+                # Check for 12 month columns for dues
+                month_names = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+                dues_months_found = [month for month in month_names if month in header_columns]
+                
+                if len(dues_months_found) == 12:
+                    self.log_test("CSV Structure - 12 Dues Months", True, f"All 12 months found: {dues_months_found}")
+                else:
+                    self.log_test("CSV Structure - 12 Dues Months", False, f"Expected 12, found {len(dues_months_found)}: {dues_months_found}")
+                
+                # Expected attendance columns
+                if 'Attendance Year' in header_columns:
+                    self.log_test("CSV Structure - Attendance Year Column", True, "Attendance Year column present")
+                else:
+                    self.log_test("CSV Structure - Attendance Year Column", False, "Attendance Year column missing")
+                
+                # Check for 48 columns for meetings (24 meetings × 2 for status+note)
+                meeting_patterns = ['Jan-1st', 'Jan-3rd', 'Feb-1st', 'Feb-3rd', 'Mar-1st', 'Mar-3rd']
+                meeting_columns_found = [col for col in header_columns if any(pattern in col for pattern in meeting_patterns)]
+                
+                if len(meeting_columns_found) >= 24:  # At least 24 meeting-related columns
+                    self.log_test("CSV Structure - Meeting Columns", True, f"Found {len(meeting_columns_found)} meeting-related columns")
+                else:
+                    self.log_test("CSV Structure - Meeting Columns", False, f"Expected at least 24, found {len(meeting_columns_found)}")
+                
+                # Verify total column count (approximately 69 as specified)
+                total_columns = len(header_columns)
+                if total_columns >= 65 and total_columns <= 75:  # Allow some flexibility
+                    self.log_test("CSV Structure - Total Columns (~69)", True, f"Total columns: {total_columns}")
+                else:
+                    self.log_test("CSV Structure - Total Columns (~69)", False, f"Expected ~69, got {total_columns}")
+                
+                # Test 3: Create test member with known data for verification
+                print(f"\n   📋 Test 3: Create Test Member for Data Verification...")
+                
+                test_member_data = {
+                    "chapter": "AD",
+                    "title": "Member", 
+                    "handle": "ExportTest",
+                    "name": "Export Test Member",
+                    "email": "exporttest@example.com",
+                    "phone": "5551234567",  # Will be formatted to (555) 123-4567
+                    "address": "123 Export Test Street, Test City, TC 12345",
+                    "dues": {
+                        "2025": [
+                            {"status": "paid", "note": ""},      # Jan - Paid
+                            {"status": "unpaid", "note": ""},    # Feb - Unpaid
+                            {"status": "late", "note": "Payment delayed"},  # Mar - Late with note
+                        ] + [{"status": "unpaid", "note": ""} for _ in range(9)]  # Rest unpaid
+                    },
+                    "meeting_attendance": {
+                        "2025": [
+                            {"status": 1, "note": ""},                    # Jan-1st - Present
+                            {"status": 0, "note": ""},                    # Jan-1st Note
+                            {"status": 2, "note": "Doctor appointment"},  # Jan-3rd - Excused with note
+                            {"status": 0, "note": ""},                    # Jan-3rd Note
+                        ] + [{"status": 0, "note": ""} for _ in range(20)]  # Rest absent
+                    }
+                }
+                
+                success, created_member = self.run_test(
+                    "Create Test Member for CSV Export",
+                    "POST",
+                    "members",
+                    201,
+                    data=test_member_data
+                )
+                
+                test_member_id = None
+                if success and 'id' in created_member:
+                    test_member_id = created_member['id']
+                    print(f"      Created test member ID: {test_member_id}")
+                    
+                    # Export CSV again to get updated data
+                    response = requests.get(url, headers=headers, verify=False)
+                    if response.status_code == 200:
+                        updated_csv_content = response.text
+                        updated_csv_lines = updated_csv_content.split('\n')
+                        
+                        # Test 4: Verify Data Content
+                        print(f"\n   📋 Test 4: Verify Data Content...")
+                        
+                        # Find test member row in CSV
+                        test_member_row = None
+                        for line in updated_csv_lines[1:]:  # Skip header
+                            if 'ExportTest' in line and 'Export Test Member' in line:
+                                test_member_row = line
+                                break
+                        
+                        if test_member_row:
+                            self.log_test("CSV Data - Test Member Found", True, "Test member found in CSV export")
+                            
+                            # Parse the row (handle CSV parsing carefully)
+                            import csv
+                            from io import StringIO
+                            csv_reader = csv.reader(StringIO(test_member_row))
+                            row_data = next(csv_reader)
+                            
+                            # Verify basic info
+                            if len(row_data) >= 7:  # At least basic columns
+                                chapter_idx = header_columns.index('Chapter') if 'Chapter' in header_columns else -1
+                                title_idx = header_columns.index('Title') if 'Title' in header_columns else -1
+                                handle_idx = header_columns.index('Member Handle') if 'Member Handle' in header_columns else -1
+                                name_idx = header_columns.index('Name') if 'Name' in header_columns else -1
+                                
+                                if (chapter_idx >= 0 and row_data[chapter_idx] == 'AD' and
+                                    title_idx >= 0 and row_data[title_idx] == 'Member' and
+                                    handle_idx >= 0 and row_data[handle_idx] == 'ExportTest' and
+                                    name_idx >= 0 and row_data[name_idx] == 'Export Test Member'):
+                                    self.log_test("CSV Data - Basic Info Correct", True, "Chapter, Title, Handle, Name all correct")
+                                else:
+                                    self.log_test("CSV Data - Basic Info Correct", False, f"Basic info mismatch in CSV row")
+                                
+                                # Test 5: Verify Phone Formatting
+                                print(f"\n   📋 Test 5: Verify Phone Formatting...")
+                                phone_idx = header_columns.index('Phone') if 'Phone' in header_columns else -1
+                                if phone_idx >= 0 and phone_idx < len(row_data):
+                                    phone_value = row_data[phone_idx]
+                                    if phone_value == '(555) 123-4567':
+                                        self.log_test("CSV Data - Phone Formatting", True, f"Phone formatted correctly: {phone_value}")
+                                    else:
+                                        self.log_test("CSV Data - Phone Formatting", False, f"Expected (555) 123-4567, got: {phone_value}")
+                                
+                                # Test 6: Verify Dues Tracking Export
+                                print(f"\n   📋 Test 6: Verify Dues Tracking Export...")
+                                dues_year_idx = header_columns.index('Dues Year') if 'Dues Year' in header_columns else -1
+                                if dues_year_idx >= 0 and dues_year_idx < len(row_data):
+                                    dues_year = row_data[dues_year_idx]
+                                    if dues_year == '2025':
+                                        self.log_test("CSV Data - Dues Year", True, f"Dues year correct: {dues_year}")
+                                    else:
+                                        self.log_test("CSV Data - Dues Year", False, f"Expected 2025, got: {dues_year}")
+                                
+                                # Check dues status for Jan (should be Paid), Feb (should be Unpaid)
+                                jan_idx = header_columns.index('Jan') if 'Jan' in header_columns else -1
+                                feb_idx = header_columns.index('Feb') if 'Feb' in header_columns else -1
+                                mar_idx = header_columns.index('Mar') if 'Mar' in header_columns else -1
+                                
+                                if jan_idx >= 0 and jan_idx < len(row_data):
+                                    jan_status = row_data[jan_idx]
+                                    if jan_status == 'Paid':
+                                        self.log_test("CSV Data - Jan Dues Paid", True, f"Jan dues status: {jan_status}")
+                                    else:
+                                        self.log_test("CSV Data - Jan Dues Paid", False, f"Expected Paid, got: {jan_status}")
+                                
+                                if feb_idx >= 0 and feb_idx < len(row_data):
+                                    feb_status = row_data[feb_idx]
+                                    if feb_status == 'Unpaid':
+                                        self.log_test("CSV Data - Feb Dues Unpaid", True, f"Feb dues status: {feb_status}")
+                                    else:
+                                        self.log_test("CSV Data - Feb Dues Unpaid", False, f"Expected Unpaid, got: {feb_status}")
+                                
+                                if mar_idx >= 0 and mar_idx < len(row_data):
+                                    mar_status = row_data[mar_idx]
+                                    if 'Late' in mar_status and 'Payment delayed' in mar_status:
+                                        self.log_test("CSV Data - Mar Dues Late with Note", True, f"Mar dues status: {mar_status}")
+                                    else:
+                                        self.log_test("CSV Data - Mar Dues Late with Note", False, f"Expected Late with note, got: {mar_status}")
+                                
+                                # Test 7: Verify Meeting Attendance Export
+                                print(f"\n   📋 Test 7: Verify Meeting Attendance Export...")
+                                attendance_year_idx = header_columns.index('Attendance Year') if 'Attendance Year' in header_columns else -1
+                                if attendance_year_idx >= 0 and attendance_year_idx < len(row_data):
+                                    attendance_year = row_data[attendance_year_idx]
+                                    if attendance_year == '2025':
+                                        self.log_test("CSV Data - Attendance Year", True, f"Attendance year correct: {attendance_year}")
+                                    else:
+                                        self.log_test("CSV Data - Attendance Year", False, f"Expected 2025, got: {attendance_year}")
+                                
+                                # Check for Jan-1st meeting (should be Present)
+                                jan_1st_cols = [i for i, col in enumerate(header_columns) if 'Jan-1st' in col and 'Note' not in col]
+                                if jan_1st_cols and jan_1st_cols[0] < len(row_data):
+                                    jan_1st_status = row_data[jan_1st_cols[0]]
+                                    if jan_1st_status == 'Present':
+                                        self.log_test("CSV Data - Jan-1st Present", True, f"Jan-1st meeting: {jan_1st_status}")
+                                    else:
+                                        self.log_test("CSV Data - Jan-1st Present", False, f"Expected Present, got: {jan_1st_status}")
+                                
+                                # Check for Jan-3rd meeting (should be Excused)
+                                jan_3rd_cols = [i for i, col in enumerate(header_columns) if 'Jan-3rd' in col and 'Note' not in col]
+                                if jan_3rd_cols and jan_3rd_cols[0] < len(row_data):
+                                    jan_3rd_status = row_data[jan_3rd_cols[0]]
+                                    if jan_3rd_status == 'Excused':
+                                        self.log_test("CSV Data - Jan-3rd Excused", True, f"Jan-3rd meeting: {jan_3rd_status}")
+                                    else:
+                                        self.log_test("CSV Data - Jan-3rd Excused", False, f"Expected Excused, got: {jan_3rd_status}")
+                                
+                                # Check for Jan-3rd Note
+                                jan_3rd_note_cols = [i for i, col in enumerate(header_columns) if 'Jan-3rd Note' in col]
+                                if jan_3rd_note_cols and jan_3rd_note_cols[0] < len(row_data):
+                                    jan_3rd_note = row_data[jan_3rd_note_cols[0]]
+                                    if 'Doctor appointment' in jan_3rd_note:
+                                        self.log_test("CSV Data - Jan-3rd Note", True, f"Jan-3rd note: {jan_3rd_note}")
+                                    else:
+                                        self.log_test("CSV Data - Jan-3rd Note", False, f"Expected 'Doctor appointment', got: {jan_3rd_note}")
+                            
+                        else:
+                            self.log_test("CSV Data - Test Member Found", False, "Test member not found in CSV export")
+                    
+                    # Clean up test member
+                    if test_member_id:
+                        success, delete_response = self.run_test(
+                            "Delete CSV Test Member (Cleanup)",
+                            "DELETE",
+                            f"members/{test_member_id}",
+                            200
+                        )
+                
+                # Test 8: Verify Permissions (Non-admin users)
+                print(f"\n   📋 Test 8: Verify Permissions...")
+                
+                # Create a regular user without admin permissions
+                regular_user = {
+                    "username": f"csvtest_{datetime.now().strftime('%H%M%S')}",
+                    "password": "testpass123",
+                    "role": "member",
+                    "permissions": {
+                        "basic_info": True,
+                        "email": False,
+                        "phone": False,
+                        "address": False,
+                        "dues_tracking": False,
+                        "meeting_attendance": False,
+                        "admin_actions": False
+                    }
+                }
+                
+                success, created_user = self.run_test(
+                    "Create Regular User for CSV Permission Test",
+                    "POST",
+                    "users",
+                    201,
+                    data=regular_user
+                )
+                
+                if success and 'id' in created_user:
+                    # Save admin token
+                    admin_token = self.token
+                    
+                    # Login as regular user
+                    success, login_response = self.run_test(
+                        "Login as Regular User for CSV Test",
+                        "POST",
+                        "auth/login",
+                        200,
+                        data={"username": regular_user["username"], "password": regular_user["password"]}
+                    )
+                    
+                    if success and 'token' in login_response:
+                        self.token = login_response['token']
+                        
+                        # Try CSV export (should fail with 403)
+                        success, csv_response = self.run_test(
+                            "Regular User CSV Export (Should Fail)",
+                            "GET",
+                            "members/export/csv",
+                            403
+                        )
+                    
+                    # Restore admin token
+                    self.token = admin_token
+                    
+                    # Clean up regular user
+                    success, delete_response = self.run_test(
+                        "Delete CSV Test User (Cleanup)",
+                        "DELETE",
+                        f"users/{created_user['id']}",
+                        200
+                    )
+            
+            else:
+                self.log_test("CSV Export - Content Analysis", False, "Empty CSV response")
+        
+        except Exception as e:
+            self.log_test("CSV Export - Request", False, f"Exception: {str(e)}")
+        
+        print(f"   📊 CSV Export comprehensive testing completed")
+
     def run_all_tests(self):
         """Run all tests"""
         print("🚀 Starting Brothers of the Highway Directory API Tests")
