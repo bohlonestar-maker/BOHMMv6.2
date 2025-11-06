@@ -706,11 +706,12 @@ export default function Dashboard({ onLogout, userRole, userPermissions }) {
               .table-container {
                 overflow-x: auto;
                 overflow-y: auto;
-                background: #334155;
-                border-radius: 8px;
-                box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-                max-height: calc(100vh - 200px);
+                background: #1e293b;
+                border-radius: 12px;
+                box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+                max-height: calc(100vh - 350px);
                 -webkit-overflow-scrolling: touch;
+                border: 1px solid #334155;
               }
               
               table {
@@ -721,10 +722,10 @@ export default function Dashboard({ onLogout, userRole, userPermissions }) {
               }
               
               th {
-                background: #475569;
+                background: linear-gradient(135deg, #334155 0%, #1e293b 100%);
                 color: #10b981;
-                font-weight: 600;
-                padding: 10px 6px;
+                font-weight: 700;
+                padding: 12px 8px;
                 text-align: left;
                 position: sticky;
                 top: 0;
@@ -732,17 +733,46 @@ export default function Dashboard({ onLogout, userRole, userPermissions }) {
                 white-space: nowrap;
                 z-index: 10;
                 font-size: 0.75rem;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+              }
+              
+              tbody tr {
+                transition: background-color 0.2s;
+              }
+              
+              tbody tr:nth-child(even) {
+                background: rgba(51, 65, 85, 0.3);
+              }
+              
+              tbody tr:hover {
+                background: rgba(16, 185, 129, 0.1);
               }
               
               td {
-                padding: 8px 6px;
-                border-bottom: 1px solid #475569;
+                padding: 10px 8px;
+                border-bottom: 1px solid #334155;
                 white-space: nowrap;
                 font-size: 0.75rem;
+                color: #cbd5e1;
               }
               
               tr:active td {
-                background: #475569;
+                background: rgba(16, 185, 129, 0.2);
+              }
+              
+              .no-results {
+                text-align: center;
+                padding: 40px 20px;
+                color: #64748b;
+                font-size: 1rem;
+              }
+              
+              .no-results i {
+                font-size: 3rem;
+                margin-bottom: 15px;
+                display: block;
+                opacity: 0.5;
               }
               
               pre {
