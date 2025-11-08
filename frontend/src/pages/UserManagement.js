@@ -1419,8 +1419,11 @@ export default function UserManagement({ onLogout }) {
         </DialogContent>
       </Dialog>
 
-      {/* Archived Records Dialog */}
-      <Dialog open={archivedDialogOpen} onOpenChange={setArchivedDialogOpen}>
+      {/* Archived Records - Now separate pages */}
+      {/* Users can navigate to /archived-members or /archived-prospects */}
+      
+      {/* Activity Log Dialog */}
+      <Dialog open={logsDialogOpen} onOpenChange={setLogsDialogOpen}>
         <DialogContent className="max-w-[95vw] sm:max-w-4xl lg:max-w-6xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-base sm:text-lg md:text-xl">Archived Records</DialogTitle>
