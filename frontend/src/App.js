@@ -216,6 +216,26 @@ function App() {
               )
             }
           />
+          <Route
+            path="/archived-members"
+            element={
+              isAuthenticated && (userRole === 'admin' || userPermissions?.admin_actions) ? (
+                <ArchivedMembers />
+              ) : (
+                <Navigate to="/" replace />
+              )
+            }
+          />
+          <Route
+            path="/archived-prospects"
+            element={
+              isAuthenticated && (userRole === 'admin' || userPermissions?.admin_actions) ? (
+                <ArchivedProspects />
+              ) : (
+                <Navigate to="/" replace />
+              )
+            }
+          />
         </Routes>
         {isAuthenticated && <MessageNotifier />}
         {isAuthenticated && <ChatBot />}
