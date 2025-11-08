@@ -135,6 +135,7 @@ export default function CSVExportView() {
           if (h.includes('handle') || h.includes('dues year') ||
               (h.includes('dues') && (h.includes('january') || h.includes('february') || 
                h.includes('march') || h.includes('april') || h.includes('may') || h.includes('june')))) {
+            console.log('  Matched first half:', header);
             indices.push(index);
           }
           break;
