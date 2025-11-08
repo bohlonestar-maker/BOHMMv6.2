@@ -1138,7 +1138,7 @@ export default function Dashboard({ onLogout, userRole, userPermissions }) {
                               
                               return (
                                 <>
-                                  <span className="text-xs text-slate-400">{latestYear}</span>
+                                  <span className="text-xs text-white">{latestYear}</span>
                                   <div className="flex items-center gap-2 text-xs">
                                     <span className="text-green-400 font-medium">
                                       Paid: {paidCount}
