@@ -1804,7 +1804,7 @@ export default function Dashboard({ onLogout, userRole, userPermissions }) {
                   
                   // Add headers
                   filteredData[0].forEach(header => {
-                    printHTML += \`        <th>\${header}</th>\n\`;
+                    printHTML += \`        <th>\\\${header}</th>\\n\`;
                   });
                   
                   printHTML += \`      </tr>
@@ -1814,11 +1814,11 @@ export default function Dashboard({ onLogout, userRole, userPermissions }) {
                   
                   // Add data rows
                   for (let i = 1; i < filteredData.length; i++) {
-                    printHTML += \`      <tr>\n\`;
+                    printHTML += \`      <tr>\\n\`;
                     filteredData[i].forEach(cell => {
-                      printHTML += \`        <td>\${cell}</td>\n\`;
+                      printHTML += \`        <td>\\\${cell}</td>\\n\`;
                     });
-                    printHTML += \`      </tr>\n\`;
+                    printHTML += \`      </tr>\\n\`;
                   }
                   
                   printHTML += \`    </tbody>
