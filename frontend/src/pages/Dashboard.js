@@ -548,14 +548,12 @@ export default function Dashboard({ onLogout, userRole, userPermissions }) {
       
       const csvData = response.data;
       
-      // Escape the CSV data for embedding in JavaScript
-      const escapedCSV = csvData
-        .replace(/\\/g, '\\\\')
-        .replace(/`/g, '\\`')
-        .replace(/\$/g, '\\$');
-      
       // Open CSV in new window with formatted view
       const csvWindow = window.open("", "_blank");
+      
+      // Use JSON.stringify to safely embed CSV data
+      const safeCSV = JSON.stringify(csvData);
+      
       csvWindow.document.write(`
         <html>
           <head>
