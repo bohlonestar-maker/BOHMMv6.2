@@ -1850,10 +1850,14 @@ export default function Dashboard({ onLogout, userRole, userPermissions }) {
                 window.selectPreset = selectPreset;
                 window.printSelectedColumns = printSelectedColumns;
               }
-      };
+      `;
       
-      // Execute the function in the new window's context
-      executeInNewWindow.call(csvWindow);
+      // Execute the script code in the new window's context
+      try {
+        csvWindow.Function(scriptCode)();
+      } catch (err) {
+        console.error('Script execution error:', err);
+      }
       
       toast.success("CSV opened in new window");
     } catch (error) {
