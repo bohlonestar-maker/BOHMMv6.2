@@ -409,11 +409,15 @@ export default function CSVExportView() {
                 <button onClick={() => selectPreset('all')} className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded text-sm">All Fields</button>
                 <button onClick={() => selectPreset('contact')} className="bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded text-sm">Contact Info</button>
                 <button onClick={() => selectPreset('dues')} className="bg-pink-600 hover:bg-pink-700 px-4 py-2 rounded text-sm">All Dues</button>
-                <button onClick={() => selectPreset('dues_first_half')} className="bg-rose-600 hover:bg-rose-700 px-4 py-2 rounded text-sm">Dues Jan-Jun</button>
-                <button onClick={() => selectPreset('dues_second_half')} className="bg-red-600 hover:bg-red-700 px-4 py-2 rounded text-sm">Dues Jul-Dec</button>
+                <button onClick={() => selectPreset('dues_q1')} className="bg-rose-600 hover:bg-rose-700 px-3 py-2 rounded text-sm">Dues Q1</button>
+                <button onClick={() => selectPreset('dues_q2')} className="bg-red-600 hover:bg-red-700 px-3 py-2 rounded text-sm">Dues Q2</button>
+                <button onClick={() => selectPreset('dues_q3')} className="bg-orange-600 hover:bg-orange-700 px-3 py-2 rounded text-sm">Dues Q3</button>
+                <button onClick={() => selectPreset('dues_q4')} className="bg-amber-600 hover:bg-amber-700 px-3 py-2 rounded text-sm">Dues Q4</button>
                 <button onClick={() => selectPreset('meetings')} className="bg-indigo-600 hover:bg-indigo-700 px-4 py-2 rounded text-sm">All Meetings</button>
-                <button onClick={() => selectPreset('meetings_first_half')} className="bg-cyan-600 hover:bg-cyan-700 px-4 py-2 rounded text-sm">Meetings Jan-Jun</button>
-                <button onClick={() => selectPreset('meetings_second_half')} className="bg-teal-600 hover:bg-teal-700 px-4 py-2 rounded text-sm">Meetings Jul-Dec</button>
+                <button onClick={() => selectPreset('meetings_q1')} className="bg-cyan-600 hover:bg-cyan-700 px-3 py-2 rounded text-sm">Meetings Q1</button>
+                <button onClick={() => selectPreset('meetings_q2')} className="bg-teal-600 hover:bg-teal-700 px-3 py-2 rounded text-sm">Meetings Q2</button>
+                <button onClick={() => selectPreset('meetings_q3')} className="bg-emerald-600 hover:bg-emerald-700 px-3 py-2 rounded text-sm">Meetings Q3</button>
+                <button onClick={() => selectPreset('meetings_q4')} className="bg-green-600 hover:bg-green-700 px-3 py-2 rounded text-sm">Meetings Q4</button>
                 <button onClick={() => setSelectedColumns([])} className="bg-slate-600 hover:bg-slate-700 px-4 py-2 rounded text-sm">Clear All</button>
               </div>
             </div>
