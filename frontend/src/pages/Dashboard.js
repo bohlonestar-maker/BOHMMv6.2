@@ -1131,27 +1131,28 @@ export default function Dashboard({ onLogout, userRole, userPermissions }) {
                 
                 <div style="background: #334155; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
                   <div style="font-size: 0.875rem; line-height: 1.6;">
-                    <p style="margin: 0 0 15px 0;"><strong>Step 1:</strong> File will download automatically</p>
-                    <p style="margin: 0 0 15px 0;"><strong>Step 2:</strong> Go to <a href="https://sheets.google.com" target="_blank" style="color: #10b981; text-decoration: underline;">Google Sheets</a></p>
-                    <p style="margin: 0 0 15px 0;"><strong>Step 3:</strong> Click <strong>File → Import</strong></p>
-                    <p style="margin: 0 0 15px 0;"><strong>Step 4:</strong> Click <strong>Upload</strong> tab and select the downloaded file</p>
-                    <p style="margin: 0;"><strong>Step 5:</strong> Click <strong>Import data</strong></p>
+                    <p style="margin: 0 0 15px 0;"><strong>Step 1:</strong> Data will be copied to your clipboard</p>
+                    <p style="margin: 0 0 15px 0;"><strong>Step 2:</strong> Google Sheets will open automatically</p>
+                    <p style="margin: 0 0 15px 0;"><strong>Step 3:</strong> Press <strong>Ctrl+V</strong> (or <strong>Cmd+V</strong> on Mac) to paste</p>
+                    <p style="margin: 0;">That's it! All your data will be in Google Sheets instantly.</p>
                   </div>
                 </div>
                 
-                <div style="background: #059669; padding: 12px; border-radius: 8px; margin-bottom: 20px; text-align: center;">
-                  <div style="font-size: 0.75rem; color: white; margin-bottom: 8px;">Quick Import Link</div>
-                  <a href="https://sheets.google.com/create" target="_blank" style="color: white; font-weight: 600; text-decoration: underline; font-size: 1rem;">
-                    Open Google Sheets Now →
-                  </a>
+                <div style="background: #059669; padding: 15px; border-radius: 8px; margin-bottom: 20px; text-align: center;">
+                  <div style="font-size: 0.875rem; color: white; margin-bottom: 8px;">
+                    <i class="fas fa-info-circle"></i> One-Click Export
+                  </div>
+                  <div style="color: white; font-size: 0.8rem; line-height: 1.5;">
+                    Click the button below to copy all <span id="modalMemberCount">${csvData.length - 1}</span> members with all <span id="modalColumnCount">${csvData[0].length}</span> columns to clipboard and open Google Sheets.
+                  </div>
                 </div>
                 
                 <div style="display: flex; gap: 10px; justify-content: flex-end;">
                   <button onclick="closeGoogleSheetsModal()" style="background: #475569; padding: 10px 20px; border: none; border-radius: 8px; color: white; cursor: pointer; font-weight: 600;">
-                    Close
+                    Cancel
                   </button>
-                  <button onclick="downloadAndOpenSheets()" style="background: linear-gradient(135deg, #34a853 0%, #1e8e3e 100%); padding: 10px 20px; border: none; border-radius: 8px; color: white; cursor: pointer; font-weight: 600; box-shadow: 0 2px 8px rgba(52, 168, 83, 0.3);">
-                    Download & Open Sheets
+                  <button onclick="exportToGoogleSheets(); event.target.disabled=true;" style="background: linear-gradient(135deg, #34a853 0%, #1e8e3e 100%); padding: 12px 24px; border: none; border-radius: 8px; color: white; cursor: pointer; font-weight: 600; box-shadow: 0 2px 8px rgba(52, 168, 83, 0.3); font-size: 1rem;">
+                    <i class="fab fa-google"></i> Copy & Open Google Sheets
                   </button>
                 </div>
               </div>
