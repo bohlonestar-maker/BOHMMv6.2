@@ -541,6 +541,7 @@ export default function Dashboard({ onLogout, userRole, userPermissions }) {
     // Navigate to the CSV export view page
     window.open('/export-view', '_blank');
     toast.success("Opening CSV export view...");
+  };
 
   const filteredMembers = members.filter((member) => {
     const search = searchTerm.toLowerCase();
