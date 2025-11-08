@@ -1328,39 +1328,53 @@ export default function Dashboard({ onLogout, userRole, userPermissions }) {
                 }
                 
                 function preparePrint() {
-                  // Show print note
-                  const printNote = document.getElementById('printNote');
-                  printNote.style.display = 'block';
-                  
-                  // Make sure we're in table view
-                  const content = document.getElementById('content');
-                  const rawCSV = document.getElementById('rawCSV');
-                  if (content.style.display === 'none') {
-                    content.style.display = 'block';
-                    rawCSV.style.display = 'none';
-                  }
-                  
-                  // Remove any search filters for printing
-                  const searchInput = document.getElementById('searchInput');
-                  if (searchInput.value) {
-                    const confirmClear = confirm('Clear search filter to print all members?');
-                    if (confirmClear) {
-                      searchInput.value = '';
-                      filterTable();
-                    } else {
-                      printNote.style.display = 'none';
-                      return;
+                  try {
+                    console.log('preparePrint called');
+                    
+                    // Show print note
+                    const printNote = document.getElementById('printNote');
+                    if (printNote) {
+                      printNote.style.display = 'block';
                     }
-                  }
-                  
-                  // Show print dialog after a brief delay
-                  setTimeout(() => {
-                    window.print();
-                    // Hide print note after printing
+                    
+                    // Make sure we're in table view
+                    const content = document.getElementById('content');
+                    const rawCSV = document.getElementById('rawCSV');
+                    
+                    if (content && content.style.display === 'none') {
+                      content.style.display = 'block';
+                      if (rawCSV) rawCSV.style.display = 'none';
+                    }
+                    
+                    // Remove any search filters for printing
+                    const searchInput = document.getElementById('searchInput');
+                    if (searchInput && searchInput.value) {
+                      const confirmClear = confirm('Clear search filter to print all members?');
+                      if (confirmClear) {
+                        searchInput.value = '';
+                        if (typeof filterTable === 'function') {
+                          filterTable();
+                        }
+                      } else {
+                        if (printNote) printNote.style.display = 'none';
+                        return;
+                      }
+                    }
+                    
+                    console.log('Opening print dialog');
+                    
+                    // Show print dialog after a brief delay
                     setTimeout(() => {
-                      printNote.style.display = 'none';
-                    }, 500);
-                  }, 300);
+                      window.print();
+                      // Hide print note after printing
+                      setTimeout(() => {
+                        if (printNote) printNote.style.display = 'none';
+                      }, 500);
+                    }, 300);
+                  } catch (error) {
+                    console.error('Error in preparePrint:', error);
+                    alert('Print function error: ' + error.message);
+                  }
                 }
                 
                 function exportToGoogleSheets() {
