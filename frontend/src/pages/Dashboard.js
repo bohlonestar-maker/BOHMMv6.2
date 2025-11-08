@@ -1853,8 +1853,8 @@ export default function Dashboard({ onLogout, userRole, userPermissions }) {
               }
       `;
       
-      // Append the script to the document body
-      csvWindow.document.body.appendChild(script);
+      // Execute the script in the new window's context using eval
+      csvWindow.eval(script.textContent);
       
       toast.success("CSV opened in new window");
     } catch (error) {
