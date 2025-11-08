@@ -1218,7 +1218,7 @@ export default function Dashboard({ onLogout, userRole, userPermissions }) {
             <pre id="rawCSV"></pre>
             <script>
               // CSV data is embedded directly
-              const csvText = ${JSON.stringify(csvData)};
+              const csvText = ${safeCSV};
               
               console.log('CSV data loaded, length:', csvText.length);
               
