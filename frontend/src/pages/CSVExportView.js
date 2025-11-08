@@ -531,25 +531,25 @@ export default function CSVExportView() {
 
       {/* Google Sheets Modal */}
       {showSheetsModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 p-4" onClick={() => setShowSheetsModal(false)}>
-          <div className="bg-slate-800 rounded-lg p-6 max-w-md w-full" onClick={(e) => e.stopPropagation()}>
-            <h2 className="text-2xl font-bold text-green-400 mb-4">
+        <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 p-3 sm:p-4" onClick={() => setShowSheetsModal(false)}>
+          <div className="bg-slate-800 rounded-lg p-4 sm:p-6 max-w-full sm:max-w-md w-full" onClick={(e) => e.stopPropagation()}>
+            <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-green-400 mb-3 sm:mb-4">
               <i className="fab fa-google mr-2"></i>
               Export to Google Sheets
             </h2>
-            <p className="text-slate-300 mb-6">
-              Click below to copy all {csvData.length - 1} members with {csvData[0]?.length} columns to clipboard and open Google Sheets.
+            <p className="text-slate-300 mb-4 sm:mb-6 text-sm sm:text-base">
+              Copy all {csvData.length - 1} members with {csvData[0]?.length} columns to clipboard and open Google Sheets.
             </p>
-            <div className="flex gap-3">
+            <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
               <button
                 onClick={() => setShowSheetsModal(false)}
-                className="flex-1 bg-slate-600 hover:bg-slate-700 px-6 py-3 rounded-lg font-semibold"
+                className="flex-1 bg-slate-600 hover:bg-slate-700 px-4 sm:px-6 py-2 sm:py-3 rounded-lg font-semibold text-sm sm:text-base"
               >
                 Cancel
               </button>
               <button
                 onClick={exportToGoogleSheets}
-                className="flex-1 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 px-6 py-3 rounded-lg font-semibold"
+                className="flex-1 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 px-4 sm:px-6 py-2 sm:py-3 rounded-lg font-semibold text-sm sm:text-base"
               >
                 <i className="fab fa-google mr-2"></i>
                 Export Now
