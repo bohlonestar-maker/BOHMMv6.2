@@ -1,69 +1,59 @@
 <analysis>
-The AI engineer's work primarily focused on resolving critical deployment issues, enhancing existing features, and implementing new functionalities for the Brothers of the Highway Member Management application. Initial efforts centered on debugging and fixing the  for Discord event notifications, which involved addressing event loop conflicts, MongoDB client initialization in threads, and robust logging. Following this, a major blocker arose with repeated deployment failures (520 status, Kaniko job failure, no pod logs). This led to extensive debugging, including lazy MongoDB connection, reordering logger initialization, adding verbose  statements, and a file-based log. The root cause was eventually traced to a missing  field in the default admin user creation, resolving the . Subsequent tasks included refining admin permissions, re-implementing member privacy (visible only to National Chapter admins), fixing a  import error in the password change function, and updating the application's change log. The final phase involved significant enhancements to the CSV export feature, adding a View Export screen with advanced UI/UX, responsiveness, search, direct Google Sheets integration, and print optimization. The trajectory concluded with the user requesting customizable print options for the export.
+The AI engineer's work, spanning from initial setup to the current state, has significantly evolved the Brothers of the Highway Member Management application. Initially, the focus was on critical bug fixes, including stabilizing  for Discord notifications, resolving complex deployment failures stemming from  due to missing email fields, and enhancing core functionalities like admin permissions, member privacy, and password changes. A major architectural shift occurred during this trajectory, moving the CSV export functionality from a problematic  in a new window to a dedicated React page (), resolving persistent browser security and script execution issues. This enabled the successful implementation of customizable print options with quarterly presets for dues and meetings, including dynamic print headers. Subsequent efforts concentrated on comprehensive responsive design across all major screens, ensuring a consistent white text theme, and adding critical features like archived member/prospect deletion, both of which were thoroughly backend and frontend tested. The current task is to address text color issues for system users based on recent user feedback.
 </analysis>
 
 <product_requirements>
-The Brothers of the Highway Member Management application provides secure member and prospect management with role-based access. It features secure login (v2.2), user/invite management (with Chapter, Title, Email fields), and bulk prospect promotion. Key data, including contact info and financial/attendance records, is managed with encryption and permission-aware CSV export. The CSV export now includes improved formatting, UTF-8 BOM, direct Google Sheets integration, and print optimization, with customizable columns pending. Member phone and address privacy is reinstated, visible only to National Chapter admins. An event calendar with Discord notifications (fixed and working, v2.2) is integrated. The app features a Professional Corporate look, responsive design (including the chatbot and CSV viewer), dark theme, an in-app change log (v2.2), and a responsive AI chatbot. Password change functionality is now fixed (v2.2).
+The Brothers of the Highway Member Management application is a robust, role-based system for managing members and prospects. It includes secure login (v2.3), user and invite management (with Chapter, Title, Email). Key features involve secure data management with encryption, permission-aware CSV export. The CSV export now boasts a dedicated View Export React page, improved formatting, UTF-8 BOM, direct Google Sheets integration, and highly customizable print options (v2.3). Customizable print features now include quarterly presets for dues and meetings, with printouts displaying the selected quarter, CST date/time, and the user who generated the report. Member phone and address privacy is reinstated, visible only to National Chapter admins. An event calendar with fixed Discord notifications (v2.2) is integrated. The application adheres to a Professional Corporate look, responsive design across all screens (including CSV viewer, login, dashboard, user management, archived records), a dark theme, an in-app change log (v2.3), and a responsive AI chatbot. Password change functionality is fixed (v2.2). Additionally, archived members and prospects now have a delete option, and the CSV export is confirmed to show decrypted data.
 </product_requirements>
 
 <key_technical_concepts>
--   **Full-stack:** React, FastAPI, MongoDB.
--   **Security:** JWT authentication (now includes ), RBAC,  (fixed usage), Fernet encryption.
--   **UI/UX:** Shadcn UI, Tailwind CSS, Responsive Design.
--   **Data Validation:** Pydantic models (fixed validation).
--   **Utilities:**  (fixed, fault-tolerant),  (lazy connection),  (debug logging).
--   **External Integration:** Discord Webhooks, Google Sheets (direct export).
+-   **Full-stack:** React, FastAPI, MongoDB (Motor for async operations).
+-   **UI/UX:** Tailwind CSS, Shadcn UI, Responsive Design, React Router DOM.
+-   **Security:** JWT authentication (includes ), RBAC, , Fernet encryption.
+-   **Data Handling:** Pydantic for validation, JSON.stringify for data serialization.
+-   **Utilities:** ,  (debug logging).
+-   **External Integration:** Discord Webhooks, Google Sheets.
+-   **Frontend Architecture:** Transition from  to dedicated React page components.
 </key_technical_concepts>
 
 <code_architecture>
 
 -   
-    -   **Importance**: Central for all API logic, data models, authentication, and background tasks.
-    -   **Changes**:
-        -   **Scheduler**: Initialization and shutdown moved to FastAPI's startup/shutdown events.  now creates an isolated  to prevent event loop conflicts. Added  for fault tolerance.
-        -   **Logging**: Reordered  setup to occur before any usage. Added extensive  statements and file-based logging () for deployment debugging.
-        -   **MongoDB**:  initialization made lazy and given a timeout ().
-        -   **Default Admin**: Added required  field and  permission during default admin creation.
-        -   **JWT**:  field added to the JWT payload in  for login and invite.
-        -   **Privacy**: Member phone/address masking logic updated to allow National chapter admins to view full details.
-        -   **Password Change**: Fixed  to correctly use  instead of an undefined  call.
-        -   **CSV Export**: Modified header generation for readability (removed symbols, descriptive names), and added UTF-8 BOM to ensure correct encoding interpretation by external tools.
+    -   **Importance**: Handles all API logic, data models, authentication, and background tasks.
+    -   **Changes**: Extended  endpoint to ensure data decryption. Added new  and  endpoints for permanent deletion of archived records.
+-   
+    -   **Importance**: Defines the main routing structure for the application.
+    -   **Changes**: Added a new route  for the  component.
 -   
     -   **Importance**: Handles user login and displays application version.
-    -   **Changes**: Updated version number to .
+    -   **Changes**: Version number updated from  to .
 -   
-    -   **Importance**: Displays member data, and controls export/viewing features.
-    -   **Changes**:
-        -   **Export UI**: Reworked buttons for View Export and Download CSV (download now fetches fresh data from API).
-        -   **CSV Viewer**: Extensive UI/UX improvements for responsiveness (smartphone, tablet, laptop), added search functionality, enhanced visual design (padding, fonts, sticky header), removed symbols from viewer.
-        -   **Toggle**: Fixed Raw View and Table View toggle functionality.
-        -   **Print**: Optimized print functionality for all data to fit in landscape, added a Print Optimized View button, and improved error handling for .
-        -   **Google Sheets**: Implemented direct export to Google Sheets via a specially crafted URL.
+    -   **Importance**: Main page for displaying member data and initiating CSV export.
+    -   **Changes**: The  function was refactored to navigate to the new  React route instead of attempting to open a dynamically generated HTML window. All original  logic, script injection, and associated debugging code related to the old CSV viewer were completely removed. Minor style adjustments for text color were made to ensure white text in various components.
+-    (NEW FILE)
+    -   **Importance**: Dedicated page for viewing exported CSV data, customizing print options, and integrating with Google Sheets.
+    -   **Changes**: This new component encapsulates all the logic for displaying CSV data in a responsive table, providing search functionality, handling custom print options with column selection, implementing quarterly presets for dues and meetings (e.g., Dues Q1, Meetings Q1), generating print-optimized HTML including quarter details, CST timestamp, and username. It also includes the Back to Dashboard button which closes the current tab, and direct Google Sheets integration. All previous Print All, All Dues, and All Meetings options were removed as per user request.
 -   
     -   **Importance**: Provides a historical record of application updates.
-    -   **Changes**: New  entry documenting all recent fixes and enhancements.
+    -   **Changes**: New  entry documenting recent fixes and enhancements, including the new CSV export/print features.
+-   
+    -   **Importance**: Manages user roles, invites, and archived members/prospects.
+    -   **Changes**: Added delete buttons and corresponding  and  functions for archived members and prospects. The archived members and prospects sections were optimized for responsive design. A Back button was added to the archived records dialog. Text colors were adjusted to ensure white text for members and users.
+-   
+    -   **Importance**: Global CSS for the application, handling base styles.
+    -   **Changes**: Updated with general responsive design utility classes to support optimal viewing across different device sizes.
 </code_architecture>
 
 <pending_tasks>
 -   Thoroughly test the new 3-role system (Admin, Member, Prospect) end-to-end, especially Prospect access restrictions.
 -   Conduct end-to-end testing for the bulk promotion functionality.
--   Re-evaluate and fix the deployment issue, specifically the Kaniko build failure that reappeared.
--   Implement customizable print options for the export data, allowing selection of specific fields.
+-   Re-evaluate and fix the deployment issue, specifically the Kaniko build failure that reappeared (original issue, not fully re-addressed in this trajectory).
 </pending_tasks>
 
 <current_work>
-Immediately prior to this summary, the AI engineer was working on enhancing the Print All functionality for the exported member data within the CSV viewer. The user's explicit request was to make the printed output customizable, allowing them to select specific columns to print, such as member Name, Handle, Title, and contact info or Handle and Dues Tracking info or Handle and Meeting info.
-
-The AI engineer's most recent actions involved:
-1.  **Investigating **: The  function in  (lines 1330-1365) was examined.
-2.  **Debugging**: Console logging was added within  to aid in diagnosing issues.
-3.  **Verification**: Confirmed that  was globally exported () and that the Print All button's  handler was correctly configured to call this function.
-4.  **Error Handling**: Enhanced error handling was added to the printing process.
-5.  **Local Test**: The frontend was restarted, and a local test confirmed that the Print All button successfully triggered the print dialog and that the added diagnostic logs were visible.
-
-The current work concluded with the confirmation that the existing Print All button is functional and logs appropriately, but the core requirement of customizable column selection for printing is yet to be implemented.
+Immediately prior to this summary, the AI engineer received a user request: Text form system users needs to be white. This followed extensive work on responsive design for various screens (CSV export, archived members/prospects), ensuring all member and user-related text was white, and adding a back button to the archived members screen. The AI engineer has acknowledged this new request and has explicitly stated the intention to investigate the uploaded screenshot (from the user) and fix the text colors specifically within the System Users table. This indicates the current focus is on a specific UI/UX refinement concerning text color consistency for system users. The  file is a likely candidate for modification related to system user display.
 </current_work>
 
 <optional_next_step>
-Implement customizable print options for the export data to allow users to select specific member fields for printing.
+Check the screenshot for specific areas where system user text is not white, and then modify  to apply  where necessary.
 </optional_next_step>
