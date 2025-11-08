@@ -1215,16 +1215,8 @@ export default function Dashboard({ onLogout, userRole, userPermissions }) {
             </div>
             <pre id="rawCSV"></pre>
             <pre id="rawCSV"></pre>
-          </body>
-        </html>
-      `;
-      
-      csvWindow.document.write(html);
-      csvWindow.document.close();
-      
-      // Create and append script immediately after document is closed
-      const script = csvWindow.document.createElement('script');
-      script.textContent = `
+            <script>
+              // CSV data is retrieved from sessionStorage
               console.log('[CSV WINDOW] Script started');
               // CSV data is retrieved from sessionStorage
               const csvText = sessionStorage.getItem('csvExportData') || '';
