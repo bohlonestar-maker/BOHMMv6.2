@@ -540,7 +540,7 @@ export default function Dashboard({ onLogout, userRole, userPermissions }) {
   const handleViewCSV = () => {
     // Navigate to the CSV export view page
     window.open('/export-view', '_blank');
-        <html>
+    toast.success("Opening CSV export view...");
           <head>
             <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
             <meta charset="UTF-8">
