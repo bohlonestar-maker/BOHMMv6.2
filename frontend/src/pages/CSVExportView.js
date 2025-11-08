@@ -203,6 +203,7 @@ export default function CSVExportView() {
     console.log('Total indices selected:', indices.length);
     console.log('Indices:', indices);
     setSelectedColumns(indices);
+    setSelectedPreset(preset);
   };
 
   const printSelectedColumns = () => {
