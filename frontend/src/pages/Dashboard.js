@@ -1852,14 +1852,9 @@ export default function Dashboard({ onLogout, userRole, userPermissions }) {
                 window.selectPreset = selectPreset;
                 window.printSelectedColumns = printSelectedColumns;
               }
-      `;
-      
-      // Execute the script code in the new window's context
-      try {
-        csvWindow.Function(scriptCode)();
-      } catch (err) {
-        console.error('Script execution error:', err);
-      }
+        `;
+        csvWindow.document.body.appendChild(script);
+      });
       
       toast.success("CSV opened in new window");
     } catch (error) {
