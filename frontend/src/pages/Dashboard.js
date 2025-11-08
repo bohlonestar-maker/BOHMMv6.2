@@ -1122,8 +1122,8 @@ export default function Dashboard({ onLogout, userRole, userPermissions }) {
                               if (!Array.isArray(months) || months.length === 0) {
                                 return (
                                   <>
-                                    <span className="text-xs text-slate-400">{latestYear}</span>
-                                    <span className="text-xs text-slate-400">No data</span>
+                                    <span className="text-xs text-white">{latestYear}</span>
+                                    <span className="text-xs text-white">No data</span>
                                   </>
                                 );
                               }
