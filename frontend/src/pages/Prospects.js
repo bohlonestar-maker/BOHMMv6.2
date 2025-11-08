@@ -774,7 +774,7 @@ export default function Prospects({ onLogout, userRole }) {
                       <TableCell>
                         <a
                           href={`mailto:${prospect.email}`}
-                          className="flex items-center gap-1 text-white hover:text-slate-300 hover:underline text-sm"
+                          className="flex items-center gap-1 text-blue-400 hover:text-blue-300 hover:underline text-sm"
                         >
                           <Mail className="w-3 h-3" />
                           {prospect.email}
