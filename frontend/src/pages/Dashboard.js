@@ -1840,8 +1840,18 @@ export default function Dashboard({ onLogout, userRole, userPermissions }) {
                 window.selectPreset = selectPreset;
                 window.printSelectedColumns = printSelectedColumns;
               }
+            </script>
+          </body>
+        </html>
       `;
-      csvWindow.document.body.appendChild(script);
+      
+      // Create a Blob from the HTML and open it in a new window
+      const blob = new Blob([completeHTML], { type: 'text/html' });
+      const blobURL = URL.createObjectURL(blob);
+      window.open(blobURL, '_blank');
+      
+      // Clean up the blob URL after a short delay
+      setTimeout(() => URL.revokeObjectURL(blobURL), 100);
       
       toast.success("CSV opened in new window");
     } catch (error) {
