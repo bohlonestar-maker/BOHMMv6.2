@@ -1260,6 +1260,12 @@ export default function Dashboard({ onLogout, userRole, userPermissions }) {
                 // Update member count
                 document.getElementById('memberCount').textContent = csvData.length - 1;
                 
+                // Update Google Sheets modal counts
+                const modalMemberCount = document.getElementById('modalMemberCount');
+                const modalColumnCount = document.getElementById('modalColumnCount');
+                if (modalMemberCount) modalMemberCount.textContent = csvData.length - 1;
+                if (modalColumnCount) modalColumnCount.textContent = csvData[0].length;
+                
                 // Create header
                 const thead = document.createElement('thead');
                 const headerRow = document.createElement('tr');
