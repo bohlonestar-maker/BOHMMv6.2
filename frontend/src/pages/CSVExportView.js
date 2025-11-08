@@ -126,8 +126,10 @@ export default function CSVExportView() {
           indices.push(index);
           break;
         case 'contact':
-          if (h.includes('name') || h.includes('handle') || h.includes('chapter') || 
-              h.includes('title') || h.includes('email') || h.includes('phone') || h.includes('address')) {
+          // Select: Chapter, Title, Member Handle, Name, Email Address, Phone Number, Mailing Address
+          if (h.includes('chapter') || h.includes('title') || h.includes('handle') || 
+              h.includes('name') || h.includes('email') || h.includes('phone') || h.includes('address')) {
+            console.log('  Matched contact field:', header);
             indices.push(index);
           }
           break;
