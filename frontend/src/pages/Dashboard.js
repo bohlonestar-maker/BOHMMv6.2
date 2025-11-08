@@ -1107,10 +1107,15 @@ export default function Dashboard({ onLogout, userRole, userPermissions }) {
                 <i class="fas fa-code"></i>
                 <span id="toggleText">Raw View</span>
               </button>
-              <button class="btn-secondary" onclick="window.print()">
+              <button class="btn-secondary" onclick="preparePrint()">
                 <i class="fas fa-print"></i>
-                Print
+                Print All
               </button>
+            </div>
+            
+            <div id="printNote" style="display: none; background: #fef3c7; color: #92400e; padding: 10px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #fbbf24;">
+              <i class="fas fa-info-circle"></i>
+              <strong>Print Tips:</strong> Set to Landscape orientation for best results. All columns will be printed.
             </div>
             
             <div id="content" class="table-container">
