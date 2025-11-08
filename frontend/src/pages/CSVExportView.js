@@ -98,7 +98,12 @@ export default function CSVExportView() {
   };
 
   const handlePrint = () => {
-    window.print();
+    // Create optimized print window with all data
+    const printWindow = window.open('', '_blank');
+    const html = generatePrintHTML(csvData);
+    printWindow.document.write(html);
+    printWindow.document.close();
+    setTimeout(() => printWindow.print(), 500);
   };
 
   const handleCustomPrint = () => {
