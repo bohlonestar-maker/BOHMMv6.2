@@ -1122,8 +1122,8 @@ export default function Dashboard({ onLogout, userRole, userPermissions }) {
               <strong>Print Tips:</strong> Set to Landscape orientation for best results. All columns will be printed.
             </div>
             
-            <div id="googleSheetsModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); z-index: 1000; align-items: center; justify-content: center;">
-              <div style="background: #1e293b; padding: 30px; border-radius: 12px; max-width: 600px; margin: 20px; border: 2px solid #10b981;">
+            <div id="googleSheetsModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); z-index: 1000; align-items: center; justify-content: center;" onclick="if(event.target.id === 'googleSheetsModal') closeGoogleSheetsModal()">
+              <div style="background: #1e293b; padding: 30px; border-radius: 12px; max-width: 600px; margin: 20px; border: 2px solid #10b981; box-shadow: 0 20px 60px rgba(0,0,0,0.6);">
                 <h2 style="color: #10b981; margin: 0 0 20px 0; font-size: 1.5rem; display: flex; align-items: center; gap: 10px;">
                   <i class="fab fa-google" style="color: #34a853;"></i>
                   Export to Google Sheets
