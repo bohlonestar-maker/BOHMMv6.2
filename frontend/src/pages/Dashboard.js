@@ -1327,50 +1327,70 @@ export default function Dashboard({ onLogout, userRole, userPermissions }) {
           </DialogContent>
         </Dialog>
 
-        {/* Delete Confirmation Dialog */}
-        <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-          <DialogContent className="max-w-sm mx-4 p-6">
-            <DialogHeader>
-              <DialogTitle className="text-lg">Archive Member</DialogTitle>
-            </DialogHeader>
-            {memberToDelete && (
-              <div className="space-y-4">
-                <p className="text-slate-200 text-sm">
-                  You are about to archive <span className="font-semibold">{memberToDelete.handle} - {memberToDelete.name}</span>. 
-                  This action will move the member to the archived records.
-                </p>
-                <div>
-                  <Label className="text-sm">Reason for Archiving *</Label>
-                  <Textarea
-                    value={deleteReason}
-                    onChange={(e) => setDeleteReason(e.target.value)}
-                    placeholder="Enter reason..."
-                    rows={2}
-                    required
-                    className="mt-1 text-sm"
-                  />
-                </div>
-                <div className="flex gap-3 justify-end border-t pt-4">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setDeleteDialogOpen(false)}
-                    className="px-4 py-2"
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    variant="destructive"
-                    onClick={handleConfirmDelete}
-                    className="px-4 py-2"
-                  >
-                    Archive
-                  </Button>
-                </div>
+        {/* Delete Confirmation Dialog - Custom Implementation */}
+        {deleteDialogOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center">
+            {/* Backdrop */}
+            <div 
+              className="absolute inset-0 bg-black/80" 
+              onClick={() => setDeleteDialogOpen(false)}
+            />
+            
+            {/* Dialog */}
+            <div className="relative bg-slate-800 border border-slate-700 rounded-lg p-6 mx-4 max-w-sm w-full shadow-xl">
+              {/* Header */}
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-semibold text-white">Archive Member</h3>
+                <button 
+                  onClick={() => setDeleteDialogOpen(false)}
+                  className="text-slate-400 hover:text-white"
+                >
+                  ✕
+                </button>
               </div>
-            )}
-          </DialogContent>
-        </Dialog>
+              
+              {memberToDelete && (
+                <div className="space-y-4">
+                  <p className="text-slate-200 text-sm">
+                    You are about to archive <span className="font-semibold text-white">{memberToDelete.handle} - {memberToDelete.name}</span>. 
+                    This action will move the member to the archived records.
+                  </p>
+                  
+                  <div>
+                    <label className="block text-sm text-slate-300 mb-2">
+                      Reason for Archiving *
+                    </label>
+                    <textarea
+                      value={deleteReason}
+                      onChange={(e) => setDeleteReason(e.target.value)}
+                      placeholder="Enter reason..."
+                      rows={2}
+                      required
+                      className="w-full p-2 text-sm bg-slate-700 border border-slate-600 rounded text-white placeholder:text-slate-400"
+                    />
+                  </div>
+                  
+                  {/* Buttons */}
+                  <div className="flex gap-3 justify-end pt-4 border-t border-slate-700">
+                    <button
+                      type="button"
+                      onClick={() => setDeleteDialogOpen(false)}
+                      className="px-4 py-2 text-sm border border-slate-600 text-slate-300 hover:text-white hover:border-slate-500 rounded"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleConfirmDelete}
+                      className="px-4 py-2 text-sm bg-red-600 hover:bg-red-700 text-white rounded"
+                    >
+                      Archive Member
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
