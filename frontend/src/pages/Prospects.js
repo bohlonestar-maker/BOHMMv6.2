@@ -769,8 +769,8 @@ export default function Prospects({ onLogout, userRole }) {
                           className="border-slate-400 data-[state=checked]:bg-green-600 data-[state=checked]:border-green-600"
                         />
                       </TableCell>
-                      <TableCell>{prospect.handle}</TableCell>
-                      <TableCell>{prospect.name}</TableCell>
+                      <TableCell className="text-white">{prospect.handle}</TableCell>
+                      <TableCell className="text-white">{prospect.name}</TableCell>
                       <TableCell>
                         <a
                           href={`mailto:${prospect.email}`}
