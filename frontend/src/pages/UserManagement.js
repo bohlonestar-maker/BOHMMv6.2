@@ -227,50 +227,6 @@ export default function UserManagement({ onLogout }) {
     navigate("/archived-members");
   };
 
-  const handleExportArchivedMembers = async () => {
-    const token = localStorage.getItem("token");
-    try {
-      const response = await axios.get(`${API}/archived/members/export/csv`, {
-        headers: { Authorization: `Bearer ${token}` },
-        responseType: 'blob'
-      });
-      
-      // Create download link
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', 'archived_members.csv');
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      toast.success("Archived members exported successfully");
-    } catch (error) {
-      toast.error("Failed to export archived members");
-    }
-  };
-
-  const handleExportArchivedProspects = async () => {
-    const token = localStorage.getItem("token");
-    try {
-      const response = await axios.get(`${API}/archived/prospects/export/csv`, {
-        headers: { Authorization: `Bearer ${token}` },
-        responseType: 'blob'
-      });
-      
-      // Create download link
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', 'archived_prospects.csv');
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      toast.success("Archived prospects exported successfully");
-    } catch (error) {
-      toast.error("Failed to export archived prospects");
-    }
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     const token = localStorage.getItem("token");
