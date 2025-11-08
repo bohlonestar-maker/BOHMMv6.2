@@ -5971,7 +5971,7 @@ class BOHDirectoryAPITester:
                 success, response = self.run_test(
                     f"Delete CSV Test Member {i+1}",
                     "DELETE",
-                    f"members/{member_id}",
+                    f"members/{member_id}?reason=Test cleanup",
                     200
                 )
         
