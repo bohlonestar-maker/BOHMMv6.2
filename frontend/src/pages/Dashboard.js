@@ -548,11 +548,11 @@ export default function Dashboard({ onLogout, userRole, userPermissions }) {
       
       const csvData = response.data;
       
+      // Store CSV data in sessionStorage for the new window to access
+      sessionStorage.setItem('csvExportData', csvData);
+      
       // Open CSV in new window with formatted view
       const csvWindow = window.open("", "_blank");
-      
-      // Use JSON.stringify to safely embed CSV data
-      const safeCSV = JSON.stringify(csvData);
       
       csvWindow.document.write(`
         <html>
