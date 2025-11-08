@@ -1166,18 +1166,18 @@ export default function Dashboard({ onLogout, userRole, userPermissions }) {
             </div>
             <pre id="rawCSV"></pre>
             <script>
-              // Get CSV data from opener's sessionStorage
-              const csvDataKey = '${csvDataKey}';
+              // Get CSV data from opener window
               let csvText = '';
               
-              if (window.opener && window.opener.sessionStorage) {
-                csvText = window.opener.sessionStorage.getItem(csvDataKey);
-                // Clean up after retrieving
-                window.opener.sessionStorage.removeItem(csvDataKey);
+              if (window.opener && window.opener.csvExportData) {
+                csvText = window.opener.csvExportData;
+                console.log('CSV data retrieved, length:', csvText.length);
+              } else {
+                console.error('Could not access CSV data from opener window');
               }
               
               if (!csvText) {
-                document.body.innerHTML = '<h1 style="color: #ef4444;">Error: CSV data not found</h1>';
+                document.body.innerHTML = '<div style="padding: 40px; text-align: center;"><h1 style="color: #ef4444; font-size: 2rem; margin-bottom: 20px;"><i class="fas fa-exclamation-triangle"></i> Error Loading Data</h1><p style="color: #94a3b8; font-size: 1.2rem;">CSV data could not be loaded. Please try again.</p><button onclick="window.close()" style="margin-top: 20px; background: #10b981; color: white; padding: 12px 24px; border: none; border-radius: 8px; font-size: 1rem; cursor: pointer;">Close Window</button></div>';
               } else {
                 // Set raw CSV
                 document.getElementById('rawCSV').textContent = csvText;
