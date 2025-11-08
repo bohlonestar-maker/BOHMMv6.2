@@ -2275,6 +2275,52 @@ async def restore_archived_prospect(prospect_id: str, current_user: dict = Depen
     
     return {"message": "Prospect restored successfully"}
 
+@api_router.delete("/archived/members/{member_id}")
+async def delete_archived_member(member_id: str, current_user: dict = Depends(verify_admin)):
+    """Permanently delete an archived member"""
+    # Get archived member
+    archived_member = await db.archived_members.find_one({"id": member_id}, {"_id": 0})
+    if not archived_member:
+        raise HTTPException(status_code=404, detail="Archived member not found")
+    
+    # Delete from archived collection
+    result = await db.archived_members.delete_one({"id": member_id})
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Failed to delete archived member")
+    
+    # Log activity
+    await log_activity(
+        username=current_user["username"],
+        action="archived_member_delete",
+        details=f"Permanently deleted archived member: {archived_member.get('name', 'Unknown')} ({archived_member.get('handle', 'Unknown')})"
+    )
+    
+    return {"message": "Archived member permanently deleted"}
+
+@api_router.delete("/archived/prospects/{prospect_id}")
+async def delete_archived_prospect(prospect_id: str, current_user: dict = Depends(verify_admin)):
+    """Permanently delete an archived prospect"""
+    # Get archived prospect
+    archived_prospect = await db.archived_prospects.find_one({"id": prospect_id}, {"_id": 0})
+    if not archived_prospect:
+        raise HTTPException(status_code=404, detail="Archived prospect not found")
+    
+    # Delete from archived collection
+    result = await db.archived_prospects.delete_one({"id": prospect_id})
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Failed to delete archived prospect")
+    
+    # Log activity
+    await log_activity(
+        username=current_user["username"],
+        action="archived_prospect_delete",
+        details=f"Permanently deleted archived prospect: {archived_prospect.get('name', 'Unknown')} ({archived_prospect.get('handle', 'Unknown')})"
+    )
+    
+    return {"message": "Archived prospect permanently deleted"}
+
 @api_router.get("/archived/members/export/csv")
 async def export_archived_members_csv(current_user: dict = Depends(verify_admin)):
     """Export archived members to CSV"""
