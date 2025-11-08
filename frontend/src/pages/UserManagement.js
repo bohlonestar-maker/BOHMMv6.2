@@ -44,7 +44,6 @@ export default function UserManagement({ onLogout }) {
   const [invitesDialogOpen, setInvitesDialogOpen] = useState(false);
   const [logsDialogOpen, setLogsDialogOpen] = useState(false);
   const [analyticsDialogOpen, setAnalyticsDialogOpen] = useState(false);
-  const [archivedDialogOpen, setArchivedDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
