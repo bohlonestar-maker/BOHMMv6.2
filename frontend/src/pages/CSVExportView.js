@@ -135,20 +135,35 @@ export default function CSVExportView() {
             indices.push(index);
           }
           break;
-        case 'dues_first_half':
-          // Handle and first 6 months (Jan-Jun)
+        case 'dues_q1':
+          // Q1: January, February, March
           if (h.includes('handle') || h.includes('dues year') ||
-              (h.includes('dues') && (h.includes('january') || h.includes('february') || 
-               h.includes('march') || h.includes('april') || h.includes('may') || h.includes('june')))) {
-            console.log('  Matched first half:', header);
+              (h.includes('dues') && (h.includes('january') || h.includes('february') || h.includes('march')))) {
+            console.log('  Matched Q1:', header);
             indices.push(index);
           }
           break;
-        case 'dues_second_half':
-          // Handle and second 6 months (Jul-Dec)
+        case 'dues_q2':
+          // Q2: April, May, June
           if (h.includes('handle') || h.includes('dues year') ||
-              (h.includes('dues') && (h.includes('july') || h.includes('august') || 
-               h.includes('september') || h.includes('october') || h.includes('november') || h.includes('december')))) {
+              (h.includes('dues') && (h.includes('april') || h.includes('may') || h.includes('june')))) {
+            console.log('  Matched Q2:', header);
+            indices.push(index);
+          }
+          break;
+        case 'dues_q3':
+          // Q3: July, August, September
+          if (h.includes('handle') || h.includes('dues year') ||
+              (h.includes('dues') && (h.includes('july') || h.includes('august') || h.includes('september')))) {
+            console.log('  Matched Q3:', header);
+            indices.push(index);
+          }
+          break;
+        case 'dues_q4':
+          // Q4: October, November, December
+          if (h.includes('handle') || h.includes('dues year') ||
+              (h.includes('dues') && (h.includes('october') || h.includes('november') || h.includes('december')))) {
+            console.log('  Matched Q4:', header);
             indices.push(index);
           }
           break;
