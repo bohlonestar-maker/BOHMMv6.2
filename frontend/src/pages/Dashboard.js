@@ -1851,10 +1851,10 @@ export default function Dashboard({ onLogout, userRole, userPermissions }) {
                 window.selectPreset = selectPreset;
                 window.printSelectedColumns = printSelectedColumns;
               }
-      `;
+      };
       
-      // Execute the script in the new window's context using eval
-      csvWindow.eval(script.textContent);
+      // Execute the function in the new window's context
+      executeInNewWindow.call(csvWindow);
       
       toast.success("CSV opened in new window");
     } catch (error) {
