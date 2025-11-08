@@ -1847,24 +1847,21 @@ export default function Dashboard({ onLogout, userRole, userPermissions }) {
       csvWindow.document.write(html);
       csvWindow.document.close();
       
-      // Inject the script programmatically AFTER document is closed
-      const script = csvWindow.document.createElement('script');
-      script.textContent = `
-        console.log('[CSV WINDOW] Script started');
-        // CSV data is retrieved from sessionStorage
-        const csvText = sessionStorage.getItem('csvExportData') || '';
+      // Wait for window to be ready, then inject the script
+      csvWindow.addEventListener('load', () => {
+        const script = csvWindow.document.createElement('script');
         
-        console.log('[CSV WINDOW] CSV data loaded, length:', csvText.length);
-        console.log('[CSV WINDOW] First 100 chars:', csvText.substring(0, 100));
-      `;
-      
-      // Find the script placeholder and replace it
-      const placeholder = csvWindow.document.getElementById('csvScript');
-      if (placeholder) {
-        placeholder.parentNode.replaceChild(script, placeholder);
-      } else {
+        // Inject all the CSV window JavaScript here
+        script.textContent = `
+          console.log('[CSV WINDOW] Script started');
+          // CSV data is retrieved from sessionStorage
+          const csvText = sessionStorage.getItem('csvExportData') || '';
+          
+          console.log('[CSV WINDOW] CSV data loaded, length:', csvText.length);
+        `;
+        
         csvWindow.document.body.appendChild(script);
-      }
+      });
       
       toast.success("CSV opened in new window");
     } catch (error) {
