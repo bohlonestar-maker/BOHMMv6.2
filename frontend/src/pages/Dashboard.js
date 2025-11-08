@@ -1217,17 +1217,17 @@ export default function Dashboard({ onLogout, userRole, userPermissions }) {
               Swipe or scroll horizontally to view all columns
             </div>
             <pre id="rawCSV"></pre>
-            
+            <pre id="rawCSV"></pre>
           </body>
         </html>
-      \`;
+      `;
       
       csvWindow.document.write(html);
       csvWindow.document.close();
       
       // Create and inject script element AFTER document.close()
       const script = csvWindow.document.createElement('script');
-      script.textContent = \`
+      script.textContent = `
               console.log('[CSV WINDOW] Script started');
               // CSV data is retrieved from sessionStorage
               const csvText = sessionStorage.getItem('csvExportData') || '';
