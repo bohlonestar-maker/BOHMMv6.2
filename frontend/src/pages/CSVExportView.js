@@ -389,28 +389,28 @@ export default function CSVExportView() {
         <div className="flex flex-col sm:flex-row flex-wrap gap-2 sm:gap-3 mb-4 sm:mb-6">
           <button
             onClick={handleDownload}
-            className="bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 px-6 py-3 rounded-lg font-semibold"
+            className="bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 px-4 sm:px-6 py-2 sm:py-3 rounded-lg font-semibold text-sm sm:text-base w-full sm:w-auto"
           >
             <i className="fas fa-download mr-2"></i>
             Download CSV
           </button>
           <button
             onClick={handleCustomPrint}
-            className="bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 px-6 py-3 rounded-lg font-semibold"
+            className="bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 px-4 sm:px-6 py-2 sm:py-3 rounded-lg font-semibold text-sm sm:text-base w-full sm:w-auto"
           >
             <i className="fas fa-print mr-2"></i>
             Print Custom
           </button>
           <button
             onClick={() => setShowSheetsModal(true)}
-            className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 px-6 py-3 rounded-lg font-semibold"
+            className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 px-4 sm:px-6 py-2 sm:py-3 rounded-lg font-semibold text-sm sm:text-base w-full sm:w-auto"
           >
             <i className="fab fa-google mr-2"></i>
             Export to Sheets
           </button>
           <button
             onClick={() => setView(view === 'table' ? 'raw' : 'table')}
-            className="bg-slate-700 hover:bg-slate-600 px-6 py-3 rounded-lg font-semibold"
+            className="bg-slate-700 hover:bg-slate-600 px-4 sm:px-6 py-2 sm:py-3 rounded-lg font-semibold text-sm sm:text-base w-full sm:w-auto"
           >
             <i className={`fas fa-${view === 'table' ? 'code' : 'table'} mr-2`}></i>
             {view === 'table' ? 'Raw View' : 'Table View'}
