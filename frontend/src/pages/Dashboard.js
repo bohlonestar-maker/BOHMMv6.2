@@ -1329,38 +1329,42 @@ export default function Dashboard({ onLogout, userRole, userPermissions }) {
 
         {/* Delete Confirmation Dialog */}
         <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-          <DialogContent className="max-w-md mx-auto max-h-[85vh] overflow-y-auto">
-            <DialogHeader>
+          <DialogContent className="max-w-md mx-auto max-h-[80vh] flex flex-col">
+            <DialogHeader className="flex-shrink-0">
               <DialogTitle>Archive Member</DialogTitle>
             </DialogHeader>
             {memberToDelete && (
-              <div className="space-y-4 mt-4">
-                <p className="text-slate-200">
-                  You are about to archive <span className="font-semibold">{memberToDelete.handle} - {memberToDelete.name}</span>. 
-                  This action will move the member to the archived records.
-                </p>
-                <div>
-                  <Label className="text-sm">Reason for Archiving *</Label>
-                  <Textarea
-                    value={deleteReason}
-                    onChange={(e) => setDeleteReason(e.target.value)}
-                    placeholder="Enter reason for archiving..."
-                    rows={2}
-                    required
-                    className="mt-1"
-                  />
+              <div className="flex flex-col flex-1 min-h-0">
+                <div className="flex-1 overflow-y-auto space-y-4 py-4">
+                  <p className="text-slate-200">
+                    You are about to archive <span className="font-semibold">{memberToDelete.handle} - {memberToDelete.name}</span>. 
+                    This action will move the member to the archived records.
+                  </p>
+                  <div>
+                    <Label className="text-sm">Reason for Archiving *</Label>
+                    <Textarea
+                      value={deleteReason}
+                      onChange={(e) => setDeleteReason(e.target.value)}
+                      placeholder="Enter reason for archiving..."
+                      rows={2}
+                      required
+                      className="mt-1"
+                    />
+                  </div>
                 </div>
-                <div className="flex gap-3 justify-end mt-6">
+                <div className="flex gap-3 justify-end border-t pt-4 flex-shrink-0 bg-slate-950">
                   <Button
                     type="button"
                     variant="outline"
                     onClick={() => setDeleteDialogOpen(false)}
+                    className="min-w-20"
                   >
                     Cancel
                   </Button>
                   <Button
                     variant="destructive"
                     onClick={handleConfirmDelete}
+                    className="min-w-24"
                   >
                     Archive Member
                   </Button>
