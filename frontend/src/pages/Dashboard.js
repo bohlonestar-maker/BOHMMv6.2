@@ -1841,13 +1841,9 @@ export default function Dashboard({ onLogout, userRole, userPermissions }) {
         </html>
       `;
       
-      // Create a Blob from the HTML and open it in a new window
-      const blob = new Blob([completeHTML], { type: 'text/html' });
-      const blobURL = URL.createObjectURL(blob);
-      window.open(blobURL, '_blank');
-      
-      // Clean up the blob URL after a short delay
-      setTimeout(() => URL.revokeObjectURL(blobURL), 100);
+      // Open window with data URL (more reliable than Blob URL for inline scripts)
+      const dataURL = 'data:text/html;charset=utf-8,' + encodeURIComponent(completeHTML);
+      window.open(dataURL, '_blank');
       
       toast.success("CSV opened in new window");
     } catch (error) {
