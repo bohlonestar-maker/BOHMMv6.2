@@ -1034,16 +1034,16 @@ export default function Dashboard({ onLogout, userRole, userPermissions }) {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Chapter</TableHead>
-                    <TableHead>Title</TableHead>
-                    <TableHead>Handle</TableHead>
-                    <TableHead>Name</TableHead>
-                    {hasPermission('email') && <TableHead>Email</TableHead>}
-                    {hasPermission('phone') && <TableHead>Phone</TableHead>}
-                    {hasPermission('address') && <TableHead>Address</TableHead>}
-                    {hasPermission('dues_tracking') && <TableHead>Dues</TableHead>}
-                    {hasPermission('meeting_attendance') && <TableHead>Attendance</TableHead>}
-                    {hasPermission('admin_actions') && <TableHead className="text-right">Actions</TableHead>}
+                    <TableHead className="text-white">Chapter</TableHead>
+                    <TableHead className="text-white">Title</TableHead>
+                    <TableHead className="text-white">Handle</TableHead>
+                    <TableHead className="text-white">Name</TableHead>
+                    {hasPermission('email') && <TableHead className="text-white">Email</TableHead>}
+                    {hasPermission('phone') && <TableHead className="text-white">Phone</TableHead>}
+                    {hasPermission('address') && <TableHead className="text-white">Address</TableHead>}
+                    {hasPermission('dues_tracking') && <TableHead className="text-white">Dues</TableHead>}
+                    {hasPermission('meeting_attendance') && <TableHead className="text-white">Attendance</TableHead>}
+                    {hasPermission('admin_actions') && <TableHead className="text-right text-white">Actions</TableHead>}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
