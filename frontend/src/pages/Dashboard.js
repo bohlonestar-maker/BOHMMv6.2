@@ -547,9 +547,8 @@ export default function Dashboard({ onLogout, userRole, userPermissions }) {
         responseType: "text",
       });
       
-      // Store CSV data in sessionStorage to avoid embedding large data in HTML
-      const csvDataKey = 'csv_export_' + Date.now();
-      sessionStorage.setItem(csvDataKey, response.data);
+      // Store CSV data globally on window for child window access
+      window.csvExportData = response.data;
       
       // Open CSV in new window with formatted view
       const csvWindow = window.open("", "_blank");
