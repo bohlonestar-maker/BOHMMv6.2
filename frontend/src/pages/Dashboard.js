@@ -1403,6 +1403,9 @@ export default function Dashboard({ onLogout, userRole, userPermissions }) {
                 window.toggleView = toggleView;
                 window.filterTable = filterTable;
                 window.preparePrint = preparePrint;
+                window.exportToGoogleSheets = exportToGoogleSheets;
+                window.closeGoogleSheetsModal = closeGoogleSheetsModal;
+                window.downloadAndOpenSheets = downloadAndOpenSheets;
               }
             </script>
           </body>
