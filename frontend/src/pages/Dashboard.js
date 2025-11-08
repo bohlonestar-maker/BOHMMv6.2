@@ -1217,13 +1217,8 @@ export default function Dashboard({ onLogout, userRole, userPermissions }) {
               Swipe or scroll horizontally to view all columns
             </div>
             <pre id="rawCSV"></pre>
-            <script>
-              console.log('[CSV WINDOW] Script started');
-              // CSV data is retrieved from sessionStorage
-              const csvText = sessionStorage.getItem('csvExportData') || '';
-              
-              console.log('[CSV WINDOW] CSV data loaded, length:', csvText.length);
-              console.log('[CSV WINDOW] First 100 chars:', csvText.substring(0, 100));
+            <script id="csvScript">
+              // Script will be injected after document load
               
               if (!csvText || csvText.length === 0) {
                 document.body.innerHTML = '<div style="padding: 40px; text-align: center;"><h1 style="color: #ef4444; font-size: 2rem; margin-bottom: 20px;"><i class="fas fa-exclamation-triangle"></i> Error Loading Data</h1><p style="color: #94a3b8; font-size: 1.2rem;">CSV data could not be loaded. Please try again.</p><button onclick="window.close()" style="margin-top: 20px; background: #10b981; color: white; padding: 12px 24px; border: none; border-radius: 8px; font-size: 1rem; cursor: pointer;">Close Window</button></div>';
