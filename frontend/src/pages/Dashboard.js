@@ -1832,6 +1832,10 @@ export default function Dashboard({ onLogout, userRole, userPermissions }) {
                 window.exportToGoogleSheets = exportToGoogleSheets;
                 window.closeGoogleSheetsModal = closeGoogleSheetsModal;
                 window.downloadAndOpenSheets = downloadAndOpenSheets;
+                window.openPrintOptions = openPrintOptions;
+                window.closePrintOptionsModal = closePrintOptionsModal;
+                window.selectPreset = selectPreset;
+                window.printSelectedColumns = printSelectedColumns;
               }
             </script>
           </body>
