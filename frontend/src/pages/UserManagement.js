@@ -1547,29 +1547,29 @@ export default function UserManagement({ onLogout }) {
 
       {/* Archived Records Dialog */}
       <Dialog open={archivedDialogOpen} onOpenChange={setArchivedDialogOpen}>
-        <DialogContent className="max-w-[95vw] sm:max-w-6xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-[95vw] sm:max-w-4xl lg:max-w-6xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Archived Records</DialogTitle>
+            <DialogTitle className="text-base sm:text-lg md:text-xl">Archived Records</DialogTitle>
           </DialogHeader>
-          <div className="space-y-6 mt-4">
+          <div className="space-y-4 sm:space-y-6 mt-3 sm:mt-4">
             {/* Archived Members */}
             <div>
-              <div className="flex justify-between items-center mb-3">
-                <h3 className="text-lg font-semibold text-slate-100">Archived Members ({archivedMembers.length})</h3>
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 sm:gap-0 mb-3">
+                <h3 className="text-base sm:text-lg font-semibold text-slate-100">Archived Members ({archivedMembers.length})</h3>
                 {archivedMembers.length > 0 && (
                   <Button
                     size="sm"
                     variant="outline"
                     onClick={handleExportArchivedMembers}
-                    className="flex items-center gap-2"
+                    className="flex items-center gap-2 w-full sm:w-auto text-xs sm:text-sm"
                   >
-                    <Download className="w-4 h-4" />
+                    <Download className="w-3 h-3 sm:w-4 sm:h-4" />
                     Export CSV
                   </Button>
                 )}
               </div>
               {archivedMembers.length > 0 ? (
-                <div className="space-y-2">
+                <div className="space-y-2 sm:space-y-3">
                   {archivedMembers.map((member) => {
                     const deletedDate = new Date(member.deleted_at);
                     const cstDate = new Intl.DateTimeFormat('en-US', {
@@ -1579,36 +1579,42 @@ export default function UserManagement({ onLogout }) {
                     }).format(deletedDate);
                     
                     return (
-                      <div key={member.id} className="bg-slate-800 border border-slate-700 rounded-lg p-4">
-                        <div className="flex justify-between items-start">
-                          <div className="flex-1">
-                            <p className="font-semibold text-slate-100">{member.handle} - {member.name}</p>
-                            <p className="text-sm text-slate-400">{member.chapter} | {member.title}</p>
-                            <p className="text-sm text-slate-300 mt-2"><span className="font-medium">Reason:</span> {member.deletion_reason}</p>
+                      <div key={member.id} className="bg-slate-800 border border-slate-700 rounded-lg p-3 sm:p-4">
+                        <div className="flex flex-col sm:flex-row justify-between items-start gap-3">
+                          <div className="flex-1 w-full sm:w-auto">
+                            <p className="font-semibold text-slate-100 text-sm sm:text-base">{member.handle} - {member.name}</p>
+                            <p className="text-xs sm:text-sm text-slate-400">{member.chapter} | {member.title}</p>
+                            <p className="text-xs sm:text-sm text-slate-300 mt-2 break-words"><span className="font-medium">Reason:</span> {member.deletion_reason}</p>
                           </div>
-                          <div className="flex items-start gap-3">
-                            <div className="text-right text-sm text-slate-500">
+                          <div className="flex flex-row sm:flex-row items-center sm:items-start gap-2 sm:gap-3 w-full sm:w-auto justify-end">
+                            <div className="text-right text-xs sm:text-sm text-slate-500 hidden sm:block">
                               <p>Archived by {member.deleted_by}</p>
                               <p>{cstDate} CST</p>
                             </div>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="text-green-600 hover:text-green-700 border-green-600"
-                              onClick={() => handleRestoreMember(member.id, member.name)}
-                              title="Restore member"
-                            >
-                              <RotateCcw className="w-4 h-4" />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="text-red-600 hover:text-red-700 border-red-600"
-                              onClick={() => handleDeleteArchivedMember(member.id, member.name)}
-                              title="Permanently delete"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
+                            <div className="flex gap-2">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="text-green-600 hover:text-green-700 border-green-600 min-w-[40px] sm:min-w-[44px]"
+                                onClick={() => handleRestoreMember(member.id, member.name)}
+                                title="Restore member"
+                              >
+                                <RotateCcw className="w-3 h-3 sm:w-4 sm:h-4" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="text-red-600 hover:text-red-700 border-red-600 min-w-[40px] sm:min-w-[44px]"
+                                onClick={() => handleDeleteArchivedMember(member.id, member.name)}
+                                title="Permanently delete"
+                              >
+                                <Trash2 className="w-3 h-3 sm:w-4 sm:h-4" />
+                              </Button>
+                            </div>
+                            <div className="text-left text-xs text-slate-500 sm:hidden w-full mt-2">
+                              <p>Archived by {member.deleted_by}</p>
+                              <p>{cstDate} CST</p>
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -1616,7 +1622,7 @@ export default function UserManagement({ onLogout }) {
                   })}
                 </div>
               ) : (
-                <p className="text-slate-400">No archived members</p>
+                <p className="text-slate-400 text-sm sm:text-base">No archived members</p>
               )}
             </div>
 
