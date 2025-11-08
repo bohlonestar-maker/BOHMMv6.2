@@ -13,6 +13,7 @@ export default function CSVExportView() {
   const [showPrintModal, setShowPrintModal] = useState(false);
   const [showSheetsModal, setShowSheetsModal] = useState(false);
   const [selectedColumns, setSelectedColumns] = useState([]);
+  const [selectedPreset, setSelectedPreset] = useState('');
   const navigate = useNavigate();
 
   useEffect(() => {
