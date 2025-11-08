@@ -1158,7 +1158,7 @@ export default function Dashboard({ onLogout, userRole, userPermissions }) {
                       {hasPermission('meeting_attendance') && (
                         <TableCell>
                           <div className="flex flex-col gap-0.5">
-                            <span className="text-xs text-slate-600">{member.meeting_attendance?.year || new Date().getFullYear()}</span>
+                            <span className="text-xs text-white">{member.meeting_attendance?.year || new Date().getFullYear()}</span>
                             <div className="flex items-center gap-1 text-xs">
                               <span className="text-green-600 font-medium">
                                 P:{member.meeting_attendance?.meetings?.filter(m => (typeof m === 'object' ? m.status === 1 : m === 1)).length || 0}
