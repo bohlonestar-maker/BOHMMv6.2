@@ -1099,6 +1099,10 @@ export default function Dashboard({ onLogout, userRole, userPermissions }) {
             </div>
             
             <div class="controls">
+              <button onclick="exportToGoogleSheets()" style="background: linear-gradient(135deg, #34a853 0%, #1e8e3e 100%);">
+                <i class="fab fa-google"></i>
+                Google Sheets
+              </button>
               <button onclick="downloadFullCSV()">
                 <i class="fas fa-download"></i>
                 Download
