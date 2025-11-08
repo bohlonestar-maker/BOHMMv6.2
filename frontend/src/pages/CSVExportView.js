@@ -240,7 +240,23 @@ export default function CSVExportView() {
     setShowPrintModal(false);
   };
 
-  const generatePrintHTML = (data) => {
+  const generatePrintHTML = (data, preset, username, timestamp) => {
+    // Convert preset code to readable name
+    const presetNames = {
+      'dues_q1': 'Dues - Quarter 1 (Jan, Feb, Mar)',
+      'dues_q2': 'Dues - Quarter 2 (Apr, May, Jun)',
+      'dues_q3': 'Dues - Quarter 3 (Jul, Aug, Sep)',
+      'dues_q4': 'Dues - Quarter 4 (Oct, Nov, Dec)',
+      'meetings_q1': 'Meetings - Quarter 1 (Jan, Feb, Mar)',
+      'meetings_q2': 'Meetings - Quarter 2 (Apr, May, Jun)',
+      'meetings_q3': 'Meetings - Quarter 3 (Jul, Aug, Sep)',
+      'meetings_q4': 'Meetings - Quarter 4 (Oct, Nov, Dec)',
+      'contact': 'Contact Information',
+      'all': 'All Fields'
+    };
+    
+    const presetName = presetNames[preset] || 'Custom Selection';
+    
     return `
 <!DOCTYPE html>
 <html>
@@ -249,13 +265,19 @@ export default function CSVExportView() {
   <style>
     @page { size: landscape; margin: 0.5cm; }
     body { font-family: Arial, sans-serif; margin: 10px; }
-    h1 { text-align: center; color: #8b5cf6; margin-bottom: 20px; }
+    .header-info { background: #f3f4f6; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 2px solid #8b5cf6; }
+    .header-info h1 { text-align: center; color: #8b5cf6; margin: 0 0 10px 0; font-size: 1.5rem; }
+    .header-info .meta { display: flex; justify-content: space-between; font-size: 0.875rem; color: #1f2937; }
+    .header-info .meta div { margin: 5px 0; }
+    .header-info .meta strong { color: #8b5cf6; }
     table { width: 100%; border-collapse: collapse; }
     th { background: #8b5cf6; color: white; padding: 8px; text-align: left; font-size: 0.75rem; }
     td { padding: 6px; border-bottom: 1px solid #ddd; font-size: 0.7rem; }
     tr:nth-child(even) { background: #f5f5f5; }
     @media print {
       .no-print { display: none; }
+      .header-info { background: #f3f4f6; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      th { background: #8b5cf6 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     }
   </style>
 </head>
@@ -264,7 +286,16 @@ export default function CSVExportView() {
     <button onclick="window.print()" style="background: #8b5cf6; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; margin: 5px;">Print</button>
     <button onclick="window.close()" style="background: #64748b; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; margin: 5px;">Close</button>
   </div>
-  <h1>Brothers of the Highway - Member Export</h1>
+  
+  <div class="header-info">
+    <h1>Brothers of the Highway - Member Export</h1>
+    <div class="meta">
+      <div><strong>Report:</strong> ${presetName}</div>
+      <div><strong>Printed By:</strong> ${username}</div>
+      <div><strong>Date/Time:</strong> ${timestamp} CST</div>
+    </div>
+  </div>
+  
   <table>
     <thead><tr>${data[0].map(h => `<th>${h}</th>`).join('')}</tr></thead>
     <tbody>
