@@ -1627,23 +1627,23 @@ export default function UserManagement({ onLogout }) {
             </div>
 
             {/* Archived Prospects */}
-            <div className="border-t border-slate-700 pt-6">
-              <div className="flex justify-between items-center mb-3">
-                <h3 className="text-lg font-semibold text-slate-100">Archived Prospects ({archivedProspects.length})</h3>
+            <div className="border-t border-slate-700 pt-4 sm:pt-6">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 sm:gap-0 mb-3">
+                <h3 className="text-base sm:text-lg font-semibold text-slate-100">Archived Prospects ({archivedProspects.length})</h3>
                 {archivedProspects.length > 0 && (
                   <Button
                     size="sm"
                     variant="outline"
                     onClick={handleExportArchivedProspects}
-                    className="flex items-center gap-2"
+                    className="flex items-center gap-2 w-full sm:w-auto text-xs sm:text-sm"
                   >
-                    <Download className="w-4 h-4" />
+                    <Download className="w-3 h-3 sm:w-4 sm:h-4" />
                     Export CSV
                   </Button>
                 )}
               </div>
               {archivedProspects.length > 0 ? (
-                <div className="space-y-2">
+                <div className="space-y-2 sm:space-y-3">
                   {archivedProspects.map((prospect) => {
                     const deletedDate = new Date(prospect.deleted_at);
                     const cstDate = new Intl.DateTimeFormat('en-US', {
@@ -1653,35 +1653,41 @@ export default function UserManagement({ onLogout }) {
                     }).format(deletedDate);
                     
                     return (
-                      <div key={prospect.id} className="bg-slate-800 border border-slate-700 rounded-lg p-4">
-                        <div className="flex justify-between items-start">
-                          <div className="flex-1">
-                            <p className="font-semibold text-slate-100">{prospect.handle} - {prospect.name}</p>
-                            <p className="text-sm text-slate-300 mt-2"><span className="font-medium">Reason:</span> {prospect.deletion_reason}</p>
+                      <div key={prospect.id} className="bg-slate-800 border border-slate-700 rounded-lg p-3 sm:p-4">
+                        <div className="flex flex-col sm:flex-row justify-between items-start gap-3">
+                          <div className="flex-1 w-full sm:w-auto">
+                            <p className="font-semibold text-slate-100 text-sm sm:text-base">{prospect.handle} - {prospect.name}</p>
+                            <p className="text-xs sm:text-sm text-slate-300 mt-2 break-words"><span className="font-medium">Reason:</span> {prospect.deletion_reason}</p>
                           </div>
-                          <div className="flex items-start gap-3">
-                            <div className="text-right text-sm text-slate-500">
+                          <div className="flex flex-row sm:flex-row items-center sm:items-start gap-2 sm:gap-3 w-full sm:w-auto justify-end">
+                            <div className="text-right text-xs sm:text-sm text-slate-500 hidden sm:block">
                               <p>Archived by {prospect.deleted_by}</p>
                               <p>{cstDate} CST</p>
                             </div>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="text-green-600 hover:text-green-700 border-green-600"
-                              onClick={() => handleRestoreProspect(prospect.id, prospect.name)}
-                              title="Restore prospect"
-                            >
-                              <RotateCcw className="w-4 h-4" />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="text-red-600 hover:text-red-700 border-red-600"
-                              onClick={() => handleDeleteArchivedProspect(prospect.id, prospect.name)}
-                              title="Permanently delete"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
+                            <div className="flex gap-2">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="text-green-600 hover:text-green-700 border-green-600 min-w-[40px] sm:min-w-[44px]"
+                                onClick={() => handleRestoreProspect(prospect.id, prospect.name)}
+                                title="Restore prospect"
+                              >
+                                <RotateCcw className="w-3 h-3 sm:w-4 sm:h-4" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="text-red-600 hover:text-red-700 border-red-600 min-w-[40px] sm:min-w-[44px]"
+                                onClick={() => handleDeleteArchivedProspect(prospect.id, prospect.name)}
+                                title="Permanently delete"
+                              >
+                                <Trash2 className="w-3 h-3 sm:w-4 sm:h-4" />
+                              </Button>
+                            </div>
+                            <div className="text-left text-xs text-slate-500 sm:hidden w-full mt-2">
+                              <p>Archived by {prospect.deleted_by}</p>
+                              <p>{cstDate} CST</p>
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -1689,7 +1695,7 @@ export default function UserManagement({ onLogout }) {
                   })}
                 </div>
               ) : (
-                <p className="text-slate-400">No archived prospects</p>
+                <p className="text-slate-400 text-sm sm:text-base">No archived prospects</p>
               )}
             </div>
           </div>
