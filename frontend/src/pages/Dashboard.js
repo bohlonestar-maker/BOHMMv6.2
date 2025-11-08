@@ -1365,9 +1365,63 @@ export default function Dashboard({ onLogout, userRole, userPermissions }) {
                 }
                 
                 function exportToGoogleSheets() {
-                  // Show the modal
+                  // Show loading message
                   const modal = document.getElementById('googleSheetsModal');
+                  modal.querySelector('h2').innerHTML = '<i class="fas fa-spinner fa-spin"></i> Preparing Export...';
                   modal.style.display = 'flex';
+                  
+                  // Convert CSV to TSV for better Google Sheets compatibility
+                  const rows = csvText.split('\\n');
+                  const tsvData = rows.map(row => {
+                    // Parse CSV properly handling quotes
+                    const cells = [];
+                    let cell = '';
+                    let inQuotes = false;
+                    for (let i = 0; i < row.length; i++) {
+                      const char = row[i];
+                      if (char === '"') {
+                        inQuotes = !inQuotes;
+                      } else if (char === ',' && !inQuotes) {
+                        cells.push(cell);
+                        cell = '';
+                      } else {
+                        cell += char;
+                      }
+                    }
+                    cells.push(cell);
+                    return cells.join('\\t');
+                  }).join('\\n');
+                  
+                  // Copy TSV to clipboard
+                  if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(tsvData).then(() => {
+                      // Update modal with success message
+                      modal.querySelector('h2').innerHTML = '<i class="fas fa-check-circle" style="color: #10b981;"></i> Ready to Paste!';
+                      const contentDiv = modal.querySelector('div[style*="background: #334155"]');
+                      contentDiv.innerHTML = '<div style="font-size: 1rem; line-height: 1.8; text-align: center;"><p style="margin: 0 0 20px 0; font-size: 1.2rem; color: #10b981;"><strong>✓ Data copied to clipboard!</strong></p><p style="margin: 0 0 15px 0;">Google Sheets will open in a new tab.</p><p style="margin: 0 0 15px 0;"><strong style="color: #10b981;">Simply press Ctrl+V (or Cmd+V on Mac)</strong></p><p style="margin: 0;">to paste all ' + (csvData.length - 1) + ' members with all ' + csvData[0].length + ' columns!</p></div>';
+                      
+                      // Open Google Sheets
+                      setTimeout(() => {
+                        window.open('https://sheets.google.com/create', '_blank');
+                        
+                        // Auto-close modal after opening
+                        setTimeout(() => {
+                          closeGoogleSheetsModal();
+                          // Reset modal content for next use
+                          setTimeout(() => {
+                            modal.querySelector('h2').innerHTML = '<i class="fab fa-google" style="color: #34a853;"></i> Export to Google Sheets';
+                          }, 500);
+                        }, 2000);
+                      }, 800);
+                    }).catch(err => {
+                      // Fallback if clipboard fails
+                      console.error('Clipboard error:', err);
+                      downloadAndOpenSheets();
+                    });
+                  } else {
+                    // Fallback for browsers without clipboard API
+                    downloadAndOpenSheets();
+                  }
                 }
                 
                 function closeGoogleSheetsModal() {
@@ -1376,12 +1430,17 @@ export default function Dashboard({ onLogout, userRole, userPermissions }) {
                 }
                 
                 function downloadAndOpenSheets() {
+                  const modal = document.getElementById('googleSheetsModal');
+                  modal.querySelector('h2').innerHTML = '<i class="fab fa-google" style="color: #34a853;"></i> Export to Google Sheets';
+                  const contentDiv = modal.querySelector('div[style*="background: #334155"]');
+                  contentDiv.innerHTML = '<div style="font-size: 0.875rem; line-height: 1.6;"><p style="margin: 0 0 15px 0;"><strong>Step 1:</strong> File will download automatically</p><p style="margin: 0 0 15px 0;"><strong>Step 2:</strong> Google Sheets will open in a new tab</p><p style="margin: 0 0 15px 0;"><strong>Step 3:</strong> Click <strong>File → Import</strong></p><p style="margin: 0 0 15px 0;"><strong>Step 4:</strong> Click <strong>Upload</strong> tab and select the downloaded file</p><p style="margin: 0;"><strong>Step 5:</strong> Click <strong>Import data</strong></p></div>';
+                  
                   // Download the CSV file
                   const blob = new Blob([csvText], { type: 'text/csv;charset=utf-8;' });
                   const url = window.URL.createObjectURL(blob);
                   const a = document.createElement('a');
                   a.href = url;
-                  a.download = 'brothers_of_highway_members_for_sheets_' + new Date().toISOString().split('T')[0] + '.csv';
+                  a.download = 'brothers_of_highway_members_' + new Date().toISOString().split('T')[0] + '.csv';
                   document.body.appendChild(a);
                   a.click();
                   document.body.removeChild(a);
@@ -1395,7 +1454,7 @@ export default function Dashboard({ onLogout, userRole, userPermissions }) {
                   // Close modal after a delay
                   setTimeout(() => {
                     closeGoogleSheetsModal();
-                  }, 1000);
+                  }, 3000);
                 }
                 
                 // Make functions globally available
