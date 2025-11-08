@@ -510,16 +510,16 @@ export default function CSVExportView() {
               ))}
             </div>
 
-            <div className="flex gap-3">
+            <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
               <button
                 onClick={() => setShowPrintModal(false)}
-                className="flex-1 bg-slate-600 hover:bg-slate-700 px-6 py-3 rounded-lg font-semibold"
+                className="flex-1 bg-slate-600 hover:bg-slate-700 px-4 sm:px-6 py-2 sm:py-3 rounded-lg font-semibold text-sm sm:text-base"
               >
                 Cancel
               </button>
               <button
                 onClick={printSelectedColumns}
-                className="flex-1 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 px-6 py-3 rounded-lg font-semibold"
+                className="flex-1 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 px-4 sm:px-6 py-2 sm:py-3 rounded-lg font-semibold text-sm sm:text-base"
               >
                 <i className="fas fa-print mr-2"></i>
                 Print Selected
