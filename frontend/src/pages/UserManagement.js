@@ -1635,6 +1635,15 @@ export default function UserManagement({ onLogout }) {
                             >
                               <RotateCcw className="w-4 h-4" />
                             </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="text-red-600 hover:text-red-700 border-red-600"
+                              onClick={() => handleDeleteArchivedProspect(prospect.id, prospect.name)}
+                              title="Permanently delete"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
                           </div>
                         </div>
                       </div>
