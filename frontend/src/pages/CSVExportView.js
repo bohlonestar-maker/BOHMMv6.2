@@ -153,6 +153,24 @@ export default function CSVExportView() {
             indices.push(index);
           }
           break;
+        case 'meetings_first_half':
+          // Handle and first 6 months meetings (Jan-Jun)
+          if (h.includes('handle') ||
+              (h.includes('meeting') && (h.includes('january') || h.includes('february') || 
+               h.includes('march') || h.includes('april') || h.includes('may') || h.includes('june')))) {
+            console.log('  Matched meetings first half:', header);
+            indices.push(index);
+          }
+          break;
+        case 'meetings_second_half':
+          // Handle and second 6 months meetings (Jul-Dec)
+          if (h.includes('handle') ||
+              (h.includes('meeting') && (h.includes('july') || h.includes('august') || 
+               h.includes('september') || h.includes('october') || h.includes('november') || h.includes('december')))) {
+            console.log('  Matched meetings second half:', header);
+            indices.push(index);
+          }
+          break;
         default:
           break;
       }
