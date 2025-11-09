@@ -897,6 +897,12 @@ async def start_scheduler():
         traceback.print_exc(file=sys.stderr)
         scheduler = None
 
+@app.on_event("startup")
+async def start_discord_activity_bot():
+    """Start Discord activity tracking bot"""
+    if DISCORD_BOT_TOKEN:
+        asyncio.create_task(start_discord_bot())
+
 # Auth endpoints
 @api_router.post("/auth/login", response_model=LoginResponse)
 async def login(login_data: LoginRequest):
