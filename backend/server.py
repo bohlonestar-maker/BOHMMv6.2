@@ -142,6 +142,12 @@ async def start_discord_bot():
                 
             async def on_ready(self):
                 sys.stderr.write(f"✅ [DISCORD] Bot logged in as {self.user}\n")
+                sys.stderr.write(f"✅ [DISCORD] Monitoring {len(self.guilds)} guilds:\n")
+                for guild in self.guilds:
+                    sys.stderr.write(f"   - {guild.name} ({guild.id}): {guild.member_count} members\n")
+                    sys.stderr.write(f"   - Bot permissions: {guild.me.guild_permissions.value}\n")
+                    sys.stderr.write(f"   - Voice channels: {len(guild.voice_channels)}\n")
+                    sys.stderr.write(f"   - Text channels: {len(guild.text_channels)}\n")
                 sys.stderr.flush()
                 
             async def on_voice_state_update(self, member, before, after):
