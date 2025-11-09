@@ -104,6 +104,7 @@ export default function Dashboard({ onLogout, userRole, userPermissions }) {
   const [deleteReason, setDeleteReason] = useState("");
   const [selectedMember, setSelectedMember] = useState(null);
   const [actionForm, setActionForm] = useState({ type: "merit", date: "", description: "" });
+  const [editingAction, setEditingAction] = useState(null);
   const [editingMember, setEditingMember] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [meetingDates, setMeetingDates] = useState([]);
