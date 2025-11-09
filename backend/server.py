@@ -3434,10 +3434,26 @@ async def get_discord_analytics(days: int = 90, current_user: dict = Depends(ver
             member_info = member_map.get(stat["_id"], {})
             stat["username"] = member_info.get("display_name") or member_info.get("username") or f"User {stat['_id'][:8]}"
         
+        # Calculate correct totals
+        total_voice_sessions = sum(s["total_sessions"] for s in voice_stats) if voice_stats else 0
+        total_text_messages = sum(s["total_messages"] for s in text_stats) if text_stats else 0
+        
+        # Get all voice sessions (not just top users)
+        all_voice_sessions = await db.discord_voice_activity.count_documents({
+            "date": {"$gte": start_date.isoformat(), "$lte": end_date.isoformat()}
+        })
+        
+        # Get all text messages (not just top users)
+        all_text_messages_result = await db.discord_text_activity.aggregate([
+            {"$match": {"date": {"$gte": start_date.isoformat(), "$lte": end_date.isoformat()}}},
+            {"$group": {"_id": None, "total": {"$sum": "$message_count"}}}
+        ]).to_list(None)
+        all_text_messages = all_text_messages_result[0]["total"] if all_text_messages_result else 0
+        
         analytics = DiscordAnalytics(
             total_members=total_members,
-            voice_stats={"total_sessions": len(voice_stats), "top_users": voice_stats},
-            text_stats={"total_messages": sum(s["total_messages"] for s in text_stats), "top_users": text_stats},
+            voice_stats={"total_sessions": all_voice_sessions, "top_users": voice_stats},
+            text_stats={"total_messages": all_text_messages, "top_users": text_stats},
             top_voice_users=voice_stats,
             top_text_users=text_stats,
             daily_activity=daily_activity
