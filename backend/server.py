@@ -3209,10 +3209,18 @@ async def simulate_discord_activity(current_user: dict = Depends(verify_admin)):
         await db.discord_voice_activity.insert_one(voice_activity)
         await db.discord_text_activity.insert_one(text_activity)
         
+        # Convert datetime objects to ISO strings for JSON serialization
+        voice_activity_response = voice_activity.copy()
+        voice_activity_response['joined_at'] = voice_activity['joined_at'].isoformat()
+        voice_activity_response['left_at'] = voice_activity['left_at'].isoformat()
+        
+        text_activity_response = text_activity.copy()
+        text_activity_response['last_message_at'] = text_activity['last_message_at'].isoformat()
+        
         return {
             "message": "Test activity created successfully",
-            "voice_activity": voice_activity,
-            "text_activity": text_activity
+            "voice_activity": voice_activity_response,
+            "text_activity": text_activity_response
         }
         
     except Exception as e:
