@@ -497,6 +497,18 @@ frontend:
         agent: "testing"
         comment: "COMPREHENSIVE TESTING COMPLETED ✅ User Management Button Reorganization Verified: 1) Login successful with testadmin/testpass123 credentials 2) Navigation to /users page successful 3) Button Layout Verified: All 4 buttons present in correct order (Activity Log → Manage Invites → Invite User → Add User) 4) Button Styling Verified: First 3 buttons have outline styling, Add User has filled/primary styling (bg-slate-800) 5) Icon Verification: Activity Log (Shield), Manage Invites (Mail), Invite User (Mail), Add User (Plus) - all icons present 6) Functionality Testing: All buttons successfully open their respective dialogs (Activity Log, Manage Invitation Links, Invite New User, Add New User) 7) Spacing and Layout: Buttons properly spaced with gap-2 in header section. Button reorganization is working perfectly as specified."
   
+  - task: "Title dropdown includes Member option"
+    implemented: true
+    working: true
+    file: "/app/frontend/src/pages/Dashboard.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "TITLE DROPDOWN VERIFICATION COMPLETE ✅ COMPREHENSIVE TESTING COMPLETED: Successfully verified that the Title dropdown in the Add/Edit Member form includes 'Member' as an option. ✅ TEST RESULTS: 1) Login: Successfully logged in with testadmin/testpass123 credentials 2) Add Member Dialog: Successfully opened Add Member dialog by clicking 'Add Member' button 3) Title Dropdown: Successfully expanded Title dropdown and verified all options 4) Option Verification: Found all 12 expected title options in correct order: ['Prez', 'VP', 'S@A', 'ENF', 'SEC', 'T', 'CD', 'CC', 'CCLC', 'MD', 'PM', 'Member'] 5) Position Verification: 'Member' correctly appears as the last option (index 11) after 'PM' (index 10) 6) Count Verification: Total of 12 options (11 existing + 1 new 'Member') as expected 7) Screenshot: Captured screenshot showing expanded dropdown with all options visible including 'Member' at the bottom. ✅ IMPLEMENTATION CONFIRMED: The TITLES array in Dashboard.js line 38 correctly includes 'Member' as the final option, and the Select component properly renders all options in the specified order. The feature is working exactly as requested."
+
   - task: "Resend invite button UI"
     implemented: true
     working: "NA"
