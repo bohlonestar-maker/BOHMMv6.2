@@ -3161,6 +3161,17 @@ async def test_discord_activity(current_user: dict = Depends(verify_admin)):
                     "bot_permissions": guild.me.guild_permissions.value
                 })
         
+        # Convert datetime objects to ISO strings for JSON serialization
+        for record in recent_voice:
+            if 'joined_at' in record and isinstance(record['joined_at'], datetime):
+                record['joined_at'] = record['joined_at'].isoformat()
+            if 'left_at' in record and isinstance(record['left_at'], datetime):
+                record['left_at'] = record['left_at'].isoformat()
+        
+        for record in recent_text:
+            if 'last_message_at' in record and isinstance(record['last_message_at'], datetime):
+                record['last_message_at'] = record['last_message_at'].isoformat()
+        
         return {
             "bot_status": "running" if discord_bot else "not_running",
             "bot_info": bot_info,
