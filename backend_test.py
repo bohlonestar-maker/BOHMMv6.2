@@ -6098,6 +6098,277 @@ class BOHDirectoryAPITester:
         print(f"   🤖 Discord activity tracking testing completed")
         return True
 
+    def test_discord_import_matching_algorithm(self):
+        """Test enhanced Discord import matching algorithm with fuzzy matching - REVIEW REQUEST"""
+        print(f"\n🔗 Testing Enhanced Discord Import Matching Algorithm...")
+        
+        # Step 1: Login with testadmin/testpass123 as requested
+        success, admin_login = self.run_test(
+            "Login with testadmin/testpass123",
+            "POST",
+            "auth/login",
+            200,
+            data={"username": "testadmin", "password": "testpass123"}
+        )
+        
+        if not success or 'token' not in admin_login:
+            print("❌ Cannot continue - testadmin login failed")
+            return
+        
+        self.token = admin_login['token']
+        print(f"   ✅ Successfully logged in as testadmin")
+        
+        # Step 2: GET /api/discord/members - Check current link status BEFORE import
+        print(f"\n   📊 Checking Discord Members Status BEFORE Import...")
+        
+        success, discord_members_before = self.run_test(
+            "Get Discord Members BEFORE Import",
+            "GET",
+            "discord/members",
+            200
+        )
+        
+        linked_before = 0
+        unlinked_before = 0
+        total_members = 0
+        
+        if success and isinstance(discord_members_before, list):
+            total_members = len(discord_members_before)
+            for member in discord_members_before:
+                if member.get('member_id'):
+                    linked_before += 1
+                else:
+                    unlinked_before += 1
+            
+            self.log_test("Discord Members Count BEFORE Import", True, f"Total: {total_members}, Linked: {linked_before}, Unlinked: {unlinked_before}")
+            
+            # Show sample Discord usernames for matching analysis
+            sample_usernames = []
+            for member in discord_members_before[:10]:  # First 10 members
+                username = member.get('username', 'N/A')
+                display_name = member.get('display_name', 'N/A')
+                sample_usernames.append(f"{username} (display: {display_name})")
+            
+            if sample_usernames:
+                self.log_test("Sample Discord Usernames", True, f"Found usernames: {', '.join(sample_usernames[:5])}")
+        else:
+            self.log_test("Get Discord Members BEFORE Import", False, "Failed to retrieve Discord members")
+            return
+        
+        # Step 3: Check database members for matching potential
+        success, database_members = self.run_test(
+            "Get Database Members for Matching Analysis",
+            "GET",
+            "members",
+            200
+        )
+        
+        if success and isinstance(database_members, list):
+            sample_handles = []
+            for member in database_members[:10]:
+                handle = member.get('handle', 'N/A')
+                name = member.get('name', 'N/A')
+                sample_handles.append(f"{handle} ({name})")
+            
+            if sample_handles:
+                self.log_test("Sample Database Handles", True, f"Found handles: {', '.join(sample_handles[:5])}")
+                
+                # Look for specific test case: "lonestar379" should match "Lonestar"
+                lonestar_discord = None
+                lonestar_db = None
+                
+                for discord_member in discord_members_before:
+                    username = (discord_member.get('username') or '').lower()
+                    display_name = (discord_member.get('display_name') or '').lower()
+                    if 'lonestar' in username or 'lonestar' in display_name:
+                        lonestar_discord = discord_member
+                        break
+                
+                for db_member in database_members:
+                    handle = (db_member.get('handle') or '').lower()
+                    name = (db_member.get('name') or '').lower()
+                    if 'lonestar' in handle or 'lonestar' in name:
+                        lonestar_db = db_member
+                        break
+                
+                if lonestar_discord and lonestar_db:
+                    self.log_test("Lonestar Match Candidates Found", True, f"Discord: {lonestar_discord.get('username')} -> DB: {lonestar_db.get('handle')}")
+                else:
+                    self.log_test("Lonestar Match Candidates", False, f"Discord Lonestar: {bool(lonestar_discord)}, DB Lonestar: {bool(lonestar_db)}")
+        
+        # Step 4: POST /api/discord/import-members - Run the enhanced import
+        print(f"\n   🔄 Running Enhanced Discord Import...")
+        
+        success, import_response = self.run_test(
+            "Run Enhanced Discord Import",
+            "POST",
+            "discord/import-members",
+            200
+        )
+        
+        matched_count = 0
+        match_details = []
+        
+        if success:
+            matched_count = import_response.get('matched_count', 0)
+            total_discord = import_response.get('total_discord_members', 0)
+            match_details = import_response.get('match_details', [])
+            
+            self.log_test("Discord Import Response", True, f"Matched {matched_count} out of {total_discord} Discord members")
+            
+            # Analyze match details
+            if match_details:
+                print(f"   📋 Match Details Analysis:")
+                for i, match in enumerate(match_details[:5]):  # Show first 5 matches
+                    discord_user = match.get('discord_user', 'N/A')
+                    discord_display = match.get('discord_display', 'N/A')
+                    matched_handle = match.get('matched_handle', 'N/A')
+                    matched_name = match.get('matched_name', 'N/A')
+                    score = match.get('score', 0)
+                    method = match.get('method', 'N/A')
+                    
+                    print(f"      {i+1}. {discord_user} ({discord_display}) -> {matched_handle} ({matched_name}) | Score: {score}% | Method: {method}")
+                
+                # Check for different matching methods
+                methods_used = set(match.get('method', 'unknown') for match in match_details)
+                self.log_test("Matching Methods Used", True, f"Methods: {', '.join(methods_used)}")
+                
+                # Check for high-quality matches (score >= 80)
+                high_quality_matches = [m for m in match_details if m.get('score', 0) >= 80]
+                self.log_test("High Quality Matches (≥80%)", True, f"Found {len(high_quality_matches)} high-quality matches")
+                
+                # Check for exact matches (score = 100)
+                exact_matches = [m for m in match_details if m.get('score', 0) == 100]
+                self.log_test("Exact Matches (100%)", True, f"Found {len(exact_matches)} exact matches")
+                
+                # Check for fuzzy matches (score 80-99)
+                fuzzy_matches = [m for m in match_details if 80 <= m.get('score', 0) < 100]
+                self.log_test("Fuzzy Matches (80-99%)", True, f"Found {len(fuzzy_matches)} fuzzy matches")
+                
+                # Look for the specific Lonestar test case
+                lonestar_match = None
+                for match in match_details:
+                    discord_user = (match.get('discord_user') or '').lower()
+                    matched_handle = (match.get('matched_handle') or '').lower()
+                    if 'lonestar' in discord_user and 'lonestar' in matched_handle:
+                        lonestar_match = match
+                        break
+                
+                if lonestar_match:
+                    self.log_test("Lonestar Matching Test Case", True, f"Successfully matched {lonestar_match.get('discord_user')} -> {lonestar_match.get('matched_handle')} (Score: {lonestar_match.get('score')}%, Method: {lonestar_match.get('method')})")
+                else:
+                    # Check if we can find lonestar in the full match details
+                    found_lonestar = False
+                    for match in match_details:
+                        if 'lonestar' in str(match).lower():
+                            found_lonestar = True
+                            self.log_test("Lonestar Matching Test Case", True, f"Found Lonestar match: {match}")
+                            break
+                    
+                    if not found_lonestar:
+                        self.log_test("Lonestar Matching Test Case", False, "Expected 'lonestar379' -> 'Lonestar' match not found")
+            else:
+                self.log_test("Match Details Available", False, "No match details returned")
+        else:
+            self.log_test("Discord Import Execution", False, "Import failed")
+            return
+        
+        # Step 5: GET /api/discord/members - Check link status AFTER import
+        print(f"\n   📊 Checking Discord Members Status AFTER Import...")
+        
+        success, discord_members_after = self.run_test(
+            "Get Discord Members AFTER Import",
+            "GET",
+            "discord/members",
+            200
+        )
+        
+        linked_after = 0
+        unlinked_after = 0
+        
+        if success and isinstance(discord_members_after, list):
+            for member in discord_members_after:
+                if member.get('member_id'):
+                    linked_after += 1
+                else:
+                    unlinked_after += 1
+            
+            self.log_test("Discord Members Count AFTER Import", True, f"Total: {len(discord_members_after)}, Linked: {linked_after}, Unlinked: {unlinked_after}")
+            
+            # Compare before and after
+            improvement = linked_after - linked_before
+            if improvement > 0:
+                self.log_test("Import Effectiveness", True, f"Linked members increased by {improvement} (from {linked_before} to {linked_after})")
+            elif improvement == 0:
+                self.log_test("Import Effectiveness", False, f"No new links created (remained at {linked_before})")
+            else:
+                self.log_test("Import Effectiveness", False, f"Linked members decreased by {abs(improvement)}")
+            
+            # Show sample linked members with their database member info
+            linked_members = [m for m in discord_members_after if m.get('member_id')]
+            if linked_members:
+                print(f"   🔗 Sample Linked Members:")
+                for i, member in enumerate(linked_members[:5]):  # Show first 5 linked members
+                    username = member.get('username', 'N/A')
+                    display_name = member.get('display_name', 'N/A')
+                    member_id = member.get('member_id', 'N/A')
+                    
+                    # Find the corresponding database member
+                    db_member = None
+                    if database_members:
+                        for db_m in database_members:
+                            if db_m.get('id') == member_id:
+                                db_member = db_m
+                                break
+                    
+                    if db_member:
+                        handle = db_member.get('handle', 'N/A')
+                        name = db_member.get('name', 'N/A')
+                        print(f"      {i+1}. Discord: {username} ({display_name}) -> DB: {handle} ({name})")
+                    else:
+                        print(f"      {i+1}. Discord: {username} ({display_name}) -> DB: [Member ID {member_id} not found]")
+                
+                self.log_test("Sample Linked Members Display", True, f"Displayed {min(5, len(linked_members))} linked members")
+            else:
+                self.log_test("Sample Linked Members Display", False, "No linked members found after import")
+        else:
+            self.log_test("Get Discord Members AFTER Import", False, "Failed to retrieve Discord members after import")
+        
+        # Step 6: Verify the matching quality and expected behavior
+        print(f"\n   ✅ Verifying Enhanced Matching Algorithm Results...")
+        
+        # Expected behavior verification
+        expected_significant_increase = matched_count >= 5  # Expect at least 5 matches
+        if expected_significant_increase:
+            self.log_test("Significant Matching Improvement", True, f"Enhanced algorithm matched {matched_count} members (≥5 expected)")
+        else:
+            self.log_test("Significant Matching Improvement", False, f"Enhanced algorithm only matched {matched_count} members (<5)")
+        
+        # Verify match scores are in expected range (80-100)
+        if match_details:
+            scores = [m.get('score', 0) for m in match_details]
+            min_score = min(scores) if scores else 0
+            max_score = max(scores) if scores else 0
+            avg_score = sum(scores) / len(scores) if scores else 0
+            
+            if min_score >= 80:
+                self.log_test("Match Score Quality", True, f"All matches ≥80% (range: {min_score}-{max_score}%, avg: {avg_score:.1f}%)")
+            else:
+                self.log_test("Match Score Quality", False, f"Some matches <80% (range: {min_score}-{max_score}%, avg: {avg_score:.1f}%)")
+        
+        # Verify appropriate matching methods are used
+        if match_details:
+            expected_methods = ['exact_handle', 'exact_name', 'partial_handle', 'partial_username', 'fuzzy_handle', 'fuzzy_name']
+            methods_found = set(m.get('method', '') for m in match_details)
+            
+            if any(method in methods_found for method in expected_methods):
+                self.log_test("Matching Methods Verification", True, f"Found expected methods: {methods_found}")
+            else:
+                self.log_test("Matching Methods Verification", False, f"Unexpected methods: {methods_found}")
+        
+        print(f"   🔗 Enhanced Discord Import Matching Algorithm testing completed")
+        return matched_count, match_details
+
     def run_all_tests(self):
         """Run all tests"""
         print("🚀 Starting Brothers of the Highway Directory API Tests")
