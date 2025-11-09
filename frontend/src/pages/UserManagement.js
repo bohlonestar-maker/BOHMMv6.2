@@ -462,6 +462,16 @@ export default function UserManagement({ onLogout }) {
                 </Button>
 
                 <Button
+                  onClick={() => navigate("/discord-analytics")}
+                  variant="ghost"
+                  size="sm"
+                  className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm text-slate-200 hover:bg-slate-600"
+                >
+                  <MessageSquare className="w-3 h-3 sm:w-4 sm:h-4" />
+                  <span className="hidden sm:inline">Discord</span>
+                </Button>
+
+                <Button
                   onClick={handleViewArchived}
                   variant="ghost"
                   size="sm"
