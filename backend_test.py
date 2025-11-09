@@ -5832,6 +5832,90 @@ class BOHDirectoryAPITester:
         print(f"   🎮 Discord Analytics API testing completed")
         return True
 
+    def test_discord_activity_tracking(self):
+        """Test Discord activity tracking functionality - NEW FEATURE"""
+        print(f"\n🤖 Testing Discord Activity Tracking...")
+        
+        # Test the /api/discord/test-activity endpoint
+        success, activity_response = self.run_test(
+            "GET Discord Test Activity Endpoint",
+            "GET",
+            "discord/test-activity",
+            200
+        )
+        
+        if success:
+            # Verify response structure
+            expected_fields = ['bot_status', 'total_voice_records', 'total_text_records', 'recent_voice_activity', 'recent_text_activity', 'message']
+            missing_fields = [field for field in expected_fields if field not in activity_response]
+            
+            if not missing_fields:
+                self.log_test("Discord Activity - Response Structure", True, f"All required fields present: {expected_fields}")
+                
+                # Check bot status
+                bot_status = activity_response.get('bot_status')
+                if bot_status == 'running':
+                    self.log_test("Discord Bot Status", True, "Bot is running and connected")
+                elif bot_status == 'not_running':
+                    self.log_test("Discord Bot Status", False, "Bot is not running - check Discord bot token and connection")
+                else:
+                    self.log_test("Discord Bot Status", False, f"Unknown bot status: {bot_status}")
+                
+                # Check activity counts
+                voice_count = activity_response.get('total_voice_records', 0)
+                text_count = activity_response.get('total_text_records', 0)
+                recent_voice = activity_response.get('recent_voice_activity', 0)
+                recent_text = activity_response.get('recent_text_activity', 0)
+                
+                self.log_test("Discord Voice Activity Records", True, f"Total voice records: {voice_count}")
+                self.log_test("Discord Text Activity Records", True, f"Total text records: {text_count}")
+                self.log_test("Recent Voice Activity", True, f"Recent voice activity: {recent_voice}")
+                self.log_test("Recent Text Activity", True, f"Recent text activity: {recent_text}")
+                
+                # Check message field
+                message = activity_response.get('message', '')
+                if message:
+                    self.log_test("Discord Activity - Status Message", True, f"Message: {message}")
+                else:
+                    self.log_test("Discord Activity - Status Message", False, "No status message provided")
+                
+                # Analyze activity levels
+                if voice_count > 0 or text_count > 0:
+                    self.log_test("Discord Activity - Historical Data", True, f"Found historical activity: {voice_count} voice + {text_count} text records")
+                else:
+                    self.log_test("Discord Activity - Historical Data", False, "No historical activity found - bot may have just started")
+                
+                if recent_voice > 0 or recent_text > 0:
+                    self.log_test("Discord Activity - Recent Activity", True, f"Recent activity detected: {recent_voice} voice + {recent_text} text")
+                else:
+                    self.log_test("Discord Activity - Recent Activity", False, "No recent activity - expected if bot just started or server is quiet")
+                
+                # Overall assessment
+                if bot_status == 'running':
+                    self.log_test("Discord Activity Tracking - Overall Status", True, "Bot is running and ready to track activity")
+                else:
+                    self.log_test("Discord Activity Tracking - Overall Status", False, "Bot is not running - activity tracking unavailable")
+                    
+            else:
+                self.log_test("Discord Activity - Response Structure", False, f"Missing fields: {missing_fields}")
+        
+        # Test unauthorized access (should fail without admin token)
+        original_token = self.token
+        self.token = None
+        
+        success, response = self.run_test(
+            "Discord Activity - Unauthorized Access (Should Fail)",
+            "GET",
+            "discord/test-activity",
+            403  # Should fail without admin token
+        )
+        
+        # Restore admin token
+        self.token = original_token
+        
+        print(f"   🤖 Discord activity tracking testing completed")
+        return True
+
     def run_all_tests(self):
         """Run all tests"""
         print("🚀 Starting Brothers of the Highway Directory API Tests")
