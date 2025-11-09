@@ -2981,8 +2981,7 @@ async def get_discord_members(current_user: dict = Depends(verify_admin)):
     try:
         async with aiohttp.ClientSession() as session:
             headers = {'Authorization': f'Bot {DISCORD_BOT_TOKEN}'}
-            # You'll need to provide your Discord server/guild ID
-            guild_id = "YOUR_DISCORD_GUILD_ID"  # Replace with actual guild ID
+            guild_id = "991898490743574628"  # Brothers of the Highway Discord server
             async with session.get(f'https://discord.com/api/v10/guilds/{guild_id}/members?limit=1000', headers=headers) as resp:
                 if resp.status == 200:
                     discord_members = await resp.json()
