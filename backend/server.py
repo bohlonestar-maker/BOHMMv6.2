@@ -3098,6 +3098,36 @@ async def export_support_messages(current_user: dict = Depends(verify_token)):
 
 
 # Discord Analytics Endpoints
+@api_router.get("/discord/test-activity")
+async def test_discord_activity(current_user: dict = Depends(verify_admin)):
+    """Test endpoint to check if Discord activity is being recorded"""
+    try:
+        # Check if there's any voice or text activity in the database
+        voice_count = await db.discord_voice_activity.count_documents({})
+        text_count = await db.discord_text_activity.count_documents({})
+        
+        # Get recent activity (last 24 hours)
+        from datetime import datetime, timedelta
+        yesterday = datetime.now(timezone.utc) - timedelta(days=1)
+        recent_voice = await db.discord_voice_activity.find({
+            "joined_at": {"$gte": yesterday}
+        }).limit(5).to_list(None)
+        
+        recent_text = await db.discord_text_activity.find({
+            "last_message_at": {"$gte": yesterday}
+        }).limit(5).to_list(None)
+        
+        return {
+            "bot_status": "running" if discord_bot else "not_running",
+            "total_voice_records": voice_count,
+            "total_text_records": text_count,
+            "recent_voice_activity": len(recent_voice),
+            "recent_text_activity": len(recent_text),
+            "message": f"Bot is {'active' if discord_bot else 'inactive'}. Voice: {voice_count} records, Text: {text_count} records"
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Test error: {str(e)}")
+
 @api_router.get("/discord/members")
 async def get_discord_members(current_user: dict = Depends(verify_admin)):
     """Get Discord server members list"""
