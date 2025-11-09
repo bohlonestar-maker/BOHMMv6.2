@@ -3303,10 +3303,14 @@ async def get_discord_members(current_user: dict = Depends(verify_admin)):
                             is_bot=user.get('bot', False)
                         )
                         
-                        # Upsert to database
+                        # Upsert to database - preserve member_id if it exists
+                        discord_data = discord_member.model_dump()
+                        # Remove member_id from the update to preserve existing links
+                        discord_data.pop('member_id', None)
+                        
                         await db.discord_members.update_one(
                             {"discord_id": user['id']},
-                            {"$set": discord_member.model_dump()},
+                            {"$set": discord_data},
                             upsert=True
                         )
                     
