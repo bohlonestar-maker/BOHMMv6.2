@@ -2974,6 +2974,164 @@ async def export_support_messages(current_user: dict = Depends(verify_token)):
     )
 
 
+# Discord Analytics Endpoints
+@api_router.get("/discord/members")
+async def get_discord_members(current_user: dict = Depends(verify_admin)):
+    """Get Discord server members list"""
+    try:
+        async with aiohttp.ClientSession() as session:
+            headers = {'Authorization': f'Bot {DISCORD_BOT_TOKEN}'}
+            # You'll need to provide your Discord server/guild ID
+            guild_id = "YOUR_DISCORD_GUILD_ID"  # Replace with actual guild ID
+            async with session.get(f'https://discord.com/api/v10/guilds/{guild_id}/members?limit=1000', headers=headers) as resp:
+                if resp.status == 200:
+                    discord_members = await resp.json()
+                    
+                    # Store/update members in database
+                    for member in discord_members:
+                        user = member['user']
+                        discord_member = DiscordMember(
+                            discord_id=user['id'],
+                            username=user['username'],
+                            display_name=member.get('nick') or user.get('display_name'),
+                            avatar_url=f"https://cdn.discordapp.com/avatars/{user['id']}/{user['avatar']}.png" if user.get('avatar') else None,
+                            joined_at=datetime.fromisoformat(member['joined_at'].replace('Z', '+00:00')) if member.get('joined_at') else None,
+                            roles=member.get('roles', []),
+                            is_bot=user.get('bot', False)
+                        )
+                        
+                        # Upsert to database
+                        await db.discord_members.update_one(
+                            {"discord_id": user['id']},
+                            {"$set": discord_member.model_dump()},
+                            upsert=True
+                        )
+                    
+                    # Return stored members
+                    stored_members = await db.discord_members.find({}, {"_id": 0}).to_list(1000)
+                    return stored_members
+                else:
+                    raise HTTPException(status_code=resp.status, detail="Failed to fetch Discord members")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Discord API error: {str(e)}")
+
+@api_router.get("/discord/analytics")
+async def get_discord_analytics(days: int = 90, current_user: dict = Depends(verify_admin)):
+    """Get Discord analytics for specified number of days"""
+    try:
+        end_date = datetime.now(timezone.utc).date()
+        start_date = end_date - timedelta(days=days)
+        
+        # Get voice activity stats
+        voice_pipeline = [
+            {"$match": {"date": {"$gte": start_date.isoformat(), "$lte": end_date.isoformat()}}},
+            {"$group": {
+                "_id": "$discord_user_id",
+                "total_sessions": {"$sum": 1},
+                "total_duration": {"$sum": "$duration_seconds"},
+                "username": {"$first": "$discord_user_id"}  # We'll replace this with actual username
+            }},
+            {"$sort": {"total_duration": -1}},
+            {"$limit": 10}
+        ]
+        
+        # Get text activity stats
+        text_pipeline = [
+            {"$match": {"date": {"$gte": start_date.isoformat(), "$lte": end_date.isoformat()}}},
+            {"$group": {
+                "_id": "$discord_user_id", 
+                "total_messages": {"$sum": "$message_count"},
+                "username": {"$first": "$discord_user_id"}  # We'll replace this with actual username
+            }},
+            {"$sort": {"total_messages": -1}},
+            {"$limit": 10}
+        ]
+        
+        # Get daily activity aggregation
+        daily_pipeline = [
+            {"$match": {"date": {"$gte": start_date.isoformat(), "$lte": end_date.isoformat()}}},
+            {"$group": {
+                "_id": "$date",
+                "voice_sessions": {"$sum": 1},
+                "total_voice_duration": {"$sum": "$duration_seconds"}
+            }},
+            {"$sort": {"_id": 1}}
+        ]
+        
+        # Execute aggregations
+        voice_stats = await db.discord_voice_activity.aggregate(voice_pipeline).to_list(None)
+        text_stats = await db.discord_text_activity.aggregate(text_pipeline).to_list(None)
+        daily_activity = await db.discord_voice_activity.aggregate(daily_pipeline).to_list(None)
+        
+        # Get total members count
+        total_members = await db.discord_members.count_documents({})
+        
+        # Enhance with usernames from discord_members collection
+        member_map = {}
+        all_members = await db.discord_members.find({}, {"discord_id": 1, "username": 1, "_id": 0}).to_list(None)
+        for member in all_members:
+            member_map[member["discord_id"]] = member["username"]
+        
+        # Add usernames to stats
+        for stat in voice_stats:
+            stat["username"] = member_map.get(stat["_id"], f"User {stat['_id'][:8]}")
+        
+        for stat in text_stats:
+            stat["username"] = member_map.get(stat["_id"], f"User {stat['_id'][:8]}")
+        
+        analytics = DiscordAnalytics(
+            total_members=total_members,
+            voice_stats={"total_sessions": len(voice_stats), "top_users": voice_stats},
+            text_stats={"total_messages": sum(s["total_messages"] for s in text_stats), "top_users": text_stats},
+            top_voice_users=voice_stats,
+            top_text_users=text_stats,
+            daily_activity=daily_activity
+        )
+        
+        return analytics.model_dump()
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Analytics error: {str(e)}")
+
+@api_router.post("/discord/import-members")
+async def import_discord_members(current_user: dict = Depends(verify_admin)):
+    """Import Discord members and link to existing members"""
+    try:
+        # This endpoint will be called manually to import Discord members
+        # It will fetch the member list and try to match with existing database members
+        
+        discord_members = await db.discord_members.find({}, {"_id": 0}).to_list(None)
+        database_members = await db.members.find({}, {"_id": 0, "id": 1, "handle": 1, "name": 1}).to_list(None)
+        
+        matched_count = 0
+        
+        for discord_member in discord_members:
+            # Try to match by handle or name
+            username = discord_member.get("username", "").lower()
+            display_name = discord_member.get("display_name", "").lower()
+            
+            for db_member in database_members:
+                handle = db_member.get("handle", "").lower()
+                name = db_member.get("name", "").lower()
+                
+                # Simple matching logic - can be enhanced
+                if (username == handle or display_name == handle or 
+                    username == name or display_name == name):
+                    
+                    # Link the accounts
+                    await db.discord_members.update_one(
+                        {"discord_id": discord_member["discord_id"]},
+                        {"$set": {"member_id": db_member["id"]}}
+                    )
+                    matched_count += 1
+                    break
+        
+        return {"message": f"Imported Discord members. Matched {matched_count} with existing members."}
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Import error: {str(e)}")
+
+
 # AI Chatbot endpoint
 class ChatMessage(BaseModel):
     message: str
