@@ -326,6 +326,49 @@ export default function Dashboard({ onLogout, userRole, userPermissions }) {
     }
   };
 
+  const handleEditAction = (action) => {
+    setEditingAction(action);
+    setActionForm({
+      type: action.type,
+      date: action.date,
+      description: action.description
+    });
+  };
+
+  const handleUpdateAction = async (e) => {
+    e.preventDefault();
+    if (!actionForm.description.trim()) {
+      toast.error("Please enter a description");
+      return;
+    }
+
+    const token = localStorage.getItem("token");
+    try {
+      await axios.put(
+        `${API}/members/${selectedMember.id}/actions/${editingAction.id}`,
+        {
+          action_type: actionForm.type,
+          date: actionForm.date,
+          description: actionForm.description
+        },
+        {
+          headers: { Authorization: `Bearer ${token}` }
+        }
+      );
+      toast.success("Action updated successfully");
+      setEditingAction(null);
+      setActionForm({ type: "merit", date: new Date().toISOString().split('T')[0], description: "" });
+      fetchMembers(); // Refresh to get updated actions
+    } catch (error) {
+      toast.error(error.response?.data?.detail || "Failed to update action");
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditingAction(null);
+    setActionForm({ type: "merit", date: new Date().toISOString().split('T')[0], description: "" });
+  };
+
   const handleEdit = (member) => {
     setEditingMember(member);
     
