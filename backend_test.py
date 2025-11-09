@@ -7554,7 +7554,164 @@ def test_discord_members_data_structure():
         print(f"   🔍 Discord analytics investigation completed")
         return analytics_data
 
+    def test_discord_voice_activity_investigation(self):
+        """Investigate Discord voice activity not updating - PRIORITY TEST"""
+        print(f"\n🎤 Investigating Discord Voice Activity Issue...")
+        
+        # Test 1: Login with testadmin/testpass123 as requested
+        success, admin_login = self.run_test(
+            "Login with testadmin/testpass123",
+            "POST",
+            "auth/login",
+            200,
+            data={"username": "testadmin", "password": "testpass123"}
+        )
+        
+        if not success or 'token' not in admin_login:
+            print("❌ Cannot continue - testadmin login failed")
+            return
+        
+        self.token = admin_login['token']
+        print(f"   ✅ Successfully logged in as testadmin")
+        
+        # Test 2: Check Discord bot status via GET /api/discord/test-activity
+        success, bot_status = self.run_test(
+            "Check Discord Bot Status",
+            "GET",
+            "discord/test-activity",
+            200
+        )
+        
+        if success:
+            print(f"   📊 Discord Bot Status Response:")
+            print(f"      Bot Status: {bot_status.get('bot_status', 'Unknown')}")
+            print(f"      Total Voice Records: {bot_status.get('total_voice_records', 0)}")
+            print(f"      Total Text Records: {bot_status.get('total_text_records', 0)}")
+            print(f"      Recent Voice Activity: {bot_status.get('recent_voice_activity', 0)}")
+            print(f"      Recent Text Activity: {bot_status.get('recent_text_activity', 0)}")
+            
+            # Check if bot is running and connected
+            if bot_status.get('bot_status') == 'running':
+                self.log_test("Discord Bot - Running Status", True, "Bot is running and connected")
+            else:
+                self.log_test("Discord Bot - Running Status", False, f"Bot status: {bot_status.get('bot_status')}")
+            
+            # Check voice activity counts
+            voice_count = bot_status.get('total_voice_records', 0)
+            if voice_count > 0:
+                self.log_test("Discord Voice Activity - Records Found", True, f"Found {voice_count} voice records")
+            else:
+                self.log_test("Discord Voice Activity - Records Found", False, "No voice records found in database")
+            
+            # Check recent activity
+            recent_voice = bot_status.get('recent_voice_activity', 0)
+            if recent_voice > 0:
+                self.log_test("Discord Voice Activity - Recent Activity", True, f"Found {recent_voice} recent voice activities")
+            else:
+                self.log_test("Discord Voice Activity - Recent Activity", False, "No recent voice activity detected")
+        else:
+            print("❌ Failed to get Discord bot status")
+            return
+        
+        # Test 3: Check Discord analytics for more detailed data
+        success, analytics = self.run_test(
+            "Check Discord Analytics",
+            "GET",
+            "discord/analytics",
+            200
+        )
+        
+        if success:
+            print(f"   📈 Discord Analytics Response:")
+            print(f"      Total Members: {analytics.get('total_members', 0)}")
+            
+            voice_stats = analytics.get('voice_stats', {})
+            text_stats = analytics.get('text_stats', {})
+            
+            print(f"      Voice Stats: {voice_stats}")
+            print(f"      Text Stats: {text_stats}")
+            
+            # Check voice sessions in analytics
+            voice_sessions = voice_stats.get('total_sessions', 0)
+            if voice_sessions > 0:
+                self.log_test("Discord Analytics - Voice Sessions", True, f"Analytics shows {voice_sessions} voice sessions")
+            else:
+                self.log_test("Discord Analytics - Voice Sessions", False, "Analytics shows 0 voice sessions")
+            
+            # Check daily activity
+            daily_activity = analytics.get('daily_activity', [])
+            if daily_activity:
+                self.log_test("Discord Analytics - Daily Activity", True, f"Found {len(daily_activity)} daily activity records")
+            else:
+                self.log_test("Discord Analytics - Daily Activity", False, "No daily activity records found")
+        
+        # Test 4: Check Discord members endpoint
+        success, discord_members = self.run_test(
+            "Check Discord Members",
+            "GET",
+            "discord/members",
+            200
+        )
+        
+        if success and isinstance(discord_members, list):
+            print(f"   👥 Discord Members: {len(discord_members)} total members")
+            
+            # Check for linked members
+            linked_members = [m for m in discord_members if m.get('member_id')]
+            unlinked_members = [m for m in discord_members if not m.get('member_id')]
+            
+            print(f"      Linked Members: {len(linked_members)}")
+            print(f"      Unlinked Members: {len(unlinked_members)}")
+            
+            if len(discord_members) > 0:
+                self.log_test("Discord Members - Server Connection", True, f"Found {len(discord_members)} Discord server members")
+                
+                # Show sample member data
+                if discord_members:
+                    sample_member = discord_members[0]
+                    print(f"      Sample Member: {sample_member.get('username', 'Unknown')} (ID: {sample_member.get('discord_id', 'Unknown')})")
+            else:
+                self.log_test("Discord Members - Server Connection", False, "No Discord members found - bot may not be connected to server")
+        
+        # Test 5: Try to trigger notification check (if endpoint exists)
+        success, trigger_response = self.run_test(
+            "Trigger Discord Activity Check",
+            "POST",
+            "discord/simulate-activity",
+            200
+        )
+        
+        if success:
+            print(f"   🔄 Activity simulation triggered: {trigger_response}")
+        else:
+            print("   ⚠️  Activity simulation endpoint not available or failed")
+        
+        # Test 6: Check if there are any recent voice state changes in logs
+        print(f"\n   🔍 Investigation Summary:")
+        print(f"      - Bot Status: {bot_status.get('bot_status', 'Unknown')}")
+        print(f"      - Voice Records in DB: {bot_status.get('total_voice_records', 0)}")
+        print(f"      - Discord Server Members: {len(discord_members) if isinstance(discord_members, list) else 0}")
+        print(f"      - Recent Voice Activity: {bot_status.get('recent_voice_activity', 0)}")
+        
+        # Determine if voice activity is working
+        voice_records = bot_status.get('total_voice_records', 0)
+        bot_running = bot_status.get('bot_status') == 'running'
+        server_connected = isinstance(discord_members, list) and len(discord_members) > 0
+        
+        if bot_running and server_connected and voice_records > 0:
+            self.log_test("Discord Voice Activity - Overall Status", True, "Bot is running, connected to server, and has recorded voice activity")
+        elif bot_running and server_connected and voice_records == 0:
+            self.log_test("Discord Voice Activity - Overall Status", False, "Bot is running and connected but no voice activity recorded - users may not be using voice channels")
+        elif bot_running and not server_connected:
+            self.log_test("Discord Voice Activity - Overall Status", False, "Bot is running but not connected to Discord server")
+        elif not bot_running:
+            self.log_test("Discord Voice Activity - Overall Status", False, "Discord bot is not running")
+        else:
+            self.log_test("Discord Voice Activity - Overall Status", False, "Unknown issue with Discord voice activity tracking")
+        
+        return bot_status, analytics, discord_members
+
 if __name__ == "__main__":
-    # Run the Discord analytics investigation specifically
+    # Run the Discord voice activity investigation specifically
     tester = BOHDirectoryAPITester()
-    tester.test_discord_analytics_investigation()
+    tester.test_discord_voice_activity_investigation()
