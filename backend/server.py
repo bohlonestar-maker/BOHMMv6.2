@@ -1323,6 +1323,59 @@ async def delete_member_action(
     
     return {"message": "Action deleted successfully"}
 
+@api_router.put("/members/{member_id}/actions/{action_id}")
+async def update_member_action(
+    member_id: str,
+    action_id: str,
+    action_data: dict,
+    current_user: dict = Depends(verify_admin)
+):
+    """Update an action for a member"""
+    member = await db.members.find_one({"id": member_id}, {"_id": 0})
+    if not member:
+        raise HTTPException(status_code=404, detail="Member not found")
+    
+    # Extract action data
+    action_type = action_data.get("action_type")
+    date = action_data.get("date")
+    description = action_data.get("description")
+    
+    if not all([action_type, date, description]):
+        raise HTTPException(status_code=400, detail="Missing required fields: action_type, date, description")
+    
+    # Validate action type
+    if action_type not in ["merit", "promotion", "disciplinary"]:
+        raise HTTPException(status_code=400, detail="Invalid action type")
+    
+    # Find and update the action
+    actions = member.get("actions", [])
+    action_found = False
+    for action in actions:
+        if action.get("id") == action_id:
+            action["type"] = action_type
+            action["date"] = date
+            action["description"] = description
+            action["updated_at"] = datetime.now(timezone.utc).isoformat()
+            action_found = True
+            break
+    
+    if not action_found:
+        raise HTTPException(status_code=404, detail="Action not found")
+    
+    # Update the member document
+    await db.members.update_one(
+        {"id": member_id},
+        {"$set": {"actions": actions, "updated_at": datetime.now(timezone.utc)}}
+    )
+    
+    await log_activity(
+        current_user["username"],
+        "update_action",
+        f"Updated action for member {member['handle']}: {action_type}"
+    )
+    
+    return {"message": "Action updated successfully"}
+
 # Prospect Actions endpoints (admin only)
 @api_router.post("/prospects/{prospect_id}/actions")
 async def add_prospect_action(
