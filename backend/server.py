@@ -70,6 +70,11 @@ from cryptography.fernet import Fernet
 sys.stderr.write("  [INIT] Importing hashlib...\n")
 sys.stderr.flush()
 import hashlib
+sys.stderr.write("  [INIT] Importing Discord.py...\n")
+sys.stderr.flush()
+import discord
+import asyncio
+import aiohttp
 
 sys.stderr.write("✅ [INIT] All imports completed successfully\n")
 sys.stderr.flush()
