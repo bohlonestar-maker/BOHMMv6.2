@@ -5979,6 +5979,9 @@ class BOHDirectoryAPITester:
         # REVIEW REQUEST: Discord Analytics API Endpoints Testing
         self.test_discord_analytics_endpoints()
         
+        # NEW FEATURE TEST: Discord Activity Tracking
+        self.test_discord_activity_tracking()
+        
         # Test member operations
         self.test_member_operations()
         
