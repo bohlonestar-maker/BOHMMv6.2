@@ -13,7 +13,7 @@ from datetime import datetime
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 class ComprehensivePrivacyTester:
-    def __init__(self, base_url="https://biker-dashboard.preview.emergentagent.com/api"):
+    def __init__(self, base_url="https://brotherhood-app-4.preview.emergentagent.com/api"):
         self.base_url = base_url
         self.token = None
         self.tests_run = 0

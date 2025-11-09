@@ -32,7 +32,7 @@ def generate_final_report():
     
     # Login to API
     login_response = requests.post(
-        'https://biker-dashboard.preview.emergentagent.com/api/auth/login',
+        'https://brotherhood-app-4.preview.emergentagent.com/api/auth/login',
         json={'username': 'testadmin', 'password': 'testpass123'},
         verify=False
     )
@@ -74,7 +74,7 @@ def generate_final_report():
     # 2. Analytics API Response
     print("\n2. ANALYTICS API AGGREGATION:")
     analytics_response = requests.get(
-        'https://biker-dashboard.preview.emergentagent.com/api/discord/analytics',
+        'https://brotherhood-app-4.preview.emergentagent.com/api/discord/analytics',
         headers=headers,
         verify=False
     )
@@ -127,7 +127,7 @@ def generate_final_report():
     # 4. Bot Status
     print("\n4. DISCORD BOT STATUS:")
     bot_response = requests.get(
-        'https://biker-dashboard.preview.emergentagent.com/api/discord/test-activity',
+        'https://brotherhood-app-4.preview.emergentagent.com/api/discord/test-activity',
         headers=headers,
         verify=False
     )
