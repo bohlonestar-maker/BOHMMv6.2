@@ -3180,15 +3180,18 @@ async def simulate_discord_activity(current_user: dict = Depends(verify_admin)):
     """Simulate Discord activity for testing purposes"""
     try:
         # Create sample voice activity
+        now = datetime.now(timezone.utc)
+        thirty_min_ago = now - timedelta(minutes=30)
+        
         voice_activity = {
             'id': str(uuid.uuid4()),
             'discord_user_id': '12345678901234567890',  # Test user ID
             'channel_id': '98765432109876543210',
             'channel_name': 'General Voice',
-            'joined_at': datetime.now(timezone.utc) - timedelta(minutes=30),
-            'left_at': datetime.now(timezone.utc),
+            'joined_at': thirty_min_ago,
+            'left_at': now,
             'duration_seconds': 1800,  # 30 minutes
-            'date': datetime.now(timezone.utc).date().isoformat()
+            'date': now.date().isoformat()
         }
         
         # Create sample text activity
@@ -3198,8 +3201,8 @@ async def simulate_discord_activity(current_user: dict = Depends(verify_admin)):
             'channel_id': '11111111111111111111',
             'channel_name': 'general',
             'message_count': 5,
-            'date': datetime.now(timezone.utc).date().isoformat(),
-            'last_message_at': datetime.now(timezone.utc)
+            'date': now.date().isoformat(),
+            'last_message_at': now
         }
         
         # Insert test data
