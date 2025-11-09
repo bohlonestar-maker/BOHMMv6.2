@@ -6098,6 +6098,219 @@ class BOHDirectoryAPITester:
         print(f"   🤖 Discord activity tracking testing completed")
         return True
 
+    def test_discord_analytics_investigation(self):
+        """Investigate Discord analytics voice sessions and daily averages issue - PRIORITY TEST"""
+        print(f"\n🔍 INVESTIGATING DISCORD ANALYTICS ISSUE...")
+        print("   User reports: voice sessions showing as 2, daily average showing as 0")
+        
+        # Step 1: Login with testadmin/testpass123 as requested
+        success, admin_login = self.run_test(
+            "Login with testadmin/testpass123",
+            "POST",
+            "auth/login",
+            200,
+            data={"username": "testadmin", "password": "testpass123"}
+        )
+        
+        if not success or 'token' not in admin_login:
+            print("❌ Cannot continue - testadmin login failed")
+            return
+        
+        self.token = admin_login['token']
+        print(f"   ✅ Successfully logged in as testadmin")
+        
+        # Step 2: Check Discord bot status via GET /api/discord/test-activity
+        print(f"\n   🤖 Step 2: Checking Discord bot status...")
+        success, bot_status = self.run_test(
+            "Check Discord Bot Status",
+            "GET",
+            "discord/test-activity",
+            200
+        )
+        
+        if success:
+            print(f"   Bot Status: {bot_status.get('bot_status', 'unknown')}")
+            print(f"   Total Voice Records: {bot_status.get('total_voice_records', 0)}")
+            print(f"   Total Text Records: {bot_status.get('total_text_records', 0)}")
+            print(f"   Recent Voice Activity: {bot_status.get('recent_voice_activity', 0)}")
+            print(f"   Recent Text Activity: {bot_status.get('recent_text_activity', 0)}")
+            
+            # Log findings
+            voice_records = bot_status.get('total_voice_records', 0)
+            text_records = bot_status.get('total_text_records', 0)
+            
+            if voice_records > 0:
+                self.log_test("Discord Bot - Voice Records Found", True, f"Found {voice_records} voice records in database")
+            else:
+                self.log_test("Discord Bot - Voice Records Found", False, "No voice records found in database")
+            
+            if text_records > 0:
+                self.log_test("Discord Bot - Text Records Found", True, f"Found {text_records} text records in database")
+            else:
+                self.log_test("Discord Bot - Text Records Found", False, "No text records found in database")
+        
+        # Step 3: Check GET /api/discord/analytics?days=90
+        print(f"\n   📊 Step 3: Checking Discord analytics (90 days)...")
+        success, analytics_data = self.run_test(
+            "Get Discord Analytics (90 days)",
+            "GET",
+            "discord/analytics?days=90",
+            200
+        )
+        
+        if success:
+            print(f"   Total Members: {analytics_data.get('total_members', 0)}")
+            
+            # Examine voice_stats
+            voice_stats = analytics_data.get('voice_stats', {})
+            print(f"   Voice Stats: {voice_stats}")
+            
+            total_sessions = voice_stats.get('total_sessions', 0)
+            print(f"   Voice Total Sessions: {total_sessions}")
+            
+            # Examine text_stats  
+            text_stats = analytics_data.get('text_stats', {})
+            print(f"   Text Stats: {text_stats}")
+            
+            total_messages = text_stats.get('total_messages', 0)
+            print(f"   Text Total Messages: {total_messages}")
+            
+            # Check daily_activity array
+            daily_activity = analytics_data.get('daily_activity', [])
+            print(f"   Daily Activity Records: {len(daily_activity)}")
+            
+            # Calculate what daily average SHOULD be
+            if total_sessions > 0:
+                expected_daily_avg = total_sessions / 90
+                print(f"   Expected Daily Average (voice): {expected_daily_avg:.2f}")
+                
+                # Check if analytics shows correct daily average
+                voice_daily_avg = voice_stats.get('daily_average', 0)
+                print(f"   Reported Daily Average (voice): {voice_daily_avg}")
+                
+                if abs(voice_daily_avg - expected_daily_avg) < 0.01:
+                    self.log_test("Voice Daily Average Calculation", True, f"Correct: {voice_daily_avg:.2f}")
+                else:
+                    self.log_test("Voice Daily Average Calculation", False, f"Expected: {expected_daily_avg:.2f}, Got: {voice_daily_avg}")
+            
+            # Log the reported issue
+            if total_sessions == 2:
+                self.log_test("Voice Sessions Match User Report", True, f"User reported 2 sessions, analytics shows {total_sessions}")
+            else:
+                self.log_test("Voice Sessions Match User Report", False, f"User reported 2 sessions, analytics shows {total_sessions}")
+            
+            voice_daily_avg = voice_stats.get('daily_average', 0)
+            if voice_daily_avg == 0:
+                self.log_test("Daily Average Matches User Report", True, f"User reported 0 daily average, analytics shows {voice_daily_avg}")
+            else:
+                self.log_test("Daily Average Matches User Report", False, f"User reported 0 daily average, analytics shows {voice_daily_avg}")
+        
+        # Step 4: Check raw database data by examining recent activity
+        print(f"\n   🗄️  Step 4: Examining raw database data via recent activity...")
+        
+        if bot_status and 'recent_voice_activity' in bot_status:
+            recent_voice = bot_status.get('recent_voice_activity', [])
+            recent_text = bot_status.get('recent_text_activity', [])
+            
+            print(f"   Recent Voice Activity Count: {len(recent_voice) if isinstance(recent_voice, list) else 'N/A'}")
+            print(f"   Recent Text Activity Count: {len(recent_text) if isinstance(recent_text, list) else 'N/A'}")
+            
+            # Show sample data if available
+            if isinstance(recent_voice, list) and len(recent_voice) > 0:
+                print(f"   Sample Voice Activity: {recent_voice[0] if recent_voice else 'None'}")
+            
+            if isinstance(recent_text, list) and len(recent_text) > 0:
+                print(f"   Sample Text Activity: {recent_text[0] if recent_text else 'None'}")
+        
+        # Step 5: Identify root cause
+        print(f"\n   🔍 Step 5: Root Cause Analysis...")
+        
+        # Compare database records vs analytics aggregation
+        db_voice_count = bot_status.get('total_voice_records', 0) if bot_status else 0
+        analytics_voice_sessions = analytics_data.get('voice_stats', {}).get('total_sessions', 0) if analytics_data else 0
+        
+        if db_voice_count == analytics_voice_sessions:
+            self.log_test("Database vs Analytics Voice Count Match", True, f"Both show {db_voice_count} records")
+        else:
+            self.log_test("Database vs Analytics Voice Count Match", False, f"Database: {db_voice_count}, Analytics: {analytics_voice_sessions}")
+        
+        db_text_count = bot_status.get('total_text_records', 0) if bot_status else 0
+        analytics_text_messages = analytics_data.get('text_stats', {}).get('total_messages', 0) if analytics_data else 0
+        
+        if db_text_count == analytics_text_messages:
+            self.log_test("Database vs Analytics Text Count Match", True, f"Both show {db_text_count} records")
+        else:
+            self.log_test("Database vs Analytics Text Count Match", False, f"Database: {db_text_count}, Analytics: {analytics_text_messages}")
+        
+        # Check if daily average calculation is working
+        if analytics_data and voice_stats:
+            total_sessions = voice_stats.get('total_sessions', 0)
+            daily_avg = voice_stats.get('daily_average', 0)
+            
+            if total_sessions > 0:
+                expected_avg = total_sessions / 90
+                if abs(daily_avg - expected_avg) < 0.01:
+                    self.log_test("Daily Average Calculation Working", True, f"Calculation correct: {daily_avg:.3f}")
+                else:
+                    self.log_test("Daily Average Calculation Working", False, f"Expected: {expected_avg:.3f}, Got: {daily_avg}")
+            elif total_sessions == 0 and daily_avg == 0:
+                self.log_test("Daily Average Calculation Working", True, "Correctly shows 0 when no sessions")
+            else:
+                self.log_test("Daily Average Calculation Working", False, f"Sessions: {total_sessions}, Avg: {daily_avg}")
+        
+        # Step 6: Check backend logs for errors (simulate by checking if endpoints work)
+        print(f"\n   📋 Step 6: Checking for backend errors...")
+        
+        # Test if all Discord endpoints are working
+        discord_endpoints = [
+            ("discord/members", "Discord Members Endpoint"),
+            ("discord/analytics", "Discord Analytics Endpoint"),
+            ("discord/test-activity", "Discord Test Activity Endpoint")
+        ]
+        
+        for endpoint, description in discord_endpoints:
+            success, response = self.run_test(
+                f"Test {description}",
+                "GET",
+                endpoint,
+                200
+            )
+            
+            if not success:
+                self.log_test(f"{description} Error Check", False, "Endpoint returned error")
+        
+        # Summary of findings
+        print(f"\n   📋 INVESTIGATION SUMMARY:")
+        print(f"   - Voice sessions in database: {db_voice_count}")
+        print(f"   - Voice sessions in analytics: {analytics_voice_sessions}")
+        print(f"   - Text records in database: {db_text_count}")
+        print(f"   - Text messages in analytics: {analytics_text_messages}")
+        
+        if analytics_data and voice_stats:
+            daily_avg = voice_stats.get('daily_average', 0)
+            print(f"   - Daily average reported: {daily_avg}")
+            
+            if analytics_voice_sessions > 0:
+                expected_avg = analytics_voice_sessions / 90
+                print(f"   - Daily average expected: {expected_avg:.3f}")
+        
+        # Determine if issue is with data recording or analytics calculation
+        if db_voice_count == 0:
+            print(f"   🔍 ROOT CAUSE: No voice activity data being recorded in database")
+            self.log_test("Root Cause Identified", True, "No voice activity data being recorded")
+        elif db_voice_count != analytics_voice_sessions:
+            print(f"   🔍 ROOT CAUSE: Analytics aggregation not matching database records")
+            self.log_test("Root Cause Identified", True, "Analytics aggregation issue")
+        elif analytics_data and voice_stats.get('daily_average', 0) == 0 and voice_stats.get('total_sessions', 0) > 0:
+            print(f"   🔍 ROOT CAUSE: Daily average calculation is broken")
+            self.log_test("Root Cause Identified", True, "Daily average calculation broken")
+        else:
+            print(f"   🔍 ROOT CAUSE: Unable to determine - may need deeper investigation")
+            self.log_test("Root Cause Identified", False, "Unable to determine root cause")
+        
+        print(f"   🔍 Discord analytics investigation completed")
+        return analytics_data
+
     def test_discord_import_matching_algorithm(self):
         """Test enhanced Discord import matching algorithm with fuzzy matching - REVIEW REQUEST"""
         print(f"\n🔗 Testing Enhanced Discord Import Matching Algorithm...")
