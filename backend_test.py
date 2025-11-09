@@ -6164,6 +6164,9 @@ class BOHDirectoryAPITester:
         # NEW FEATURE TEST: Discord Activity Tracking
         self.test_discord_activity_tracking()
         
+        # REVIEW REQUEST: Current Discord Activity Data Testing
+        self.test_current_discord_activity_data()
+        
         # Test member operations
         self.test_member_operations()
         
