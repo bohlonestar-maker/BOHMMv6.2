@@ -1444,6 +1444,59 @@ async def delete_prospect_action(
     
     return {"message": "Action deleted successfully"}
 
+@api_router.put("/prospects/{prospect_id}/actions/{action_id}")
+async def update_prospect_action(
+    prospect_id: str,
+    action_id: str,
+    action_data: dict,
+    current_user: dict = Depends(verify_admin)
+):
+    """Update an action for a prospect"""
+    prospect = await db.prospects.find_one({"id": prospect_id}, {"_id": 0})
+    if not prospect:
+        raise HTTPException(status_code=404, detail="Prospect not found")
+    
+    # Extract action data
+    action_type = action_data.get("action_type")
+    date = action_data.get("date")
+    description = action_data.get("description")
+    
+    if not all([action_type, date, description]):
+        raise HTTPException(status_code=400, detail="Missing required fields: action_type, date, description")
+    
+    # Validate action type
+    if action_type not in ["merit", "promotion", "disciplinary"]:
+        raise HTTPException(status_code=400, detail="Invalid action type")
+    
+    # Find and update the action
+    actions = prospect.get("actions", [])
+    action_found = False
+    for action in actions:
+        if action.get("id") == action_id:
+            action["type"] = action_type
+            action["date"] = date
+            action["description"] = description
+            action["updated_at"] = datetime.now(timezone.utc).isoformat()
+            action_found = True
+            break
+    
+    if not action_found:
+        raise HTTPException(status_code=404, detail="Action not found")
+    
+    # Update the prospect document
+    await db.prospects.update_one(
+        {"id": prospect_id},
+        {"$set": {"actions": actions, "updated_at": datetime.now(timezone.utc)}}
+    )
+    
+    await log_activity(
+        current_user["username"],
+        "update_action",
+        f"Updated action for prospect {prospect['handle']}: {action_type}"
+    )
+    
+    return {"message": "Action updated successfully"}
+
 # Prospect management endpoints (admin only)
 @api_router.get("/prospects", response_model=List[Prospect])
 async def get_prospects(current_user: dict = Depends(verify_admin)):
