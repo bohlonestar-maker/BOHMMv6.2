@@ -562,6 +562,6 @@ export default function CSVExportView() {
           thead { display: table-header-group; }
         }
       `}</style>
-    </div>
+    </PageLayout>
   );
 }
