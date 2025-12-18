@@ -854,7 +854,6 @@ export default function EventCalendar() {
             )}
           </DialogContent>
         </Dialog>
-      </div>
-    </div>
+    </PageLayout>
   );
 }
