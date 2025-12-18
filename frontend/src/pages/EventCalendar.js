@@ -29,12 +29,12 @@ import {
   TableHeader,
   TableRow,
 } from "../components/ui/table";
-import { Calendar, Plus, Edit, Trash2, MapPin, Clock, Users, ArrowLeft, Filter, Send } from "lucide-react";
+import { Calendar, Plus, Edit, Trash2, MapPin, Clock, Users, Filter, Send } from "lucide-react";
+import PageLayout from "@/components/PageLayout";
 
 const API = process.env.REACT_APP_BACKEND_URL || "";
 
 export default function EventCalendar() {
-  const navigate = useNavigate();
   const [events, setEvents] = useState([]);
   const [filteredEvents, setFilteredEvents] = useState([]);
   const [loading, setLoading] = useState(true);
