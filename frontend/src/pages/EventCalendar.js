@@ -406,9 +406,17 @@ export default function EventCalendar() {
                 </form>
               </DialogContent>
             </Dialog>
-          </div>
-        </div>
+    </>
+  );
 
+  return (
+    <PageLayout
+      title="Event Calendar"
+      icon={Calendar}
+      backTo="/"
+      backLabel="Back"
+      actions={headerActions}
+    >
         {/* Filters */}
         <div className="bg-slate-800 rounded-lg p-4 mb-6">
           <div className="flex items-center gap-2 mb-3">
