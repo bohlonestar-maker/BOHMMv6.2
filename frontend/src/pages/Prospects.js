@@ -1155,7 +1155,6 @@ export default function Prospects({ onLogout, userRole }) {
             </form>
           </DialogContent>
         </Dialog>
-      </div>
-    </div>
+    </PageLayout>
   );
 }
