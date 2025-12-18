@@ -402,28 +402,12 @@ export default function UserManagement({ onLogout }) {
   const { totalMembers, chapterCounts } = getMemberStats();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
-      <nav className="bg-slate-800 border-b border-slate-700 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-4">
-          <div className="flex justify-between items-center">
-            <div className="flex items-center gap-2 sm:gap-4">
-              <Button
-                onClick={() => navigate("/")}
-                variant="outline"
-                size="sm"
-                data-testid="back-button"
-                className="flex items-center gap-1 sm:gap-2 border-slate-600 text-slate-200 hover:bg-slate-700"
-              >
-                <ArrowLeft className="w-3 h-3 sm:w-4 sm:h-4" />
-                <span className="hidden sm:inline">Back</span>
-              </Button>
-              <h1 className="text-lg sm:text-2xl font-bold text-slate-100">User Management</h1>
-            </div>
-          </div>
-        </div>
-      </nav>
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-8">
+    <PageLayout
+      title="User Management"
+      icon={Settings}
+      backTo="/"
+      backLabel="Back"
+    >
         <div className="bg-slate-800 rounded-xl shadow-xl border border-slate-700 p-4 sm:p-6">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 sm:mb-6 gap-3 sm:gap-0">
             <h2 className="text-base sm:text-lg font-semibold text-slate-100">System Users</h2>
