@@ -258,27 +258,9 @@ export default function EventCalendar() {
     );
   }
 
-  return (
-    <div className="min-h-screen bg-slate-900 text-slate-100 p-4">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-6">
-          <Button
-            variant="ghost"
-            onClick={() => navigate("/dashboard")}
-            className="mb-4 text-slate-300 hover:text-slate-100"
-          >
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Dashboard
-          </Button>
-
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <div className="flex items-center gap-3">
-              <Calendar className="w-8 h-8 text-blue-400" />
-              <h1 className="text-3xl font-bold">Event Calendar</h1>
-            </div>
-
-            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+  const headerActions = (
+    <>
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
               <DialogTrigger asChild>
                 <Button className="bg-green-600 hover:bg-green-700">
                   <Plus className="w-4 h-4 mr-2" />
