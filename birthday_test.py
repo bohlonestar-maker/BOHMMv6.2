@@ -350,12 +350,13 @@ class BirthdayNotificationTester:
         # Test 8: Create test member with birthday to verify functionality
         # Create member with birthday tomorrow for testing
         tomorrow = datetime.now() + timedelta(days=1)
+        timestamp = datetime.now().strftime("%H%M%S")
         birthday_member = {
             "chapter": "National",
             "title": "Member",
-            "handle": "BirthdayTestRider",
+            "handle": f"BirthdayTestRider{timestamp}",
             "name": "Birthday Test Member",
-            "email": "birthday@test.com",
+            "email": f"birthday{timestamp}@test.com",
             "phone": "555-BDAY",
             "address": "123 Birthday Street",
             "dob": tomorrow.strftime("%Y-%m-%d")  # Birthday tomorrow
