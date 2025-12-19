@@ -925,7 +925,7 @@ export default function UserManagement({ onLogout }) {
         setEditDialogOpen(open);
             if (!open) setEditingUser(null);
           }}>
-            <DialogContent>
+            <DialogContent className="bg-slate-800 border-slate-700">
               <DialogHeader>
                 <DialogTitle>Edit User: {editingUser?.username}</DialogTitle>
               </DialogHeader>
@@ -1154,7 +1154,7 @@ export default function UserManagement({ onLogout }) {
               setPasswordFormData({ newPassword: "", confirmPassword: "" });
             }
           }}>
-            <DialogContent>
+            <DialogContent className="bg-slate-800 border-slate-700">
               <DialogHeader>
                 <DialogTitle>Change Password: {editingUser?.username}</DialogTitle>
               </DialogHeader>
