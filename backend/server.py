@@ -4476,7 +4476,7 @@ async def send_birthday_notification(member: dict):
         # Create a festive birthday embed
         embed = {
             "title": "🎂 Happy Birthday! 🎉",
-            "description": f"Today we celebrate **{member_name}**!\n\nWishing you a fantastic birthday filled with joy and great rides ahead! 🏍️",
+            "description": f"Today we celebrate **{member_name}**!\n\nWishing you a fantastic birthday filled with joy and many safe miles ahead! 🚛",
             "color": 0xFFD700,  # Gold color for birthday
             "fields": [],
             "footer": {
