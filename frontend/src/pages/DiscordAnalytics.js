@@ -553,6 +553,80 @@ export default function DiscordAnalytics() {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Link Member Dialog */}
+      <Dialog open={linkDialogOpen} onOpenChange={setLinkDialogOpen}>
+        <DialogContent className="bg-slate-800 border-slate-700 max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-white">
+              Link Discord Member
+            </DialogTitle>
+          </DialogHeader>
+          
+          {selectedDiscordMember && (
+            <div className="space-y-4">
+              <div className="p-3 bg-slate-900 rounded-lg">
+                <p className="text-sm text-slate-400">Discord User:</p>
+                <p className="text-white font-medium">
+                  {selectedDiscordMember.display_name || selectedDiscordMember.username}
+                </p>
+                <p className="text-sm text-slate-400">@{selectedDiscordMember.username}</p>
+              </div>
+              
+              <div className="space-y-2">
+                <label className="text-sm text-slate-300">Search Database Members:</label>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                  <Input
+                    value={memberSearch}
+                    onChange={(e) => setMemberSearch(e.target.value)}
+                    placeholder="Search by handle, name, or chapter..."
+                    className="pl-9 bg-slate-700 border-slate-600 text-white"
+                  />
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <label className="text-sm text-slate-300">Select Member to Link:</label>
+                <Select value={selectedMemberId} onValueChange={setSelectedMemberId}>
+                  <SelectTrigger className="bg-slate-700 border-slate-600 text-white">
+                    <SelectValue placeholder="Select a member..." />
+                  </SelectTrigger>
+                  <SelectContent className="bg-slate-800 border-slate-700 max-h-60">
+                    {filteredDatabaseMembers.map((member) => (
+                      <SelectItem 
+                        key={member.id} 
+                        value={member.id}
+                        className="text-white hover:bg-slate-700"
+                      >
+                        {member.handle} - {member.name} ({member.chapter})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="flex gap-3 justify-end pt-4">
+                <Button
+                  variant="outline"
+                  onClick={() => setLinkDialogOpen(false)}
+                  className="border-slate-600 text-slate-300 hover:bg-slate-700"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleLinkMember}
+                  disabled={!selectedMemberId}
+                  className="bg-green-600 hover:bg-green-700 text-white"
+                >
+                  <Link className="w-4 h-4 mr-2" />
+                  Link Member
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
