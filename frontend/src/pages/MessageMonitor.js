@@ -44,7 +44,7 @@ export default function MessageMonitor() {
       console.error("Failed to load messages:", error);
       if (error.response?.status === 403) {
         alert("Access denied. This feature is restricted to Lonestar only.");
-        navigate("/dashboard");
+        navigate("/");
       }
     } finally {
       setLoading(false);
