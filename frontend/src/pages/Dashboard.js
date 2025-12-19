@@ -865,6 +865,7 @@ export default function Dashboard({ onLogout, userRole, userPermissions }) {
                             onCheckedChange={(checked) =>
                               setFormData({ ...formData, phone_private: checked })
                             }
+                            className="border-slate-400 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
                           />
                           <label htmlFor="phone_private" className="text-sm font-medium cursor-pointer text-slate-300">
                             Make phone number private (hide from non-admin users)
