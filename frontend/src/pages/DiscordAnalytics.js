@@ -475,73 +475,74 @@ export default function DiscordAnalytics() {
                 {discordMembers.length > 0 ? (
                   <div className="space-y-2 max-h-[500px] overflow-y-auto">
                     {discordMembers.map((member) => (
-                      <div key={member.discord_id} className="flex items-center justify-between p-3 bg-slate-900 rounded-lg">
-                        <div className="flex items-center gap-3">
-                          {member.avatar_url ? (
-                            <img 
-                              src={member.avatar_url} 
-                              alt={member.username}
-                              className="w-8 h-8 rounded-full"
-                            />
-                          ) : (
-                            <div className="w-8 h-8 bg-slate-600 rounded-full flex items-center justify-center">
-                              <Users className="w-4 h-4" />
+                      <div key={member.discord_id} className="p-3 bg-slate-900 rounded-lg">
+                        {/* Top row: Avatar, Name, Status */}
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2 min-w-0 flex-1">
+                            {member.avatar_url ? (
+                              <img 
+                                src={member.avatar_url} 
+                                alt={member.username}
+                                className="w-8 h-8 rounded-full flex-shrink-0"
+                              />
+                            ) : (
+                              <div className="w-8 h-8 bg-slate-600 rounded-full flex items-center justify-center flex-shrink-0">
+                                <Users className="w-4 h-4" />
+                              </div>
+                            )}
+                            <div className="min-w-0 flex-1">
+                              <p className="font-medium text-white text-sm truncate">
+                                {member.display_name || member.username}
+                              </p>
+                              <p className="text-xs text-slate-400 truncate">@{member.username}</p>
                             </div>
-                          )}
-                          <div>
-                            <p className="font-medium text-white">
-                              {member.display_name || member.username}
-                            </p>
-                            <p className="text-sm text-slate-400">@{member.username}</p>
+                          </div>
+                          
+                          {/* Status badge */}
+                          <div className="flex-shrink-0 ml-2">
+                            {member.is_bot ? (
+                              <span className="px-2 py-1 bg-blue-600 text-white text-xs rounded">Bot</span>
+                            ) : member.member_id ? (
+                              <span className="px-2 py-1 bg-green-600 text-white text-xs rounded">Linked</span>
+                            ) : (
+                              <span className="px-2 py-1 bg-slate-600 text-slate-300 text-xs rounded">Unlinked</span>
+                            )}
                           </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                          {member.member_id ? (
-                            <>
-                              <div className="flex flex-col items-end">
-                                <span className="px-2 py-1 bg-green-600 text-white text-xs rounded">
-                                  Linked
-                                </span>
-                                {member.linked_member && (
-                                  <p className="text-xs text-green-400 mt-1">
-                                    → {member.linked_member.handle}
-                                  </p>
-                                )}
-                              </div>
+                        
+                        {/* Bottom row: Linked info + Action button */}
+                        {!member.is_bot && (
+                          <div className="flex items-center justify-between mt-2 pt-2 border-t border-slate-700">
+                            <div className="text-xs text-slate-400 truncate flex-1 mr-2">
+                              {member.member_id && member.linked_member ? (
+                                <span className="text-green-400">→ {member.linked_member.handle}</span>
+                              ) : (
+                                <span>Not linked to database</span>
+                              )}
+                            </div>
+                            {member.member_id ? (
                               <Button
                                 size="sm"
                                 variant="outline"
                                 onClick={() => handleUnlinkMember(member.discord_id)}
-                                className="border-red-600 text-red-400 hover:bg-red-600 hover:text-white"
+                                className="border-red-600 text-red-400 hover:bg-red-600 hover:text-white h-7 px-2 text-xs"
                               >
-                                <Unlink className="w-3 h-3 mr-1" />
-                                Unlink
+                                <Unlink className="w-3 h-3 sm:mr-1" />
+                                <span className="hidden sm:inline">Unlink</span>
                               </Button>
-                            </>
-                          ) : (
-                            <>
-                              <span className="px-2 py-1 bg-slate-600 text-slate-300 text-xs rounded">
-                                Unlinked
-                              </span>
-                              {!member.is_bot && (
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => openLinkDialog(member)}
-                                  className="border-green-600 text-green-400 hover:bg-green-600 hover:text-white"
-                                >
-                                  <Link className="w-3 h-3 mr-1" />
-                                  Link
-                                </Button>
-                              )}
-                            </>
-                          )}
-                          {member.is_bot && (
-                            <span className="px-2 py-1 bg-blue-600 text-white text-xs rounded">
-                              Bot
-                            </span>
-                          )}
-                        </div>
+                            ) : (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => openLinkDialog(member)}
+                                className="border-green-600 text-green-400 hover:bg-green-600 hover:text-white h-7 px-2 text-xs"
+                              >
+                                <Link className="w-3 h-3 sm:mr-1" />
+                                <span className="hidden sm:inline">Link</span>
+                              </Button>
+                            )}
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
