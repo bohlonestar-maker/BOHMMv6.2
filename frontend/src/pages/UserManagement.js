@@ -925,13 +925,13 @@ export default function UserManagement({ onLogout }) {
         setEditDialogOpen(open);
             if (!open) setEditingUser(null);
           }}>
-            <DialogContent className="bg-slate-800 border-slate-700">
+            <DialogContent className="bg-slate-800 border-slate-700 max-w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
-                <DialogTitle>Edit User: {editingUser?.username}</DialogTitle>
+                <DialogTitle className="text-white">Edit User: {editingUser?.username}</DialogTitle>
               </DialogHeader>
               <form onSubmit={handleEditSubmit} className="space-y-4 mt-4">
                 <div>
-                  <Label>Email</Label>
+                  <Label className="text-white">Email</Label>
                   <Input
                     type="email"
                     value={editFormData.email}
@@ -939,82 +939,83 @@ export default function UserManagement({ onLogout }) {
                       setEditFormData({ ...editFormData, email: e.target.value })
                     }
                     required
+                    className="text-white bg-slate-700 border-slate-600"
                   />
                 </div>
 
                 <div>
-                  <Label>Role</Label>
+                  <Label className="text-white">Role</Label>
                   <Select
                     value={editFormData.role}
                     onValueChange={(value) =>
                       setEditFormData({ ...editFormData, role: value })
                     }
                   >
-                    <SelectTrigger data-testid="edit-role-select">
+                    <SelectTrigger data-testid="edit-role-select" className="text-white bg-slate-700 border-slate-600">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="member">Member</SelectItem>
-                      <SelectItem value="prospect">Prospect</SelectItem>
-                      <SelectItem value="admin">Admin</SelectItem>
+                    <SelectContent className="bg-slate-800 text-white border-slate-700">
+                      <SelectItem value="member" className="text-white hover:bg-slate-700">Member</SelectItem>
+                      <SelectItem value="prospect" className="text-white hover:bg-slate-700">Prospect</SelectItem>
+                      <SelectItem value="admin" className="text-white hover:bg-slate-700">Admin</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label>Chapter</Label>
+                    <Label className="text-white">Chapter</Label>
                     <Select
                       value={editFormData.chapter}
                       onValueChange={(value) =>
                         setEditFormData({ ...editFormData, chapter: value })
                       }
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className="text-white bg-slate-700 border-slate-600">
                         <SelectValue placeholder="Select chapter" />
                       </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="National">National</SelectItem>
-                        <SelectItem value="AD">Asphalt Demons</SelectItem>
-                        <SelectItem value="HA">Highway Asylum</SelectItem>
-                        <SelectItem value="HS">Highway Souls</SelectItem>
+                      <SelectContent className="bg-slate-800 text-white border-slate-700">
+                        <SelectItem value="National" className="text-white hover:bg-slate-700">National</SelectItem>
+                        <SelectItem value="AD" className="text-white hover:bg-slate-700">Asphalt Demons</SelectItem>
+                        <SelectItem value="HA" className="text-white hover:bg-slate-700">Highway Asylum</SelectItem>
+                        <SelectItem value="HS" className="text-white hover:bg-slate-700">Highway Souls</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
 
                   <div>
-                    <Label>Title</Label>
+                    <Label className="text-white">Title</Label>
                     <Select
                       value={editFormData.title}
                       onValueChange={(value) =>
                         setEditFormData({ ...editFormData, title: value })
                       }
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className="text-white bg-slate-700 border-slate-600">
                         <SelectValue placeholder="Select title" />
                       </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Prez">Prez - President</SelectItem>
-                        <SelectItem value="VP">VP - Vice President</SelectItem>
-                        <SelectItem value="S@A">S@A - Sergeant at Arms</SelectItem>
-                        <SelectItem value="ENF">ENF - Enforcer</SelectItem>
-                        <SelectItem value="SEC">SEC - Secretary</SelectItem>
-                        <SelectItem value="T">T - Treasurer</SelectItem>
-                        <SelectItem value="CD">CD - Club Director</SelectItem>
-                        <SelectItem value="CC">CC - Club Chaplain</SelectItem>
-                        <SelectItem value="CCLC">CCLC - Club Counselor & Life Coach</SelectItem>
-                        <SelectItem value="MD">MD - Media Director</SelectItem>
-                        <SelectItem value="PM">PM - Prospect Manager</SelectItem>
-                        <SelectItem value="Member">Member</SelectItem>
-                        <SelectItem value="Prospect">Prospect</SelectItem>
+                      <SelectContent className="bg-slate-800 text-white border-slate-700">
+                        <SelectItem value="Prez" className="text-white hover:bg-slate-700">Prez - President</SelectItem>
+                        <SelectItem value="VP" className="text-white hover:bg-slate-700">VP - Vice President</SelectItem>
+                        <SelectItem value="S@A" className="text-white hover:bg-slate-700">S@A - Sergeant at Arms</SelectItem>
+                        <SelectItem value="ENF" className="text-white hover:bg-slate-700">ENF - Enforcer</SelectItem>
+                        <SelectItem value="SEC" className="text-white hover:bg-slate-700">SEC - Secretary</SelectItem>
+                        <SelectItem value="T" className="text-white hover:bg-slate-700">T - Treasurer</SelectItem>
+                        <SelectItem value="CD" className="text-white hover:bg-slate-700">CD - Club Director</SelectItem>
+                        <SelectItem value="CC" className="text-white hover:bg-slate-700">CC - Club Chaplain</SelectItem>
+                        <SelectItem value="CCLC" className="text-white hover:bg-slate-700">CCLC - Club Counselor & Life Coach</SelectItem>
+                        <SelectItem value="MD" className="text-white hover:bg-slate-700">MD - Media Director</SelectItem>
+                        <SelectItem value="PM" className="text-white hover:bg-slate-700">PM - Prospect Manager</SelectItem>
+                        <SelectItem value="Member" className="text-white hover:bg-slate-700">Member</SelectItem>
+                        <SelectItem value="Prospect" className="text-white hover:bg-slate-700">Prospect</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                 </div>
 
                 <div className="space-y-3">
-                  <Label>Permissions</Label>
-                  <div className="space-y-2 border rounded-lg p-4">
+                  <Label className="text-white">Permissions</Label>
+                  <div className="space-y-2 border border-slate-600 rounded-lg p-4 bg-slate-700">
                     <div className="flex items-center space-x-2">
                       <Checkbox
                         id="edit_basic_info"
@@ -1025,8 +1026,9 @@ export default function UserManagement({ onLogout }) {
                             permissions: { ...editFormData.permissions, basic_info: checked }
                           })
                         }
+                        className="border-slate-400 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
                       />
-                      <label htmlFor="edit_basic_info" className="text-sm font-medium cursor-pointer">
+                      <label htmlFor="edit_basic_info" className="text-sm font-medium cursor-pointer text-slate-200">
                         Basic Info (Chapter, Title, Handle, Name)
                       </label>
                     </div>
@@ -1040,8 +1042,9 @@ export default function UserManagement({ onLogout }) {
                             permissions: { ...editFormData.permissions, email: checked }
                           })
                         }
+                        className="border-slate-400 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
                       />
-                      <label htmlFor="edit_email" className="text-sm font-medium cursor-pointer">
+                      <label htmlFor="edit_email" className="text-sm font-medium cursor-pointer text-slate-200">
                         Email
                       </label>
                     </div>
@@ -1055,8 +1058,9 @@ export default function UserManagement({ onLogout }) {
                             permissions: { ...editFormData.permissions, phone: checked }
                           })
                         }
+                        className="border-slate-400 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
                       />
-                      <label htmlFor="edit_phone" className="text-sm font-medium cursor-pointer">
+                      <label htmlFor="edit_phone" className="text-sm font-medium cursor-pointer text-slate-200">
                         Phone
                       </label>
                     </div>
@@ -1070,8 +1074,9 @@ export default function UserManagement({ onLogout }) {
                             permissions: { ...editFormData.permissions, address: checked }
                           })
                         }
+                        className="border-slate-400 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
                       />
-                      <label htmlFor="edit_address" className="text-sm font-medium cursor-pointer">
+                      <label htmlFor="edit_address" className="text-sm font-medium cursor-pointer text-slate-200">
                         Address
                       </label>
                     </div>
@@ -1085,8 +1090,9 @@ export default function UserManagement({ onLogout }) {
                             permissions: { ...editFormData.permissions, dues_tracking: checked }
                           })
                         }
+                        className="border-slate-400 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
                       />
-                      <label htmlFor="edit_dues_tracking" className="text-sm font-medium cursor-pointer">
+                      <label htmlFor="edit_dues_tracking" className="text-sm font-medium cursor-pointer text-slate-200">
                         Dues Tracking
                       </label>
                     </div>
@@ -1100,8 +1106,9 @@ export default function UserManagement({ onLogout }) {
                             permissions: { ...editFormData.permissions, meeting_attendance: checked }
                           })
                         }
+                        className="border-slate-400 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
                       />
-                      <label htmlFor="edit_meeting_attendance" className="text-sm font-medium cursor-pointer">
+                      <label htmlFor="edit_meeting_attendance" className="text-sm font-medium cursor-pointer text-slate-200">
                         Meeting Attendance
                       </label>
                     </div>
@@ -1115,8 +1122,9 @@ export default function UserManagement({ onLogout }) {
                             permissions: { ...editFormData.permissions, admin_actions: checked }
                           })
                         }
+                        className="border-slate-400 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
                       />
-                      <label htmlFor="edit_admin_actions" className="text-sm font-medium cursor-pointer">
+                      <label htmlFor="edit_admin_actions" className="text-sm font-medium cursor-pointer text-slate-200">
                         Admin Actions (Add/Edit/Delete, Export CSV, User Management)
                       </label>
                     </div>
@@ -1131,13 +1139,14 @@ export default function UserManagement({ onLogout }) {
                       setEditDialogOpen(false);
                       setEditingUser(null);
                     }}
+                    className="border-slate-600 text-slate-200 hover:bg-slate-700"
                   >
                     Cancel
                   </Button>
                   <Button
                     type="submit"
                     data-testid="submit-edit-user-button"
-                    className="bg-slate-800 hover:bg-slate-900"
+                    className="bg-blue-600 hover:bg-blue-700 text-white"
                   >
                     Update User
                   </Button>
