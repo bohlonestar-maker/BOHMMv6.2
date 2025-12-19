@@ -848,6 +848,19 @@ export default function Dashboard({ onLogout, userRole, userPermissions }) {
                           required
                           className="text-white"
                         />
+                        <div className="flex items-center space-x-2 mt-2">
+                          <Checkbox
+                            id="email_private"
+                            checked={formData.email_private}
+                            onCheckedChange={(checked) =>
+                              setFormData({ ...formData, email_private: checked })
+                            }
+                            className="border-slate-400 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
+                          />
+                          <label htmlFor="email_private" className="text-sm font-medium cursor-pointer text-slate-300">
+                            Make email private (visible only to National members & chapter officers)
+                          </label>
+                        </div>
                       </div>
 
                       <div>
