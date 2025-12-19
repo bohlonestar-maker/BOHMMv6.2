@@ -3238,10 +3238,54 @@ async def get_discord_members(current_user: dict = Depends(verify_admin)):
                                 }
                     
                     return stored_members
-                else:
-                    raise HTTPException(status_code=resp.status, detail="Failed to fetch Discord members")
+        
+        # If Discord API failed, return cached data from database
+        if not api_success:
+            print("⚠️ Discord API failed, returning cached members from database")
+            stored_members = await db.discord_members.find(
+                {"is_bot": {"$ne": True}},
+                {"_id": 0}
+            ).sort("display_name", 1).to_list(1000)
+            
+            # Enrich with linked member info
+            for discord_member in stored_members:
+                if discord_member.get("member_id"):
+                    db_member = await db.members.find_one(
+                        {"id": discord_member["member_id"]},
+                        {"_id": 0, "handle": 1, "name": 1}
+                    )
+                    if db_member:
+                        discord_member["linked_member"] = {
+                            "handle": db_member.get("handle"),
+                            "name": db_member.get("name")
+                        }
+            
+            return stored_members
+                
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Discord API error: {str(e)}")
+        # On any error, try to return cached data
+        try:
+            print(f"⚠️ Error fetching Discord members: {str(e)}, returning cached data")
+            stored_members = await db.discord_members.find(
+                {"is_bot": {"$ne": True}},
+                {"_id": 0}
+            ).sort("display_name", 1).to_list(1000)
+            
+            for discord_member in stored_members:
+                if discord_member.get("member_id"):
+                    db_member = await db.members.find_one(
+                        {"id": discord_member["member_id"]},
+                        {"_id": 0, "handle": 1, "name": 1}
+                    )
+                    if db_member:
+                        discord_member["linked_member"] = {
+                            "handle": db_member.get("handle"),
+                            "name": db_member.get("name")
+                        }
+            
+            return stored_members
+        except Exception as inner_e:
+            raise HTTPException(status_code=500, detail=f"Discord API error: {str(e)}")
 
 @api_router.get("/discord/analytics")
 async def get_discord_analytics(days: int = 90, current_user: dict = Depends(verify_admin)):
