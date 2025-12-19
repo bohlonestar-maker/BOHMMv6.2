@@ -4108,6 +4108,113 @@ async def trigger_notification_check(current_user: dict = Depends(verify_admin))
     return {"message": "Notification check triggered. Check backend logs for results."}
 
 
+@api_router.post("/birthdays/trigger-check")
+async def trigger_birthday_check(current_user: dict = Depends(verify_admin)):
+    """Manually trigger the birthday notification check (admin only, for testing)"""
+    import threading
+    
+    # Run in a separate thread to avoid blocking
+    thread = threading.Thread(target=run_birthday_check)
+    thread.start()
+    
+    return {"message": "Birthday check triggered. Check backend logs for results."}
+
+
+@api_router.get("/birthdays/today")
+async def get_todays_birthdays(current_user: dict = Depends(get_current_user)):
+    """Get list of members with birthdays today"""
+    from datetime import datetime
+    
+    today = datetime.now()
+    today_mm_dd = today.strftime("%m-%d")
+    
+    # Fetch all members with DOB set
+    members = await db.members.find(
+        {"dob": {"$exists": True, "$ne": None, "$ne": ""}},
+        {"_id": 0}
+    ).to_list(1000)
+    
+    birthday_members = []
+    for member in members:
+        dob = member.get('dob', '')
+        if not dob:
+            continue
+        try:
+            dob_mm_dd = dob[5:10]  # Gets MM-DD portion
+            if dob_mm_dd == today_mm_dd:
+                birthday_members.append({
+                    "id": member.get("id"),
+                    "handle": member.get("handle"),
+                    "name": member.get("name"),
+                    "chapter": member.get("chapter"),
+                    "title": member.get("title"),
+                    "dob": dob
+                })
+        except:
+            pass
+    
+    return {
+        "date": today.strftime("%Y-%m-%d"),
+        "count": len(birthday_members),
+        "members": birthday_members
+    }
+
+
+@api_router.get("/birthdays/upcoming")
+async def get_upcoming_birthdays(days: int = 30, current_user: dict = Depends(get_current_user)):
+    """Get list of members with birthdays in the next N days"""
+    from datetime import datetime, timedelta
+    
+    today = datetime.now()
+    
+    # Fetch all members with DOB set
+    members = await db.members.find(
+        {"dob": {"$exists": True, "$ne": None, "$ne": ""}},
+        {"_id": 0}
+    ).to_list(1000)
+    
+    upcoming_birthdays = []
+    for member in members:
+        dob = member.get('dob', '')
+        if not dob:
+            continue
+        try:
+            # Parse DOB and calculate this year's birthday
+            dob_date = datetime.strptime(dob, "%Y-%m-%d")
+            this_year_birthday = dob_date.replace(year=today.year)
+            
+            # If birthday already passed this year, check next year
+            if this_year_birthday.date() < today.date():
+                this_year_birthday = dob_date.replace(year=today.year + 1)
+            
+            # Check if within the next N days
+            days_until = (this_year_birthday.date() - today.date()).days
+            
+            if 0 <= days_until <= days:
+                upcoming_birthdays.append({
+                    "id": member.get("id"),
+                    "handle": member.get("handle"),
+                    "name": member.get("name"),
+                    "chapter": member.get("chapter"),
+                    "title": member.get("title"),
+                    "dob": dob,
+                    "birthday_date": this_year_birthday.strftime("%Y-%m-%d"),
+                    "days_until": days_until
+                })
+        except:
+            pass
+    
+    # Sort by days_until
+    upcoming_birthdays.sort(key=lambda x: x["days_until"])
+    
+    return {
+        "from_date": today.strftime("%Y-%m-%d"),
+        "to_date": (today + timedelta(days=days)).strftime("%Y-%m-%d"),
+        "count": len(upcoming_birthdays),
+        "members": upcoming_birthdays
+    }
+
+
 
 # ==================== DISCORD NOTIFICATION SYSTEM ====================
 
