@@ -3184,13 +3184,16 @@ async def simulate_discord_activity(current_user: dict = Depends(verify_admin)):
 
 @api_router.get("/discord/members")
 async def get_discord_members(current_user: dict = Depends(verify_admin)):
-    """Get Discord server members list"""
+    """Get Discord server members list - returns cached data from database"""
     try:
+        # First try to fetch fresh data from Discord API
+        api_success = False
         async with aiohttp.ClientSession() as session:
             headers = {'Authorization': f'Bot {DISCORD_BOT_TOKEN}'}
             guild_id = "991898490743574628"  # Brothers of the Highway Discord server
             async with session.get(f'https://discord.com/api/v10/guilds/{guild_id}/members?limit=1000', headers=headers) as resp:
                 if resp.status == 200:
+                    api_success = True
                     discord_members = await resp.json()
                     
                     # Store/update members in database
