@@ -482,9 +482,9 @@ export default function DiscordAnalytics() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {discordMembers.length > 0 ? (
+                {filteredDiscordMembers.length > 0 ? (
                   <div className="space-y-2 max-h-[500px] overflow-y-auto">
-                    {discordMembers.map((member) => (
+                    {filteredDiscordMembers.map((member) => (
                       <div key={member.discord_id} className="p-3 bg-slate-900 rounded-lg">
                         {/* Top row: Avatar, Name, Status */}
                         <div className="flex items-center justify-between">
