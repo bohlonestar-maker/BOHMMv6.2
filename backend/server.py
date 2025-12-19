@@ -4121,7 +4121,7 @@ async def trigger_birthday_check(current_user: dict = Depends(verify_admin)):
 
 
 @api_router.get("/birthdays/today")
-async def get_todays_birthdays(current_user: dict = Depends(get_current_user)):
+async def get_todays_birthdays(current_user: dict = Depends(verify_token)):
     """Get list of members with birthdays today"""
     from datetime import datetime
     
@@ -4161,7 +4161,7 @@ async def get_todays_birthdays(current_user: dict = Depends(get_current_user)):
 
 
 @api_router.get("/birthdays/upcoming")
-async def get_upcoming_birthdays(days: int = 30, current_user: dict = Depends(get_current_user)):
+async def get_upcoming_birthdays(days: int = 30, current_user: dict = Depends(verify_token)):
     """Get list of members with birthdays in the next N days"""
     from datetime import datetime, timedelta
     
