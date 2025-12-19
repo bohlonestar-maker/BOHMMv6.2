@@ -741,6 +741,7 @@ class Member(BaseModel):
     join_date: Optional[str] = None  # Date joined the organization (YYYY-MM-DD format)
     phone_private: bool = False  # If True, only admins can see phone
     address_private: bool = False  # If True, only admins can see address
+    email_private: bool = False  # If True, only National members and chapter officers (Prez, VP, S@A, Enf, SEC) can see email
     actions: list = Field(default_factory=list)  # Merit, Promotion, Disciplinary actions
     # Format: [{"type": "merit|promotion|disciplinary", "date": "YYYY-MM-DD", "description": "...", "added_by": "username", "added_at": "ISO timestamp"}]
     dues: dict = Field(default_factory=lambda: {
