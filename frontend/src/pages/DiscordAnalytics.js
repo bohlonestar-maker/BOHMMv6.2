@@ -100,14 +100,16 @@ export default function DiscordAnalytics() {
     );
   });
 
-  // Filter out Discord members with "bot" or "tv" in their name
+  // Filter out Discord members with "bot", "tv" in their name, or "aoh" at the start
   const filteredDiscordMembers = discordMembers.filter(m => {
     const displayName = (m.display_name || '').toLowerCase();
     const username = (m.username || '').toLowerCase();
     return !displayName.includes('bot') && 
            !displayName.includes('tv') && 
            !username.includes('bot') && 
-           !username.includes('tv');
+           !username.includes('tv') &&
+           !displayName.startsWith('aoh') &&
+           !username.startsWith('aoh');
   });
 
   const fetchDiscordAnalytics = async () => {
