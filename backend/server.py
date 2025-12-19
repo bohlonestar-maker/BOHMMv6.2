@@ -937,25 +937,39 @@ async def create_default_admin():
 
 @app.on_event("startup")
 async def start_scheduler():
-    """Start the APScheduler for Discord event notifications"""
+    """Start the APScheduler for Discord event notifications and birthday checks"""
     import sys
     global scheduler
     try:
         from apscheduler.schedulers.background import BackgroundScheduler
+        from apscheduler.triggers.cron import CronTrigger
         
-        sys.stderr.write("🔧 [SCHEDULER] Initializing Discord event notification system...\n")
+        sys.stderr.write("🔧 [SCHEDULER] Initializing Discord notification system...\n")
         sys.stderr.flush()
         
         scheduler = BackgroundScheduler()
+        
+        # Event notifications - check every 30 minutes
         scheduler.add_job(
             run_notification_check,
             'interval',
-            minutes=30,  # Check every 30 minutes
+            minutes=30,
             id='event_notifications',
             replace_existing=True
         )
+        
+        # Birthday notifications - run daily at 9:00 AM CST (15:00 UTC)
+        scheduler.add_job(
+            run_birthday_check,
+            CronTrigger(hour=15, minute=0),  # 9:00 AM CST = 15:00 UTC
+            id='birthday_notifications',
+            replace_existing=True
+        )
+        
         scheduler.start()
-        sys.stderr.write("✅ [SCHEDULER] Discord event notification system started (checking every 30 minutes)\n")
+        sys.stderr.write("✅ [SCHEDULER] Discord notification system started:\n")
+        sys.stderr.write("   📅 Event notifications: every 30 minutes\n")
+        sys.stderr.write("   🎂 Birthday notifications: daily at 9:00 AM CST\n")
         sys.stderr.flush()
     except Exception as e:
         sys.stderr.write(f"⚠️ [SCHEDULER] Failed to start scheduler (app will continue without it): {str(e)}\n")
