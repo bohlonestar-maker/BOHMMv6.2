@@ -285,6 +285,7 @@ class BirthdayNotificationTester:
         # Create a regular user to test non-admin access
         regular_user = {
             "username": "birthdaytest",
+            "email": "birthdaytest@example.com",
             "password": "testpass123",
             "role": "member"
         }
