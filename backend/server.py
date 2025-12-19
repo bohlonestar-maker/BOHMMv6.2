@@ -1039,25 +1039,36 @@ async def verify(current_user: dict = Depends(verify_token)):
 async def get_members(current_user: dict = Depends(verify_token)):
     members = await db.members.find({}, {"_id": 0}).to_list(10000)
     user_role = current_user.get('role')
+    user_chapter = current_user.get('chapter')
+    user_title = current_user.get('title', '')
+    
+    # Titles that can see private emails
+    officer_titles = ['Prez', 'VP', 'S@A', 'Enf', 'SEC']
+    
+    # Check if user can see private emails:
+    # - National chapter members can see all private emails
+    # - Officers (Prez, VP, S@A, Enf, SEC) of any chapter can see private emails
+    is_national_member = user_chapter == 'National'
+    is_officer = user_title in officer_titles
+    can_see_private_emails = is_national_member or is_officer
+    
+    # For phone/address privacy, only National Chapter admins can see
+    is_national_admin = user_role == 'admin' and user_chapter == 'National'
     
     for i, member in enumerate(members):
         # Decrypt sensitive data
         members[i] = decrypt_member_sensitive_data(member)
         
-        # Redact contact info for National chapter members if user is not admin OR National Chapter admin
-        user_chapter = current_user.get('chapter')
-        is_national_admin = user_role == 'admin' and user_chapter == 'National'
-        if user_role != 'admin' and not is_national_admin and members[i].get('chapter') == 'National':
-            members[i]['email'] = 'restricted@admin-only.com'
-            members[i]['phone'] = 'Admin Only'
-            members[i]['address'] = 'Admin Only'
-        
         # Hide names for prospect users
         if user_role == 'prospect':
             members[i]['name'] = 'Hidden'
         
-        # Apply privacy settings (hide phone/address if marked private and user is not National Chapter admin)
-        # Only National Chapter admins can see private contact info
+        # Apply email privacy settings
+        # Private emails visible to: National members, and officers (Prez, VP, S@A, Enf, SEC)
+        if members[i].get('email_private', False) and not can_see_private_emails:
+            members[i]['email'] = 'Private'
+        
+        # Apply phone/address privacy settings (only National Chapter admins can see)
         if not is_national_admin:
             if members[i].get('phone_private', False):
                 members[i]['phone'] = 'Private'
