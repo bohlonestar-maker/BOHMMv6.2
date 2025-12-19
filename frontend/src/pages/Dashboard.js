@@ -891,6 +891,7 @@ export default function Dashboard({ onLogout, userRole, userPermissions }) {
                             onCheckedChange={(checked) =>
                               setFormData({ ...formData, address_private: checked })
                             }
+                            className="border-slate-400 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
                           />
                           <label htmlFor="address_private" className="text-sm font-medium cursor-pointer text-slate-300">
                             Make address private (hide from non-admin users)
