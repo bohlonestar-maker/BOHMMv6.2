@@ -115,10 +115,10 @@ discord_bot = None
 discord_task = None
 
 async def start_discord_bot():
-    """Start Discord activity tracking bot"""
+    """Start Discord analytics bot (simplified - no recording)"""
     global discord_bot, discord_task
     try:
-        sys.stderr.write("🔧 [DISCORD] Starting Discord activity tracking bot...\n")
+        sys.stderr.write("🔧 [DISCORD] Starting Discord analytics bot...\n")
         sys.stderr.flush()
         
         if not DISCORD_BOT_TOKEN:
@@ -128,166 +128,26 @@ async def start_discord_bot():
         
         # Import Discord bot components
         import discord
-        from datetime import timezone
         
-        # Discord Activity Bot Class
+        # Discord Analytics Bot Class (Simplified - No Recording)
         class DiscordActivityBot(discord.Client):
             def __init__(self):
                 intents = discord.Intents.default()
-                intents.voice_states = True
-                intents.message_content = True
                 intents.members = True
                 super().__init__(intents=intents)
-                self.voice_sessions = {}
                 
             async def on_ready(self):
                 sys.stderr.write(f"✅ [DISCORD] Bot logged in as {self.user}\n")
-                sys.stderr.write(f"✅ [DISCORD] Monitoring {len(self.guilds)} guilds:\n")
+                sys.stderr.write(f"✅ [DISCORD] Connected to {len(self.guilds)} guild(s):\n")
                 for guild in self.guilds:
                     sys.stderr.write(f"   - {guild.name} ({guild.id}): {guild.member_count} members\n")
-                    sys.stderr.write(f"   - Bot permissions: {guild.me.guild_permissions.value}\n")
-                    sys.stderr.write(f"   - Voice channels: {len(guild.voice_channels)}\n")
-                    sys.stderr.write(f"   - Text channels: {len(guild.text_channels)}\n")
                 sys.stderr.flush()
-                
-            async def on_voice_state_update(self, member, before, after):
-                if member.bot:
-                    return
-                    
-                user_id = str(member.id)
-                now = datetime.now(timezone.utc)
-                
-                sys.stderr.write(f"🎤 [DISCORD] Voice event: {member.display_name} ({member.id})\n")
-                sys.stderr.write(f"   Before: {before.channel.name if before.channel else None}\n")
-                sys.stderr.write(f"   After: {after.channel.name if after.channel else None}\n")
-                sys.stderr.flush()
-                
-                try:
-                    # User joined voice channel
-                    if before.channel is None and after.channel is not None:
-                        sys.stderr.write(f"🎤 [DISCORD] {member.display_name} JOINED voice channel: {after.channel.name}\n")
-                        sys.stderr.flush()
-                        
-                        self.voice_sessions[user_id] = {
-                            'joined_at': now,
-                            'channel_id': str(after.channel.id),
-                            'channel_name': after.channel.name
-                        }
-                        
-                    # User left voice channel
-                    elif before.channel is not None and after.channel is None:
-                        sys.stderr.write(f"🎤 [DISCORD] {member.display_name} LEFT voice channel: {before.channel.name}\n")
-                        sys.stderr.flush()
-                        
-                        if user_id in self.voice_sessions:
-                            session = self.voice_sessions[user_id]
-                            duration = (now - session['joined_at']).total_seconds()
-                            
-                            voice_activity = {
-                                'id': str(uuid.uuid4()),
-                                'discord_user_id': user_id,
-                                'channel_id': session['channel_id'],
-                                'channel_name': session['channel_name'],
-                                'joined_at': session['joined_at'],
-                                'left_at': now,
-                                'duration_seconds': int(duration),
-                                'date': now.date().isoformat()
-                            }
-                            
-                            await db.discord_voice_activity.insert_one(voice_activity)
-                            sys.stderr.write(f"💾 [DISCORD] Saved voice session for {member.display_name}: {duration/60:.1f} minutes\n")
-                            sys.stderr.flush()
-                            del self.voice_sessions[user_id]
-                        else:
-                            sys.stderr.write(f"⚠️  [DISCORD] No active session found for {member.display_name} when leaving\n")
-                            sys.stderr.flush()
-                            
-                    # User moved between voice channels
-                    elif before.channel is not None and after.channel is not None and before.channel != after.channel:
-                        sys.stderr.write(f"🎤 [DISCORD] {member.display_name} MOVED from {before.channel.name} to {after.channel.name}\n")
-                        sys.stderr.flush()
-                        
-                        # End previous session
-                        if user_id in self.voice_sessions:
-                            session = self.voice_sessions[user_id]
-                            duration = (now - session['joined_at']).total_seconds()
-                            
-                            voice_activity = {
-                                'id': str(uuid.uuid4()),
-                                'discord_user_id': user_id,
-                                'channel_id': session['channel_id'],
-                                'channel_name': session['channel_name'],
-                                'joined_at': session['joined_at'],
-                                'left_at': now,
-                                'duration_seconds': int(duration),
-                                'date': now.date().isoformat()
-                            }
-                            
-                            await db.discord_voice_activity.insert_one(voice_activity)
-                            sys.stderr.write(f"💾 [DISCORD] Saved voice session for {member.display_name}: {duration/60:.1f} minutes\n")
-                            sys.stderr.flush()
-                        
-                        # Start new session
-                        self.voice_sessions[user_id] = {
-                            'joined_at': now,
-                            'channel_id': str(after.channel.id),
-                            'channel_name': after.channel.name
-                        }
-                        sys.stderr.write(f"🎤 [DISCORD] Started new session for {member.display_name} in {after.channel.name}\n")
-                        sys.stderr.flush()
-                
-                except Exception as e:
-                    sys.stderr.write(f"❌ [DISCORD] Error processing voice event for {member.display_name}: {str(e)}\n")
-                    sys.stderr.flush()
-                        
-            async def on_message(self, message):
-                if message.author.bot or not message.guild:
-                    return
-                    
-                user_id = str(message.author.id)
-                channel_id = str(message.channel.id)
-                channel_name = message.channel.name
-                today = datetime.now(timezone.utc).date().isoformat()
-                
-                sys.stderr.write(f"💬 [DISCORD] Message from {message.author.display_name} in #{channel_name}: {message.content[:50]}...\n")
-                sys.stderr.flush()
-                
-                # Check existing record
-                existing_record = await db.discord_text_activity.find_one({
-                    'discord_user_id': user_id,
-                    'channel_id': channel_id,
-                    'date': today
-                })
-                
-                if existing_record:
-                    await db.discord_text_activity.update_one(
-                        {'_id': existing_record['_id']},
-                        {
-                            '$inc': {'message_count': 1},
-                            '$set': {'last_message_at': datetime.now(timezone.utc)}
-                        }
-                    )
-                    sys.stderr.write(f"📊 [DISCORD] Updated message count for {message.author.display_name}\n")
-                    sys.stderr.flush()
-                else:
-                    text_activity = {
-                        'id': str(uuid.uuid4()),
-                        'discord_user_id': user_id,
-                        'channel_id': channel_id,
-                        'channel_name': channel_name,
-                        'message_count': 1,
-                        'date': today,
-                        'last_message_at': datetime.now(timezone.utc)
-                    }
-                    await db.discord_text_activity.insert_one(text_activity)
-                    sys.stderr.write(f"💾 [DISCORD] Created new text activity record for {message.author.display_name}\n")
-                    sys.stderr.flush()
         
         # Start the bot
         discord_bot = DiscordActivityBot()
         discord_task = asyncio.create_task(discord_bot.start(DISCORD_BOT_TOKEN))
         
-        sys.stderr.write("✅ [DISCORD] Activity tracking bot started\n")
+        sys.stderr.write("✅ [DISCORD] Analytics bot started\n")
         sys.stderr.flush()
         
     except Exception as e:
