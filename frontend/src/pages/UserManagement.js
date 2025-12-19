@@ -1284,7 +1284,7 @@ export default function UserManagement({ onLogout }) {
 
       {/* Manage Invites Dialog */}
       <Dialog open={invitesDialogOpen} onOpenChange={setInvitesDialogOpen}>
-        <DialogContent className="max-w-[95vw] sm:max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-[95vw] sm:max-w-4xl max-h-[90vh] overflow-y-auto bg-slate-800 border-slate-700">
           <DialogHeader>
             <DialogTitle>Manage Invitation Links</DialogTitle>
           </DialogHeader>
@@ -1373,7 +1373,7 @@ export default function UserManagement({ onLogout }) {
 
       {/* Analytics Dialog */}
       <Dialog open={analyticsDialogOpen} onOpenChange={setAnalyticsDialogOpen}>
-        <DialogContent className="max-w-[95vw] sm:max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-[95vw] sm:max-w-4xl max-h-[90vh] overflow-y-auto bg-slate-800 border-slate-700">
           <DialogHeader>
             <DialogTitle>Member Analytics</DialogTitle>
           </DialogHeader>
