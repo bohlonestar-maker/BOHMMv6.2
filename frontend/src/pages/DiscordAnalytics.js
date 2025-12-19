@@ -468,12 +468,12 @@ export default function DiscordAnalytics() {
                   Discord Members ({discordMembers.length})
                 </CardTitle>
                 <CardDescription className="text-slate-400">
-                  Server members and their connection status
+                  Server members and their connection status. Click Link/Unlink to manage connections.
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 {discordMembers.length > 0 ? (
-                  <div className="space-y-2 max-h-96 overflow-y-auto">
+                  <div className="space-y-2 max-h-[500px] overflow-y-auto">
                     {discordMembers.map((member) => (
                       <div key={member.discord_id} className="flex items-center justify-between p-3 bg-slate-900 rounded-lg">
                         <div className="flex items-center gap-3">
@@ -495,27 +495,51 @@ export default function DiscordAnalytics() {
                             <p className="text-sm text-slate-400">@{member.username}</p>
                           </div>
                         </div>
-                        <div className="flex flex-col items-end gap-1">
-                          <div className="flex items-center gap-2">
-                            {member.member_id ? (
-                              <span className="px-2 py-1 bg-green-600 text-white text-xs rounded">
-                                Linked
-                              </span>
-                            ) : (
+                        <div className="flex items-center gap-2">
+                          {member.member_id ? (
+                            <>
+                              <div className="flex flex-col items-end">
+                                <span className="px-2 py-1 bg-green-600 text-white text-xs rounded">
+                                  Linked
+                                </span>
+                                {member.linked_member && (
+                                  <p className="text-xs text-green-400 mt-1">
+                                    → {member.linked_member.handle}
+                                  </p>
+                                )}
+                              </div>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleUnlinkMember(member.discord_id)}
+                                className="border-red-600 text-red-400 hover:bg-red-600 hover:text-white"
+                              >
+                                <Unlink className="w-3 h-3 mr-1" />
+                                Unlink
+                              </Button>
+                            </>
+                          ) : (
+                            <>
                               <span className="px-2 py-1 bg-slate-600 text-slate-300 text-xs rounded">
                                 Unlinked
                               </span>
-                            )}
-                            {member.is_bot && (
-                              <span className="px-2 py-1 bg-blue-600 text-white text-xs rounded">
-                                Bot
-                              </span>
-                            )}
-                          </div>
-                          {member.linked_member && (
-                            <p className="text-xs text-green-400">
-                              → {member.linked_member.handle} ({member.linked_member.name})
-                            </p>
+                              {!member.is_bot && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => openLinkDialog(member)}
+                                  className="border-green-600 text-green-400 hover:bg-green-600 hover:text-white"
+                                >
+                                  <Link className="w-3 h-3 mr-1" />
+                                  Link
+                                </Button>
+                              )}
+                            </>
+                          )}
+                          {member.is_bot && (
+                            <span className="px-2 py-1 bg-blue-600 text-white text-xs rounded">
+                              Bot
+                            </span>
                           )}
                         </div>
                       </div>
