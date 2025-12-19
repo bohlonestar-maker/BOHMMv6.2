@@ -386,7 +386,7 @@ class BirthdayNotificationTester:
                 # Look for our test member in the results
                 test_member_found = False
                 for member in updated_upcoming['members']:
-                    if member.get('handle') == 'BirthdayTestRider':
+                    if member.get('handle') == f'BirthdayTestRider{timestamp}':
                         test_member_found = True
                         if member.get('days_until') == 1:
                             self.log_test("Test Member Birthday Calculation", True, "Test member shows 1 day until birthday")
