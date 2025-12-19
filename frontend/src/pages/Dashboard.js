@@ -755,7 +755,7 @@ export default function Dashboard({ onLogout, userRole, userPermissions }) {
                     Add Member
                   </Button>
                 </DialogTrigger>
-                  <DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+                  <DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto bg-slate-800 border-slate-700">
                     <DialogHeader>
                       <DialogTitle className="text-lg sm:text-xl text-white">
                         {editingMember ? "Edit Member" : "Add New Member"}
