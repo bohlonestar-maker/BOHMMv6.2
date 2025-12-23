@@ -774,6 +774,13 @@ class MemberCreate(BaseModel):
     phone_private: bool = False
     address_private: bool = False
     email_private: bool = False
+    # Military Service
+    military_service: bool = False
+    military_branch: Optional[str] = None
+    # First Responder Service
+    is_police: bool = False
+    is_fire: bool = False
+    is_ems: bool = False
     dues: Optional[dict] = None
 
 class MemberUpdate(BaseModel):
