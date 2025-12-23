@@ -205,7 +205,7 @@ export default function DiscordAnalytics() {
               </Button>
               <div>
                 <h1 className="text-2xl font-bold text-white">Discord Analytics</h1>
-                <p className="text-slate-400">90-day activity overview</p>
+                <p className="text-slate-400">30-day activity overview</p>
               </div>
             </div>
             
