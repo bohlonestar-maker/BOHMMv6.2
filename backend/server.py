@@ -3743,28 +3743,50 @@ async def get_linked_members_with_activity(current_user: dict = Depends(verify_a
                     {"_id": 0, "handle": 1, "name": 1, "chapter": 1, "title": 1}
                 )
             
+            # Helper to format time in CST
+            def format_time_cst(dt):
+                if not dt:
+                    return None
+                if isinstance(dt, str):
+                    dt = datetime.fromisoformat(dt.replace('Z', '+00:00'))
+                # Convert to CST (UTC-6)
+                from datetime import timedelta
+                cst_time = dt - timedelta(hours=6)
+                # Check if it's today in CST
+                now_cst = datetime.now(timezone.utc) - timedelta(hours=6)
+                if cst_time.date() == now_cst.date():
+                    # Today: show only time
+                    return cst_time.strftime("%-I:%M %p")
+                else:
+                    # Not today: show date and time
+                    return cst_time.strftime("%b %-d, %-I:%M %p")
+            
             # Format voice activity
             last_voice_time = None
+            last_voice_time_raw = None
             last_voice_channel = None
             if last_voice and last_voice.get("left_at"):
-                last_voice_time = last_voice["left_at"].isoformat() if isinstance(last_voice["left_at"], datetime) else last_voice["left_at"]
+                last_voice_time_raw = last_voice["left_at"].isoformat() if isinstance(last_voice["left_at"], datetime) else last_voice["left_at"]
+                last_voice_time = format_time_cst(last_voice["left_at"])
                 last_voice_channel = last_voice.get("channel_name")
             
             # Format text activity
             last_text_time = None
+            last_text_time_raw = None
             last_text_channel = None
             if last_text and last_text.get("last_message_at"):
-                last_text_time = last_text["last_message_at"].isoformat() if isinstance(last_text["last_message_at"], datetime) else last_text["last_message_at"]
+                last_text_time_raw = last_text["last_message_at"].isoformat() if isinstance(last_text["last_message_at"], datetime) else last_text["last_message_at"]
+                last_text_time = format_time_cst(last_text["last_message_at"])
                 last_text_channel = last_text.get("channel_name")
             
             # Determine overall last activity for sorting
             last_activity = None
-            if last_voice_time and last_text_time:
-                last_activity = max(last_voice_time, last_text_time)
-            elif last_voice_time:
-                last_activity = last_voice_time
-            elif last_text_time:
-                last_activity = last_text_time
+            if last_voice_time_raw and last_text_time_raw:
+                last_activity = max(last_voice_time_raw, last_text_time_raw)
+            elif last_voice_time_raw:
+                last_activity = last_voice_time_raw
+            elif last_text_time_raw:
+                last_activity = last_text_time_raw
             
             result.append({
                 "discord_id": discord_id,
