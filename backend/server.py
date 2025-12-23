@@ -3530,27 +3530,6 @@ async def get_linked_members_with_activity(current_user: dict = Depends(verify_a
                 sort=[("last_message_at", -1)]
             )
             
-            # Determine last activity
-            last_activity = None
-            last_activity_type = None
-            last_activity_channel = None
-            
-            if last_voice and last_voice.get("left_at"):
-                last_activity = last_voice["left_at"]
-                last_activity_type = "voice"
-                last_activity_channel = last_voice.get("channel_name")
-            
-            if last_text and last_text.get("last_message_at"):
-                text_time = last_text["last_message_at"]
-                if last_activity is None or (isinstance(text_time, datetime) and isinstance(last_activity, datetime) and text_time > last_activity):
-                    last_activity = text_time
-                    last_activity_type = "text"
-                    last_activity_channel = last_text.get("channel_name")
-                elif isinstance(text_time, str) and isinstance(last_activity, str) and text_time > last_activity:
-                    last_activity = text_time
-                    last_activity_type = "text"
-                    last_activity_channel = last_text.get("channel_name")
-            
             # Get database member info
             db_member = None
             if dm.get("member_id"):
@@ -3558,6 +3537,29 @@ async def get_linked_members_with_activity(current_user: dict = Depends(verify_a
                     {"id": dm["member_id"]},
                     {"_id": 0, "handle": 1, "name": 1, "chapter": 1, "title": 1}
                 )
+            
+            # Format voice activity
+            last_voice_time = None
+            last_voice_channel = None
+            if last_voice and last_voice.get("left_at"):
+                last_voice_time = last_voice["left_at"].isoformat() if isinstance(last_voice["left_at"], datetime) else last_voice["left_at"]
+                last_voice_channel = last_voice.get("channel_name")
+            
+            # Format text activity
+            last_text_time = None
+            last_text_channel = None
+            if last_text and last_text.get("last_message_at"):
+                last_text_time = last_text["last_message_at"].isoformat() if isinstance(last_text["last_message_at"], datetime) else last_text["last_message_at"]
+                last_text_channel = last_text.get("channel_name")
+            
+            # Determine overall last activity for sorting
+            last_activity = None
+            if last_voice_time and last_text_time:
+                last_activity = max(last_voice_time, last_text_time)
+            elif last_voice_time:
+                last_activity = last_voice_time
+            elif last_text_time:
+                last_activity = last_text_time
             
             result.append({
                 "discord_id": discord_id,
@@ -3569,9 +3571,11 @@ async def get_linked_members_with_activity(current_user: dict = Depends(verify_a
                 "member_name": db_member.get("name") if db_member else dm.get("linked_member_name"),
                 "member_chapter": db_member.get("chapter") if db_member else None,
                 "member_title": db_member.get("title") if db_member else None,
-                "last_activity": last_activity.isoformat() if isinstance(last_activity, datetime) else last_activity,
-                "last_activity_type": last_activity_type,
-                "last_activity_channel": last_activity_channel
+                "last_activity": last_activity,
+                "last_voice_time": last_voice_time,
+                "last_voice_channel": last_voice_channel,
+                "last_text_time": last_text_time,
+                "last_text_channel": last_text_channel
             })
         
         # Sort by last activity (most recent first), with None values at the end
