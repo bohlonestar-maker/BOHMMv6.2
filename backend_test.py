@@ -7146,22 +7146,13 @@ class BOHDirectoryAPITester:
         
         for item_id, endpoint, description in cleanup_items:
             if item_id:
-                # Add reason parameter for member deletions
-                if endpoint == "members":
-                    success, response = self.run_test(
-                        description,
-                        "DELETE",
-                        f"{endpoint}/{item_id}?reason=Test cleanup",
-                        200
-                    )
-                else:
-                    # Prospects don't need reason parameter
-                    success, response = self.run_test(
-                        description,
-                        "DELETE",
-                        f"{endpoint}/{item_id}",
-                        200
-                    )
+                # Both members and prospects need reason parameter
+                success, response = self.run_test(
+                    description,
+                    "DELETE",
+                    f"{endpoint}/{item_id}?reason=Test cleanup",
+                    200
+                )
         
         print(f"   📅 Anniversary Date feature testing completed")
         return member_id, prospect_id
