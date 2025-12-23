@@ -4416,6 +4416,140 @@ async def trigger_birthday_check(current_user: dict = Depends(verify_admin)):
     return {"message": "Birthday check triggered. Check backend logs for results."}
 
 
+@api_router.post("/anniversaries/trigger-check")
+async def trigger_anniversary_check(current_user: dict = Depends(verify_admin)):
+    """Manually trigger the anniversary notification check (admin only, for testing)"""
+    import threading
+    
+    # Run in a separate thread to avoid blocking
+    thread = threading.Thread(target=run_anniversary_check)
+    thread.start()
+    
+    return {"message": "Anniversary check triggered. Check backend logs for results."}
+
+
+@api_router.get("/anniversaries/this-month")
+async def get_anniversaries_this_month(current_user: dict = Depends(verify_token)):
+    """Get list of members with anniversaries this month"""
+    from datetime import datetime
+    
+    today = datetime.now()
+    current_month = today.strftime("%m")
+    current_year = today.year
+    
+    # Fetch all members with join_date
+    members = await db.members.find(
+        {"join_date": {"$exists": True, "$ne": None, "$ne": ""}},
+        {"_id": 0}
+    ).to_list(1000)
+    
+    anniversary_members = []
+    for member in members:
+        join_date = member.get('join_date', '')
+        if not join_date or '/' not in join_date:
+            continue
+        
+        try:
+            join_month = join_date.split('/')[0].zfill(2)
+            join_year_str = join_date.split('/')[1]
+            
+            if join_month == current_month:
+                try:
+                    join_year = int(join_year_str)
+                    years = current_year - join_year
+                    
+                    if years >= 1:
+                        # Decrypt member data
+                        decrypted = decrypt_member_sensitive_data(member.copy())
+                        anniversary_members.append({
+                            "id": member.get('id'),
+                            "handle": decrypted.get('handle'),
+                            "name": decrypted.get('name'),
+                            "chapter": decrypted.get('chapter'),
+                            "title": decrypted.get('title'),
+                            "join_date": join_date,
+                            "years": years
+                        })
+                except ValueError:
+                    continue
+        except Exception:
+            continue
+    
+    # Sort by years (longest first)
+    anniversary_members.sort(key=lambda x: x["years"], reverse=True)
+    
+    return {
+        "month": today.strftime("%B %Y"),
+        "count": len(anniversary_members),
+        "members": anniversary_members
+    }
+
+
+@api_router.get("/anniversaries/upcoming")
+async def get_upcoming_anniversaries(months: int = 3, current_user: dict = Depends(verify_token)):
+    """Get list of members with anniversaries in the next N months"""
+    from datetime import datetime
+    
+    today = datetime.now()
+    current_month = today.month
+    current_year = today.year
+    
+    # Fetch all members with join_date
+    members = await db.members.find(
+        {"join_date": {"$exists": True, "$ne": None, "$ne": ""}},
+        {"_id": 0}
+    ).to_list(1000)
+    
+    upcoming_anniversaries = []
+    for member in members:
+        join_date = member.get('join_date', '')
+        if not join_date or '/' not in join_date:
+            continue
+        
+        try:
+            join_month = int(join_date.split('/')[0])
+            join_year_str = join_date.split('/')[1]
+            join_year = int(join_year_str)
+            
+            # Calculate months until anniversary
+            if join_month >= current_month:
+                months_until = join_month - current_month
+                anniversary_year = current_year
+            else:
+                months_until = (12 - current_month) + join_month
+                anniversary_year = current_year + 1
+            
+            # Check if within range
+            if months_until <= months:
+                years = anniversary_year - join_year
+                
+                if years >= 1:
+                    # Decrypt member data
+                    decrypted = decrypt_member_sensitive_data(member.copy())
+                    upcoming_anniversaries.append({
+                        "id": member.get('id'),
+                        "handle": decrypted.get('handle'),
+                        "name": decrypted.get('name'),
+                        "chapter": decrypted.get('chapter'),
+                        "title": decrypted.get('title'),
+                        "join_date": join_date,
+                        "years": years,
+                        "months_until": months_until
+                    })
+        except (ValueError, IndexError):
+            continue
+    
+    # Sort by months_until (soonest first)
+    upcoming_anniversaries.sort(key=lambda x: x["months_until"])
+    
+    return {
+        "from_date": today.strftime("%Y-%m-%d"),
+        "months_ahead": months,
+        "count": len(upcoming_anniversaries),
+        "members": upcoming_anniversaries
+    }
+
+
 @api_router.get("/birthdays/today")
 async def get_todays_birthdays(current_user: dict = Depends(verify_token)):
     """Get list of members with birthdays today"""
