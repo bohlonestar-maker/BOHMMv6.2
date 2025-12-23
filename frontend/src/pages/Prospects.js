@@ -650,6 +650,88 @@ export default function Prospects({ onLogout, userRole }) {
                     />
                   </div>
 
+                  {/* Military Service Section */}
+                  <div className="space-y-3 p-3 bg-slate-800 rounded-lg border border-slate-700">
+                    <Label className="text-white font-semibold">🎖️ Military Service</Label>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="prospect_military_service"
+                        checked={formData.military_service || false}
+                        onCheckedChange={(checked) =>
+                          setFormData({ ...formData, military_service: checked, military_branch: checked ? formData.military_branch : "" })
+                        }
+                      />
+                      <label htmlFor="prospect_military_service" className="text-sm text-slate-200 cursor-pointer">
+                        Served in Military
+                      </label>
+                    </div>
+                    {formData.military_service && (
+                      <div className="ml-6">
+                        <Label className="text-slate-300 text-sm">Branch of Service</Label>
+                        <Select
+                          value={formData.military_branch || ""}
+                          onValueChange={(value) => setFormData({ ...formData, military_branch: value })}
+                        >
+                          <SelectTrigger className="bg-slate-900 border-slate-600 text-white">
+                            <SelectValue placeholder="Select branch" />
+                          </SelectTrigger>
+                          <SelectContent className="bg-slate-800 border-slate-600">
+                            <SelectItem value="Army" className="text-white hover:bg-slate-700">Army</SelectItem>
+                            <SelectItem value="Navy" className="text-white hover:bg-slate-700">Navy</SelectItem>
+                            <SelectItem value="Air Force" className="text-white hover:bg-slate-700">Air Force</SelectItem>
+                            <SelectItem value="Marines" className="text-white hover:bg-slate-700">Marines</SelectItem>
+                            <SelectItem value="Coast Guard" className="text-white hover:bg-slate-700">Coast Guard</SelectItem>
+                            <SelectItem value="Space Force" className="text-white hover:bg-slate-700">Space Force</SelectItem>
+                            <SelectItem value="National Guard" className="text-white hover:bg-slate-700">National Guard</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* First Responder Section */}
+                  <div className="space-y-3 p-3 bg-slate-800 rounded-lg border border-slate-700">
+                    <Label className="text-white font-semibold">🚨 First Responder Service</Label>
+                    <div className="space-y-2">
+                      <div className="flex items-center space-x-2">
+                        <Checkbox
+                          id="prospect_is_police"
+                          checked={formData.is_police || false}
+                          onCheckedChange={(checked) =>
+                            setFormData({ ...formData, is_police: checked })
+                          }
+                        />
+                        <label htmlFor="prospect_is_police" className="text-sm text-slate-200 cursor-pointer">
+                          🚔 Police / Law Enforcement
+                        </label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Checkbox
+                          id="prospect_is_fire"
+                          checked={formData.is_fire || false}
+                          onCheckedChange={(checked) =>
+                            setFormData({ ...formData, is_fire: checked })
+                          }
+                        />
+                        <label htmlFor="prospect_is_fire" className="text-sm text-slate-200 cursor-pointer">
+                          🚒 Fire / Firefighter
+                        </label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Checkbox
+                          id="prospect_is_ems"
+                          checked={formData.is_ems || false}
+                          onCheckedChange={(checked) =>
+                            setFormData({ ...formData, is_ems: checked })
+                          }
+                        />
+                        <label htmlFor="prospect_is_ems" className="text-sm text-slate-200 cursor-pointer">
+                          🚑 EMS / Paramedic
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+
                   <div className="border-t border-slate-700 pt-4">
                     <div className="flex justify-between items-center mb-3">
                       <Label className="text-base font-semibold">Meeting Attendance</Label>
