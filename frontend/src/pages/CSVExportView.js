@@ -476,6 +476,7 @@ export default function CSVExportView() {
               <div className="flex flex-wrap gap-1.5 sm:gap-2 mb-3 sm:mb-4">
                 <button onClick={() => selectPreset('all')} className="bg-blue-600 hover:bg-blue-700 px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 rounded text-xs sm:text-sm">All Fields</button>
                 <button onClick={() => selectPreset('contact')} className="bg-purple-600 hover:bg-purple-700 px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 rounded text-xs sm:text-sm">Contact</button>
+                <button onClick={() => selectPreset('service')} className="bg-indigo-600 hover:bg-indigo-700 px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 rounded text-xs sm:text-sm">🎖️ Service</button>
                 <button onClick={() => selectPreset('dues_q1')} className="bg-rose-600 hover:bg-rose-700 px-2 sm:px-3 py-1.5 sm:py-2 rounded text-xs sm:text-sm">Dues Q1</button>
                 <button onClick={() => selectPreset('dues_q2')} className="bg-red-600 hover:bg-red-700 px-2 sm:px-3 py-1.5 sm:py-2 rounded text-xs sm:text-sm">Dues Q2</button>
                 <button onClick={() => selectPreset('dues_q3')} className="bg-orange-600 hover:bg-orange-700 px-2 sm:px-3 py-1.5 sm:py-2 rounded text-xs sm:text-sm">Dues Q3</button>
