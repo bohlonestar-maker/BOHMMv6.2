@@ -175,37 +175,45 @@ export default function DiscordAnalytics() {
 
   const formatLastActivity = (dateStr) => {
     if (!dateStr) return "Never";
-    const date = new Date(dateStr);
-    const now = new Date();
     
-    // Format options for Central Time
-    const timeOptions = { 
+    // Parse the UTC date
+    const utcDate = new Date(dateStr);
+    
+    // Convert to Central Time by creating a formatter
+    const formatter = new Intl.DateTimeFormat('en-US', {
+      timeZone: 'America/Chicago',
       hour: 'numeric',
       minute: '2-digit',
-      hour12: true,
-      timeZone: 'America/Chicago'
-    };
+      hour12: true
+    });
     
-    const dateTimeOptions = { 
-      month: 'short', 
+    const dateFormatter = new Intl.DateTimeFormat('en-US', {
+      timeZone: 'America/Chicago',
+      month: 'short',
       day: 'numeric',
       hour: 'numeric',
       minute: '2-digit',
-      hour12: true,
-      timeZone: 'America/Chicago'
-    };
+      hour12: true
+    });
     
-    // Check if it's today (in Central Time)
-    const todayCST = new Date().toLocaleDateString('en-US', { timeZone: 'America/Chicago' });
-    const dateCST = date.toLocaleDateString('en-US', { timeZone: 'America/Chicago' });
+    const todayFormatter = new Intl.DateTimeFormat('en-US', {
+      timeZone: 'America/Chicago',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    });
+    
+    // Check if it's today in Central Time
+    const todayCST = todayFormatter.format(new Date());
+    const dateCST = todayFormatter.format(utcDate);
     const isToday = todayCST === dateCST;
     
     if (isToday) {
-      // Today: show only time
-      return date.toLocaleTimeString('en-US', timeOptions);
+      // Today: show only time in CST
+      return formatter.format(utcDate);
     } else {
-      // Not today: show date and time
-      return date.toLocaleDateString('en-US', dateTimeOptions);
+      // Not today: show date and time in CST
+      return dateFormatter.format(utcDate);
     }
   };
 
