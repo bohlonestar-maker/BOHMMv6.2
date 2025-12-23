@@ -837,14 +837,24 @@ export default function DiscordAnalytics() {
                           </p>
                         </div>
                       </div>
-                      <div className="text-right flex-shrink-0 ml-3">
-                        <p className={`text-sm font-medium ${member.last_activity ? 'text-green-400' : 'text-red-400'}`}>
-                          {formatLastActivity(member.last_activity)}
-                        </p>
-                        {member.last_activity_type && (
-                          <p className="text-xs text-slate-500">
-                            {member.last_activity_type === 'voice' ? '🎤' : '💬'} {member.last_activity_channel}
-                          </p>
+                      <div className="text-right flex-shrink-0 ml-3 space-y-1">
+                        <div className="flex items-center justify-end gap-2">
+                          <span className="text-xs">🎤</span>
+                          <span className={`text-sm ${member.last_voice_time ? 'text-green-400' : 'text-slate-500'}`}>
+                            {formatLastActivity(member.last_voice_time)}
+                          </span>
+                        </div>
+                        {member.last_voice_channel && (
+                          <p className="text-xs text-slate-500 truncate max-w-[120px]">{member.last_voice_channel}</p>
+                        )}
+                        <div className="flex items-center justify-end gap-2 pt-1">
+                          <span className="text-xs">💬</span>
+                          <span className={`text-sm ${member.last_text_time ? 'text-green-400' : 'text-slate-500'}`}>
+                            {formatLastActivity(member.last_text_time)}
+                          </span>
+                        </div>
+                        {member.last_text_channel && (
+                          <p className="text-xs text-slate-500 truncate max-w-[120px]">{member.last_text_channel}</p>
                         )}
                       </div>
                     </div>
