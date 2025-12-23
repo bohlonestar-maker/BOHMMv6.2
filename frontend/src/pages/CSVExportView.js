@@ -264,6 +264,7 @@ export default function CSVExportView() {
       'meetings_q3': 'Meetings - Quarter 3 (Jul, Aug, Sep)',
       'meetings_q4': 'Meetings - Quarter 4 (Oct, Nov, Dec)',
       'contact': 'Contact Information',
+      'service': 'Military & First Responder Service',
       'all': 'All Fields'
     };
     
