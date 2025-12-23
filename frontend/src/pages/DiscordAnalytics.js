@@ -299,6 +299,9 @@ export default function DiscordAnalytics() {
             <TabsTrigger value="voice" className="data-[state=active]:bg-slate-700 text-white">
               Voice Activity
             </TabsTrigger>
+            <TabsTrigger value="channels" className="data-[state=active]:bg-slate-700 text-white">
+              By Channel
+            </TabsTrigger>
             <TabsTrigger value="text" className="data-[state=active]:bg-slate-700 text-white">
               Text Activity
             </TabsTrigger>
