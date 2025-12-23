@@ -969,10 +969,19 @@ async def start_scheduler():
             replace_existing=True
         )
         
+        # Anniversary notifications - run on 1st of each month at 9:00 AM CST (15:00 UTC)
+        scheduler.add_job(
+            run_anniversary_check,
+            CronTrigger(day=1, hour=15, minute=0),  # 1st of month, 9:00 AM CST = 15:00 UTC
+            id='anniversary_notifications',
+            replace_existing=True
+        )
+        
         scheduler.start()
         sys.stderr.write("✅ [SCHEDULER] Discord notification system started:\n")
         sys.stderr.write("   📅 Event notifications: every 30 minutes\n")
         sys.stderr.write("   🎂 Birthday notifications: daily at 9:00 AM CST\n")
+        sys.stderr.write("   🎉 Anniversary notifications: 1st of month at 9:00 AM CST\n")
         sys.stderr.flush()
     except Exception as e:
         sys.stderr.write(f"⚠️ [SCHEDULER] Failed to start scheduler (app will continue without it): {str(e)}\n")
