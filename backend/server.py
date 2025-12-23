@@ -1401,6 +1401,11 @@ async def export_members_csv(current_user: dict = Depends(verify_token)):
         header.append('Phone Number')
     if is_admin or permissions.get("address"):
         header.append('Mailing Address')
+    
+    # Always include Military and First Responder fields for admin
+    if is_admin:
+        header.extend(['Military Service', 'Military Branch', 'Police', 'Fire', 'EMS'])
+    
     if is_admin or permissions.get("dues_tracking"):
         month_names = ['January', 'February', 'March', 'April', 'May', 'June', 
                       'July', 'August', 'September', 'October', 'November', 'December']
