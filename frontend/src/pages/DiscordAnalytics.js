@@ -353,6 +353,61 @@ export default function DiscordAnalytics() {
             </Card>
           </TabsContent>
 
+          {/* By Channel Tab */}
+          <TabsContent value="channels" className="space-y-4">
+            <Card className="bg-slate-800 border-slate-700">
+              <CardHeader>
+                <CardTitle className="text-white flex items-center gap-2">
+                  <Volume2 className="w-5 h-5" />
+                  Top Users By Channel (30 days)
+                </CardTitle>
+                <CardDescription className="text-slate-400">
+                  Most active members in each voice channel
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {analytics?.channel_stats?.length > 0 ? (
+                  <div className="space-y-4 max-h-[500px] overflow-y-auto">
+                    {analytics.channel_stats.map((channel) => (
+                      <div key={channel.channel_id} className="p-4 bg-slate-900 rounded-lg">
+                        <div className="flex items-center justify-between mb-3">
+                          <h3 className="font-medium text-white flex items-center gap-2">
+                            <Volume2 className="w-4 h-4 text-blue-400" />
+                            {channel.channel_name}
+                          </h3>
+                          <div className="text-right text-sm">
+                            <span className="text-slate-400">{channel.total_sessions} sessions</span>
+                            <span className="text-slate-500 mx-2">•</span>
+                            <span className="text-blue-400">{formatDuration(channel.total_duration)}</span>
+                          </div>
+                        </div>
+                        {channel.top_users?.length > 0 ? (
+                          <div className="space-y-2">
+                            {channel.top_users.map((user, index) => (
+                              <div key={user.user_id} className="flex items-center justify-between py-2 px-3 bg-slate-800 rounded">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-xs text-slate-500 w-4">{index + 1}.</span>
+                                  <span className="text-sm text-white">{user.username}</span>
+                                </div>
+                                <div className="text-sm text-slate-400">
+                                  {user.sessions} sessions • {formatDuration(user.duration)}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-sm text-slate-500">No activity</p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-slate-400 text-center py-8">No channel activity recorded yet</p>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
           {/* Text Activity Tab */}
           <TabsContent value="text" className="space-y-4">
             <Card className="bg-slate-800 border-slate-700">
