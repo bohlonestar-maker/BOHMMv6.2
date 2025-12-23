@@ -7918,12 +7918,21 @@ class BOHDirectoryAPITester:
         
         for item_id, endpoint, description in cleanup_items:
             if item_id:
-                success, response = self.run_test(
-                    description,
-                    "DELETE",
-                    f"{endpoint}/{item_id}",
-                    200
-                )
+                if endpoint == "members":
+                    # Members require a reason parameter
+                    success, response = self.run_test(
+                        description,
+                        "DELETE",
+                        f"{endpoint}/{item_id}?reason=Test cleanup",
+                        200
+                    )
+                else:
+                    success, response = self.run_test(
+                        description,
+                        "DELETE",
+                        f"{endpoint}/{item_id}",
+                        200
+                    )
         
         print(f"\n🔐 CONTACT PRIVACY FEATURE VERIFICATION COMPLETED")
         print("=" * 80)
