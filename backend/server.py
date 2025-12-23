@@ -3341,10 +3341,54 @@ async def test_discord_activity(current_user: dict = Depends(verify_admin)):
             "recent_text_activity": len(recent_text),
             "recent_voice_records": recent_voice,
             "recent_text_records": recent_text,
+            "currently_tracking": len(discord_bot.voice_sessions) if discord_bot and hasattr(discord_bot, 'voice_sessions') else 0,
             "message": f"Bot is {'active' if discord_bot else 'inactive'}. Voice: {voice_count} records, Text: {text_count} records"
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Test error: {str(e)}")
+
+
+@api_router.post("/discord/resync-voice")
+async def resync_discord_voice_tracking(current_user: dict = Depends(verify_admin)):
+    """Resync voice tracking by scanning all voice channels for connected users"""
+    try:
+        if not discord_bot:
+            raise HTTPException(status_code=503, detail="Discord bot is not running")
+        
+        # Clear existing tracked sessions (they may be stale)
+        old_count = len(discord_bot.voice_sessions)
+        discord_bot.voice_sessions.clear()
+        
+        # Scan all guilds for users in voice channels
+        new_tracked = []
+        from datetime import timezone
+        now = datetime.now(timezone.utc)
+        
+        for guild in discord_bot.guilds:
+            for voice_channel in guild.voice_channels:
+                for member in voice_channel.members:
+                    if not member.bot:
+                        user_id = str(member.id)
+                        discord_bot.voice_sessions[user_id] = {
+                            'joined_at': now,
+                            'channel_id': str(voice_channel.id),
+                            'channel_name': voice_channel.name
+                        }
+                        new_tracked.append({
+                            "user": member.display_name,
+                            "channel": voice_channel.name
+                        })
+        
+        return {
+            "success": True,
+            "previous_tracking": old_count,
+            "now_tracking": len(discord_bot.voice_sessions),
+            "users": new_tracked,
+            "message": f"Resynced voice tracking. Now tracking {len(new_tracked)} user(s) in voice channels."
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Resync error: {str(e)}")
 
 @api_router.post("/discord/simulate-activity")
 async def simulate_discord_activity(current_user: dict = Depends(verify_admin)):
