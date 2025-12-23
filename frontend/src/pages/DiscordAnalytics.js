@@ -144,7 +144,27 @@ export default function DiscordAnalytics() {
   };
 
   const filteredLinkedMembers = linkedMembers.filter(m => {
+    // First filter out aoh, bot, tv names
+    const displayName = (m.discord_display_name || '').toLowerCase();
+    const username = (m.discord_username || '').toLowerCase();
+    const handle = (m.member_handle || '').toLowerCase();
+    
+    const isFiltered = displayName.includes('bot') || 
+           displayName.includes('tv') || 
+           displayName.startsWith('aoh') ||
+           username.includes('bot') || 
+           username.includes('tv') ||
+           username.startsWith('aoh') ||
+           handle.includes('bot') ||
+           handle.includes('tv') ||
+           handle.startsWith('aoh');
+    
+    if (isFiltered) return false;
+    
+    // Then apply search filter
     const search = linkedMemberSearch.toLowerCase();
+    if (!search) return true;
+    
     return (
       m.member_handle?.toLowerCase().includes(search) ||
       m.member_name?.toLowerCase().includes(search) ||
