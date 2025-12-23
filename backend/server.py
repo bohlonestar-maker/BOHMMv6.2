@@ -3502,6 +3502,87 @@ async def unlink_discord_member(discord_id: str, current_user: dict = Depends(ve
         raise HTTPException(status_code=500, detail=f"Error unlinking member: {str(e)}")
 
 
+@api_router.get("/discord/linked-members")
+async def get_linked_members_with_activity(current_user: dict = Depends(verify_admin)):
+    """Get all linked Discord members with their last activity time"""
+    try:
+        # Get all linked Discord members
+        linked_members = await db.discord_members.find(
+            {"member_id": {"$exists": True, "$ne": None}},
+            {"_id": 0}
+        ).to_list(1000)
+        
+        result = []
+        for dm in linked_members:
+            discord_id = dm.get("discord_id")
+            
+            # Get last voice activity
+            last_voice = await db.discord_voice_activity.find_one(
+                {"discord_user_id": discord_id},
+                {"_id": 0, "left_at": 1, "channel_name": 1},
+                sort=[("left_at", -1)]
+            )
+            
+            # Get last text activity
+            last_text = await db.discord_text_activity.find_one(
+                {"discord_user_id": discord_id},
+                {"_id": 0, "last_message_at": 1, "channel_name": 1},
+                sort=[("last_message_at", -1)]
+            )
+            
+            # Determine last activity
+            last_activity = None
+            last_activity_type = None
+            last_activity_channel = None
+            
+            if last_voice and last_voice.get("left_at"):
+                last_activity = last_voice["left_at"]
+                last_activity_type = "voice"
+                last_activity_channel = last_voice.get("channel_name")
+            
+            if last_text and last_text.get("last_message_at"):
+                text_time = last_text["last_message_at"]
+                if last_activity is None or (isinstance(text_time, datetime) and isinstance(last_activity, datetime) and text_time > last_activity):
+                    last_activity = text_time
+                    last_activity_type = "text"
+                    last_activity_channel = last_text.get("channel_name")
+                elif isinstance(text_time, str) and isinstance(last_activity, str) and text_time > last_activity:
+                    last_activity = text_time
+                    last_activity_type = "text"
+                    last_activity_channel = last_text.get("channel_name")
+            
+            # Get database member info
+            db_member = None
+            if dm.get("member_id"):
+                db_member = await db.members.find_one(
+                    {"id": dm["member_id"]},
+                    {"_id": 0, "handle": 1, "name": 1, "chapter": 1, "title": 1}
+                )
+            
+            result.append({
+                "discord_id": discord_id,
+                "discord_username": dm.get("username"),
+                "discord_display_name": dm.get("display_name"),
+                "avatar_url": dm.get("avatar_url"),
+                "member_id": dm.get("member_id"),
+                "member_handle": db_member.get("handle") if db_member else dm.get("linked_member_handle"),
+                "member_name": db_member.get("name") if db_member else dm.get("linked_member_name"),
+                "member_chapter": db_member.get("chapter") if db_member else None,
+                "member_title": db_member.get("title") if db_member else None,
+                "last_activity": last_activity.isoformat() if isinstance(last_activity, datetime) else last_activity,
+                "last_activity_type": last_activity_type,
+                "last_activity_channel": last_activity_channel
+            })
+        
+        # Sort by last activity (most recent first), with None values at the end
+        result.sort(key=lambda x: x.get("last_activity") or "0000-00-00", reverse=True)
+        
+        return result
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error fetching linked members: {str(e)}")
+
+
 @api_router.get("/discord/analytics")
 async def get_discord_analytics(days: int = 90, current_user: dict = Depends(verify_admin)):
     """Get Discord analytics for specified number of days"""
