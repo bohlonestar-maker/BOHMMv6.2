@@ -287,11 +287,15 @@ export default function DiscordAnalytics() {
 
           {/* Overview Cards */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-            <Card className="bg-slate-800 border-slate-700">
+            <Card 
+              className="bg-slate-800 border-slate-700 cursor-pointer hover:bg-slate-700 transition-colors"
+              onClick={openLinkedMembersDialog}
+            >
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm font-medium text-slate-300 flex items-center gap-2">
                   <Users className="w-4 h-4" />
                   Total Members
+                  <span className="text-xs text-blue-400 ml-auto">Click to view</span>
                 </CardTitle>
               </CardHeader>
               <CardContent>
