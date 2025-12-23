@@ -1976,7 +1976,7 @@ async def export_prospects_csv(current_user: dict = Depends(verify_admin)):
         meeting_dates.append((first_wed, third_wed))
     
     # Create CSV header with dates
-    csv_content = "Handle,Name,Email,Phone,Address,Meeting Attendance Year"
+    csv_content = "Handle,Name,Email,Phone,Address,Military Service,Military Branch,Police,Fire,EMS,Meeting Attendance Year"
     
     for idx, month in enumerate(months):
         first_date, third_date = meeting_dates[idx]
@@ -1997,7 +1997,14 @@ async def export_prospects_csv(current_user: dict = Depends(verify_admin)):
         while len(meetings) < 24:
             meetings.append({"status": 0, "note": ""})
         
-        row = f"{prospect['handle']},{prospect['name']},{prospect['email']},{prospect['phone']},{prospect['address']},{current_year}"
+        # Military and First Responder status
+        military_service = "Yes" if prospect.get('military_service', False) else "No"
+        military_branch = prospect.get('military_branch', '') or ''
+        is_police = "Yes" if prospect.get('is_police', False) else "No"
+        is_fire = "Yes" if prospect.get('is_fire', False) else "No"
+        is_ems = "Yes" if prospect.get('is_ems', False) else "No"
+        
+        row = f"{prospect['handle']},{prospect['name']},{prospect['email']},{prospect['phone']},{prospect['address']},{military_service},{military_branch},{is_police},{is_fire},{is_ems},{current_year}"
         
         for i in range(24):
             meeting = meetings[i] if i < len(meetings) else {"status": 0, "note": ""}
