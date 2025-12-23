@@ -787,9 +787,7 @@ class MemberCreate(BaseModel):
     military_service: bool = False
     military_branch: Optional[str] = None
     # First Responder Service
-    is_police: bool = False
-    is_fire: bool = False
-    is_ems: bool = False
+    is_first_responder: bool = False
     dues: Optional[dict] = None
 
 class MemberUpdate(BaseModel):
