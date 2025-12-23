@@ -3791,10 +3791,26 @@ async def get_discord_analytics(days: int = 90, current_user: dict = Depends(ver
         text_active_users.update(all_text_users)
         
         # Find least active members (no voice AND no text activity)
+        # Filter out bots and excluded usernames
+        EXCLUDED_USERNAMES = ['bot', 'tv', 'aoh', 'craig', 'testdummy', 'gearjammerbor']
+        
         least_active_members = []
         for member in all_members:
             if member.get("is_bot"):
                 continue  # Skip bots
+            
+            username = member.get("username", "").lower()
+            display_name = (member.get("display_name") or "").lower()
+            
+            # Skip excluded usernames
+            is_excluded = False
+            for excluded in EXCLUDED_USERNAMES:
+                if excluded in username or excluded in display_name or username.startswith(excluded) or display_name.startswith(excluded):
+                    is_excluded = True
+                    break
+            
+            if is_excluded:
+                continue
                 
             discord_id = member["discord_id"]
             has_voice_activity = discord_id in voice_active_users
