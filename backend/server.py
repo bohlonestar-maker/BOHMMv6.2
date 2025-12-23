@@ -738,7 +738,7 @@ class Member(BaseModel):
     phone: str
     address: str
     dob: Optional[str] = None  # Date of Birth (YYYY-MM-DD format)
-    join_date: Optional[str] = None  # Date joined the organization (YYYY-MM-DD format)
+    join_date: Optional[str] = None  # Anniversary Date (MM/YYYY format)
     phone_private: bool = False  # If True, only admins can see phone
     address_private: bool = False  # If True, only admins can see address
     email_private: bool = False  # If True, only National members and chapter officers (Prez, VP, S@A, Enf, SEC) can see email
@@ -795,7 +795,7 @@ class Prospect(BaseModel):
     phone: str
     address: str
     dob: Optional[str] = None  # Date of Birth (YYYY-MM-DD format)
-    join_date: Optional[str] = None  # Date joined as prospect (YYYY-MM-DD format)
+    join_date: Optional[str] = None  # Anniversary Date (MM/YYYY format)
     actions: list = Field(default_factory=list)  # Merit, Promotion, Disciplinary actions
     meeting_attendance: dict = Field(default_factory=lambda: {
         str(datetime.now(timezone.utc).year): [{"status": 0, "note": ""} for _ in range(24)]
