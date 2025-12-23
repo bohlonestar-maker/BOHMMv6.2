@@ -618,11 +618,20 @@ export default function Prospects({ onLogout, userRole }) {
                   </div>
 
                   <div>
-                    <Label>Join Date (optional)</Label>
+                    <Label>Anniversary Date (MM/YYYY)</Label>
                     <Input
-                      type="date"
+                      type="text"
+                      placeholder="MM/YYYY"
                       value={formData.join_date}
-                      onChange={(e) => setFormData({ ...formData, join_date: e.target.value })}
+                      onChange={(e) => {
+                        let value = e.target.value.replace(/[^\d/]/g, '');
+                        if (value.length === 2 && !value.includes('/') && formData.join_date.length < value.length) {
+                          value = value + '/';
+                        }
+                        if (value.length <= 7) {
+                          setFormData({ ...formData, join_date: value });
+                        }
+                      }}
                     />
                   </div>
 
