@@ -240,6 +240,7 @@ export default function EventCalendar() {
       year: "numeric",
       month: "short",
       day: "numeric",
+      timeZone: 'America/Chicago'
     });
   };
 
