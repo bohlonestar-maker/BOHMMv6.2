@@ -465,6 +465,11 @@ export default function Dashboard({ onLogout, userRole, userPermissions }) {
       phone_private: false,
       address_private: false,
       email_private: false,
+      military_service: false,
+      military_branch: "",
+      is_police: false,
+      is_fire: false,
+      is_ems: false,
       dues: {
         [currentYear]: Array(12).fill(false)
       },
