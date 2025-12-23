@@ -4920,6 +4920,223 @@ def run_birthday_check():
         import traceback
         traceback.print_exc(file=sys.stderr)
 
+# ==================== ANNIVERSARY NOTIFICATIONS ====================
+
+async def send_anniversary_notification(member: dict, years: int):
+    """Send Discord notification for a member's anniversary"""
+    if not DISCORD_WEBHOOK_URL:
+        print("⚠️  Discord webhook URL not configured for anniversary notification")
+        return False
+    
+    try:
+        # Get member details
+        member_name = member.get('name', member.get('handle', 'Brother'))
+        member_handle = member.get('handle', '')
+        member_chapter = member.get('chapter', '')
+        member_title = member.get('title', '')
+        
+        # Create trucker-themed anniversary message
+        year_text = "year" if years == 1 else "years"
+        
+        # Milestone messages based on years
+        if years >= 10:
+            milestone_msg = "A true road warrior and pillar of the Brotherhood! 🏆"
+        elif years >= 5:
+            milestone_msg = "A seasoned veteran of the highway! Keep on truckin'! 🛣️"
+        elif years >= 3:
+            milestone_msg = "Rolling strong through the years! 💪"
+        else:
+            milestone_msg = "Keep those wheels turning, Brother! 🚛"
+        
+        # Create a festive anniversary embed
+        embed = {
+            "title": "🎉 Member Anniversary! 🎊",
+            "description": f"**{member_name}** is celebrating **{years} {year_text}** as a Brother of the Highway!\n\n{milestone_msg}",
+            "color": 0x4169E1,  # Royal blue for anniversary
+            "fields": [],
+            "footer": {
+                "text": "Brothers of the Highway | Anniversary Celebration"
+            }
+        }
+        
+        # Add member info
+        if member_handle:
+            embed["fields"].append({
+                "name": "🏷️ Handle",
+                "value": member_handle,
+                "inline": True
+            })
+        
+        if member_chapter:
+            embed["fields"].append({
+                "name": "🏴 Chapter",
+                "value": member_chapter,
+                "inline": True
+            })
+        
+        if member_title:
+            embed["fields"].append({
+                "name": "👤 Title",
+                "value": member_title,
+                "inline": True
+            })
+        
+        # Add years milestone
+        embed["fields"].append({
+            "name": "📅 Years of Brotherhood",
+            "value": f"**{years}** {year_text} on the road together!",
+            "inline": False
+        })
+        
+        # Add call to action
+        embed["fields"].append({
+            "name": "🎊 Congratulations!",
+            "value": "All Brothers are invited to congratulate them on their anniversary!",
+            "inline": False
+        })
+        
+        payload = {
+            "content": f"@everyone **🎉 Anniversary Alert!** 🎉\n\nLet's all congratulate **{member_name}** on **{years} {year_text}** with the Brotherhood! 🚛💨",
+            "embeds": [embed]
+        }
+        
+        response = requests.post(DISCORD_WEBHOOK_URL, json=payload)
+        
+        if response.status_code == 204:
+            print(f"✅ Anniversary notification sent for: {member_name} ({years} years)")
+            return True
+        else:
+            print(f"❌ Anniversary notification failed: {response.status_code} - {response.text}")
+            return False
+            
+    except Exception as e:
+        print(f"❌ Error sending anniversary notification: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return False
+
+
+async def check_and_send_anniversary_notifications():
+    """Check for members with anniversaries this month and send Discord notifications (runs on 1st of month)"""
+    import sys
+    from datetime import datetime
+    
+    try:
+        print(f"🎉 [ANNIVERSARY] Checking for member anniversaries this month...", file=sys.stderr, flush=True)
+        
+        # Get current month and year
+        today = datetime.now()
+        current_month = today.strftime("%m")  # MM format
+        current_year = today.year
+        
+        # Create a new MongoDB connection for this thread
+        from motor.motor_asyncio import AsyncIOMotorClient
+        mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
+        db_name = os.environ.get('DB_NAME', 'test_database')
+        client = AsyncIOMotorClient(mongo_url)
+        thread_db = client[db_name]
+        
+        # Fetch all members with join_date set
+        members = await thread_db.members.find(
+            {"join_date": {"$exists": True, "$ne": None, "$ne": ""}},
+            {"_id": 0}
+        ).to_list(1000)
+        
+        print(f"🎉 [ANNIVERSARY] Found {len(members)} members with join_date records", file=sys.stderr, flush=True)
+        
+        # Check today's date key to avoid duplicate notifications (use year-month)
+        month_key = today.strftime("%Y-%m")
+        
+        anniversary_count = 0
+        for member in members:
+            join_date = member.get('join_date', '')
+            if not join_date:
+                continue
+            
+            try:
+                # join_date format: MM/YYYY, extract MM portion
+                if '/' in join_date:
+                    join_month = join_date.split('/')[0].zfill(2)  # Get MM, pad with 0 if needed
+                    join_year_str = join_date.split('/')[1]
+                    
+                    # Check if this member's anniversary is this month
+                    if join_month == current_month:
+                        # Calculate years of membership
+                        try:
+                            join_year = int(join_year_str)
+                            years = current_year - join_year
+                            
+                            # Skip if less than 1 year or join year is in the future
+                            if years < 1:
+                                continue
+                                
+                        except ValueError:
+                            print(f"   ⚠️ Invalid year in join_date for {member.get('handle', 'unknown')}: {join_date}", file=sys.stderr, flush=True)
+                            continue
+                        
+                        member_id = member.get('id', member.get('handle', ''))
+                        
+                        # Check if we already sent notification this month
+                        existing = await thread_db.anniversary_notifications.find_one({
+                            "member_id": member_id,
+                            "notification_month": month_key
+                        })
+                        
+                        if existing:
+                            print(f"   ⏭️ Already notified for {member.get('name', member.get('handle'))} this month", file=sys.stderr, flush=True)
+                            continue
+                        
+                        # Decrypt sensitive data for the notification
+                        decrypted_member = decrypt_member_sensitive_data(member.copy())
+                        
+                        # Send anniversary notification
+                        print(f"   🎉 Anniversary found: {decrypted_member.get('name', decrypted_member.get('handle'))} - {years} year(s) (joined {join_date})", file=sys.stderr, flush=True)
+                        success = await send_anniversary_notification(decrypted_member, years)
+                        
+                        if success:
+                            # Record that we sent the notification
+                            await thread_db.anniversary_notifications.insert_one({
+                                "member_id": member_id,
+                                "member_name": decrypted_member.get('name', decrypted_member.get('handle', '')),
+                                "notification_month": month_key,
+                                "years": years,
+                                "sent_at": datetime.now()
+                            })
+                            anniversary_count += 1
+                            
+            except Exception as e:
+                print(f"   ❌ Error processing join_date for {member.get('handle', 'unknown')}: {str(e)}", file=sys.stderr, flush=True)
+        
+        print(f"🎉 [ANNIVERSARY] Sent {anniversary_count} anniversary notification(s) this month", file=sys.stderr, flush=True)
+        client.close()
+        
+    except Exception as e:
+        print(f"❌ [ANNIVERSARY] Error checking anniversaries: {str(e)}", file=sys.stderr, flush=True)
+        import traceback
+        traceback.print_exc(file=sys.stderr)
+
+
+def run_anniversary_check():
+    """Wrapper to run async anniversary check in sync context (called by scheduler in thread)"""
+    import asyncio
+    import sys
+    try:
+        print(f"🎉 [SCHEDULER] Starting anniversary check job...", file=sys.stderr, flush=True)
+        
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        try:
+            loop.run_until_complete(check_and_send_anniversary_notifications())
+            print(f"✅ [SCHEDULER] Anniversary check job completed", file=sys.stderr, flush=True)
+        finally:
+            loop.close()
+            
+    except Exception as e:
+        print(f"❌ [SCHEDULER] Error running anniversary check: {str(e)}", file=sys.stderr, flush=True)
+        import traceback
+        traceback.print_exc(file=sys.stderr)
+
+
 # Initialize scheduler variable (will be started in startup event)
 import sys
 scheduler = None
