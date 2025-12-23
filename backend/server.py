@@ -826,9 +826,7 @@ class Prospect(BaseModel):
     military_service: bool = False  # If True, prospect has served in military
     military_branch: Optional[str] = None  # Army, Navy, Air Force, Marines, Coast Guard, Space Force, National Guard
     # First Responder Service
-    is_police: bool = False  # If True, prospect has served as Police
-    is_fire: bool = False  # If True, prospect has served as Fire/Firefighter
-    is_ems: bool = False  # If True, prospect has served as EMS/Paramedic
+    is_first_responder: bool = False  # If True, prospect has served as Police, Fire, or EMS
     actions: list = Field(default_factory=list)  # Merit, Promotion, Disciplinary actions
     meeting_attendance: dict = Field(default_factory=lambda: {
         str(datetime.now(timezone.utc).year): [{"status": 0, "note": ""} for _ in range(24)]
