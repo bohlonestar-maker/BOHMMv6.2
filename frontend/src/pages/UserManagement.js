@@ -1343,10 +1343,10 @@ export default function UserManagement({ onLogout }) {
                         </span>
                       </TableCell>
                       <TableCell className="text-sm text-slate-600">
-                        {new Date(invite.created_at).toLocaleDateString()}
+                        {new Date(invite.created_at).toLocaleDateString('en-US', { timeZone: 'America/Chicago' })}
                       </TableCell>
                       <TableCell className="text-sm text-slate-600">
-                        {new Date(invite.expires_at).toLocaleDateString()}
+                        {new Date(invite.expires_at).toLocaleDateString('en-US', { timeZone: 'America/Chicago' })}
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
