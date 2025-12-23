@@ -173,48 +173,10 @@ export default function DiscordAnalytics() {
     );
   });
 
-  const formatLastActivity = (dateStr) => {
-    if (!dateStr) return "Never";
-    
-    // Parse the UTC date
-    const utcDate = new Date(dateStr);
-    
-    // Convert to Central Time by creating a formatter
-    const formatter = new Intl.DateTimeFormat('en-US', {
-      timeZone: 'America/Chicago',
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true
-    });
-    
-    const dateFormatter = new Intl.DateTimeFormat('en-US', {
-      timeZone: 'America/Chicago',
-      month: 'short',
-      day: 'numeric',
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true
-    });
-    
-    const todayFormatter = new Intl.DateTimeFormat('en-US', {
-      timeZone: 'America/Chicago',
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit'
-    });
-    
-    // Check if it's today in Central Time
-    const todayCST = todayFormatter.format(new Date());
-    const dateCST = todayFormatter.format(utcDate);
-    const isToday = todayCST === dateCST;
-    
-    if (isToday) {
-      // Today: show only time in CST
-      return formatter.format(utcDate);
-    } else {
-      // Not today: show date and time in CST
-      return dateFormatter.format(utcDate);
-    }
+  const formatLastActivity = (timeStr) => {
+    // Backend now sends pre-formatted CST time strings
+    if (!timeStr) return "Never";
+    return timeStr;
   };
 
   const fetchDiscordAnalytics = async () => {
