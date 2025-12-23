@@ -169,6 +169,7 @@ async def start_discord_bot():
                     # User left voice channel
                     elif before.channel is not None and after.channel is None:
                         if user_id in self.voice_sessions:
+                            # We have a tracked session - calculate duration
                             session = self.voice_sessions[user_id]
                             duration = (now - session['joined_at']).total_seconds()
                             
@@ -187,6 +188,26 @@ async def start_discord_bot():
                             sys.stderr.write(f"💾 [DISCORD] Saved {member.display_name} voice session: {duration/60:.1f} min\n")
                             sys.stderr.flush()
                             del self.voice_sessions[user_id]
+                        else:
+                            # User was already in voice when bot started - record their disconnect
+                            sys.stderr.write(f"🎤 [DISCORD] {member.display_name} left {before.channel.name} (was already in voice)\n")
+                            sys.stderr.flush()
+                            
+                            voice_activity = {
+                                'id': str(uuid.uuid4()),
+                                'discord_user_id': user_id,
+                                'channel_id': str(before.channel.id),
+                                'channel_name': before.channel.name,
+                                'joined_at': now,  # Unknown join time, use disconnect time
+                                'left_at': now,
+                                'duration_seconds': 0,  # Unknown duration
+                                'date': now.date().isoformat(),
+                                'partial_session': True  # Flag to indicate we didn't track the full session
+                            }
+                            
+                            await db.discord_voice_activity.insert_one(voice_activity)
+                            sys.stderr.write(f"💾 [DISCORD] Saved partial session for {member.display_name}\n")
+                            sys.stderr.flush()
                             
                     # User moved between channels
                     elif before.channel is not None and after.channel is not None and before.channel != after.channel:
