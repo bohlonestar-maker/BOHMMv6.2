@@ -7656,8 +7656,8 @@ class BOHDirectoryAPITester:
         
         # Create testmember user (AD chapter)
         non_national_user = {
-            "username": "testmember",
-            "email": "testmember@example.com",
+            "username": f"testmember{timestamp}",
+            "email": f"testmember{timestamp}@example.com",
             "password": "testpass123",
             "role": "member",
             "chapter": "AD",
@@ -7686,7 +7686,7 @@ class BOHDirectoryAPITester:
             "POST",
             "auth/login",
             200,
-            data={"username": "testmember", "password": "testpass123"}
+            data={"username": f"testmember{timestamp}", "password": "testpass123"}
         )
         
         if success and 'token' in member_login:
