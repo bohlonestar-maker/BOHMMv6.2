@@ -807,9 +807,7 @@ class MemberUpdate(BaseModel):
     military_service: Optional[bool] = None
     military_branch: Optional[str] = None
     # First Responder Service
-    is_police: Optional[bool] = None
-    is_fire: Optional[bool] = None
-    is_ems: Optional[bool] = None
+    is_first_responder: Optional[bool] = None
     dues: Optional[dict] = None
     meeting_attendance: Optional[dict] = None
 
