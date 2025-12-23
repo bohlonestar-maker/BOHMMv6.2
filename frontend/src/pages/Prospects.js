@@ -387,6 +387,11 @@ export default function Prospects({ onLogout, userRole }) {
       address: "",
       dob: "",
       join_date: "",
+      military_service: false,
+      military_branch: "",
+      is_police: false,
+      is_fire: false,
+      is_ems: false,
       meeting_attendance: {
         year: new Date().getFullYear(),
         meetings: Array(24).fill(null).map(() => ({ status: 0, note: "" }))
