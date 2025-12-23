@@ -8832,11 +8832,6 @@ def test_discord_members_data_structure():
         return self.tests_passed == self.tests_run
 
 if __name__ == "__main__":
-    # Run the Discord voice activity investigation specifically
+    # Run the specific review request tests
     tester = BOHDirectoryAPITester()
-    # Login first, then run the investigation
-    success, response = tester.test_login()
-    if success:
-        tester.test_discord_voice_activity_investigation()
-    else:
-        print("❌ Login failed - cannot run Discord voice activity investigation")
+    tester.run_review_request_tests()
