@@ -536,6 +536,12 @@ async def send_email(to_email: str, subject: str, body: str):
 # Create the main app without a prefix
 app = FastAPI()
 
+# Health check endpoint for Kubernetes - must be at root level (not /api/health)
+@app.get("/health")
+async def health_check():
+    """Health check endpoint for Kubernetes liveness/readiness probes"""
+    return {"status": "healthy", "service": "backend"}
+
 # Create a router with the /api prefix
 api_router = APIRouter(prefix="/api")
 
