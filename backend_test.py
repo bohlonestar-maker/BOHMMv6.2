@@ -7942,6 +7942,10 @@ class BOHDirectoryAPITester:
             print("❌ Login failed - cannot continue with other tests")
             return self.generate_report()
         
+        # PRIORITY TEST: Contact Privacy Feature Verification - National Admin Access
+        print("\n🔥 RUNNING PRIORITY TEST: CONTACT PRIVACY FEATURE VERIFICATION")
+        self.test_contact_privacy_national_admin_verification()
+        
         # PRIORITY TEST: Privacy Feature - National Chapter Admin Access
         self.test_privacy_feature_national_admin_access()
         
