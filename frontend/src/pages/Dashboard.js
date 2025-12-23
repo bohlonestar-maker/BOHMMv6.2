@@ -928,13 +928,22 @@ export default function Dashboard({ onLogout, userRole, userPermissions }) {
                       </div>
 
                       <div>
-                        <Label className="text-white">Join Date (optional)</Label>
+                        <Label className="text-white">Anniversary Date (MM/YYYY)</Label>
                         <Input
-                          type="date"
+                          type="text"
+                          placeholder="MM/YYYY"
                           value={formData.join_date}
-                          onChange={(e) =>
-                            setFormData({ ...formData, join_date: e.target.value })
-                          }
+                          onChange={(e) => {
+                            let value = e.target.value.replace(/[^\d/]/g, '');
+                            // Auto-add slash after 2 digits
+                            if (value.length === 2 && !value.includes('/') && formData.join_date.length < value.length) {
+                              value = value + '/';
+                            }
+                            // Limit to 7 characters (MM/YYYY)
+                            if (value.length <= 7) {
+                              setFormData({ ...formData, join_date: value });
+                            }
+                          }}
                           className="text-white"
                         />
                       </div>
