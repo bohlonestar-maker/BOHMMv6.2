@@ -188,9 +188,7 @@ export default function Prospects({ onLogout, userRole }) {
       join_date: prospect.join_date || "",
       military_service: prospect.military_service || false,
       military_branch: prospect.military_branch || "",
-      is_police: prospect.is_police || false,
-      is_fire: prospect.is_fire || false,
-      is_ems: prospect.is_ems || false,
+      is_first_responder: prospect.is_first_responder || false,
       meeting_attendance: {
         year: attendanceData.year || new Date().getFullYear(),
         meetings: meetings
