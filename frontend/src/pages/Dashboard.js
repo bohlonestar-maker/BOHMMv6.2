@@ -439,9 +439,7 @@ export default function Dashboard({ onLogout, userRole, userPermissions }) {
       email_private: member.email_private || false,
       military_service: member.military_service || false,
       military_branch: member.military_branch || "",
-      is_police: member.is_police || false,
-      is_fire: member.is_fire || false,
-      is_ems: member.is_ems || false,
+      is_first_responder: member.is_first_responder || false,
       dues: duesData,
       meeting_attendance: attendanceData
     });
