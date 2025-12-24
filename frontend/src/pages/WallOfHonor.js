@@ -313,7 +313,7 @@ export default function WallOfHonor({ token, userRole }) {
                   {member.tribute && (
                     <div className="bg-slate-900/50 rounded-lg p-3 mt-3">
                       <p className="text-sm text-slate-300 italic text-center leading-relaxed">
-                        "{member.tribute}"
+                        &ldquo;{member.tribute}&rdquo;
                       </p>
                     </div>
                   )}
