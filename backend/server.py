@@ -1100,6 +1100,10 @@ async def verify(current_user: dict = Depends(verify_token)):
 async def submit_support_request(request: SupportRequest):
     """Submit a support request from the login page"""
     try:
+        # Determine if contact info is an email
+        contact_is_email = "@" in request.contact_info
+        reply_to_email = request.contact_info if contact_is_email else None
+        
         # Build the email body
         body = f"""
 New Support Request
@@ -1110,6 +1114,9 @@ Contact: {request.contact_info}
 
 Reason for Request:
 {request.reason}
+
+---
+{"Reply directly to this email to respond to " + request.name if contact_is_email else "Note: Contact provided is not an email. Please use: " + request.contact_info}
         """.strip()
         
         # Send email to support
@@ -1118,7 +1125,19 @@ Reason for Request:
             message["Subject"] = f"Support Request from {request.name}"
             message["From"] = SMTP_EMAIL
             message["To"] = SUPPORT_EMAIL
-            message["Reply-To"] = request.contact_info if "@" in request.contact_info else SMTP_EMAIL
+            
+            # Set Reply-To so clicking "Reply" goes to the requester
+            if reply_to_email:
+                message["Reply-To"] = reply_to_email
+            
+            # Build HTML with clear reply instructions
+            reply_instruction = f'''
+                <div style="background-color: #dbeafe; padding: 12px; border-radius: 6px; margin-top: 16px; border-left: 4px solid #3b82f6;">
+                    <p style="margin: 0; color: #1e40af; font-size: 14px;">
+                        <strong>💡 To respond:</strong> {"Simply reply to this email - it will go directly to " + request.name + " at " + request.contact_info if contact_is_email else "Contact " + request.name + " at: <strong>" + request.contact_info + "</strong> (phone number provided)"}
+                    </p>
+                </div>
+            ''' if True else ''
             
             html = f"""
             <html>
@@ -1133,6 +1152,7 @@ Reason for Request:
                     <p><strong>Reason for Request:</strong></p>
                     <p style="white-space: pre-wrap;">{request.reason}</p>
                   </div>
+                  {reply_instruction}
                 </div>
               </body>
             </html>
