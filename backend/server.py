@@ -2402,6 +2402,37 @@ async def delete_fallen_member(
     
     return {"message": "Fallen member removed from Wall of Honor"}
 
+@api_router.post("/upload/image")
+async def upload_image(
+    file: UploadFile = File(...),
+    current_user: dict = Depends(verify_admin)
+):
+    """Upload an image file (admin only)"""
+    # Validate file type
+    allowed_types = ["image/jpeg", "image/png", "image/gif", "image/webp"]
+    if file.content_type not in allowed_types:
+        raise HTTPException(status_code=400, detail="Invalid file type. Allowed: JPEG, PNG, GIF, WEBP")
+    
+    # Validate file size (max 5MB)
+    contents = await file.read()
+    if len(contents) > 5 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="File too large. Maximum size is 5MB")
+    
+    # Generate unique filename
+    file_ext = file.filename.split('.')[-1] if '.' in file.filename else 'jpg'
+    unique_filename = f"{uuid.uuid4()}.{file_ext}"
+    
+    # Save file
+    upload_dir = Path(__file__).parent / "uploads"
+    upload_dir.mkdir(exist_ok=True)
+    file_path = upload_dir / unique_filename
+    
+    with open(file_path, "wb") as f:
+        f.write(contents)
+    
+    # Return the URL path (will be served via /uploads static mount)
+    return {"url": f"/api/uploads/{unique_filename}", "filename": unique_filename}
+
 # ==================== END WALL OF HONOR ====================
 
 # User management endpoints (admin only)
