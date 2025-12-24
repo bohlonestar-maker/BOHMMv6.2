@@ -5737,8 +5737,15 @@ import sys
 scheduler = None
 
 
+# Create uploads directory if it doesn't exist
+UPLOAD_DIR = Path(__file__).parent / "uploads"
+UPLOAD_DIR.mkdir(exist_ok=True)
+
 # Include the router in the main app
 app.include_router(api_router)
+
+# Mount static files for uploaded images
+app.mount("/uploads", StaticFiles(directory=str(UPLOAD_DIR)), name="uploads")
 
 app.add_middleware(
     CORSMiddleware,
