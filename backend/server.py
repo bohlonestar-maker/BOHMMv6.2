@@ -3727,17 +3727,25 @@ async def get_linked_members_with_activity(current_user: dict = Depends(verify_a
                     {"_id": 0, "handle": 1, "name": 1, "chapter": 1, "title": 1}
                 )
             
-            # Helper to format time in CST
+            # Helper to format time in CST using pytz
             def format_time_cst(dt):
                 if not dt:
                     return None
+                import pytz
+                cst_tz = pytz.timezone('America/Chicago')
+                
                 if isinstance(dt, str):
                     dt = datetime.fromisoformat(dt.replace('Z', '+00:00'))
-                # Convert to CST (UTC-6)
-                from datetime import timedelta
-                cst_time = dt - timedelta(hours=6)
+                
+                # If datetime is naive (no timezone), assume it's UTC
+                if dt.tzinfo is None:
+                    dt = dt.replace(tzinfo=timezone.utc)
+                
+                # Convert to CST/CDT (handles DST automatically)
+                cst_time = dt.astimezone(cst_tz)
+                
                 # Check if it's today in CST
-                now_cst = datetime.now(timezone.utc) - timedelta(hours=6)
+                now_cst = datetime.now(timezone.utc).astimezone(cst_tz)
                 if cst_time.date() == now_cst.date():
                     # Today: show only time
                     return cst_time.strftime("%-I:%M %p")
