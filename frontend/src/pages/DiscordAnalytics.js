@@ -715,80 +715,94 @@ export default function DiscordAnalytics() {
 
       {/* Linked Members Dialog */}
       <Dialog open={linkedMembersDialogOpen} onOpenChange={setLinkedMembersDialogOpen}>
-        <DialogContent className="bg-slate-800 border-slate-700 max-w-3xl max-h-[80vh] overflow-hidden flex flex-col">
-          <DialogHeader>
-            <DialogTitle className="text-white flex items-center gap-2">
-              <Users className="w-5 h-5" />
+        <DialogContent className="bg-slate-800 border-slate-700 w-[95vw] max-w-3xl max-h-[85vh] overflow-hidden flex flex-col p-3 sm:p-6">
+          <DialogHeader className="pb-2 sm:pb-4">
+            <DialogTitle className="text-white flex items-center gap-2 text-base sm:text-lg">
+              <Users className="w-4 h-4 sm:w-5 sm:h-5" />
               Linked Members ({linkedMembers.length})
             </DialogTitle>
-            <p className="text-xs text-slate-400">All times shown in Central Time (CST)</p>
+            <p className="text-[10px] sm:text-xs text-slate-400">All times shown in Central Time (CST)</p>
           </DialogHeader>
           
-          <div className="space-y-4 flex-1 overflow-hidden flex flex-col">
+          <div className="space-y-3 sm:space-y-4 flex-1 overflow-hidden flex flex-col">
             {/* Search */}
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
               <Input
                 value={linkedMemberSearch}
                 onChange={(e) => setLinkedMemberSearch(e.target.value)}
-                placeholder="Search by name, handle, or Discord username..."
-                className="pl-9 bg-slate-700 border-slate-600 text-white"
+                placeholder="Search by name, handle..."
+                className="pl-9 bg-slate-700 border-slate-600 text-white text-sm"
               />
             </div>
             
             {/* Members List */}
-            <div className="flex-1 overflow-y-auto space-y-2">
+            <div className="flex-1 overflow-y-auto space-y-2 -mx-1 px-1">
               {loadingLinkedMembers ? (
                 <div className="text-center py-8">
-                  <RefreshCw className="w-8 h-8 animate-spin text-blue-400 mx-auto mb-2" />
-                  <p className="text-slate-400">Loading linked members...</p>
+                  <RefreshCw className="w-6 h-6 sm:w-8 sm:h-8 animate-spin text-blue-400 mx-auto mb-2" />
+                  <p className="text-slate-400 text-sm">Loading linked members...</p>
                 </div>
               ) : filteredLinkedMembers.length > 0 ? (
                 filteredLinkedMembers.map((member) => (
-                  <div key={member.discord_id} className="p-3 bg-slate-900 rounded-lg">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3 min-w-0 flex-1">
-                        {member.avatar_url ? (
-                          <img 
-                            src={member.avatar_url} 
-                            alt={member.discord_username}
-                            className="w-10 h-10 rounded-full flex-shrink-0"
-                          />
-                        ) : (
-                          <div className="w-10 h-10 bg-slate-600 rounded-full flex items-center justify-center flex-shrink-0">
-                            <Users className="w-5 h-5" />
+                  <div key={member.discord_id} className="p-2 sm:p-3 bg-slate-900 rounded-lg">
+                    <div className="flex items-start sm:items-center gap-2 sm:gap-3">
+                      {/* Avatar */}
+                      {member.avatar_url ? (
+                        <img 
+                          src={member.avatar_url} 
+                          alt={member.discord_username}
+                          className="w-8 h-8 sm:w-10 sm:h-10 rounded-full flex-shrink-0"
+                        />
+                      ) : (
+                        <div className="w-8 h-8 sm:w-10 sm:h-10 bg-slate-600 rounded-full flex items-center justify-center flex-shrink-0">
+                          <Users className="w-4 h-4 sm:w-5 sm:h-5" />
+                        </div>
+                      )}
+                      
+                      {/* Member Info and Activity - Stacks on mobile */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-4">
+                          {/* Name and Details */}
+                          <div className="min-w-0 flex-1">
+                            <p className="font-medium text-white text-sm sm:text-base truncate">
+                              {member.member_handle || member.member_name}
+                            </p>
+                            <p className="text-xs sm:text-sm text-slate-400 truncate">
+                              {member.member_chapter} • {member.member_title}
+                            </p>
+                            <p className="text-[10px] sm:text-xs text-slate-500 truncate">
+                              Discord: @{member.discord_username}
+                            </p>
                           </div>
-                        )}
-                        <div className="min-w-0 flex-1">
-                          <p className="font-medium text-white truncate">
-                            {member.member_handle || member.member_name}
-                          </p>
-                          <p className="text-sm text-slate-400 truncate">
-                            {member.member_chapter} • {member.member_title}
-                          </p>
-                          <p className="text-xs text-slate-500 truncate">
-                            Discord: @{member.discord_username}
-                          </p>
+                          
+                          {/* Activity Times - Side by side on mobile, stacked on desktop */}
+                          <div className="flex flex-row sm:flex-col gap-3 sm:gap-1 text-right mt-1 sm:mt-0 flex-shrink-0">
+                            <div className="flex items-center gap-1 sm:gap-2 sm:justify-end">
+                              <span className="text-[10px] sm:text-xs">🎤</span>
+                              <span className={`text-xs sm:text-sm ${member.last_voice_time ? 'text-green-400' : 'text-slate-500'}`}>
+                                {formatLastActivity(member.last_voice_time)}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-1 sm:gap-2 sm:justify-end">
+                              <span className="text-[10px] sm:text-xs">💬</span>
+                              <span className={`text-xs sm:text-sm ${member.last_text_time ? 'text-green-400' : 'text-slate-500'}`}>
+                                {formatLastActivity(member.last_text_time)}
+                              </span>
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                      <div className="text-right flex-shrink-0 ml-3 space-y-1">
-                        <div className="flex items-center justify-end gap-2">
-                          <span className="text-xs">🎤</span>
-                          <span className={`text-sm ${member.last_voice_time ? 'text-green-400' : 'text-slate-500'}`}>
-                            {formatLastActivity(member.last_voice_time)}
-                          </span>
-                        </div>
-                        {member.last_voice_channel && (
-                          <p className="text-xs text-slate-500 truncate max-w-[120px]">{member.last_voice_channel}</p>
-                        )}
-                        <div className="flex items-center justify-end gap-2 pt-1">
-                          <span className="text-xs">💬</span>
-                          <span className={`text-sm ${member.last_text_time ? 'text-green-400' : 'text-slate-500'}`}>
-                            {formatLastActivity(member.last_text_time)}
-                          </span>
-                        </div>
-                        {member.last_text_channel && (
-                          <p className="text-xs text-slate-500 truncate max-w-[120px]">{member.last_text_channel}</p>
+                        
+                        {/* Channel names - only show on larger screens */}
+                        {(member.last_voice_channel || member.last_text_channel) && (
+                          <div className="hidden sm:flex gap-4 mt-1 text-xs text-slate-500">
+                            {member.last_voice_channel && (
+                              <span className="truncate max-w-[150px]">🎤 {member.last_voice_channel}</span>
+                            )}
+                            {member.last_text_channel && (
+                              <span className="truncate max-w-[150px]">💬 {member.last_text_channel}</span>
+                            )}
+                          </div>
                         )}
                       </div>
                     </div>
@@ -796,7 +810,7 @@ export default function DiscordAnalytics() {
                 ))
               ) : (
                 <div className="text-center py-8">
-                  <p className="text-slate-400">No linked members found</p>
+                  <p className="text-slate-400 text-sm">No linked members found</p>
                 </div>
               )}
             </div>
