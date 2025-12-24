@@ -215,7 +215,7 @@ export default function WallOfHonor({ token, userRole }) {
             <h1 className="text-3xl sm:text-4xl font-bold text-amber-400 mb-2">Wall of Honor</h1>
             <p className="text-slate-400 text-sm sm:text-base max-w-2xl mx-auto">
               In loving memory of our fallen brothers who rode beside us. 
-              Though they&apos;ve parked their bikes for the last time, their spirit rides on in our hearts forever.
+              Though they&apos;ve made their final haul, their spirit rides on in our hearts forever.
             </p>
           </div>
           
