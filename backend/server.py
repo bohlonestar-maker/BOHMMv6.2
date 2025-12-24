@@ -14,7 +14,7 @@ except:
 
 sys.stderr.write("  [INIT] Importing FastAPI...\n")
 sys.stderr.flush()
-from fastapi import FastAPI, APIRouter, HTTPException, Depends, status, Response
+from fastapi import FastAPI, APIRouter, HTTPException, Depends, status, Response, UploadFile, File
 sys.stderr.write("  [INIT] Importing security...\n")
 sys.stderr.flush()
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -24,6 +24,7 @@ from dotenv import load_dotenv
 sys.stderr.write("  [INIT] Importing CORS...\n")
 sys.stderr.flush()
 from starlette.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 sys.stderr.write("  [INIT] Importing Motor (MongoDB async)...\n")
 sys.stderr.flush()
 from motor.motor_asyncio import AsyncIOMotorClient
