@@ -136,9 +136,8 @@ export default function CSVExportView() {
           }
           break;
         case 'service':
-          // Select: Handle, Military Service, Military Branch, Police, Fire, EMS
-          if (h.includes('handle') || h.includes('military') || h.includes('police') || 
-              h.includes('fire') || h.includes('ems')) {
+          // Select: Handle, Military Service, Military Branch, First Responder
+          if (h.includes('handle') || h.includes('military') || h.includes('first responder')) {
             console.log('  Matched service field:', header);
             indices.push(index);
           }
