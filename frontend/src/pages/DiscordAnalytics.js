@@ -552,85 +552,85 @@ export default function DiscordAnalytics() {
           </TabsContent>
 
           {/* Least Active Members Tab */}
-          <TabsContent value="inactive" className="space-y-4">
+          <TabsContent value="inactive" className="space-y-4 mt-4">
             <Card className="bg-slate-800 border-slate-700">
-              <CardHeader>
-                <CardTitle className="text-white flex items-center gap-2">
-                  <Users className="w-5 h-5 text-orange-500" />
+              <CardHeader className="p-3 sm:p-6">
+                <CardTitle className="text-white flex items-center gap-2 text-base sm:text-lg">
+                  <Users className="w-4 h-4 sm:w-5 sm:h-5 text-orange-500" />
                   Least Active Members (30 days)
                 </CardTitle>
-                <CardDescription className="text-slate-400">
+                <CardDescription className="text-slate-400 text-xs sm:text-sm">
                   Members with no voice or text activity - may need engagement
                 </CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="p-3 pt-0 sm:p-6 sm:pt-0">
                 {/* Engagement Overview */}
                 {analytics?.engagement_stats && (
-                  <div className="bg-slate-900 rounded-lg p-4 mb-4">
-                    <h4 className="text-white font-medium mb-3">Engagement Overview</h4>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                      <div className="text-center">
-                        <div className="text-2xl font-bold text-green-400">
+                  <div className="bg-slate-900 rounded-lg p-3 sm:p-4 mb-4">
+                    <h4 className="text-white font-medium mb-2 sm:mb-3 text-sm sm:text-base">Engagement Overview</h4>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4 text-xs sm:text-sm">
+                      <div className="text-center p-2 sm:p-0">
+                        <div className="text-xl sm:text-2xl font-bold text-green-400">
                           {analytics.engagement_stats.engagement_rate}%
                         </div>
-                        <div className="text-slate-400">Engagement Rate</div>
+                        <div className="text-slate-400 text-[10px] sm:text-sm">Engagement</div>
                       </div>
-                      <div className="text-center">
-                        <div className="text-2xl font-bold text-blue-400">
+                      <div className="text-center p-2 sm:p-0">
+                        <div className="text-xl sm:text-2xl font-bold text-blue-400">
                           {analytics.engagement_stats.voice_active_members}
                         </div>
-                        <div className="text-slate-400">Voice Active</div>
+                        <div className="text-slate-400 text-[10px] sm:text-sm">Voice Active</div>
                       </div>
-                      <div className="text-center">
-                        <div className="text-2xl font-bold text-green-400">
+                      <div className="text-center p-2 sm:p-0">
+                        <div className="text-xl sm:text-2xl font-bold text-green-400">
                           {analytics.engagement_stats.text_active_members}
                         </div>
-                        <div className="text-slate-400">Text Active</div>
+                        <div className="text-slate-400 text-[10px] sm:text-sm">Text Active</div>
                       </div>
-                      <div className="text-center">
-                        <div className="text-2xl font-bold text-orange-400">
+                      <div className="text-center p-2 sm:p-0">
+                        <div className="text-xl sm:text-2xl font-bold text-orange-400">
                           {analytics.engagement_stats.inactive_members}
                         </div>
-                        <div className="text-slate-400">Inactive</div>
+                        <div className="text-slate-400 text-[10px] sm:text-sm">Inactive</div>
                       </div>
                     </div>
                   </div>
                 )}
 
                 {analytics?.least_active_members?.length > 0 ? (
-                  <div className="space-y-3">
+                  <div className="space-y-2 sm:space-y-3">
                     {analytics.least_active_members.map((member, index) => (
-                      <div key={member.discord_id} className="flex items-center justify-between p-3 bg-slate-900 rounded-lg border-l-4 border-orange-500">
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center text-sm font-bold">
+                      <div key={member.discord_id} className="flex items-center justify-between p-2 sm:p-3 bg-slate-900 rounded-lg border-l-4 border-orange-500">
+                        <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+                          <div className="w-7 h-7 sm:w-8 sm:h-8 bg-orange-500 rounded-full flex items-center justify-center text-xs sm:text-sm font-bold flex-shrink-0">
                             {index + 1}
                           </div>
-                          <div>
-                            <p className="font-medium text-white">{member.display_name}</p>
-                            <p className="text-sm text-slate-400">@{member.username}</p>
+                          <div className="min-w-0 flex-1">
+                            <p className="font-medium text-white text-sm sm:text-base truncate">{member.display_name}</p>
+                            <p className="text-xs sm:text-sm text-slate-400 truncate">@{member.username}</p>
                           </div>
                         </div>
-                        <div className="text-right">
-                          <div className="flex gap-2">
-                            <span className="px-2 py-1 bg-red-600 text-white text-xs rounded">
+                        <div className="text-right flex-shrink-0 ml-2">
+                          <div className="flex gap-1 sm:gap-2 flex-wrap justify-end">
+                            <span className="px-1.5 sm:px-2 py-0.5 sm:py-1 bg-red-600 text-white text-[10px] sm:text-xs rounded">
                               No Voice
                             </span>
-                            <span className="px-2 py-1 bg-red-600 text-white text-xs rounded">
+                            <span className="px-1.5 sm:px-2 py-0.5 sm:py-1 bg-red-600 text-white text-[10px] sm:text-xs rounded">
                               No Text
                             </span>
                           </div>
-                          <p className="text-sm text-slate-400 mt-1">No activity in 30 days</p>
+                          <p className="text-[10px] sm:text-sm text-slate-400 mt-1 hidden sm:block">No activity in 30 days</p>
                         </div>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <div className="text-center py-8">
-                    <div className="w-16 h-16 bg-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                      <TrendingUp className="w-8 h-8 text-white" />
+                  <div className="text-center py-6 sm:py-8">
+                    <div className="w-12 h-12 sm:w-16 sm:h-16 bg-green-600 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4">
+                      <TrendingUp className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
                     </div>
-                    <p className="text-green-400 font-medium">Excellent Engagement!</p>
-                    <p className="text-slate-400">All members have been active in voice or text chat</p>
+                    <p className="text-green-400 font-medium text-sm sm:text-base">Excellent Engagement!</p>
+                    <p className="text-slate-400 text-xs sm:text-sm">All members have been active in voice or text chat</p>
                   </div>
                 )}
               </CardContent>
