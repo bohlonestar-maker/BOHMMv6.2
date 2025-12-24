@@ -532,6 +532,83 @@ async def send_email(to_email: str, subject: str, body: str):
         logger.error(f"Failed to send email: {str(e)}")
         return False
 
+# Support request model
+class SupportRequest(BaseModel):
+    name: str
+    handle: Optional[str] = None
+    contact_info: str
+    reason: str
+
+# Support email address
+SUPPORT_EMAIL = "supp.boh2158@gmail.com"
+
+# Support request endpoint (no auth required - accessible from login page)
+@api_router.post("/support/request")
+async def submit_support_request(request: SupportRequest):
+    """Submit a support request from the login page"""
+    try:
+        # Build the email body
+        body = f"""
+New Support Request
+
+From: {request.name}
+Handle: {request.handle or 'Not provided'}
+Contact: {request.contact_info}
+
+Reason for Request:
+{request.reason}
+        """.strip()
+        
+        # Send email to support
+        if SMTP_EMAIL and SMTP_PASSWORD:
+            message = MIMEMultipart("alternative")
+            message["Subject"] = f"Support Request from {request.name}"
+            message["From"] = SMTP_EMAIL
+            message["To"] = SUPPORT_EMAIL
+            message["Reply-To"] = request.contact_info if "@" in request.contact_info else SMTP_EMAIL
+            
+            html = f"""
+            <html>
+              <body>
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                  <h2 style="color: #1e293b;">New Support Request</h2>
+                  <div style="background-color: #f8fafc; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                    <p><strong>From:</strong> {request.name}</p>
+                    <p><strong>Handle:</strong> {request.handle or 'Not provided'}</p>
+                    <p><strong>Contact:</strong> {request.contact_info}</p>
+                    <hr style="border: 1px solid #e2e8f0; margin: 16px 0;">
+                    <p><strong>Reason for Request:</strong></p>
+                    <p style="white-space: pre-wrap;">{request.reason}</p>
+                  </div>
+                </div>
+              </body>
+            </html>
+            """
+            
+            part1 = MIMEText(body, "plain")
+            part2 = MIMEText(html, "html")
+            message.attach(part1)
+            message.attach(part2)
+            
+            await aiosmtplib.send(
+                message,
+                hostname=SMTP_HOST,
+                port=SMTP_PORT,
+                username=SMTP_EMAIL,
+                password=SMTP_PASSWORD,
+                use_tls=True
+            )
+            logger.info(f"Support request sent from {request.name}")
+            return {"success": True, "message": "Support request submitted successfully"}
+        else:
+            # Log the request if email isn't configured
+            logger.warning(f"SMTP not configured. Support request from {request.name}: {request.reason}")
+            return {"success": True, "message": "Support request received (email notification pending)"}
+            
+    except Exception as e:
+        logger.error(f"Failed to submit support request: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to submit support request")
+
 
 # Create the main app without a prefix
 app = FastAPI()
