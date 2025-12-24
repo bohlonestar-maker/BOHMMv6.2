@@ -179,6 +179,16 @@ function App() {
             }
           />
           <Route
+            path="/wall-of-honor"
+            element={
+              isAuthenticated ? (
+                <WallOfHonor token={token} userRole={userRole} />
+              ) : (
+                <Navigate to="/login" replace />
+              )
+            }
+          />
+          <Route
             path="/messages"
             element={
               isAuthenticated ? (
