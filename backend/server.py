@@ -1620,6 +1620,227 @@ async def initialize_year(year: int, current_user: dict = Depends(verify_admin))
         "prospects_updated": prospects_updated
     }
 
+# ==================== MEETING MANAGEMENT ====================
+
+@api_router.get("/meetings")
+async def get_meetings(
+    year: Optional[int] = None,
+    current_user: dict = Depends(verify_token)
+):
+    """Get all meetings, optionally filtered by year"""
+    query = {}
+    if year:
+        query["year"] = str(year)
+    else:
+        # Default to current year
+        query["year"] = str(datetime.now(timezone.utc).year)
+    
+    meetings = await db.meetings.find(query, {"_id": 0}).to_list(1000)
+    # Sort by date descending (most recent first)
+    meetings.sort(key=lambda x: x.get('date', ''), reverse=True)
+    return meetings
+
+@api_router.post("/meetings", response_model=Meeting, status_code=201)
+async def create_meeting(
+    meeting: MeetingCreate,
+    current_user: dict = Depends(verify_admin)
+):
+    """Create a new meeting (admin only)"""
+    # Parse the date to get the year
+    try:
+        meeting_date = datetime.strptime(meeting.date, "%Y-%m-%d")
+        year = str(meeting_date.year)
+    except:
+        year = str(datetime.now(timezone.utc).year)
+    
+    meeting_dict = meeting.model_dump()
+    meeting_dict["id"] = str(uuid.uuid4())
+    meeting_dict["year"] = year
+    meeting_dict["created_at"] = datetime.now(timezone.utc)
+    meeting_dict["created_by"] = current_user["username"]
+    
+    await db.meetings.insert_one(meeting_dict)
+    
+    # Log activity
+    await log_activity(
+        current_user["username"],
+        "create_meeting",
+        f"Created meeting on {meeting.date}"
+    )
+    
+    return Meeting(**meeting_dict)
+
+@api_router.delete("/meetings/{meeting_id}")
+async def delete_meeting(
+    meeting_id: str,
+    current_user: dict = Depends(verify_admin)
+):
+    """Delete a meeting (admin only)"""
+    meeting = await db.meetings.find_one({"id": meeting_id}, {"_id": 0})
+    if not meeting:
+        raise HTTPException(status_code=404, detail="Meeting not found")
+    
+    await db.meetings.delete_one({"id": meeting_id})
+    
+    # Also delete all attendance records for this meeting
+    await db.meeting_attendance.delete_many({"meeting_id": meeting_id})
+    
+    # Log activity
+    await log_activity(
+        current_user["username"],
+        "delete_meeting",
+        f"Deleted meeting on {meeting.get('date')}"
+    )
+    
+    return {"message": "Meeting deleted successfully"}
+
+@api_router.get("/meetings/{meeting_id}/attendance")
+async def get_meeting_attendance(
+    meeting_id: str,
+    current_user: dict = Depends(verify_token)
+):
+    """Get attendance records for a specific meeting"""
+    meeting = await db.meetings.find_one({"id": meeting_id}, {"_id": 0})
+    if not meeting:
+        raise HTTPException(status_code=404, detail="Meeting not found")
+    
+    # Get all members
+    members = await db.members.find({}, {"_id": 0, "id": 1, "name": 1, "handle": 1, "chapter": 1}).to_list(1000)
+    
+    # Get attendance records for this meeting
+    attendance_records = await db.meeting_attendance.find(
+        {"meeting_id": meeting_id}, 
+        {"_id": 0}
+    ).to_list(1000)
+    
+    # Create a map of member_id -> attendance
+    attendance_map = {r["member_id"]: r for r in attendance_records}
+    
+    # Build response with all members and their attendance
+    result = []
+    for member in members:
+        attendance = attendance_map.get(member["id"], {"status": 0, "note": ""})
+        result.append({
+            "member_id": member["id"],
+            "name": member["name"],
+            "handle": member["handle"],
+            "chapter": member.get("chapter", ""),
+            "status": attendance.get("status", 0),
+            "note": attendance.get("note", "")
+        })
+    
+    # Sort by chapter then handle
+    result.sort(key=lambda x: (x.get("chapter", ""), x.get("handle", "")))
+    
+    return {
+        "meeting": meeting,
+        "attendance": result
+    }
+
+@api_router.post("/meetings/{meeting_id}/attendance")
+async def update_meeting_attendance(
+    meeting_id: str,
+    attendance: List[MeetingAttendanceRecord],
+    current_user: dict = Depends(verify_admin)
+):
+    """Update attendance for a meeting (admin only)"""
+    meeting = await db.meetings.find_one({"id": meeting_id}, {"_id": 0})
+    if not meeting:
+        raise HTTPException(status_code=404, detail="Meeting not found")
+    
+    # Update or insert attendance records
+    for record in attendance:
+        await db.meeting_attendance.update_one(
+            {"meeting_id": meeting_id, "member_id": record.member_id},
+            {"$set": {
+                "meeting_id": meeting_id,
+                "member_id": record.member_id,
+                "status": record.status,
+                "note": record.note or ""
+            }},
+            upsert=True
+        )
+    
+    return {"message": "Attendance updated successfully"}
+
+@api_router.put("/meetings/{meeting_id}/attendance/{member_id}")
+async def update_single_attendance(
+    meeting_id: str,
+    member_id: str,
+    status: int,
+    note: Optional[str] = "",
+    current_user: dict = Depends(verify_admin)
+):
+    """Update attendance for a single member at a meeting"""
+    meeting = await db.meetings.find_one({"id": meeting_id}, {"_id": 0})
+    if not meeting:
+        raise HTTPException(status_code=404, detail="Meeting not found")
+    
+    await db.meeting_attendance.update_one(
+        {"meeting_id": meeting_id, "member_id": member_id},
+        {"$set": {
+            "meeting_id": meeting_id,
+            "member_id": member_id,
+            "status": status,
+            "note": note or ""
+        }},
+        upsert=True
+    )
+    
+    return {"message": "Attendance updated"}
+
+@api_router.get("/members/{member_id}/attendance-summary")
+async def get_member_attendance_summary(
+    member_id: str,
+    year: Optional[int] = None,
+    current_user: dict = Depends(verify_token)
+):
+    """Get attendance summary for a specific member"""
+    target_year = str(year) if year else str(datetime.now(timezone.utc).year)
+    
+    # Get all meetings for the year
+    meetings = await db.meetings.find({"year": target_year}, {"_id": 0}).to_list(1000)
+    meeting_ids = [m["id"] for m in meetings]
+    
+    # Get attendance records for this member
+    attendance_records = await db.meeting_attendance.find(
+        {"member_id": member_id, "meeting_id": {"$in": meeting_ids}},
+        {"_id": 0}
+    ).to_list(1000)
+    
+    # Create map
+    attendance_map = {r["meeting_id"]: r for r in attendance_records}
+    
+    # Calculate summary
+    total = len(meetings)
+    present = sum(1 for m in meetings if attendance_map.get(m["id"], {}).get("status") == 1)
+    excused = sum(1 for m in meetings if attendance_map.get(m["id"], {}).get("status") == 2)
+    absent = total - present - excused
+    
+    # Build detailed list
+    details = []
+    for meeting in sorted(meetings, key=lambda x: x.get("date", ""), reverse=True):
+        att = attendance_map.get(meeting["id"], {"status": 0, "note": ""})
+        details.append({
+            "meeting_id": meeting["id"],
+            "date": meeting["date"],
+            "name": meeting.get("name"),
+            "status": att.get("status", 0),
+            "note": att.get("note", "")
+        })
+    
+    return {
+        "year": target_year,
+        "total_meetings": total,
+        "present": present,
+        "excused": excused,
+        "absent": absent,
+        "attendance_rate": round(present / total * 100, 1) if total > 0 else 0,
+        "details": details
+    }
+
+# ==================== END MEETING MANAGEMENT ====================
+
 @api_router.delete("/members/{member_id}")
 async def delete_member(
     member_id: str, 
