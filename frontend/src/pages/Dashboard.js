@@ -703,6 +703,18 @@ export default function Dashboard({ onLogout, userRole, userPermissions }) {
                     <span className="hidden sm:inline">Monitor</span>
                   </Button>
                 )}
+                {userRole === 'admin' && (
+                  <Button
+                    onClick={() => navigate("/meeting-manager")}
+                    variant="outline"
+                    size="sm"
+                    className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm bg-blue-900/30 text-blue-400 border-blue-600/50 hover:bg-blue-900/50"
+                  >
+                    <ClipboardList className="w-3 h-3 sm:w-4 sm:h-4" />
+                    <span className="hidden sm:inline">Meetings</span>
+                    <span className="sm:hidden">Meetings</span>
+                  </Button>
+                )}
                 <Button
                   onClick={() => navigate("/events")}
                   variant="outline"
