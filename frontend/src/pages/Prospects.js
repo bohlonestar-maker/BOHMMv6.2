@@ -1576,6 +1576,69 @@ export default function Prospects({ onLogout, userRole }) {
             </form>
           </DialogContent>
         </Dialog>
+
+        {/* Print Custom Modal */}
+        {showPrintModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 p-3 sm:p-4" onClick={() => setShowPrintModal(false)}>
+            <div className="bg-slate-800 rounded-lg p-4 sm:p-6 max-w-full sm:max-w-2xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+              <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-purple-400 mb-3 sm:mb-4">
+                Print Custom - Prospects
+              </h2>
+              
+              <div className="mb-3 sm:mb-4">
+                <p className="text-slate-300 mb-2 sm:mb-3 text-sm sm:text-base">Select which columns to include:</p>
+                <div className="flex flex-wrap gap-1.5 sm:gap-2 mb-3 sm:mb-4">
+                  <button onClick={() => selectPreset('all')} className="bg-blue-600 hover:bg-blue-700 px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 rounded text-xs sm:text-sm text-white">All Fields</button>
+                  <button onClick={() => selectPreset('contact')} className="bg-purple-600 hover:bg-purple-700 px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 rounded text-xs sm:text-sm text-white">Contact</button>
+                  <button onClick={() => selectPreset('service')} className="bg-indigo-600 hover:bg-indigo-700 px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 rounded text-xs sm:text-sm text-white">🎖️ Service</button>
+                  <button onClick={() => selectPreset('meetings_q1')} className="bg-cyan-600 hover:bg-cyan-700 px-2 sm:px-3 py-1.5 sm:py-2 rounded text-xs sm:text-sm text-white">Mtgs Q1</button>
+                  <button onClick={() => selectPreset('meetings_q2')} className="bg-teal-600 hover:bg-teal-700 px-2 sm:px-3 py-1.5 sm:py-2 rounded text-xs sm:text-sm text-white">Mtgs Q2</button>
+                  <button onClick={() => selectPreset('meetings_q3')} className="bg-emerald-600 hover:bg-emerald-700 px-2 sm:px-3 py-1.5 sm:py-2 rounded text-xs sm:text-sm text-white">Mtgs Q3</button>
+                  <button onClick={() => selectPreset('meetings_q4')} className="bg-green-600 hover:bg-green-700 px-2 sm:px-3 py-1.5 sm:py-2 rounded text-xs sm:text-sm text-white">Mtgs Q4</button>
+                  <button onClick={() => setSelectedColumns([])} className="bg-slate-600 hover:bg-slate-700 px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 rounded text-xs sm:text-sm text-white">Clear</button>
+                </div>
+              </div>
+
+              <div className="bg-slate-700 rounded-lg p-3 sm:p-4 mb-3 sm:mb-4 max-h-48 sm:max-h-64 overflow-y-auto">
+                {csvData[0]?.map((header, index) => (
+                  <div key={index} className="flex items-center gap-3 py-2 hover:bg-slate-600 px-2 rounded">
+                    <input
+                      type="checkbox"
+                      id={`prospect-col-${index}`}
+                      checked={selectedColumns.includes(index)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedColumns([...selectedColumns, index]);
+                        } else {
+                          setSelectedColumns(selectedColumns.filter(i => i !== index));
+                        }
+                      }}
+                      className="w-5 h-5 accent-purple-600"
+                    />
+                    <label htmlFor={`prospect-col-${index}`} className="cursor-pointer flex-1 text-white">
+                      {header}
+                    </label>
+                  </div>
+                ))}
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+                <button
+                  onClick={() => setShowPrintModal(false)}
+                  className="flex-1 bg-slate-600 hover:bg-slate-700 px-4 sm:px-6 py-2 sm:py-3 rounded-lg font-semibold text-sm sm:text-base text-white"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={printSelectedColumns}
+                  className="flex-1 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 px-4 sm:px-6 py-2 sm:py-3 rounded-lg font-semibold text-sm sm:text-base text-white"
+                >
+                  Print Selected
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
     </PageLayout>
   );
 }
