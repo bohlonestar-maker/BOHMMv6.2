@@ -358,6 +358,62 @@ export default function CSVExportView() {
     }
   };
 
+  const downloadQuarterlyReport = async (reportType) => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      toast.error('Please login to download reports');
+      return;
+    }
+    
+    setReportLoading(true);
+    try {
+      let url = "";
+      let filename = "";
+      
+      const quarterNames = { '1': 'Q1', '2': 'Q2', '3': 'Q3', '4': 'Q4' };
+      const qName = quarterNames[reportQuarter];
+      
+      switch (reportType) {
+        case "attendance":
+          url = `${API}/api/reports/attendance/quarterly?year=${reportYear}&quarter=${reportQuarter}&chapter=${reportChapter}`;
+          filename = `attendance_${qName}_${reportYear}${reportChapter !== 'All' ? `_${reportChapter}` : ''}.csv`;
+          break;
+        case "dues":
+          url = `${API}/api/reports/dues/quarterly?year=${reportYear}&quarter=${reportQuarter}&chapter=${reportChapter}`;
+          filename = `dues_${qName}_${reportYear}${reportChapter !== 'All' ? `_${reportChapter}` : ''}.csv`;
+          break;
+        case "prospects":
+          url = `${API}/api/reports/prospects/attendance/quarterly?year=${reportYear}&quarter=${reportQuarter}`;
+          filename = `prospects_attendance_${qName}_${reportYear}.csv`;
+          break;
+        default:
+          return;
+      }
+      
+      const response = await axios.get(url, {
+        headers: { Authorization: `Bearer ${token}` },
+        responseType: 'blob'
+      });
+      
+      const blob = new Blob([response.data], { type: 'text/csv' });
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.setAttribute('download', filename);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(downloadUrl);
+      
+      toast.success(`${reportType.charAt(0).toUpperCase() + reportType.slice(1)} report downloaded`);
+    } catch (error) {
+      console.error('Error downloading report:', error);
+      toast.error('Failed to download report');
+    } finally {
+      setReportLoading(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-slate-900 flex items-center justify-center">
