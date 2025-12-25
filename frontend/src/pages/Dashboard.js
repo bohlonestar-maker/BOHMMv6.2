@@ -1185,6 +1185,24 @@ export default function Dashboard({ onLogout, userRole, userPermissions }) {
                         
                         {attendanceExpanded && (
                           <div className="p-3 space-y-3 bg-slate-800/50">
+                            {/* Year Selector */}
+                            {userRole === 'admin' && availableYears.length > 1 && (
+                              <div className="flex items-center gap-2 mb-2">
+                                <span className="text-xs text-slate-400">Year:</span>
+                                <select
+                                  value={selectedYear}
+                                  onChange={(e) => setSelectedYear(e.target.value)}
+                                  className="bg-slate-700 border border-slate-600 text-white text-xs rounded px-2 py-1"
+                                >
+                                  {availableYears.map(year => (
+                                    <option key={year} value={year}>{year}</option>
+                                  ))}
+                                </select>
+                                {selectedYear !== new Date().getFullYear().toString() && (
+                                  <span className="text-xs text-yellow-400">(Viewing historical data - read only)</span>
+                                )}
+                              </div>
+                            )}
                             <div className="flex justify-between items-center text-xs">
                               <span className="text-slate-400">Click to cycle status, right-click to add note</span>
                               <div className="flex gap-2">
@@ -1196,10 +1214,10 @@ export default function Dashboard({ onLogout, userRole, userPermissions }) {
                             {/* Compact 6x4 grid for 24 meetings */}
                             <div className="grid grid-cols-6 gap-1">
                               {monthNames.map((month, monthIndex) => {
-                                const currentYear = new Date().getFullYear().toString();
-                                const yearMeetings = formData.meeting_attendance[currentYear] || Array(24).fill(null).map(() => ({ status: 0, note: "" }));
+                                const yearMeetings = formData.meeting_attendance[selectedYear] || Array(24).fill(null).map(() => ({ status: 0, note: "" }));
                                 const meeting1 = yearMeetings[monthIndex * 2];
                                 const meeting2 = yearMeetings[monthIndex * 2 + 1];
+                                const isCurrentYear = selectedYear === new Date().getFullYear().toString();
                                 
                                 return (
                                   <div key={month} className="flex flex-col gap-0.5">
@@ -1207,7 +1225,8 @@ export default function Dashboard({ onLogout, userRole, userPermissions }) {
                                     <div className="flex gap-0.5">
                                       <button
                                         type="button"
-                                        onClick={() => handleAttendanceToggle(monthIndex * 2)}
+                                        onClick={() => isCurrentYear && handleAttendanceToggle(monthIndex * 2)}
+                                        disabled={!isCurrentYear}
                                         onContextMenu={(e) => {
                                           e.preventDefault();
                                           setEditingNoteIndex(editingNoteIndex === monthIndex * 2 ? null : monthIndex * 2);
