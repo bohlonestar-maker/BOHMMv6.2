@@ -93,6 +93,9 @@ export default function Prospects({ onLogout, userRole }) {
   const [addMeetingDialogOpen, setAddMeetingDialogOpen] = useState(false);
   const [newMeetingDate, setNewMeetingDate] = useState("");
   const [newMeetingStatus, setNewMeetingStatus] = useState(1);
+  const [showPrintModal, setShowPrintModal] = useState(false);
+  const [selectedColumns, setSelectedColumns] = useState([]);
+  const [csvData, setCsvData] = useState([]);
   const [newMeetingNote, setNewMeetingNote] = useState("");
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear().toString());
   const navigate = useNavigate();
