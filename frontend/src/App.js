@@ -270,6 +270,16 @@ function App() {
               )
             }
           />
+          <Route
+            path="/quarterly-reports"
+            element={
+              isAuthenticated && userRole === 'admin' ? (
+                <QuarterlyReports />
+              ) : (
+                <Navigate to="/" replace />
+              )
+            }
+          />
         </Routes>
         {isAuthenticated && <MessageNotifier />}
         {isAuthenticated && <ChatBot />}
