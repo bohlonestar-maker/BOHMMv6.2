@@ -525,13 +525,97 @@ export default function CSVExportView() {
       {/* Print Custom Modal */}
       {showPrintModal && (
         <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 p-3 sm:p-4" onClick={() => setShowPrintModal(false)}>
-          <div className="bg-slate-800 rounded-lg p-4 sm:p-6 max-w-full sm:max-w-2xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-slate-800 rounded-lg p-4 sm:p-6 max-w-full sm:max-w-3xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-purple-400 mb-3 sm:mb-4">
               <i className="fas fa-print mr-2"></i>
-              Customize Print Columns
+              Print Custom
             </h2>
             
+            {/* Quarterly Reports Section */}
+            <div className="mb-4 p-3 sm:p-4 bg-slate-700/50 rounded-lg border border-slate-600">
+              <h3 className="text-sm font-semibold text-green-400 mb-3 flex items-center gap-2">
+                <FileSpreadsheet className="w-4 h-4" />
+                Quarterly Reports (CSV Download)
+              </h3>
+              
+              {/* Filters */}
+              <div className="grid grid-cols-3 gap-2 mb-3">
+                <div>
+                  <label className="block text-xs text-slate-400 mb-1">Year</label>
+                  <select
+                    value={reportYear}
+                    onChange={(e) => setReportYear(e.target.value)}
+                    className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1.5 text-xs text-white"
+                  >
+                    {Array.from({ length: 6 }, (_, i) => (new Date().getFullYear() - i).toString()).map(year => (
+                      <option key={year} value={year}>{year}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs text-slate-400 mb-1">Quarter</label>
+                  <select
+                    value={reportQuarter}
+                    onChange={(e) => setReportQuarter(e.target.value)}
+                    className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1.5 text-xs text-white"
+                  >
+                    <option value="1">Q1 (Jan-Mar)</option>
+                    <option value="2">Q2 (Apr-Jun)</option>
+                    <option value="3">Q3 (Jul-Sep)</option>
+                    <option value="4">Q4 (Oct-Dec)</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs text-slate-400 mb-1">Chapter</label>
+                  <select
+                    value={reportChapter}
+                    onChange={(e) => setReportChapter(e.target.value)}
+                    className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1.5 text-xs text-white"
+                  >
+                    <option value="All">All Chapters</option>
+                    <option value="National">National</option>
+                    <option value="AD">AD</option>
+                    <option value="HA">HA</option>
+                    <option value="HS">HS</option>
+                  </select>
+                </div>
+              </div>
+              
+              {/* Report Download Buttons */}
+              <div className="grid grid-cols-3 gap-2">
+                <button
+                  onClick={() => downloadQuarterlyReport('attendance')}
+                  disabled={reportLoading}
+                  className="flex items-center justify-center gap-1 bg-green-600 hover:bg-green-700 disabled:opacity-50 px-2 py-2 rounded text-xs font-medium transition-colors"
+                >
+                  <Users className="w-3 h-3" />
+                  Attendance
+                </button>
+                <button
+                  onClick={() => downloadQuarterlyReport('dues')}
+                  disabled={reportLoading}
+                  className="flex items-center justify-center gap-1 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 px-2 py-2 rounded text-xs font-medium transition-colors"
+                >
+                  <DollarSign className="w-3 h-3" />
+                  Dues
+                </button>
+                <button
+                  onClick={() => downloadQuarterlyReport('prospects')}
+                  disabled={reportLoading}
+                  className="flex items-center justify-center gap-1 bg-orange-600 hover:bg-orange-700 disabled:opacity-50 px-2 py-2 rounded text-xs font-medium transition-colors"
+                >
+                  <UserCheck className="w-3 h-3" />
+                  Prospects
+                </button>
+              </div>
+            </div>
+
+            {/* Divider */}
+            <div className="border-t border-slate-600 my-4"></div>
+            
+            {/* Column Selection Section */}
             <div className="mb-3 sm:mb-4">
+              <h3 className="text-sm font-semibold text-purple-400 mb-2">Print by Columns</h3>
               <p className="text-slate-300 mb-2 sm:mb-3 text-sm sm:text-base">Select which columns to include:</p>
               <div className="flex flex-wrap gap-1.5 sm:gap-2 mb-3 sm:mb-4">
                 <button onClick={() => selectPreset('all')} className="bg-blue-600 hover:bg-blue-700 px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 rounded text-xs sm:text-sm">All Fields</button>
