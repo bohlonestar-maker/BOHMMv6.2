@@ -1229,7 +1229,7 @@ export default function Dashboard({ onLogout, userRole, userPermissions }) {
                                         disabled={!isCurrentYear}
                                         onContextMenu={(e) => {
                                           e.preventDefault();
-                                          setEditingNoteIndex(editingNoteIndex === monthIndex * 2 ? null : monthIndex * 2);
+                                          if (isCurrentYear) setEditingNoteIndex(editingNoteIndex === monthIndex * 2 ? null : monthIndex * 2);
                                         }}
                                         className={`flex-1 h-6 rounded text-[10px] font-medium transition-colors relative ${
                                           meeting1?.status === 1
@@ -1237,17 +1237,18 @@ export default function Dashboard({ onLogout, userRole, userPermissions }) {
                                             : meeting1?.status === 2
                                             ? 'bg-orange-500 text-white'
                                             : 'bg-red-600/80 text-white'
-                                        } ${meeting1?.note ? 'ring-2 ring-yellow-400' : ''}`}
-                                        title={`${month} 1st - ${meeting1?.status === 1 ? 'Present' : meeting1?.status === 2 ? 'Excused' : 'Absent'}${meeting1?.note ? '\nNote: ' + meeting1.note : ''}\n(Right-click to add note)`}
+                                        } ${meeting1?.note ? 'ring-2 ring-yellow-400' : ''} ${!isCurrentYear ? 'opacity-60 cursor-not-allowed' : ''}`}
+                                        title={`${month} 1st - ${meeting1?.status === 1 ? 'Present' : meeting1?.status === 2 ? 'Excused' : 'Absent'}${meeting1?.note ? '\nNote: ' + meeting1.note : ''}${isCurrentYear ? '\n(Right-click to add note)' : ''}`}
                                       >
                                         1{meeting1?.note ? '*' : ''}
                                       </button>
                                       <button
                                         type="button"
-                                        onClick={() => handleAttendanceToggle(monthIndex * 2 + 1)}
+                                        onClick={() => isCurrentYear && handleAttendanceToggle(monthIndex * 2 + 1)}
+                                        disabled={!isCurrentYear}
                                         onContextMenu={(e) => {
                                           e.preventDefault();
-                                          setEditingNoteIndex(editingNoteIndex === monthIndex * 2 + 1 ? null : monthIndex * 2 + 1);
+                                          if (isCurrentYear) setEditingNoteIndex(editingNoteIndex === monthIndex * 2 + 1 ? null : monthIndex * 2 + 1);
                                         }}
                                         className={`flex-1 h-6 rounded text-[10px] font-medium transition-colors relative ${
                                           meeting2?.status === 1
@@ -1255,8 +1256,8 @@ export default function Dashboard({ onLogout, userRole, userPermissions }) {
                                             : meeting2?.status === 2
                                             ? 'bg-orange-500 text-white'
                                             : 'bg-red-600/80 text-white'
-                                        } ${meeting2?.note ? 'ring-2 ring-yellow-400' : ''}`}
-                                        title={`${month} 3rd - ${meeting2?.status === 1 ? 'Present' : meeting2?.status === 2 ? 'Excused' : 'Absent'}${meeting2?.note ? '\nNote: ' + meeting2.note : ''}\n(Right-click to add note)`}
+                                        } ${meeting2?.note ? 'ring-2 ring-yellow-400' : ''} ${!isCurrentYear ? 'opacity-60 cursor-not-allowed' : ''}`}
+                                        title={`${month} 3rd - ${meeting2?.status === 1 ? 'Present' : meeting2?.status === 2 ? 'Excused' : 'Absent'}${meeting2?.note ? '\nNote: ' + meeting2.note : ''}${isCurrentYear ? '\n(Right-click to add note)' : ''}`}
                                       >
                                         3{meeting2?.note ? '*' : ''}
                                       </button>
@@ -1267,7 +1268,7 @@ export default function Dashboard({ onLogout, userRole, userPermissions }) {
                             </div>
                             
                             {/* Note editing area */}
-                            {editingNoteIndex !== null && (
+                            {editingNoteIndex !== null && selectedYear === new Date().getFullYear().toString() && (
                               <div className="mt-2 p-2 bg-slate-900 rounded border border-slate-600">
                                 <div className="flex items-center justify-between mb-1">
                                   <span className="text-xs text-slate-300">
@@ -1283,8 +1284,7 @@ export default function Dashboard({ onLogout, userRole, userPermissions }) {
                                 </div>
                                 <Input
                                   value={(() => {
-                                    const currentYear = new Date().getFullYear().toString();
-                                    const yearMeetings = formData.meeting_attendance[currentYear] || [];
+                                    const yearMeetings = formData.meeting_attendance[selectedYear] || [];
                                     return yearMeetings[editingNoteIndex]?.note || '';
                                   })()}
                                   onChange={(e) => handleAttendanceNote(editingNoteIndex, e.target.value)}
