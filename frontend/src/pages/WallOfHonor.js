@@ -510,14 +510,56 @@ export default function WallOfHonor({ token, userRole }) {
             </div>
 
             <div>
-              <Label className="text-slate-200">Photo URL</Label>
-              <Input
-                value={formData.photo_url}
-                onChange={(e) => setFormData({ ...formData, photo_url: e.target.value })}
-                placeholder="https://example.com/photo.jpg"
-                className="mt-1 bg-slate-700 border-slate-600 text-white"
-              />
-              <p className="text-xs text-slate-500 mt-1">Direct link to a photo (optional)</p>
+              <Label className="text-slate-200">Photo</Label>
+              <div className="mt-1 space-y-3">
+                {/* Photo Preview */}
+                {photoPreview && (
+                  <div className="flex justify-center">
+                    <img 
+                      src={photoPreview} 
+                      alt="Preview" 
+                      className="w-24 h-24 rounded-full object-cover border-2 border-amber-600"
+                    />
+                  </div>
+                )}
+                
+                {/* Upload Button */}
+                <div className="flex gap-2">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/jpeg,image/png,image/gif,image/webp"
+                    onChange={handleFileChange}
+                    className="hidden"
+                    id="photo-upload"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploading}
+                    className="flex-1 border-slate-600 text-slate-300 hover:bg-slate-700"
+                  >
+                    <Upload className="w-4 h-4 mr-2" />
+                    {uploading ? "Uploading..." : photoPreview ? "Change Photo" : "Upload Photo"}
+                  </Button>
+                  {photoPreview && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        setPhotoPreview(null);
+                        setFormData({ ...formData, photo_url: "" });
+                        if (fileInputRef.current) fileInputRef.current.value = "";
+                      }}
+                      className="border-red-600/50 text-red-400 hover:bg-red-900/30"
+                    >
+                      Remove
+                    </Button>
+                  )}
+                </div>
+                <p className="text-xs text-slate-500">JPEG, PNG, GIF, or WEBP. Max 5MB.</p>
+              </div>
             </div>
 
             <div>
