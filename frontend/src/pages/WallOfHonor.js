@@ -617,15 +617,17 @@ export default function WallOfHonor({ token, userRole }) {
                 type="button"
                 variant="outline"
                 onClick={() => setDialogOpen(false)}
+                disabled={submitting}
                 className="flex-1 border-slate-600 text-slate-300 hover:bg-slate-700"
               >
                 Cancel
               </Button>
               <Button
                 type="submit"
-                className="flex-1 bg-amber-600 hover:bg-amber-700 text-white"
+                disabled={submitting || uploading}
+                className="flex-1 bg-amber-600 hover:bg-amber-700 text-white disabled:opacity-50"
               >
-                {editingMember ? "Update Memorial" : "Add to Wall of Honor"}
+                {submitting ? "Saving..." : editingMember ? "Update Memorial" : "Add to Wall of Honor"}
               </Button>
             </div>
           </form>
