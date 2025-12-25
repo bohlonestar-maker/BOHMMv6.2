@@ -1144,11 +1144,20 @@ async def start_scheduler():
             replace_existing=True
         )
         
+        # New Year initialization - run on January 1st at 12:01 AM CST (06:01 UTC)
+        scheduler.add_job(
+            run_new_year_initialization,
+            CronTrigger(month=1, day=1, hour=6, minute=1),  # Jan 1st, 12:01 AM CST = 06:01 UTC
+            id='new_year_initialization',
+            replace_existing=True
+        )
+        
         scheduler.start()
         sys.stderr.write("✅ [SCHEDULER] Discord notification system started:\n")
         sys.stderr.write("   📅 Event notifications: every 30 minutes\n")
         sys.stderr.write("   🎂 Birthday notifications: daily at 9:00 AM CST\n")
         sys.stderr.write("   🎉 Anniversary notifications: 1st of month at 9:00 AM CST\n")
+        sys.stderr.write("   🎆 New Year initialization: Jan 1st at 12:01 AM CST\n")
         sys.stderr.flush()
     except Exception as e:
         sys.stderr.write(f"⚠️ [SCHEDULER] Failed to start scheduler (app will continue without it): {str(e)}\n")
