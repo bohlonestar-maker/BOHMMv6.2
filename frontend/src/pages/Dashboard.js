@@ -127,6 +127,7 @@ export default function Dashboard({ onLogout, userRole, userPermissions }) {
   // Fetch available years (admin only)
   useEffect(() => {
     if (userRole === 'admin') {
+      const token = localStorage.getItem('token');
       axios.get(`${API}/admin/available-years`, {
         headers: { Authorization: `Bearer ${token}` }
       }).then(res => {
@@ -135,7 +136,7 @@ export default function Dashboard({ onLogout, userRole, userPermissions }) {
         console.error("Failed to fetch available years:", err);
       });
     }
-  }, [userRole, token]);
+  }, [userRole]);
 
   // Generic error handler for API calls
   const handleApiError = (error, context) => {
