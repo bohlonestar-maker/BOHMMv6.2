@@ -758,6 +758,15 @@ export default function Prospects({ onLogout, userRole }) {
                 Export CSV
               </Button>
 
+              <Button
+                onClick={openPrintModal}
+                size="sm"
+                className="flex items-center justify-center gap-2 text-xs sm:text-sm bg-purple-700 text-white hover:bg-purple-800"
+              >
+                <Printer className="w-4 h-4" />
+                Print Custom
+              </Button>
+
               {selectedProspects.length > 0 && (
                 <Button
                   onClick={handleBulkPromote}
