@@ -601,7 +601,13 @@ export default function Dashboard({ onLogout, userRole, userPermissions }) {
     toast.success("Opening CSV export view...");
   };
 
+  // Filter by chapter first, then by search term
   const filteredMembers = members.filter((member) => {
+    // Chapter filter
+    if (selectedChapter !== "All" && member.chapter !== selectedChapter) {
+      return false;
+    }
+    // Search filter
     const search = searchTerm.toLowerCase();
     return (
       member.name.toLowerCase().includes(search) ||
@@ -610,6 +616,15 @@ export default function Dashboard({ onLogout, userRole, userPermissions }) {
       member.chapter.toLowerCase().includes(search)
     );
   });
+
+  // Get member counts by chapter
+  const chapterCounts = {
+    All: members.length,
+    National: members.filter(m => m.chapter === "National").length,
+    AD: members.filter(m => m.chapter === "AD").length,
+    HA: members.filter(m => m.chapter === "HA").length,
+    HS: members.filter(m => m.chapter === "HS").length,
+  };
 
   // Sort filtered members to maintain order
   const sortedFilteredMembers = sortMembers([...filteredMembers]);
