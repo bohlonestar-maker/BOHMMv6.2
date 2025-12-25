@@ -170,11 +170,15 @@ export default function WallOfHonor({ token, userRole }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
+    if (submitting) return; // Prevent double submission
+    
     if (!formData.name.trim() || !formData.handle.trim()) {
       toast.error("Name and Handle are required");
       return;
     }
 
+    setSubmitting(true);
+    
     try {
       if (editingMember) {
         await axios.put(`${API}/fallen/${editingMember.id}`, formData, {
@@ -190,10 +194,12 @@ export default function WallOfHonor({ token, userRole }) {
       
       setDialogOpen(false);
       resetForm();
-      fetchFallenMembers();
+      await fetchFallenMembers();
     } catch (error) {
       console.error("Error saving fallen member:", error);
       toast.error(error.response?.data?.detail || "Failed to save memorial");
+    } finally {
+      setSubmitting(false);
     }
   };
 
