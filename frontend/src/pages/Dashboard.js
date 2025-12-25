@@ -1134,65 +1134,59 @@ export default function Dashboard({ onLogout, userRole, userPermissions }) {
                       <div className="space-y-3">
                         <div className="flex justify-between items-center">
                           <Label>Meeting Attendance ({new Date().getFullYear()})</Label>
+                          <div className="flex gap-2 text-xs">
+                            <span className="text-green-500">● Present</span>
+                            <span className="text-orange-500">● Excused</span>
+                            <span className="text-red-500">● Absent</span>
+                          </div>
                         </div>
-                        <div className="space-y-3">
+                        {/* Compact 6x4 grid for 24 meetings */}
+                        <div className="grid grid-cols-6 gap-1">
                           {monthNames.map((month, monthIndex) => {
                             const currentYear = new Date().getFullYear().toString();
                             const yearMeetings = formData.meeting_attendance[currentYear] || Array(24).fill(null).map(() => ({ status: 0, note: "" }));
+                            const meeting1 = yearMeetings[monthIndex * 2];
+                            const meeting2 = yearMeetings[monthIndex * 2 + 1];
                             
                             return (
-                            <div key={month} className="space-y-2">
-                              <div className="grid grid-cols-2 gap-2">
-                                <button
-                                  type="button"
-                                  onClick={() => handleAttendanceToggle(monthIndex * 2)}
-                                  className={`px-2 py-2 rounded text-xs font-medium transition-colors ${
-                                    yearMeetings[monthIndex * 2]?.status === 1
-                                      ? 'bg-green-600 text-white hover:bg-green-700'
-                                      : yearMeetings[monthIndex * 2]?.status === 2
-                                      ? 'bg-orange-500 text-white hover:bg-orange-600'
-                                      : 'bg-red-600 text-white hover:bg-red-700'
-                                  }`}
-                                  data-testid={`attendance-${monthIndex}-1st`}
-                                >
-                                  {month}-1st {meetingDates[monthIndex * 2] && `(${formatMeetingDate(meetingDates[monthIndex * 2])})`}
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => handleAttendanceToggle(monthIndex * 2 + 1)}
-                                  className={`px-2 py-2 rounded text-xs font-medium transition-colors ${
-                                    yearMeetings[monthIndex * 2 + 1]?.status === 1
-                                      ? 'bg-green-600 text-white hover:bg-green-700'
-                                      : yearMeetings[monthIndex * 2 + 1]?.status === 2
-                                      ? 'bg-orange-500 text-white hover:bg-orange-600'
-                                      : 'bg-red-600 text-white hover:bg-red-700'
-                                  }`}
-                                  data-testid={`attendance-${monthIndex}-3rd`}
-                                >
-                                  {month}-3rd {meetingDates[monthIndex * 2 + 1] && `(${formatMeetingDate(meetingDates[monthIndex * 2 + 1])})`}
-                                </button>
+                              <div key={month} className="flex flex-col gap-0.5">
+                                <span className="text-[10px] text-slate-400 text-center">{month.slice(0, 3)}</span>
+                                <div className="flex gap-0.5">
+                                  <button
+                                    type="button"
+                                    onClick={() => handleAttendanceToggle(monthIndex * 2)}
+                                    className={`flex-1 h-6 rounded text-[10px] font-medium transition-colors ${
+                                      meeting1?.status === 1
+                                        ? 'bg-green-600 text-white'
+                                        : meeting1?.status === 2
+                                        ? 'bg-orange-500 text-white'
+                                        : 'bg-red-600/80 text-white'
+                                    }`}
+                                    title={`${month} 1st - ${meeting1?.status === 1 ? 'Present' : meeting1?.status === 2 ? 'Excused' : 'Absent'}${meeting1?.note ? ': ' + meeting1.note : ''}`}
+                                  >
+                                    1
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleAttendanceToggle(monthIndex * 2 + 1)}
+                                    className={`flex-1 h-6 rounded text-[10px] font-medium transition-colors ${
+                                      meeting2?.status === 1
+                                        ? 'bg-green-600 text-white'
+                                        : meeting2?.status === 2
+                                        ? 'bg-orange-500 text-white'
+                                        : 'bg-red-600/80 text-white'
+                                    }`}
+                                    title={`${month} 3rd - ${meeting2?.status === 1 ? 'Present' : meeting2?.status === 2 ? 'Excused' : 'Absent'}${meeting2?.note ? ': ' + meeting2.note : ''}`}
+                                  >
+                                    3
+                                  </button>
+                                </div>
                               </div>
-                              {(yearMeetings[monthIndex * 2]?.status === 0 || yearMeetings[monthIndex * 2]?.status === 2) && (
-                                <Input
-                                  placeholder={`${month}-1st note (${yearMeetings[monthIndex * 2]?.status === 2 ? 'excused' : 'unexcused'} absence)`}
-                                  value={yearMeetings[monthIndex * 2]?.note || ''}
-                                  onChange={(e) => handleAttendanceNote(monthIndex * 2, e.target.value)}
-                                  className="text-xs text-white"
-                                />
-                              )}
-                              {(yearMeetings[monthIndex * 2 + 1]?.status === 0 || yearMeetings[monthIndex * 2 + 1]?.status === 2) && (
-                                <Input
-                                  placeholder={`${month}-3rd note (${yearMeetings[monthIndex * 2 + 1]?.status === 2 ? 'excused' : 'unexcused'} absence)`}
-                                  value={yearMeetings[monthIndex * 2 + 1]?.note || ''}
-                                  onChange={(e) => handleAttendanceNote(monthIndex * 2 + 1, e.target.value)}
-                                  className="text-xs text-white"
-                                />
-                              )}
-                            </div>
-                          )})}
+                            );
+                          })}
                         </div>
-                        <p className="text-xs text-slate-600">
-                          Click to cycle: <span className="font-medium">Gray (Absent)</span> → <span className="font-medium text-green-600">Green (Present)</span> → <span className="font-medium text-yellow-600">Yellow (Excused)</span>
+                        <p className="text-xs text-slate-500">
+                          Click to cycle: Absent → Present → Excused. Hover for details.
                         </p>
                       </div>
 
