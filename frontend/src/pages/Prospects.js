@@ -738,10 +738,13 @@ export default function Prospects({ onLogout, userRole }) {
                     
                     {attendanceExpanded && (
                       <div className="p-3 space-y-3 bg-slate-800/50">
-                        <div className="flex justify-end gap-2 text-xs">
-                          <span className="text-green-500">● Present</span>
-                          <span className="text-orange-500">● Excused</span>
-                          <span className="text-red-500">● Absent</span>
+                        <div className="flex justify-between items-center text-xs">
+                          <span className="text-slate-400">Click to cycle status, right-click to add note</span>
+                          <div className="flex gap-2">
+                            <span className="text-green-500">● Present</span>
+                            <span className="text-orange-500">● Excused</span>
+                            <span className="text-red-500">● Absent</span>
+                          </div>
                         </div>
                         {/* Compact 6x4 grid for 24 meetings */}
                         <div className="grid grid-cols-6 gap-1">
@@ -756,38 +759,71 @@ export default function Prospects({ onLogout, userRole }) {
                                   <button
                                     type="button"
                                     onClick={() => handleAttendanceToggle(monthIndex * 2)}
+                                    onContextMenu={(e) => {
+                                      e.preventDefault();
+                                      setEditingNoteIndex(editingNoteIndex === monthIndex * 2 ? null : monthIndex * 2);
+                                    }}
                                     className={`flex-1 h-6 rounded text-[10px] font-medium transition-colors ${
                                       meeting1?.status === 1
                                         ? 'bg-green-600 text-white'
                                         : meeting1?.status === 2
                                         ? 'bg-orange-500 text-white'
                                         : 'bg-red-600/80 text-white'
-                                    }`}
-                                    title={`${month} 1st - ${meeting1?.status === 1 ? 'Present' : meeting1?.status === 2 ? 'Excused' : 'Absent'}${meeting1?.note ? ': ' + meeting1.note : ''}`}
+                                    } ${meeting1?.note ? 'ring-2 ring-yellow-400' : ''}`}
+                                    title={`${month} 1st - ${meeting1?.status === 1 ? 'Present' : meeting1?.status === 2 ? 'Excused' : 'Absent'}${meeting1?.note ? '\nNote: ' + meeting1.note : ''}\n(Right-click to add note)`}
                                   >
-                                    1
+                                    1{meeting1?.note ? '*' : ''}
                                   </button>
                                   <button
                                     type="button"
                                     onClick={() => handleAttendanceToggle(monthIndex * 2 + 1)}
+                                    onContextMenu={(e) => {
+                                      e.preventDefault();
+                                      setEditingNoteIndex(editingNoteIndex === monthIndex * 2 + 1 ? null : monthIndex * 2 + 1);
+                                    }}
                                     className={`flex-1 h-6 rounded text-[10px] font-medium transition-colors ${
                                       meeting2?.status === 1
                                         ? 'bg-green-600 text-white'
                                         : meeting2?.status === 2
                                         ? 'bg-orange-500 text-white'
                                         : 'bg-red-600/80 text-white'
-                                    }`}
-                                    title={`${month} 3rd - ${meeting2?.status === 1 ? 'Present' : meeting2?.status === 2 ? 'Excused' : 'Absent'}${meeting2?.note ? ': ' + meeting2.note : ''}`}
+                                    } ${meeting2?.note ? 'ring-2 ring-yellow-400' : ''}`}
+                                    title={`${month} 3rd - ${meeting2?.status === 1 ? 'Present' : meeting2?.status === 2 ? 'Excused' : 'Absent'}${meeting2?.note ? '\nNote: ' + meeting2.note : ''}\n(Right-click to add note)`}
                                   >
-                                    3
+                                    3{meeting2?.note ? '*' : ''}
                                   </button>
                                 </div>
                               </div>
                             );
                           })}
                         </div>
+                        
+                        {/* Note editing area */}
+                        {editingNoteIndex !== null && (
+                          <div className="mt-2 p-2 bg-slate-900 rounded border border-slate-600">
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="text-xs text-slate-300">
+                                Note for {["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][Math.floor(editingNoteIndex / 2)]}-{editingNoteIndex % 2 === 0 ? '1st' : '3rd'}:
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => setEditingNoteIndex(null)}
+                                className="text-slate-400 hover:text-white text-xs"
+                              >
+                                ✕
+                              </button>
+                            </div>
+                            <Input
+                              value={formData.meeting_attendance.meetings[editingNoteIndex]?.note || ''}
+                              onChange={(e) => handleAttendanceNoteChange(editingNoteIndex, e.target.value)}
+                              placeholder="Add note (e.g., reason for absence)"
+                              className="text-xs bg-slate-800 border-slate-600 text-white"
+                            />
+                          </div>
+                        )}
+                        
                         <p className="text-xs text-slate-500">
-                          Click to cycle: Absent → Present → Excused. Hover for details.
+                          * = has note | Yellow ring = has note
                         </p>
                       </div>
                     )}
