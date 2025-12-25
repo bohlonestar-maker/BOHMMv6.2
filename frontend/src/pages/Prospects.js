@@ -532,6 +532,148 @@ export default function Prospects({ onLogout, userRole }) {
     }
   };
 
+  // Print Custom functions
+  const fetchCSVData = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const response = await axios.get(`${API}/prospects/export/csv`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      // Parse CSV text into array
+      const text = response.data;
+      const rows = [];
+      let row = [];
+      let cell = '';
+      let inQuotes = false;
+      
+      for (let i = 0; i < text.length; i++) {
+        const char = text[i];
+        if (char === '"') {
+          inQuotes = !inQuotes;
+        } else if (char === ',' && !inQuotes) {
+          row.push(cell.trim());
+          cell = '';
+        } else if ((char === '\n' || char === '\r') && !inQuotes) {
+          if (cell || row.length > 0) {
+            row.push(cell.trim());
+            if (row.some(c => c)) rows.push(row);
+            row = [];
+            cell = '';
+          }
+        } else {
+          cell += char;
+        }
+      }
+      if (cell || row.length > 0) {
+        row.push(cell.trim());
+        if (row.some(c => c)) rows.push(row);
+      }
+      
+      setCsvData(rows);
+    } catch (error) {
+      console.error("Failed to fetch CSV data:", error);
+    }
+  };
+
+  const openPrintModal = async () => {
+    await fetchCSVData();
+    setShowPrintModal(true);
+  };
+
+  const selectPreset = (preset) => {
+    if (!csvData[0]) return;
+    
+    const headers = csvData[0].map(h => h.toLowerCase());
+    let columns = [];
+    
+    switch (preset) {
+      case 'all':
+        columns = headers.map((_, i) => i);
+        break;
+      case 'contact':
+        columns = headers.map((h, i) => 
+          ['handle', 'name', 'email', 'phone', 'address'].some(c => h.includes(c)) ? i : -1
+        ).filter(i => i !== -1);
+        break;
+      case 'service':
+        columns = headers.map((h, i) => 
+          ['handle', 'name', 'military', 'first responder', 'branch'].some(c => h.includes(c)) ? i : -1
+        ).filter(i => i !== -1);
+        break;
+      case 'meetings_q1':
+        columns = headers.map((h, i) => 
+          ['handle', 'name', 'jan', 'feb', 'mar'].some(c => h.includes(c)) ? i : -1
+        ).filter(i => i !== -1);
+        break;
+      case 'meetings_q2':
+        columns = headers.map((h, i) => 
+          ['handle', 'name', 'apr', 'may', 'jun'].some(c => h.includes(c)) ? i : -1
+        ).filter(i => i !== -1);
+        break;
+      case 'meetings_q3':
+        columns = headers.map((h, i) => 
+          ['handle', 'name', 'jul', 'aug', 'sep'].some(c => h.includes(c)) ? i : -1
+        ).filter(i => i !== -1);
+        break;
+      case 'meetings_q4':
+        columns = headers.map((h, i) => 
+          ['handle', 'name', 'oct', 'nov', 'dec'].some(c => h.includes(c)) ? i : -1
+        ).filter(i => i !== -1);
+        break;
+      default:
+        break;
+    }
+    
+    setSelectedColumns(columns);
+  };
+
+  const printSelectedColumns = () => {
+    if (selectedColumns.length === 0) {
+      toast.error("Please select at least one column");
+      return;
+    }
+    
+    const filteredData = csvData.map(row => 
+      selectedColumns.map(colIndex => row[colIndex] || '')
+    );
+    
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Prospects Report</title>
+          <style>
+            body { font-family: Arial, sans-serif; margin: 20px; }
+            table { border-collapse: collapse; width: 100%; }
+            th, td { border: 1px solid #ddd; padding: 8px; text-align: left; font-size: 12px; }
+            th { background-color: #4a5568; color: white; }
+            tr:nth-child(even) { background-color: #f9f9f9; }
+            @media print { 
+              body { margin: 0; }
+              table { font-size: 10px; }
+            }
+          </style>
+        </head>
+        <body>
+          <h2>Prospects Report</h2>
+          <table>
+            <thead>
+              <tr>${filteredData[0]?.map(h => `<th>${h}</th>`).join('') || ''}</tr>
+            </thead>
+            <tbody>
+              ${filteredData.slice(1).map(row => 
+                `<tr>${row.map(cell => `<td>${cell}</td>`).join('')}</tr>`
+              ).join('')}
+            </tbody>
+          </table>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+    printWindow.print();
+  };
+
   const filteredProspects = prospects.filter((prospect) => {
     const search = searchTerm.toLowerCase();
     return (
