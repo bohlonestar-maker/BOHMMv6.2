@@ -112,6 +112,7 @@ export default function Dashboard({ onLogout, userRole, userPermissions }) {
   const [unreadPrivateCount, setUnreadPrivateCount] = useState(0);
   const [upcomingEventsCount, setUpcomingEventsCount] = useState(0);
   const [attendanceExpanded, setAttendanceExpanded] = useState(false);
+  const [editingNoteIndex, setEditingNoteIndex] = useState(null);
   const navigate = useNavigate();
 
   // Helper to check permissions
