@@ -107,6 +107,7 @@ export default function Dashboard({ onLogout, userRole, userPermissions }) {
   const [editingAction, setEditingAction] = useState(null);
   const [editingMember, setEditingMember] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedChapter, setSelectedChapter] = useState("All");
   const [meetingDates, setMeetingDates] = useState([]);
   const [unreadPrivateCount, setUnreadPrivateCount] = useState(0);
   const [upcomingEventsCount, setUpcomingEventsCount] = useState(0);
