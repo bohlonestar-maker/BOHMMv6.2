@@ -1512,6 +1512,94 @@ async def update_member(member_id: str, member_data: MemberUpdate, current_user:
     
     return updated_member
 
+@api_router.get("/admin/available-years")
+async def get_available_years(current_user: dict = Depends(verify_admin)):
+    """Get all available years from dues and meeting attendance data"""
+    years = set()
+    current_year = datetime.now(timezone.utc).year
+    years.add(str(current_year))
+    
+    # Get years from members
+    members = await db.members.find({}, {"_id": 0, "dues": 1, "meeting_attendance": 1}).to_list(None)
+    for member in members:
+        if member.get('dues'):
+            years.update(member['dues'].keys())
+        if member.get('meeting_attendance'):
+            years.update(member['meeting_attendance'].keys())
+    
+    # Get years from prospects
+    prospects = await db.prospects.find({}, {"_id": 0, "meeting_attendance": 1}).to_list(None)
+    for prospect in prospects:
+        ma = prospect.get('meeting_attendance', {})
+        if isinstance(ma, dict):
+            if 'year' in ma:  # Old format
+                years.add(str(ma['year']))
+            else:  # New format
+                years.update(ma.keys())
+    
+    return {"years": sorted(list(years), reverse=True)}
+
+@api_router.post("/admin/initialize-year/{year}")
+async def initialize_year(year: int, current_user: dict = Depends(verify_admin)):
+    """Manually initialize a specific year for all members and prospects"""
+    year_str = str(year)
+    members_updated = 0
+    prospects_updated = 0
+    
+    # Initialize for all members
+    members = await db.members.find({}).to_list(None)
+    for member in members:
+        dues = member.get('dues', {})
+        meeting_attendance = member.get('meeting_attendance', {})
+        updated = False
+        
+        if year_str not in dues:
+            dues[year_str] = [{"status": "unpaid", "note": ""} for _ in range(12)]
+            updated = True
+        
+        if year_str not in meeting_attendance:
+            meeting_attendance[year_str] = [{"status": 0, "note": ""} for _ in range(24)]
+            updated = True
+        
+        if updated:
+            await db.members.update_one(
+                {"id": member["id"]},
+                {"$set": {"dues": dues, "meeting_attendance": meeting_attendance}}
+            )
+            members_updated += 1
+    
+    # Initialize for all prospects
+    prospects = await db.prospects.find({}).to_list(None)
+    for prospect in prospects:
+        meeting_attendance = prospect.get('meeting_attendance', {})
+        
+        # Convert old format if needed
+        if 'year' in meeting_attendance and 'meetings' in meeting_attendance:
+            old_year = str(meeting_attendance.get('year'))
+            old_meetings = meeting_attendance.get('meetings', [])
+            meeting_attendance = {old_year: old_meetings}
+        
+        if year_str not in meeting_attendance:
+            meeting_attendance[year_str] = [{"status": 0, "note": ""} for _ in range(24)]
+            await db.prospects.update_one(
+                {"id": prospect["id"]},
+                {"$set": {"meeting_attendance": meeting_attendance}}
+            )
+            prospects_updated += 1
+    
+    # Log activity
+    await log_activity(
+        current_user["username"],
+        "initialize_year",
+        f"Initialized year {year} for {members_updated} members and {prospects_updated} prospects"
+    )
+    
+    return {
+        "message": f"Year {year} initialized successfully",
+        "members_updated": members_updated,
+        "prospects_updated": prospects_updated
+    }
+
 @api_router.delete("/members/{member_id}")
 async def delete_member(
     member_id: str, 
