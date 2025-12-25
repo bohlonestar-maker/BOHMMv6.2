@@ -258,16 +258,6 @@ function App() {
               )
             }
           />
-          <Route
-            path="/meeting-manager"
-            element={
-              isAuthenticated ? (
-                <MeetingManager userRole={userRole} />
-              ) : (
-                <Navigate to="/login" replace />
-              )
-            }
-          />
         </Routes>
         {isAuthenticated && <MessageNotifier />}
         {isAuthenticated && <ChatBot />}
