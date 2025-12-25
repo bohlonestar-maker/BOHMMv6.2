@@ -101,6 +101,10 @@ export default function WallOfHonor({ token, userRole }) {
       is_first_responder: false
     });
     setEditingMember(null);
+    setPhotoPreview(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
   };
 
   const openAddDialog = () => {
@@ -122,6 +126,7 @@ export default function WallOfHonor({ token, userRole }) {
       military_branch: member.military_branch || "",
       is_first_responder: member.is_first_responder || false
     });
+    setPhotoPreview(member.photo_url || null);
     setEditingMember(member);
     setDialogOpen(true);
   };
