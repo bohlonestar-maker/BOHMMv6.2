@@ -3137,7 +3137,15 @@ async def update_fallen_member(
     if not existing:
         raise HTTPException(status_code=404, detail="Fallen member not found")
     
-    update_data = {k: v for k, v in fallen_update.model_dump().items() if v is not None}
+    # Filter out None values, but also preserve existing photo_url if empty string is sent
+    update_data = {}
+    for k, v in fallen_update.model_dump().items():
+        if v is not None:
+            # Special handling for photo_url - don't overwrite with empty string unless explicitly clearing
+            if k == 'photo_url' and v == '' and existing.get('photo_url'):
+                # Keep the existing photo if new value is empty but old exists
+                continue
+            update_data[k] = v
     
     if update_data:
         await db.fallen_members.update_one(
