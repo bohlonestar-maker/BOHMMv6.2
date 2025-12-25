@@ -169,20 +169,35 @@ export default function Prospects({ onLogout, userRole }) {
 
   const handleEdit = (prospect) => {
     setEditingProspect(prospect);
-    const attendanceData = prospect.meeting_attendance || {
-      year: new Date().getFullYear(),
-      meetings: Array(24).fill(null).map(() => ({ status: 0, note: "" }))
-    };
-
-    const meetings = attendanceData.meetings.map((meeting) => {
-      if (typeof meeting === 'object' && meeting !== null) {
-        return {
-          status: meeting.status || 0,
-          note: meeting.note || ""
-        };
+    const currentYear = new Date().getFullYear().toString();
+    
+    // Handle meeting_attendance - support both old and new format
+    let attendanceData = {};
+    
+    if (prospect.meeting_attendance) {
+      if (prospect.meeting_attendance.year && prospect.meeting_attendance.meetings) {
+        // Old format - convert to new flexible format
+        const yearStr = prospect.meeting_attendance.year.toString();
+        const meetings = prospect.meeting_attendance.meetings || [];
+        attendanceData[yearStr] = meetings.map((m, idx) => {
+          const monthIdx = Math.floor(idx / 2);
+          const weekNum = (idx % 2) + 1;
+          const approxDate = new Date(parseInt(yearStr), monthIdx, weekNum * 7);
+          return {
+            date: approxDate.toISOString().split('T')[0],
+            status: typeof m === 'object' ? (m.status || 0) : (m || 0),
+            note: typeof m === 'object' ? (m.note || '') : ''
+          };
+        }).filter(m => m.status !== 0 || m.note);
+      } else {
+        // New format - use as is
+        attendanceData = { ...prospect.meeting_attendance };
       }
-      return { status: meeting || 0, note: "" };
-    });
+    }
+    
+    if (!attendanceData[currentYear]) {
+      attendanceData[currentYear] = [];
+    }
 
     setFormData({
       handle: prospect.handle,
@@ -195,10 +210,7 @@ export default function Prospects({ onLogout, userRole }) {
       military_service: prospect.military_service || false,
       military_branch: prospect.military_branch || "",
       is_first_responder: prospect.is_first_responder || false,
-      meeting_attendance: {
-        year: attendanceData.year || new Date().getFullYear(),
-        meetings: meetings
-      }
+      meeting_attendance: attendanceData
     });
     setDialogOpen(true);
   };
