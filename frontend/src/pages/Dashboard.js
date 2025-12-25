@@ -786,6 +786,18 @@ export default function Dashboard({ onLogout, userRole, userPermissions }) {
                     <span className="sm:hidden">Meetings</span>
                   </Button>
                 )}
+                {userRole === 'admin' && (
+                  <Button
+                    onClick={() => navigate("/quarterly-reports")}
+                    variant="outline"
+                    size="sm"
+                    className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm bg-green-900/30 text-green-400 border-green-600/50 hover:bg-green-900/50"
+                  >
+                    <FileSpreadsheet className="w-3 h-3 sm:w-4 sm:h-4" />
+                    <span className="hidden sm:inline">Reports</span>
+                    <span className="sm:hidden">Reports</span>
+                  </Button>
+                )}
                 <Button
                   onClick={() => navigate("/events")}
                   variant="outline"
