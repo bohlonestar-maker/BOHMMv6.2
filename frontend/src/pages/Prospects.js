@@ -701,81 +701,95 @@ export default function Prospects({ onLogout, userRole }) {
                     </div>
                   </div>
 
-                  <div className="border-t border-slate-700 pt-4">
-                    <div className="flex justify-between items-center mb-3">
-                      <Label className="text-base font-semibold">Meeting Attendance</Label>
-                      <div className="flex items-center gap-2">
-                        <Label className="text-sm">Year:</Label>
-                        <Input
-                          type="number"
-                          value={formData.meeting_attendance.year}
-                          onChange={(e) => setFormData({
-                            ...formData,
-                            meeting_attendance: {
-                              ...formData.meeting_attendance,
-                              year: parseInt(e.target.value)
-                            }
-                          })}
-                          className="w-24"
-                        />
+                  {/* Collapsible Meeting Attendance Section */}
+                  <div className="border border-slate-600 rounded-lg overflow-hidden">
+                    <button
+                      type="button"
+                      onClick={() => setAttendanceExpanded(!attendanceExpanded)}
+                      className="w-full flex items-center justify-between p-3 bg-slate-700/50 hover:bg-slate-700 transition-colors"
+                    >
+                      <div className="flex items-center gap-3">
+                        <Label className="cursor-pointer text-base font-semibold">Meeting Attendance ({formData.meeting_attendance.year})</Label>
+                        {/* Summary counts */}
+                        {(() => {
+                          const meetings = formData.meeting_attendance.meetings || [];
+                          const present = meetings.filter(m => m?.status === 1).length;
+                          const excused = meetings.filter(m => m?.status === 2).length;
+                          const absent = meetings.filter(m => !m?.status || m?.status === 0).length;
+                          return (
+                            <div className="flex gap-2 text-xs">
+                              <span className="px-2 py-0.5 bg-green-600 text-white rounded">{present} P</span>
+                              <span className="px-2 py-0.5 bg-orange-500 text-white rounded">{excused} E</span>
+                              <span className="px-2 py-0.5 bg-red-600/80 text-white rounded">{absent} A</span>
+                            </div>
+                          );
+                        })()}
                       </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 max-h-96 overflow-y-auto">
-                      {["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"].map((month, monthIndex) => (
-                        <div key={month} className="border border-slate-700 rounded p-3 bg-slate-900">
-                          <p className="text-sm font-medium mb-2 text-slate-200">{month}</p>
-                          <div className="space-y-2">
-                            <div>
-                              <button
-                                type="button"
-                                onClick={() => handleAttendanceToggle(monthIndex * 2)}
-                                className={`w-full px-2 py-2 rounded text-xs font-medium transition-colors ${
-                                  formData.meeting_attendance.meetings[monthIndex * 2].status === 1
-                                    ? 'bg-green-600 text-white hover:bg-green-700'
-                                    : formData.meeting_attendance.meetings[monthIndex * 2].status === 2
-                                    ? 'bg-orange-500 text-white hover:bg-orange-600'
-                                    : 'bg-red-600 text-white hover:bg-red-700'
-                                }`}
-                              >
-                                {month}-1st {meetingDates[monthIndex * 2] && `(${formatMeetingDate(meetingDates[monthIndex * 2])})`}
-                              </button>
-                              {(formData.meeting_attendance.meetings[monthIndex * 2].status === 0 || formData.meeting_attendance.meetings[monthIndex * 2].status === 2) && (
-                                <Input
-                                  placeholder={`${month}-1st note (${formData.meeting_attendance.meetings[monthIndex * 2].status === 2 ? 'excused' : 'unexcused'} absence)`}
-                                  value={formData.meeting_attendance.meetings[monthIndex * 2].note}
-                                  onChange={(e) => handleAttendanceNoteChange(monthIndex * 2, e.target.value)}
-                                  className="mt-1 text-xs"
-                                />
-                              )}
-                            </div>
-                            <div>
-                              <button
-                                type="button"
-                                onClick={() => handleAttendanceToggle(monthIndex * 2 + 1)}
-                                className={`w-full px-2 py-2 rounded text-xs font-medium transition-colors ${
-                                  formData.meeting_attendance.meetings[monthIndex * 2 + 1].status === 1
-                                    ? 'bg-green-600 text-white hover:bg-green-700'
-                                    : formData.meeting_attendance.meetings[monthIndex * 2 + 1].status === 2
-                                    ? 'bg-orange-500 text-white hover:bg-orange-600'
-                                    : 'bg-red-600 text-white hover:bg-red-700'
-                                }`}
-                              >
-                                {month}-3rd {meetingDates[monthIndex * 2 + 1] && `(${formatMeetingDate(meetingDates[monthIndex * 2 + 1])})`}
-                              </button>
-                              {(formData.meeting_attendance.meetings[monthIndex * 2 + 1].status === 0 || formData.meeting_attendance.meetings[monthIndex * 2 + 1].status === 2) && (
-                                <Input
-                                  placeholder={`${month}-3rd note (${formData.meeting_attendance.meetings[monthIndex * 2 + 1].status === 2 ? 'excused' : 'unexcused'} absence)`}
-                                  value={formData.meeting_attendance.meetings[monthIndex * 2 + 1].note}
-                                  onChange={(e) => handleAttendanceNoteChange(monthIndex * 2 + 1, e.target.value)}
-                                  className="mt-1 text-xs"
-                                />
-                              )}
-                            </div>
-                          </div>
+                      <svg 
+                        className={`w-5 h-5 text-slate-400 transition-transform ${attendanceExpanded ? 'rotate-180' : ''}`}
+                        fill="none" 
+                        stroke="currentColor" 
+                        viewBox="0 0 24 24"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </button>
+                    
+                    {attendanceExpanded && (
+                      <div className="p-3 space-y-3 bg-slate-800/50">
+                        <div className="flex justify-end gap-2 text-xs">
+                          <span className="text-green-500">● Present</span>
+                          <span className="text-orange-500">● Excused</span>
+                          <span className="text-red-500">● Absent</span>
                         </div>
-                      ))}
-                    </div>
+                        {/* Compact 6x4 grid for 24 meetings */}
+                        <div className="grid grid-cols-6 gap-1">
+                          {["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"].map((month, monthIndex) => {
+                            const meeting1 = formData.meeting_attendance.meetings[monthIndex * 2];
+                            const meeting2 = formData.meeting_attendance.meetings[monthIndex * 2 + 1];
+                            
+                            return (
+                              <div key={month} className="flex flex-col gap-0.5">
+                                <span className="text-[10px] text-slate-400 text-center">{month}</span>
+                                <div className="flex gap-0.5">
+                                  <button
+                                    type="button"
+                                    onClick={() => handleAttendanceToggle(monthIndex * 2)}
+                                    className={`flex-1 h-6 rounded text-[10px] font-medium transition-colors ${
+                                      meeting1?.status === 1
+                                        ? 'bg-green-600 text-white'
+                                        : meeting1?.status === 2
+                                        ? 'bg-orange-500 text-white'
+                                        : 'bg-red-600/80 text-white'
+                                    }`}
+                                    title={`${month} 1st - ${meeting1?.status === 1 ? 'Present' : meeting1?.status === 2 ? 'Excused' : 'Absent'}${meeting1?.note ? ': ' + meeting1.note : ''}`}
+                                  >
+                                    1
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleAttendanceToggle(monthIndex * 2 + 1)}
+                                    className={`flex-1 h-6 rounded text-[10px] font-medium transition-colors ${
+                                      meeting2?.status === 1
+                                        ? 'bg-green-600 text-white'
+                                        : meeting2?.status === 2
+                                        ? 'bg-orange-500 text-white'
+                                        : 'bg-red-600/80 text-white'
+                                    }`}
+                                    title={`${month} 3rd - ${meeting2?.status === 1 ? 'Present' : meeting2?.status === 2 ? 'Excused' : 'Absent'}${meeting2?.note ? ': ' + meeting2.note : ''}`}
+                                  >
+                                    3
+                                  </button>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                        <p className="text-xs text-slate-500">
+                          Click to cycle: Absent → Present → Excused. Hover for details.
+                        </p>
+                      </div>
+                    )}
                   </div>
 
                   <div className="flex gap-3 justify-end pt-4">
