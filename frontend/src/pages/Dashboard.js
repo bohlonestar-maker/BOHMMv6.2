@@ -1237,16 +1237,17 @@ export default function Dashboard({ onLogout, userRole, userPermissions }) {
                           className="w-full flex items-center justify-between p-3 bg-slate-700/50 hover:bg-slate-700 transition-colors"
                         >
                           <div className="flex items-center gap-3">
-                            <Label className="cursor-pointer">Meeting Attendance ({new Date().getFullYear()})</Label>
+                            <Label className="cursor-pointer">Meeting Attendance ({selectedYear})</Label>
                             {/* Summary counts when collapsed */}
                             {(() => {
-                              const currentYear = new Date().getFullYear().toString();
-                              const yearMeetings = formData.meeting_attendance[currentYear] || [];
+                              const yearMeetings = formData.meeting_attendance[selectedYear] || [];
                               const present = yearMeetings.filter(m => m?.status === 1).length;
                               const excused = yearMeetings.filter(m => m?.status === 2).length;
-                              const absent = yearMeetings.filter(m => !m?.status || m?.status === 0).length;
+                              const absent = yearMeetings.filter(m => m?.status === 0).length;
+                              const total = yearMeetings.length;
                               return (
                                 <div className="flex gap-2 text-xs">
+                                  <span className="px-2 py-0.5 bg-slate-600 text-white rounded">{total} total</span>
                                   <span className="px-2 py-0.5 bg-green-600 text-white rounded">{present} P</span>
                                   <span className="px-2 py-0.5 bg-orange-500 text-white rounded">{excused} E</span>
                                   <span className="px-2 py-0.5 bg-red-600/80 text-white rounded">{absent} A</span>
@@ -1266,121 +1267,178 @@ export default function Dashboard({ onLogout, userRole, userPermissions }) {
                         
                         {attendanceExpanded && (
                           <div className="p-3 space-y-3 bg-slate-800/50">
-                            {/* Year Selector */}
-                            {userRole === 'admin' && availableYears.length > 1 && (
-                              <div className="flex items-center gap-2 mb-2">
+                            {/* Year Selector and Add Meeting Button */}
+                            <div className="flex items-center justify-between gap-2 mb-2">
+                              <div className="flex items-center gap-2">
                                 <span className="text-xs text-slate-400">Year:</span>
                                 <select
                                   value={selectedYear}
                                   onChange={(e) => setSelectedYear(e.target.value)}
                                   className="bg-slate-700 border border-slate-600 text-white text-xs rounded px-2 py-1"
                                 >
-                                  {availableYears.map(year => (
+                                  {[...new Set([...availableYears, new Date().getFullYear().toString()])].sort((a, b) => b - a).map(year => (
                                     <option key={year} value={year}>{year}</option>
                                   ))}
                                 </select>
-                                {selectedYear !== new Date().getFullYear().toString() && (
-                                  <span className="text-xs text-yellow-400">(Viewing historical data - read only)</span>
-                                )}
                               </div>
-                            )}
+                              {userRole === 'admin' && (
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  onClick={() => setAddMeetingDialogOpen(true)}
+                                  className="bg-blue-600 hover:bg-blue-700 text-xs h-7"
+                                >
+                                  <Plus className="w-3 h-3 mr-1" />
+                                  Add Meeting
+                                </Button>
+                              )}
+                            </div>
+                            
+                            {/* Legend */}
                             <div className="flex justify-between items-center text-xs">
-                              <span className="text-slate-400">Click to cycle status, right-click to add note</span>
+                              <span className="text-slate-400">Click to cycle status</span>
                               <div className="flex gap-2">
                                 <span className="text-green-500">● Present</span>
                                 <span className="text-orange-500">● Excused</span>
                                 <span className="text-red-500">● Absent</span>
                               </div>
                             </div>
-                            {/* Compact 6x4 grid for 24 meetings */}
-                            <div className="grid grid-cols-6 gap-1">
-                              {monthNames.map((month, monthIndex) => {
-                                const yearMeetings = formData.meeting_attendance[selectedYear] || Array(24).fill(null).map(() => ({ status: 0, note: "" }));
-                                const meeting1 = yearMeetings[monthIndex * 2];
-                                const meeting2 = yearMeetings[monthIndex * 2 + 1];
-                                const isCurrentYear = selectedYear === new Date().getFullYear().toString();
-                                
+                            
+                            {/* Flexible Meetings List */}
+                            {(() => {
+                              const yearMeetings = formData.meeting_attendance[selectedYear] || [];
+                              const isCurrentYear = selectedYear === new Date().getFullYear().toString();
+                              
+                              if (yearMeetings.length === 0) {
                                 return (
-                                  <div key={month} className="flex flex-col gap-0.5">
-                                    <span className="text-[10px] text-slate-400 text-center">{month.slice(0, 3)}</span>
-                                    <div className="flex gap-0.5">
-                                      <button
-                                        type="button"
-                                        onClick={() => isCurrentYear && handleAttendanceToggle(monthIndex * 2)}
-                                        disabled={!isCurrentYear}
-                                        onContextMenu={(e) => {
-                                          e.preventDefault();
-                                          if (isCurrentYear) setEditingNoteIndex(editingNoteIndex === monthIndex * 2 ? null : monthIndex * 2);
-                                        }}
-                                        className={`flex-1 h-6 rounded text-[10px] font-medium transition-colors relative ${
-                                          meeting1?.status === 1
-                                            ? 'bg-green-600 text-white'
-                                            : meeting1?.status === 2
-                                            ? 'bg-orange-500 text-white'
-                                            : 'bg-red-600/80 text-white'
-                                        } ${meeting1?.note ? 'ring-2 ring-yellow-400' : ''} ${!isCurrentYear ? 'opacity-60 cursor-not-allowed' : ''}`}
-                                        title={`${month} 1st - ${meeting1?.status === 1 ? 'Present' : meeting1?.status === 2 ? 'Excused' : 'Absent'}${meeting1?.note ? '\nNote: ' + meeting1.note : ''}${isCurrentYear ? '\n(Right-click to add note)' : ''}`}
-                                      >
-                                        1{meeting1?.note ? '*' : ''}
-                                      </button>
-                                      <button
-                                        type="button"
-                                        onClick={() => isCurrentYear && handleAttendanceToggle(monthIndex * 2 + 1)}
-                                        disabled={!isCurrentYear}
-                                        onContextMenu={(e) => {
-                                          e.preventDefault();
-                                          if (isCurrentYear) setEditingNoteIndex(editingNoteIndex === monthIndex * 2 + 1 ? null : monthIndex * 2 + 1);
-                                        }}
-                                        className={`flex-1 h-6 rounded text-[10px] font-medium transition-colors relative ${
-                                          meeting2?.status === 1
-                                            ? 'bg-green-600 text-white'
-                                            : meeting2?.status === 2
-                                            ? 'bg-orange-500 text-white'
-                                            : 'bg-red-600/80 text-white'
-                                        } ${meeting2?.note ? 'ring-2 ring-yellow-400' : ''} ${!isCurrentYear ? 'opacity-60 cursor-not-allowed' : ''}`}
-                                        title={`${month} 3rd - ${meeting2?.status === 1 ? 'Present' : meeting2?.status === 2 ? 'Excused' : 'Absent'}${meeting2?.note ? '\nNote: ' + meeting2.note : ''}${isCurrentYear ? '\n(Right-click to add note)' : ''}`}
-                                      >
-                                        3{meeting2?.note ? '*' : ''}
-                                      </button>
-                                    </div>
+                                  <div className="text-center py-4 text-slate-500 text-sm">
+                                    No meetings recorded for {selectedYear}
+                                    {userRole === 'admin' && <p className="text-xs mt-1">Click "Add Meeting" to add one</p>}
                                   </div>
                                 );
-                              })}
-                            </div>
-                            
-                            {/* Note editing area */}
-                            {editingNoteIndex !== null && selectedYear === new Date().getFullYear().toString() && (
-                              <div className="mt-2 p-2 bg-slate-900 rounded border border-slate-600">
-                                <div className="flex items-center justify-between mb-1">
-                                  <span className="text-xs text-slate-300">
-                                    Note for {monthNames[Math.floor(editingNoteIndex / 2)]}-{editingNoteIndex % 2 === 0 ? '1st' : '3rd'}:
-                                  </span>
-                                  <button
-                                    type="button"
-                                    onClick={() => setEditingNoteIndex(null)}
-                                    className="text-slate-400 hover:text-white text-xs"
-                                  >
-                                    ✕
-                                  </button>
+                              }
+                              
+                              return (
+                                <div className="space-y-1 max-h-48 overflow-y-auto">
+                                  {yearMeetings.map((meeting, idx) => (
+                                    <div 
+                                      key={idx} 
+                                      className="flex items-center gap-2 p-2 bg-slate-900/50 rounded"
+                                    >
+                                      {/* Date */}
+                                      <span className="text-xs text-slate-300 w-20 flex-shrink-0">
+                                        {formatMeetingDate(meeting.date)}
+                                      </span>
+                                      
+                                      {/* Status Button */}
+                                      <button
+                                        type="button"
+                                        onClick={() => isCurrentYear && handleAttendanceToggle(idx)}
+                                        disabled={!isCurrentYear}
+                                        className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
+                                          meeting.status === 1
+                                            ? 'bg-green-600 text-white'
+                                            : meeting.status === 2
+                                            ? 'bg-orange-500 text-white'
+                                            : 'bg-red-600/80 text-white'
+                                        } ${!isCurrentYear ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'}`}
+                                      >
+                                        {meeting.status === 1 ? 'Present' : meeting.status === 2 ? 'Excused' : 'Absent'}
+                                      </button>
+                                      
+                                      {/* Note Input */}
+                                      {isCurrentYear ? (
+                                        <Input
+                                          type="text"
+                                          value={meeting.note || ''}
+                                          onChange={(e) => handleAttendanceNote(idx, e.target.value)}
+                                          placeholder="Note..."
+                                          className="flex-1 text-xs h-7 bg-slate-800 border-slate-600 text-white"
+                                        />
+                                      ) : (
+                                        <span className="flex-1 text-xs text-slate-400 truncate">
+                                          {meeting.note || '—'}
+                                        </span>
+                                      )}
+                                      
+                                      {/* Delete Button */}
+                                      {userRole === 'admin' && isCurrentYear && (
+                                        <button
+                                          type="button"
+                                          onClick={() => handleDeleteMeeting(idx)}
+                                          className="text-red-400 hover:text-red-300 p-1"
+                                          title="Remove meeting"
+                                        >
+                                          <Trash2 className="w-3 h-3" />
+                                        </button>
+                                      )}
+                                    </div>
+                                  ))}
                                 </div>
-                                <Input
-                                  value={(() => {
-                                    const yearMeetings = formData.meeting_attendance[selectedYear] || [];
-                                    return yearMeetings[editingNoteIndex]?.note || '';
-                                  })()}
-                                  onChange={(e) => handleAttendanceNote(editingNoteIndex, e.target.value)}
-                                  placeholder="Add note (e.g., reason for absence)"
-                                  className="text-xs bg-slate-800 border-slate-600 text-white"
-                                />
-                              </div>
-                            )}
-                            
-                            <p className="text-xs text-slate-500">
-                              * = has note | Yellow ring = has note
-                            </p>
+                              );
+                            })()}
                           </div>
                         )}
                       </div>
+
+                      {/* Add Meeting Dialog */}
+                      <Dialog open={addMeetingDialogOpen} onOpenChange={setAddMeetingDialogOpen}>
+                        <DialogContent className="bg-slate-800 border-slate-600 max-w-sm">
+                          <DialogHeader>
+                            <DialogTitle className="text-white">Add Meeting</DialogTitle>
+                          </DialogHeader>
+                          <div className="space-y-4">
+                            <div>
+                              <Label className="text-slate-200">Date</Label>
+                              <Input
+                                type="date"
+                                value={newMeetingDate}
+                                onChange={(e) => setNewMeetingDate(e.target.value)}
+                                className="mt-1 bg-slate-700 border-slate-600 text-white"
+                              />
+                            </div>
+                            <div>
+                              <Label className="text-slate-200">Status</Label>
+                              <Select value={newMeetingStatus.toString()} onValueChange={(v) => setNewMeetingStatus(parseInt(v))}>
+                                <SelectTrigger className="mt-1 bg-slate-700 border-slate-600 text-white">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent className="bg-slate-800 border-slate-600">
+                                  <SelectItem value="1" className="text-white hover:bg-slate-700">Present</SelectItem>
+                                  <SelectItem value="2" className="text-white hover:bg-slate-700">Excused</SelectItem>
+                                  <SelectItem value="0" className="text-white hover:bg-slate-700">Absent</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div>
+                              <Label className="text-slate-200">Note (optional)</Label>
+                              <Input
+                                value={newMeetingNote}
+                                onChange={(e) => setNewMeetingNote(e.target.value)}
+                                placeholder="e.g., reason for absence"
+                                className="mt-1 bg-slate-700 border-slate-600 text-white"
+                              />
+                            </div>
+                            <div className="flex gap-3 justify-end pt-2">
+                              <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => setAddMeetingDialogOpen(false)}
+                                className="text-white border-slate-600"
+                              >
+                                Cancel
+                              </Button>
+                              <Button
+                                type="button"
+                                onClick={handleAddMeeting}
+                                className="bg-blue-600 hover:bg-blue-700"
+                              >
+                                Add Meeting
+                              </Button>
+                            </div>
+                          </div>
+                        </DialogContent>
+                      </Dialog>
 
                       <div className="flex gap-3 justify-end pt-4">
                         <Button
