@@ -919,6 +919,26 @@ class FallenMemberUpdate(BaseModel):
     military_branch: Optional[str] = None
     is_first_responder: Optional[bool] = None
 
+# Meeting models for flexible meeting tracking
+class Meeting(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    date: str  # YYYY-MM-DD format
+    name: Optional[str] = None  # e.g., "Weekly Meeting", "Special Meeting"
+    year: str = Field(default_factory=lambda: str(datetime.now(timezone.utc).year))
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    created_by: Optional[str] = None
+
+class MeetingCreate(BaseModel):
+    date: str
+    name: Optional[str] = None
+
+class MeetingAttendanceRecord(BaseModel):
+    meeting_id: str
+    member_id: str
+    status: int = 0  # 0=absent, 1=present, 2=excused
+    note: Optional[str] = None
+
 class PrivateMessage(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
