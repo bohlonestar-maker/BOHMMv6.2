@@ -17,6 +17,7 @@ import ArchivedMembers from "@/pages/ArchivedMembers";
 import ArchivedProspects from "@/pages/ArchivedProspects";
 import DiscordAnalytics from "@/pages/DiscordAnalytics";
 import WallOfHonor from "@/pages/WallOfHonor";
+import MeetingManager from "@/pages/MeetingManager";
 import ChatBot from "@/components/ChatBot";
 import { Toaster } from "@/components/ui/sonner";
 
@@ -255,6 +256,16 @@ function App() {
                 <DiscordAnalytics />
               ) : (
                 <Navigate to="/" replace />
+              )
+            }
+          />
+          <Route
+            path="/meeting-manager"
+            element={
+              isAuthenticated ? (
+                <MeetingManager userRole={userRole} />
+              ) : (
+                <Navigate to="/login" replace />
               )
             }
           />
