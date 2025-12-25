@@ -90,6 +90,11 @@ export default function Prospects({ onLogout, userRole }) {
   const [meetingDates, setMeetingDates] = useState([]);
   const [attendanceExpanded, setAttendanceExpanded] = useState(false);
   const [editingNoteIndex, setEditingNoteIndex] = useState(null);
+  const [addMeetingDialogOpen, setAddMeetingDialogOpen] = useState(false);
+  const [newMeetingDate, setNewMeetingDate] = useState("");
+  const [newMeetingStatus, setNewMeetingStatus] = useState(1);
+  const [newMeetingNote, setNewMeetingNote] = useState("");
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear().toString());
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
@@ -104,8 +109,7 @@ export default function Prospects({ onLogout, userRole }) {
     military_branch: "",
     is_first_responder: false,
     meeting_attendance: {
-      year: new Date().getFullYear(),
-      meetings: Array(24).fill(null).map(() => ({ status: 0, note: "" }))
+      [new Date().getFullYear().toString()]: []
     }
   });
 
