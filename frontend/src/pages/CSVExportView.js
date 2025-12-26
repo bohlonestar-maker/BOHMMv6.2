@@ -16,7 +16,12 @@ export default function CSVExportView() {
   const [showSheetsModal, setShowSheetsModal] = useState(false);
   const [selectedColumns, setSelectedColumns] = useState([]);
   const [selectedPreset, setSelectedPreset] = useState('');
+  const [selectedChapters, setSelectedChapters] = useState(['National', 'AD', 'HA', 'HS']);
+  const [selectedMembers, setSelectedMembers] = useState([]);
+  const [memberFilterMode, setMemberFilterMode] = useState('all'); // 'all', 'chapters', 'specific'
   const navigate = useNavigate();
+
+  const CHAPTERS = ['National', 'AD', 'HA', 'HS'];
 
   useEffect(() => {
     fetchCSVData();
