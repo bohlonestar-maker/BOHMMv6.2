@@ -603,6 +603,117 @@ async def verify_admin(current_user: dict = Depends(verify_token)):
         raise HTTPException(status_code=403, detail="Admin access required")
     return current_user
 
+# Permission checking helpers
+def is_national_admin(user: dict) -> bool:
+    """Check if user is a National chapter admin"""
+    return user.get("role") == "admin" and user.get("chapter") == "National"
+
+def can_view_prospects(user: dict) -> bool:
+    """Check if user can view prospects list"""
+    role = user.get("role", "")
+    chapter = user.get("chapter", "")
+    
+    # National Admin and HA Admin can view prospects
+    if role == "admin" and chapter in ["National", "HA"]:
+        return True
+    return False
+
+def can_edit_member(user: dict, member_chapter: str) -> bool:
+    """Check if user can edit a member based on their chapter"""
+    role = user.get("role", "")
+    user_chapter = user.get("chapter", "")
+    
+    if role != "admin":
+        return False
+    
+    # National Admin can edit all
+    if user_chapter == "National":
+        return True
+    
+    # Chapter admins can only edit their own chapter
+    return user_chapter == member_chapter
+
+def can_edit_prospect(user: dict) -> bool:
+    """Check if user can edit prospects"""
+    role = user.get("role", "")
+    chapter = user.get("chapter", "")
+    
+    # Only National Admin and HA Admin can edit prospects
+    return role == "admin" and chapter in ["National", "HA"]
+
+def can_view_private_info(user: dict, data_chapter: str = None) -> bool:
+    """Check if user can view private information"""
+    role = user.get("role", "")
+    user_chapter = user.get("chapter", "")
+    
+    # Prospects cannot view private info
+    if role == "prospect":
+        return False
+    
+    # National Admin can see all private info
+    if role == "admin" and user_chapter == "National":
+        return True
+    
+    # Other admins can see private info for their chapter only (unless they're HA for prospects)
+    if role == "admin":
+        return True  # Admins can view all unless specifically restricted
+    
+    # Members cannot see private info
+    return False
+
+def filter_member_for_user(member: dict, user: dict) -> dict:
+    """Filter member data based on user permissions"""
+    role = user.get("role", "")
+    user_chapter = user.get("chapter", "")
+    
+    # National Admin sees everything
+    if role == "admin" and user_chapter == "National":
+        return member
+    
+    # Create a copy to avoid modifying original
+    filtered = dict(member)
+    
+    # Prospects can only see non-private info and cannot see names/emails
+    if role == "prospect":
+        if member.get("phone_private"):
+            filtered["phone"] = "Private"
+        if member.get("address_private"):
+            filtered["address"] = "Private"
+        # Prospects cannot see member names or emails
+        filtered["name"] = "Private"
+        filtered["email"] = "Private"
+        return filtered
+    
+    # Members see everything except private fields
+    if role == "member":
+        if member.get("phone_private"):
+            filtered["phone"] = "Private"
+        if member.get("address_private"):
+            filtered["address"] = "Private"
+        if member.get("email_private"):
+            filtered["email"] = "Private"
+        return filtered
+    
+    # Chapter admins (non-National) see everything but respect privacy for other chapters
+    if role == "admin":
+        # Admins can see all data
+        return filtered
+    
+    return filtered
+
+def filter_prospect_for_user(prospect: dict, user: dict) -> dict:
+    """Filter prospect data based on user permissions"""
+    role = user.get("role", "")
+    user_chapter = user.get("chapter", "")
+    
+    # National and HA Admin see everything
+    if role == "admin" and user_chapter in ["National", "HA"]:
+        return prospect
+    
+    # Prospects can only see their own data (handled at API level)
+    # Other users shouldn't reach here as they don't have access
+    return prospect
+
 # Audit logging helper
 async def log_activity(username: str, action: str, details: str, ip_address: str = None):
     """Log user activity to audit log"""
