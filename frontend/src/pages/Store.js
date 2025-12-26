@@ -1159,32 +1159,100 @@ export default function Store({ userRole, userChapter }) {
                 </div>
               )}
               
-              {/* Handle Customization */}
+              {/* Add Text Options (Handle and Rank) */}
               {selectedProduct.allows_customization && (
-                <div>
-                  <Label className="text-slate-200 mb-2 block">
-                    Add Your Handle (Optional)
-                  </Label>
-                  <Input
-                    value={handleText}
-                    onChange={(e) => setHandleText(e.target.value)}
-                    placeholder="Enter your handle to print on shirt"
-                    className="bg-slate-700 border-slate-600 text-white"
-                    maxLength={30}
-                  />
-                  <p className="text-xs text-slate-500 mt-1">
-                    Your handle will be printed on the shirt
+                <div className="space-y-3 border border-slate-600 rounded-lg p-4 bg-slate-700/30">
+                  <Label className="text-slate-200 font-semibold block">Add Text</Label>
+                  
+                  {/* Add Handle Checkbox */}
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="checkbox"
+                        id="addHandle"
+                        checked={addHandle}
+                        onChange={(e) => {
+                          setAddHandle(e.target.checked);
+                          if (!e.target.checked) setHandleText("");
+                        }}
+                        className="w-4 h-4 rounded border-slate-500 bg-slate-700 text-blue-600 focus:ring-blue-500"
+                      />
+                      <label htmlFor="addHandle" className="text-slate-300 flex-1">
+                        Add your Handle
+                      </label>
+                      <span className="text-green-400 font-semibold">+$5.00</span>
+                    </div>
+                    {addHandle && (
+                      <Input
+                        value={handleText}
+                        onChange={(e) => setHandleText(e.target.value)}
+                        placeholder="Enter your handle"
+                        className="bg-slate-700 border-slate-600 text-white"
+                        maxLength={30}
+                      />
+                    )}
+                  </div>
+                  
+                  {/* Add Rank Checkbox */}
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="checkbox"
+                        id="addRank"
+                        checked={addRank}
+                        onChange={(e) => {
+                          setAddRank(e.target.checked);
+                          if (!e.target.checked) setRankText("");
+                        }}
+                        className="w-4 h-4 rounded border-slate-500 bg-slate-700 text-blue-600 focus:ring-blue-500"
+                      />
+                      <label htmlFor="addRank" className="text-slate-300 flex-1">
+                        Add your Rank <span className="text-slate-500">(Officer&apos;s Only)</span>
+                      </label>
+                      <span className="text-green-400 font-semibold">+$5.00</span>
+                    </div>
+                    {addRank && (
+                      <Input
+                        value={rankText}
+                        onChange={(e) => setRankText(e.target.value)}
+                        placeholder="Enter your rank"
+                        className="bg-slate-700 border-slate-600 text-white"
+                        maxLength={30}
+                      />
+                    )}
+                  </div>
+                  
+                  <p className="text-xs text-amber-400 mt-2">
+                    ⚠️ If you add your rank or handle without checking the box to add it, your item WILL NOT include your rank or handle.
                   </p>
                 </div>
               )}
               
               {/* Price Summary */}
               <div className="border-t border-slate-700 pt-3">
-                <div className="flex justify-between text-lg">
-                  <span className="text-slate-300">Price:</span>
-                  <span className="text-green-400 font-bold">
-                    ${(selectedVariation?.price || selectedProduct.display_price || selectedProduct.price).toFixed(2)}
-                  </span>
+                <div className="space-y-1">
+                  <div className="flex justify-between text-sm text-slate-400">
+                    <span>Base Price:</span>
+                    <span>${(selectedVariation?.price || selectedProduct.display_price || selectedProduct.price).toFixed(2)}</span>
+                  </div>
+                  {addHandle && (
+                    <div className="flex justify-between text-sm text-slate-400">
+                      <span>Handle:</span>
+                      <span>+$5.00</span>
+                    </div>
+                  )}
+                  {addRank && (
+                    <div className="flex justify-between text-sm text-slate-400">
+                      <span>Rank:</span>
+                      <span>+$5.00</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between text-lg font-bold border-t border-slate-600 pt-2">
+                    <span className="text-slate-200">Total:</span>
+                    <span className="text-green-400">
+                      ${calculateTotalPrice().toFixed(2)}
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
