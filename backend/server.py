@@ -6993,9 +6993,9 @@ async def get_store_product(product_id: str, current_user: dict = Depends(verify
 
 @api_router.post("/store/products", response_model=StoreProduct)
 async def create_store_product(product_data: StoreProductCreate, current_user: dict = Depends(verify_token)):
-    """Create a new store product (admin only)"""
-    if current_user.get("role") != "admin":
-        raise HTTPException(status_code=403, detail="Admin access required")
+    """Create a new store product (National Prez, VP, SEC only)"""
+    if not can_manage_store(current_user):
+        raise HTTPException(status_code=403, detail="Only National Prez, VP, and SEC can add store products")
     
     product = StoreProduct(**product_data.model_dump())
     doc = product.model_dump()
@@ -7014,9 +7014,9 @@ async def create_store_product(product_data: StoreProductCreate, current_user: d
 
 @api_router.put("/store/products/{product_id}")
 async def update_store_product(product_id: str, product_data: StoreProductUpdate, current_user: dict = Depends(verify_token)):
-    """Update a store product (admin only)"""
-    if current_user.get("role") != "admin":
-        raise HTTPException(status_code=403, detail="Admin access required")
+    """Update a store product (National Prez, VP, SEC only)"""
+    if not can_manage_store(current_user):
+        raise HTTPException(status_code=403, detail="Only National Prez, VP, and SEC can edit store products")
     
     product = await db.store_products.find_one({"id": product_id})
     if not product:
@@ -7032,9 +7032,9 @@ async def update_store_product(product_id: str, product_data: StoreProductUpdate
 
 @api_router.delete("/store/products/{product_id}")
 async def delete_store_product(product_id: str, current_user: dict = Depends(verify_token)):
-    """Delete a store product (admin only)"""
-    if current_user.get("role") != "admin":
-        raise HTTPException(status_code=403, detail="Admin access required")
+    """Delete a store product (National Prez, VP, SEC only)"""
+    if not can_manage_store(current_user):
+        raise HTTPException(status_code=403, detail="Only National Prez, VP, and SEC can delete store products")
     
     result = await db.store_products.delete_one({"id": product_id})
     if result.deleted_count == 0:
