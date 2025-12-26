@@ -7237,15 +7237,13 @@ async def process_payment(order_id: str, payment: PaymentRequest, current_user: 
             
             return {
                 "success": True,
-                "payment_id": square_payment.get("id"),
-                "amount": square_payment.get("amount_money", {}).get("amount", 0) / 100,
-                "status": square_payment.get("status"),
+                "payment_id": square_payment.id,
+                "amount": square_payment.amount_money.amount / 100 if square_payment.amount_money else 0,
+                "status": square_payment.status,
                 "order_id": order_id
             }
         else:
-            errors = result.errors
-            error_msg = errors[0].get("detail", "Payment failed") if errors else "Payment failed"
-            raise HTTPException(status_code=400, detail=error_msg)
+            raise HTTPException(status_code=400, detail="Payment failed")
             
     except HTTPException:
         raise
