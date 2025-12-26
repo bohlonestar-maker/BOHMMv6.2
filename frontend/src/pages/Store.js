@@ -572,112 +572,113 @@ export default function Store({ userRole, userChapter }) {
           {/* Merchandise Tab */}
           <TabsContent value="merchandise">
             {merchandiseProducts.length === 0 ? (
-              <div className="text-center py-12 text-slate-400">
-                <Package className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                <p>No merchandise available yet.</p>
-                {canManageStore && <p className="text-sm mt-2">Click &quot;Add Product&quot; to add items.</p>}
+              <div className="text-center py-8 sm:py-12 text-slate-400">
+                <Package className="w-10 h-10 sm:w-12 sm:h-12 mx-auto mb-4 opacity-50" />
+                <p className="text-sm sm:text-base">No merchandise available yet.</p>
+                {canManageStore && <p className="text-xs sm:text-sm mt-2">Click &quot;Add Product&quot; to add items.</p>}
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-4">
                 {merchandiseProducts.map((product) => (
-                  <Card key={product.id} className="bg-slate-800 border-slate-700">
-                    <CardHeader className="pb-2">
+                  <Card key={product.id} className="bg-slate-800 border-slate-700 flex flex-col">
+                    <CardHeader className="p-2 sm:p-4 pb-2">
                       {product.image_url ? (
                         <img
                           src={product.image_url}
                           alt={product.name}
-                          className="w-full h-48 object-cover rounded-md mb-2"
+                          className="w-full h-32 sm:h-40 md:h-48 object-cover rounded-md mb-2"
                         />
                       ) : (
-                        <div className="w-full h-48 bg-slate-700 rounded-md flex items-center justify-center mb-2">
-                          <ImageIcon className="w-12 h-12 text-slate-500" />
+                        <div className="w-full h-32 sm:h-40 md:h-48 bg-slate-700 rounded-md flex items-center justify-center mb-2">
+                          <ImageIcon className="w-8 h-8 sm:w-12 sm:h-12 text-slate-500" />
                         </div>
                       )}
-                      <CardTitle className="text-white text-lg">{product.name}</CardTitle>
+                      <CardTitle className="text-white text-sm sm:text-base md:text-lg line-clamp-2">{product.name}</CardTitle>
                       {product.description && (
-                        <CardDescription className="text-slate-400 text-sm line-clamp-2">
+                        <CardDescription className="text-slate-400 text-xs sm:text-sm line-clamp-2 hidden sm:block">
                           {product.description}
                         </CardDescription>
                       )}
                     </CardHeader>
-                    <CardContent>
-                      <div className="flex items-center justify-between mb-2">
+                    <CardContent className="p-2 sm:p-4 pt-0 flex-1">
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-2">
                         <div>
                           {product.is_member_price ? (
-                            <div className="flex items-center gap-2">
-                              <span className="text-xl font-bold text-green-400">
+                            <div className="flex flex-wrap items-center gap-1 sm:gap-2">
+                              <span className="text-base sm:text-xl font-bold text-green-400">
                                 ${product.display_price.toFixed(2)}
                               </span>
-                              <span className="text-sm text-slate-500 line-through">
+                              <span className="text-xs sm:text-sm text-slate-500 line-through">
                                 ${product.price.toFixed(2)}
                               </span>
-                              <Badge className="bg-green-600 text-xs">Member</Badge>
+                              <Badge className="bg-green-600 text-[10px] sm:text-xs">Member</Badge>
                             </div>
                           ) : (
-                            <span className="text-xl font-bold text-white">
+                            <span className="text-base sm:text-xl font-bold text-white">
                               {product.has_variations ? `From $${product.display_price.toFixed(2)}` : `$${product.display_price.toFixed(2)}`}
                             </span>
                           )}
                         </div>
                       </div>
-                      <div className="text-sm text-slate-400 mb-2">
+                      <div className="text-xs sm:text-sm text-slate-400 mb-2">
                         {product.inventory_count > 0 ? (
                           <span className="text-green-400">{product.inventory_count} in stock</span>
                         ) : (
                           <span className="text-red-400">Out of stock</span>
                         )}
                       </div>
-                      {/* Show size/variation badges */}
+                      {/* Show size/variation badges - hidden on mobile, visible on larger screens */}
                       {product.has_variations && product.variations && (
-                        <div className="flex flex-wrap gap-1 mb-2">
+                        <div className="hidden sm:flex flex-wrap gap-1 mb-2">
                           {product.variations.slice(0, 6).map((v) => (
                             <Badge 
                               key={v.id} 
                               variant="outline" 
-                              className={`text-xs ${v.sold_out || v.inventory_count === 0 ? 'text-slate-500 border-slate-600 line-through' : 'text-slate-300 border-slate-500'}`}
+                              className={`text-[10px] sm:text-xs ${v.sold_out || v.inventory_count === 0 ? 'text-slate-500 border-slate-600 line-through' : 'text-slate-300 border-slate-500'}`}
                             >
                               {v.name}
                             </Badge>
                           ))}
                           {product.variations.length > 6 && (
-                            <Badge variant="outline" className="text-xs text-slate-400">
+                            <Badge variant="outline" className="text-[10px] sm:text-xs text-slate-400">
                               +{product.variations.length - 6}
                             </Badge>
                           )}
                         </div>
                       )}
                       {product.allows_customization && (
-                        <Badge className="bg-purple-600 text-xs">Add Handle</Badge>
+                        <Badge className="bg-purple-600 text-[10px] sm:text-xs">Add Handle</Badge>
                       )}
                     </CardContent>
-                    <CardFooter className="flex gap-2">
+                    <CardFooter className="p-2 sm:p-4 pt-0 flex flex-col sm:flex-row gap-2">
                       <Button
                         onClick={() => handleAddToCartClick(product)}
                         disabled={product.inventory_count === 0}
-                        className="flex-1 bg-blue-600 hover:bg-blue-700"
+                        className="w-full sm:flex-1 bg-blue-600 hover:bg-blue-700 text-xs sm:text-sm py-2"
+                        size="sm"
                       >
-                        <ShoppingCart className="w-4 h-4 mr-2" />
-                        {product.has_variations ? 'Select Options' : 'Add to Cart'}
+                        <ShoppingCart className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+                        {product.has_variations ? 'Options' : 'Add'}
                       </Button>
                       {canManageStore && (
-                        <>
+                        <div className="flex gap-2 w-full sm:w-auto">
                           <Button
                             size="icon"
                             variant="outline"
                             onClick={() => handleEditProduct(product)}
-                            className="border-slate-600"
+                            className="border-slate-600 flex-1 sm:flex-none h-8 w-8 sm:h-9 sm:w-9"
                           >
-                            <Edit className="w-4 h-4" />
+                            <Edit className="w-3 h-3 sm:w-4 sm:h-4" />
                           </Button>
                           <Button
                             size="icon"
                             variant="outline"
                             onClick={() => handleDeleteProduct(product.id)}
-                            className="border-red-600 text-red-400 hover:bg-red-900"
+                            className="border-red-600 text-red-400 hover:bg-red-900 flex-1 sm:flex-none h-8 w-8 sm:h-9 sm:w-9"
                           >
-                            <Trash2 className="w-4 h-4" />
+                            <Trash2 className="w-3 h-3 sm:w-4 sm:h-4" />
                           </Button>
-                        </>
+                        </div>
                       )}
                     </CardFooter>
                   </Card>
