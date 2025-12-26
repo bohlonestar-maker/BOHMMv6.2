@@ -498,14 +498,88 @@ export default function CSVExportView() {
       {/* Print Custom Modal */}
       {showPrintModal && (
         <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 p-3 sm:p-4" onClick={() => setShowPrintModal(false)}>
-          <div className="bg-slate-800 rounded-lg p-4 sm:p-6 max-w-full sm:max-w-2xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-slate-800 rounded-lg p-4 sm:p-6 max-w-full sm:max-w-3xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-purple-400 mb-3 sm:mb-4">
               <i className="fas fa-print mr-2"></i>
               Print Custom
             </h2>
+
+            {/* Member Filter Section */}
+            <div className="mb-4 p-3 bg-slate-700/50 rounded-lg border border-slate-600">
+              <p className="text-slate-300 text-sm font-medium mb-2">Filter Members:</p>
+              <div className="flex flex-wrap gap-2 mb-3">
+                <button 
+                  onClick={() => setMemberFilterMode('all')}
+                  className={`px-3 py-1.5 rounded text-xs sm:text-sm ${memberFilterMode === 'all' ? 'bg-purple-600 text-white' : 'bg-slate-600 text-slate-300 hover:bg-slate-500'}`}
+                >
+                  All Members
+                </button>
+                <button 
+                  onClick={() => setMemberFilterMode('chapters')}
+                  className={`px-3 py-1.5 rounded text-xs sm:text-sm ${memberFilterMode === 'chapters' ? 'bg-purple-600 text-white' : 'bg-slate-600 text-slate-300 hover:bg-slate-500'}`}
+                >
+                  By Chapter
+                </button>
+                <button 
+                  onClick={() => setMemberFilterMode('specific')}
+                  className={`px-3 py-1.5 rounded text-xs sm:text-sm ${memberFilterMode === 'specific' ? 'bg-purple-600 text-white' : 'bg-slate-600 text-slate-300 hover:bg-slate-500'}`}
+                >
+                  Specific Members
+                </button>
+              </div>
+
+              {/* Chapter Selection */}
+              {memberFilterMode === 'chapters' && (
+                <div className="flex flex-wrap gap-2">
+                  {CHAPTERS.map(chapter => (
+                    <label key={chapter} className="flex items-center gap-2 bg-slate-800 px-3 py-1.5 rounded cursor-pointer hover:bg-slate-700">
+                      <input
+                        type="checkbox"
+                        checked={selectedChapters.includes(chapter)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedChapters([...selectedChapters, chapter]);
+                          } else {
+                            setSelectedChapters(selectedChapters.filter(c => c !== chapter));
+                          }
+                        }}
+                        className="w-4 h-4 accent-purple-600"
+                      />
+                      <span className="text-sm text-white">{chapter}</span>
+                    </label>
+                  ))}
+                </div>
+              )}
+
+              {/* Specific Member Selection */}
+              {memberFilterMode === 'specific' && (
+                <div className="max-h-40 overflow-y-auto bg-slate-800 rounded p-2">
+                  {getMemberList().map((member, idx) => (
+                    <label key={idx} className="flex items-center gap-2 py-1 px-2 hover:bg-slate-700 rounded cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={selectedMembers.includes(member.id)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedMembers([...selectedMembers, member.id]);
+                          } else {
+                            setSelectedMembers(selectedMembers.filter(m => m !== member.id));
+                          }
+                        }}
+                        className="w-4 h-4 accent-purple-600"
+                      />
+                      <span className="text-sm text-white">{member.handle}</span>
+                      <span className="text-xs text-slate-400">({member.name})</span>
+                      <span className="text-xs text-purple-400 ml-auto">{member.chapter}</span>
+                    </label>
+                  ))}
+                </div>
+              )}
+            </div>
             
+            {/* Column Selection */}
             <div className="mb-3 sm:mb-4">
-              <p className="text-slate-300 mb-2 sm:mb-3 text-sm sm:text-base">Select which columns to include:</p>
+              <p className="text-slate-300 mb-2 sm:mb-3 text-sm sm:text-base">Select columns to print:</p>
               <div className="flex flex-wrap gap-1.5 sm:gap-2 mb-3 sm:mb-4">
                 <button onClick={() => selectPreset('all')} className="bg-blue-600 hover:bg-blue-700 px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 rounded text-xs sm:text-sm">All Fields</button>
                 <button onClick={() => selectPreset('contact')} className="bg-purple-600 hover:bg-purple-700 px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 rounded text-xs sm:text-sm">Contact</button>
