@@ -213,7 +213,7 @@ export default function Store({ userRole, userChapter }) {
   };
 
   const clearCart = async () => {
-    try:
+    try {
       const token = localStorage.getItem("token");
       await axios.delete(`${API_URL}/api/store/cart/clear`, {
         headers: { Authorization: `Bearer ${token}` },
