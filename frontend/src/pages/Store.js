@@ -322,37 +322,6 @@ export default function Store({ userRole, userChapter }) {
     }
   };
 
-  const handlePaymentComplete = async (token) => {
-    if (!currentOrder) return;
-    
-    setProcessingPayment(true);
-    try {
-      const authToken = localStorage.getItem("token");
-      const response = await axios.post(
-        `${API_URL}/api/store/orders/${currentOrder.order_id}/pay`,
-        {
-          source_id: token.token,
-          amount_cents: currentOrder.total_cents,
-          order_id: currentOrder.order_id,
-        },
-        { headers: { Authorization: `Bearer ${authToken}` } }
-      );
-
-      if (response.data.success) {
-        toast.success("Payment successful!");
-        setCheckoutOpen(false);
-        setCurrentOrder(null);
-        setShippingAddress("");
-        setOrderNotes("");
-        await Promise.all([fetchCart(), fetchOrders()]);
-      }
-    } catch (error) {
-      toast.error(error.response?.data?.detail || "Payment failed");
-    } finally {
-      setProcessingPayment(false);
-    }
-  };
-
   // Dues payment handlers
   const createDuesOrder = async () => {
     try {
