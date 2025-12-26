@@ -50,41 +50,38 @@ export default function CSVExportView() {
     return result;
   };
 
-  const fetchCSVData = async () => {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      navigate('/');
-      return;
-    }
-
-    try {
-      const response = await axios.get(`${API}/api/members/export/csv`, {
-        headers: { Authorization: `Bearer ${token}` },
-        responseType: 'text',
-      });
-
-      const text = response.data;
-      setCsvText(text);
-      
-      // Parse CSV
-      const parsed = parseCSV(text);
-      setCsvData(parsed);
-      
-      // Initialize all columns as selected
-      if (parsed.length > 0) {
-        setSelectedColumns(Array.from({ length: parsed[0].length }, (_, i) => i));
-      }
-      
-      setLoading(false);
-    } catch (error) {
-      console.error('Error fetching CSV:', error);
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
-    fetchCSVData();
-  }, []);
+    const fetchData = async () => {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        navigate('/');
+        return;
+      }
+
+      try {
+        const response = await axios.get(`${API}/api/members/export/csv`, {
+          headers: { Authorization: `Bearer ${token}` },
+          responseType: 'text',
+        });
+
+        const text = response.data;
+        setCsvText(text);
+        
+        const parsed = parseCSV(text);
+        setCsvData(parsed);
+        
+        if (parsed.length > 0) {
+          setSelectedColumns(Array.from({ length: parsed[0].length }, (_, i) => i));
+        }
+      } catch (error) {
+        console.error('Error fetching CSV:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [navigate]);
 
   const filteredData = csvData.filter((row, index) => {
     if (index === 0) return true; // Always show header
