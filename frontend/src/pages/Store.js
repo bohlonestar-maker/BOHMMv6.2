@@ -645,7 +645,7 @@ export default function Store({ userRole, userChapter }) {
                         </div>
                         <div className="flex items-center gap-2">
                           {getStatusBadge(order.status)}
-                          {isAdmin && order.status === "paid" && (
+                          {canManageStore && order.status === "paid" && (
                             <Select
                               value={order.status}
                               onValueChange={(v) => updateOrderStatus(order.id, v)}
