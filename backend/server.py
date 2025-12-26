@@ -7322,9 +7322,6 @@ async def create_hosted_checkout(shipping_address: Optional[str] = None, notes: 
             
             line_items.append(line_item)
         
-        # Add tax as a separate line item (Square handles taxes differently)
-        # Or we can use Square's tax calculation
-        
         # Create order object for Square
         square_order = {
             "location_id": SQUARE_LOCATION_ID,
@@ -7348,9 +7345,9 @@ async def create_hosted_checkout(shipping_address: Optional[str] = None, notes: 
         }
         
         # Call Square API to create payment link
-        result = square_client.checkout.create_payment_link(payment_link_body)
+        result = square_client.checkout.payment_links.create(body=payment_link_body)
         
-        if result and result.payment_link:
+        if result and hasattr(result, 'payment_link') and result.payment_link:
             payment_link = result.payment_link
             
             # Update order with Square payment link info
