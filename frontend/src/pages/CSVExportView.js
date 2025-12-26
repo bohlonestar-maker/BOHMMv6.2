@@ -86,29 +86,6 @@ export default function CSVExportView() {
     fetchCSVData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-    
-    for (let line of lines) {
-      const row = [];
-      let cell = '';
-      let inQuotes = false;
-      
-      for (let i = 0; i < line.length; i++) {
-        const char = line[i];
-        if (char === '"') {
-          inQuotes = !inQuotes;
-        } else if (char === ',' && !inQuotes) {
-          row.push(cell.trim());
-          cell = '';
-        } else {
-          cell += char;
-        }
-      }
-      row.push(cell.trim());
-      result.push(row);
-    }
-    
-    return result;
-  };
 
   const filteredData = csvData.filter((row, index) => {
     if (index === 0) return true; // Always show header
