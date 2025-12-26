@@ -115,6 +115,31 @@ DISCORD_PUBLIC_KEY = os.environ.get('DISCORD_PUBLIC_KEY')
 discord_bot = None
 discord_task = None
 
+# Square Payment Configuration
+sys.stderr.write("🔧 [INIT] Setting up Square payments...\n")
+sys.stderr.flush()
+SQUARE_ACCESS_TOKEN = os.environ.get('SQUARE_ACCESS_TOKEN')
+SQUARE_APPLICATION_ID = os.environ.get('SQUARE_APPLICATION_ID')
+SQUARE_LOCATION_ID = os.environ.get('SQUARE_LOCATION_ID')
+SQUARE_ENVIRONMENT = os.environ.get('SQUARE_ENVIRONMENT', 'sandbox')
+
+square_client = None
+if SQUARE_ACCESS_TOKEN:
+    try:
+        from square.client import Client as SquareClient
+        square_client = SquareClient(
+            access_token=SQUARE_ACCESS_TOKEN,
+            environment=SQUARE_ENVIRONMENT
+        )
+        sys.stderr.write(f"✅ [INIT] Square client initialized ({SQUARE_ENVIRONMENT})\n")
+        sys.stderr.flush()
+    except Exception as e:
+        sys.stderr.write(f"⚠️ [INIT] Square client initialization failed: {str(e)}\n")
+        sys.stderr.flush()
+else:
+    sys.stderr.write("⚠️ [INIT] Square credentials not configured\n")
+    sys.stderr.flush()
+
 async def start_discord_bot():
     """Start Discord analytics bot with voice and text tracking"""
     global discord_bot, discord_task
