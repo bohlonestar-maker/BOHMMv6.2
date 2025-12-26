@@ -3237,11 +3237,15 @@ async def bulk_promote_prospects(
     prospect_ids: list[str],
     chapter: str,
     title: str,
-    current_user: dict = Depends(verify_admin)
+    current_user: dict = Depends(verify_token)
 ):
     """
     Bulk promote multiple prospects to members with same chapter and title
     """
+    # Check if user can edit prospects
+    if not can_edit_prospect(current_user):
+        raise HTTPException(status_code=403, detail="Only National Admin and HA Admin can promote prospects")
+    
     promoted_count = 0
     failed_prospects = []
     
