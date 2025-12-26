@@ -2778,16 +2778,20 @@ async def update_member_action(
     
     return {"message": "Action updated successfully"}
 
-# Prospect Actions endpoints (admin only)
+# Prospect Actions endpoints (admin only - National/HA only)
 @api_router.post("/prospects/{prospect_id}/actions")
 async def add_prospect_action(
     prospect_id: str,
     action_type: str,
     date: str,
     description: str,
-    current_user: dict = Depends(verify_admin)
+    current_user: dict = Depends(verify_token)
 ):
     """Add a merit, promotion, or disciplinary action to a prospect"""
+    # Check if user can edit prospects
+    if not can_edit_prospect(current_user):
+        raise HTTPException(status_code=403, detail="Only National Admin and HA Admin can edit prospects")
+    
     prospect = await db.prospects.find_one({"id": prospect_id}, {"_id": 0})
     if not prospect:
         raise HTTPException(status_code=404, detail="Prospect not found")
