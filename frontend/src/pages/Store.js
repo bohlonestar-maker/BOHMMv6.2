@@ -296,20 +296,29 @@ export default function Store({ userRole, userChapter }) {
 
   const createOrder = async () => {
     try {
+      setRedirectingToCheckout(true);
       const token = localStorage.getItem("token");
       const response = await axios.post(
-        `${API_URL}/api/store/orders/create`,
+        `${API_URL}/api/store/checkout`,
         null,
         {
           params: { shipping_address: shippingAddress, notes: orderNotes },
           headers: { Authorization: `Bearer ${token}` },
         }
       );
-      setCurrentOrder(response.data);
-      setCartOpen(false);
-      setCheckoutOpen(true);
+      
+      if (response.data.success && response.data.checkout_url) {
+        // Close the cart dialog
+        setCartOpen(false);
+        // Redirect to Square's hosted checkout page
+        window.location.href = response.data.checkout_url;
+      } else {
+        toast.error("Failed to create checkout link");
+        setRedirectingToCheckout(false);
+      }
     } catch (error) {
-      toast.error(error.response?.data?.detail || "Failed to create order");
+      toast.error(error.response?.data?.detail || "Failed to create checkout");
+      setRedirectingToCheckout(false);
     }
   };
 
