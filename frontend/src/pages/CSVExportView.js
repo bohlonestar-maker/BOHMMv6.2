@@ -209,7 +209,27 @@ export default function CSVExportView() {
       return;
     }
 
-    const filteredData = csvData.map(row => 
+    // Find chapter column index
+    const headers = csvData[0] || [];
+    const chapterColIndex = headers.findIndex(h => h.toLowerCase().includes('chapter'));
+    const handleColIndex = headers.findIndex(h => h.toLowerCase().includes('handle'));
+    const nameColIndex = headers.findIndex(h => h.toLowerCase().includes('name') && !h.toLowerCase().includes('user'));
+    
+    // Filter rows based on member filter mode
+    let filteredRows = csvData.slice(1); // Skip header row
+    
+    if (memberFilterMode === 'chapters' && chapterColIndex !== -1) {
+      filteredRows = filteredRows.filter(row => selectedChapters.includes(row[chapterColIndex]));
+    } else if (memberFilterMode === 'specific' && selectedMembers.length > 0) {
+      filteredRows = filteredRows.filter(row => {
+        const handle = row[handleColIndex] || '';
+        const name = row[nameColIndex] || '';
+        return selectedMembers.some(m => m === handle || m === name || m === `${handle} - ${name}`);
+      });
+    }
+    
+    // Rebuild data with header
+    const filteredData = [csvData[0], ...filteredRows].map(row => 
       selectedColumns.map(index => row[index])
     );
 
@@ -229,12 +249,36 @@ export default function CSVExportView() {
       hour12: true
     }).format(now);
 
+    // Build filter description
+    let filterDesc = 'All Members';
+    if (memberFilterMode === 'chapters') {
+      filterDesc = `Chapters: ${selectedChapters.join(', ')}`;
+    } else if (memberFilterMode === 'specific') {
+      filterDesc = `${selectedMembers.length} Selected Member(s)`;
+    }
+
     const printWindow = window.open('', '_blank');
-    const html = generatePrintHTML(filteredData, selectedPreset, username, cstTime);
+    const html = generatePrintHTML(filteredData, selectedPreset, username, cstTime, filterDesc);
     printWindow.document.write(html);
     printWindow.document.close();
     setTimeout(() => printWindow.print(), 500);
     setShowPrintModal(false);
+  };
+
+  // Get list of members for selection
+  const getMemberList = () => {
+    if (csvData.length < 2) return [];
+    const headers = csvData[0] || [];
+    const handleColIndex = headers.findIndex(h => h.toLowerCase().includes('handle'));
+    const nameColIndex = headers.findIndex(h => h.toLowerCase().includes('name') && !h.toLowerCase().includes('user'));
+    const chapterColIndex = headers.findIndex(h => h.toLowerCase().includes('chapter'));
+    
+    return csvData.slice(1).map(row => ({
+      handle: row[handleColIndex] || '',
+      name: row[nameColIndex] || '',
+      chapter: row[chapterColIndex] || '',
+      id: `${row[handleColIndex]} - ${row[nameColIndex]}`
+    }));
   };
 
   const generatePrintHTML = (data, preset, username, timestamp) => {
