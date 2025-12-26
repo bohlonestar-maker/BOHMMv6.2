@@ -145,13 +145,32 @@ export default function Store({ userRole, userChapter }) {
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [productModalOpen, setProductModalOpen] = useState(false);
   const [selectedVariation, setSelectedVariation] = useState(null);
+  const [addHandle, setAddHandle] = useState(false);
   const [handleText, setHandleText] = useState("");
+  const [addRank, setAddRank] = useState(false);
+  const [rankText, setRankText] = useState("");
+
+  // Customization prices
+  const HANDLE_PRICE = 5.00;
+  const RANK_PRICE = 5.00;
 
   const openProductModal = (product) => {
     setSelectedProduct(product);
     setSelectedVariation(null);
+    setAddHandle(false);
     setHandleText("");
+    setAddRank(false);
+    setRankText("");
     setProductModalOpen(true);
+  };
+
+  // Calculate total price including customizations
+  const calculateTotalPrice = () => {
+    if (!selectedProduct) return 0;
+    let price = selectedVariation?.price || selectedProduct.display_price || selectedProduct.price;
+    if (addHandle) price += HANDLE_PRICE;
+    if (addRank) price += RANK_PRICE;
+    return price;
   };
 
   const addToCart = async (product, variationId = null, customization = null) => {
@@ -164,6 +183,15 @@ export default function Store({ userRole, userChapter }) {
       if (customization) {
         url += `&customization=${encodeURIComponent(customization)}`;
       }
+      
+      // Include add-on prices in the request
+      let addOnPrice = 0;
+      if (addHandle) addOnPrice += HANDLE_PRICE;
+      if (addRank) addOnPrice += RANK_PRICE;
+      if (addOnPrice > 0) {
+        url += `&add_on_price=${addOnPrice}`;
+      }
+      
       await axios.post(url, {}, { headers: { Authorization: `Bearer ${token}` } });
       await fetchCart();
       toast.success("Added to cart!");
