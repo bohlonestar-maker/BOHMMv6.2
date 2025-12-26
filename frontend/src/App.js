@@ -151,7 +151,7 @@ function App() {
             path="/"
             element={
               isAuthenticated ? (
-                <Dashboard onLogout={handleLogout} userRole={userRole} userPermissions={userPermissions} />
+                <Dashboard onLogout={handleLogout} userRole={userRole} userPermissions={userPermissions} userChapter={userChapter} />
               ) : (
                 <Navigate to="/login" replace />
               )
@@ -170,8 +170,8 @@ function App() {
           <Route
             path="/prospects"
             element={
-              isAuthenticated && userRole === 'admin' ? (
-                <Prospects onLogout={handleLogout} userRole={userRole} />
+              isAuthenticated && userRole === 'admin' && (userChapter === 'National' || userChapter === 'HA') ? (
+                <Prospects onLogout={handleLogout} userRole={userRole} userChapter={userChapter} />
               ) : (
                 <Navigate to="/" replace />
               )
