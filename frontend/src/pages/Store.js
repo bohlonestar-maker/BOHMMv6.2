@@ -57,6 +57,7 @@ const SQUARE_LOCATION_ID = process.env.REACT_APP_SQUARE_LOCATION_ID;
 
 export default function Store({ userRole, userChapter }) {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState("merchandise");
   const [products, setProducts] = useState([]);
   const [cart, setCart] = useState({ items: [], total: 0, item_count: 0 });
@@ -71,6 +72,7 @@ export default function Store({ userRole, userChapter }) {
   const [shippingAddress, setShippingAddress] = useState("");
   const [orderNotes, setOrderNotes] = useState("");
   const [canManageStore, setCanManageStore] = useState(false);
+  const [redirectingToCheckout, setRedirectingToCheckout] = useState(false);
   
   // Dues state
   const [duesAmount, setDuesAmount] = useState(100);
