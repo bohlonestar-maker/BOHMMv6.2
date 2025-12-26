@@ -220,7 +220,30 @@ export default function Store({ userRole, userChapter }) {
       return;
     }
     
-    addToCart(selectedProduct, selectedVariation?.id, handleText || null);
+    // Validate customization inputs
+    if (addHandle && !handleText.trim()) {
+      toast.error("Please enter your handle or uncheck 'Add your Handle'");
+      return;
+    }
+    if (addRank && !rankText.trim()) {
+      toast.error("Please enter your rank or uncheck 'Add your Rank'");
+      return;
+    }
+    
+    // Build customization string
+    let customization = null;
+    const parts = [];
+    if (addHandle && handleText.trim()) {
+      parts.push(`Handle: ${handleText.trim()}`);
+    }
+    if (addRank && rankText.trim()) {
+      parts.push(`Rank: ${rankText.trim()}`);
+    }
+    if (parts.length > 0) {
+      customization = parts.join(' | ');
+    }
+    
+    addToCart(selectedProduct, selectedVariation?.id, customization);
   };
 
   const updateCartItem = async (item, quantity) => {
