@@ -601,24 +601,10 @@ export default function Prospects({ onLogout, userRole }) {
           ['handle', 'name', 'military', 'first responder', 'branch'].some(c => h.includes(c)) ? i : -1
         ).filter(i => i !== -1);
         break;
-      case 'meetings_q1':
+      case 'attendance':
+        // Select attendance summary columns
         columns = headers.map((h, i) => 
-          ['handle', 'name', 'jan', 'feb', 'mar'].some(c => h.includes(c)) ? i : -1
-        ).filter(i => i !== -1);
-        break;
-      case 'meetings_q2':
-        columns = headers.map((h, i) => 
-          ['handle', 'name', 'apr', 'may', 'jun'].some(c => h.includes(c)) ? i : -1
-        ).filter(i => i !== -1);
-        break;
-      case 'meetings_q3':
-        columns = headers.map((h, i) => 
-          ['handle', 'name', 'jul', 'aug', 'sep'].some(c => h.includes(c)) ? i : -1
-        ).filter(i => i !== -1);
-        break;
-      case 'meetings_q4':
-        columns = headers.map((h, i) => 
-          ['handle', 'name', 'oct', 'nov', 'dec'].some(c => h.includes(c)) ? i : -1
+          ['handle', 'name', 'attendance year', 'total meetings', 'present', 'excused', 'absent', 'attendance %', 'meeting details'].some(c => h.includes(c)) ? i : -1
         ).filter(i => i !== -1);
         break;
       default:
