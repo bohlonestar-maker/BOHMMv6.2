@@ -2863,72 +2863,108 @@ async def export_prospects_csv(current_user: dict = Depends(verify_admin)):
     # Decrypt sensitive data for all prospects
     decrypted_prospects = [decrypt_member_sensitive_data(prospect) for prospect in prospects]
     
-    # Helper function to get nth weekday of month
-    def get_nth_weekday(year, month, weekday, n):
-        from datetime import date, timedelta
-        d = date(year, month, 1)
-        count = 0
-        while d.month == month:
-            if d.weekday() == weekday:
-                count += 1
-                if count == n:
-                    return d
-            d += timedelta(days=1)
-        return None
+    current_year_str = str(datetime.now(timezone.utc).year)
     
-    # Get current year or most recent year from data
-    current_year = datetime.now(timezone.utc).year
+    output = StringIO()
+    writer = csv.writer(output)
     
-    # Generate meeting dates for the year
-    months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
-    meeting_dates = []
-    for month_idx in range(1, 13):
-        first_wed = get_nth_weekday(current_year, month_idx, 2, 1)  # Wednesday is 2
-        third_wed = get_nth_weekday(current_year, month_idx, 2, 3)
-        meeting_dates.append((first_wed, third_wed))
-    
-    # Create CSV header with dates
-    csv_content = "Handle,Name,Email,Phone,Address,Military Service,Military Branch,First Responder,Meeting Attendance Year"
-    
-    for idx, month in enumerate(months):
-        first_date, third_date = meeting_dates[idx]
-        first_str = first_date.strftime("%m/%d") if first_date else ""
-        third_str = third_date.strftime("%m/%d") if third_date else ""
-        csv_content += f",{month}-1st ({first_str}),{month}-1st Note,{month}-3rd ({third_str}),{month}-3rd Note"
-    csv_content += "\n"
+    # Create CSV header with new flexible format
+    header = ["Handle", "Name", "Email", "Phone", "Address", "Military Service", "Military Branch", 
+              "First Responder", "Attendance Year", "Total Meetings", "Present", "Excused", "Absent", 
+              "Attendance %", "Meeting Details"]
+    writer.writerow(header)
     
     # Add data rows
     for prospect in decrypted_prospects:
         attendance = prospect.get('meeting_attendance', {})
+        meetings = []
+        export_year = current_year_str
         
-        # Handle new format (dict with years as keys) and old format (single year dict)
-        year_data = attendance.get(str(current_year), {})
-        meetings = year_data if isinstance(year_data, list) else year_data.get('meetings', [])
+        # Handle both old and new format
+        if attendance and isinstance(attendance, dict):
+            if 'year' in attendance:
+                # Old format
+                export_year = str(attendance.get('year', current_year_str))
+                old_meetings = attendance.get('meetings', [])
+                for idx, m in enumerate(old_meetings):
+                    if isinstance(m, dict) and (m.get('status', 0) != 0 or m.get('note')):
+                        month_idx = idx // 2
+                        week_num = (idx % 2) + 1
+                        approx_date = f"{export_year}-{month_idx+1:02d}-{week_num * 7:02d}"
+                        meetings.append({
+                            'date': approx_date,
+                            'status': m.get('status', 0),
+                            'note': m.get('note', '')
+                        })
+            else:
+                # New format
+                years = sorted([k for k in attendance.keys() if k.isdigit()], reverse=True)
+                if years:
+                    export_year = years[0]
+                    meetings = attendance.get(export_year, [])
         
-        # Ensure we have 24 meetings
-        while len(meetings) < 24:
-            meetings.append({"status": 0, "note": ""})
+        # Calculate stats
+        total = len(meetings)
+        present = sum(1 for m in meetings if m.get('status') == 1)
+        excused = sum(1 for m in meetings if m.get('status') == 2)
+        absent = sum(1 for m in meetings if m.get('status') == 0)
+        attendance_pct = f"{(present / total * 100):.1f}%" if total > 0 else "N/A"
+        
+        # Build meeting details string
+        details_parts = []
+        for m in sorted(meetings, key=lambda x: x.get('date', '')):
+            date_str = m.get('date', '')
+            if date_str:
+                try:
+                    parts = date_str.split('-')
+                    if len(parts) == 3:
+                        date_str = f"{parts[1]}/{parts[2]}"
+                except:
+                    pass
+            status = m.get('status', 0)
+            status_char = 'P' if status == 1 else ('E' if status == 2 else 'A')
+            note = m.get('note', '')
+            if note:
+                details_parts.append(f"{date_str}:{status_char}({note})")
+            else:
+                details_parts.append(f"{date_str}:{status_char}")
+        
+        details_str = "; ".join(details_parts) if details_parts else "No meetings"
         
         # Military and First Responder status
         military_service = "Yes" if prospect.get('military_service', False) else "No"
         military_branch = prospect.get('military_branch', '') or ''
         is_first_responder = "Yes" if prospect.get('is_first_responder', False) else "No"
         
-        row = f"{prospect['handle']},{prospect['name']},{prospect['email']},{prospect['phone']},{prospect['address']},{military_service},{military_branch},{is_first_responder},{current_year}"
-        
-        for i in range(24):
-            meeting = meetings[i] if i < len(meetings) else {"status": 0, "note": ""}
-            status_map = {0: "Absent", 1: "Present", 2: "Excused"}
-            status = status_map.get(meeting.get('status', 0), "Absent")
-            note = meeting.get('note', '').replace(',', ';').replace('\n', ' ')
-            row += f",{status},{note}"
-        
-        csv_content += row + "\n"
+        row = [
+            prospect.get('handle', ''),
+            prospect.get('name', ''),
+            prospect.get('email', ''),
+            prospect.get('phone', ''),
+            prospect.get('address', ''),
+            military_service,
+            military_branch,
+            is_first_responder,
+            export_year,
+            str(total),
+            str(present),
+            str(excused),
+            str(absent),
+            attendance_pct,
+            details_str
+        ]
+        writer.writerow(row)
     
-    return Response(
-        content=csv_content,
-        media_type="text/csv",
-        headers={"Content-Disposition": "attachment; filename=prospects_export.csv"}
+    output.seek(0)
+    csv_content = '\ufeff' + output.getvalue()
+    
+    return StreamingResponse(
+        iter([csv_content]),
+        media_type="text/csv; charset=utf-8",
+        headers={
+            "Content-Disposition": "attachment; filename=prospects_export.csv",
+            "Content-Type": "text/csv; charset=utf-8"
+        }
     )
 
 @api_router.post("/prospects/{prospect_id}/promote", response_model=Member, status_code=201)
