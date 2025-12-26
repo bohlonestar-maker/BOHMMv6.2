@@ -2671,12 +2671,20 @@ async def add_member_action(
     action_type: str,
     date: str,
     description: str,
-    current_user: dict = Depends(verify_admin)
+    current_user: dict = Depends(verify_token)
 ):
     """Add a merit, promotion, or disciplinary action to a member"""
+    # Check if user is an admin
+    if current_user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
     member = await db.members.find_one({"id": member_id}, {"_id": 0})
     if not member:
         raise HTTPException(status_code=404, detail="Member not found")
+    
+    # Check if user can edit this member (chapter-based)
+    if not can_edit_member(current_user, member.get("chapter", "")):
+        raise HTTPException(status_code=403, detail="You can only add actions for members in your own chapter")
     
     # Create action record
     action = {
@@ -2709,12 +2717,20 @@ async def add_member_action(
 async def delete_member_action(
     member_id: str,
     action_id: str,
-    current_user: dict = Depends(verify_admin)
+    current_user: dict = Depends(verify_token)
 ):
     """Delete an action from a member"""
+    # Check if user is an admin
+    if current_user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
     member = await db.members.find_one({"id": member_id}, {"_id": 0})
     if not member:
         raise HTTPException(status_code=404, detail="Member not found")
+    
+    # Check if user can edit this member (chapter-based)
+    if not can_edit_member(current_user, member.get("chapter", "")):
+        raise HTTPException(status_code=403, detail="You can only delete actions for members in your own chapter")
     
     actions = member.get("actions", [])
     actions = [a for a in actions if a.get("id") != action_id]
@@ -2737,12 +2753,20 @@ async def update_member_action(
     member_id: str,
     action_id: str,
     action_data: dict,
-    current_user: dict = Depends(verify_admin)
+    current_user: dict = Depends(verify_token)
 ):
     """Update an action for a member"""
+    # Check if user is an admin
+    if current_user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
     member = await db.members.find_one({"id": member_id}, {"_id": 0})
     if not member:
         raise HTTPException(status_code=404, detail="Member not found")
+    
+    # Check if user can edit this member (chapter-based)
+    if not can_edit_member(current_user, member.get("chapter", "")):
+        raise HTTPException(status_code=403, detail="You can only update actions for members in your own chapter")
     
     # Extract action data
     action_type = action_data.get("action_type")
