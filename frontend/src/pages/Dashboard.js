@@ -740,20 +740,22 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
             <div className="flex items-center justify-between gap-2 flex-wrap w-full sm:w-auto">
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="text-xs sm:text-sm text-slate-300">
-                  {localStorage.getItem("username")} ({userRole})
+                  {localStorage.getItem("username")} ({userRole}{userChapter ? ` - ${userChapter}` : ''})
                 </span>
                 {userRole === 'admin' && (
                   <>
-                    <Button
-                      onClick={() => navigate("/prospects")}
-                      variant="outline"
-                      size="sm"
-                      className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm bg-slate-700 text-slate-200 border-slate-600 hover:bg-slate-600"
-                    >
-                      <Users className="w-3 h-3 sm:w-4 sm:h-4" />
-                      <span className="hidden sm:inline">Prospects</span>
-                      <span className="sm:hidden">Prospects</span>
-                    </Button>
+                    {canAccessProspects && (
+                      <Button
+                        onClick={() => navigate("/prospects")}
+                        variant="outline"
+                        size="sm"
+                        className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm bg-slate-700 text-slate-200 border-slate-600 hover:bg-slate-600"
+                      >
+                        <Users className="w-3 h-3 sm:w-4 sm:h-4" />
+                        <span className="hidden sm:inline">Prospects</span>
+                        <span className="sm:hidden">Prospects</span>
+                      </Button>
+                    )}
                     <Button
                       onClick={() => navigate("/users")}
                       variant="outline"
