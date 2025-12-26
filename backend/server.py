@@ -2827,9 +2827,13 @@ async def add_prospect_action(
 async def delete_prospect_action(
     prospect_id: str,
     action_id: str,
-    current_user: dict = Depends(verify_admin)
+    current_user: dict = Depends(verify_token)
 ):
     """Delete an action from a prospect"""
+    # Check if user can edit prospects
+    if not can_edit_prospect(current_user):
+        raise HTTPException(status_code=403, detail="Only National Admin and HA Admin can edit prospects")
+    
     prospect = await db.prospects.find_one({"id": prospect_id}, {"_id": 0})
     if not prospect:
         raise HTTPException(status_code=404, detail="Prospect not found")
