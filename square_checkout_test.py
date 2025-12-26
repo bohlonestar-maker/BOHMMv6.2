@@ -36,7 +36,7 @@ class SquareCheckoutTester:
             "details": details
         })
 
-    def run_test(self, name, method, endpoint, expected_status, data=None, headers=None):
+    def run_test(self, name, method, endpoint, expected_status, data=None, headers=None, params=None):
         """Run a single API test"""
         url = f"{self.base_url}/{endpoint}"
         test_headers = {'Content-Type': 'application/json'}
@@ -49,9 +49,12 @@ class SquareCheckoutTester:
 
         try:
             if method == 'GET':
-                response = requests.get(url, headers=test_headers, verify=False)
+                response = requests.get(url, headers=test_headers, params=params, verify=False)
             elif method == 'POST':
-                response = requests.post(url, json=data, headers=test_headers, verify=False)
+                if params:
+                    response = requests.post(url, json=data, headers=test_headers, params=params, verify=False)
+                else:
+                    response = requests.post(url, json=data, headers=test_headers, verify=False)
             elif method == 'PUT':
                 response = requests.put(url, json=data, headers=test_headers, verify=False)
             elif method == 'DELETE':
