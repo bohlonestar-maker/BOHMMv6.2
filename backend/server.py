@@ -7349,22 +7349,24 @@ async def sync_square_catalog(current_user: dict = Depends(verify_token)):
     
     try:
         # Fetch catalog items from Square
-        result = square_client.catalog.list_catalog(types="ITEM")
+        result = square_client.catalog.list(types="ITEM")
         
-        if not result.is_success():
-            raise HTTPException(status_code=500, detail="Failed to fetch Square catalog")
+        if not result or not result.objects:
+            return {"message": "No items found in Square catalog", "count": 0}
         
-        items = result.body.get("objects", [])
+        items = result.objects
         synced_count = 0
         
         for item in items:
-            item_data = item.get("item_data", {})
-            item_id = item.get("id")
-            name = item_data.get("name", "Unknown")
-            description = item_data.get("description", "")
+            item_data = item.item_data
+            if not item_data:
+                continue
+            item_id = item.id
+            name = item_data.name or "Unknown"
+            description = item_data.description or ""
             
             # Get variations and use the first/lowest price
-            variations = item_data.get("variations", [])
+            variations = item_data.variations or []
             if not variations:
                 continue
             
@@ -7372,12 +7374,15 @@ async def sync_square_catalog(current_user: dict = Depends(verify_token)):
             prices = []
             variation_names = []
             for var in variations:
-                var_data = var.get("item_variation_data", {})
-                price_money = var_data.get("price_money", {})
-                price = price_money.get("amount", 0) / 100
-                if price > 0:
-                    prices.append(price)
-                    variation_names.append(f"{var_data.get('name', 'Default')}: ${price:.2f}")
+                var_data = var.item_variation_data
+                if not var_data:
+                    continue
+                price_money = var_data.price_money
+                if price_money:
+                    price = price_money.amount / 100
+                    if price > 0:
+                        prices.append(price)
+                        variation_names.append(f"{var_data.name or 'Default'}: ${price:.2f}")
             
             if not prices:
                 continue
