@@ -6938,6 +6938,411 @@ scheduler = None
 UPLOAD_DIR = Path(__file__).parent / "uploads"
 UPLOAD_DIR.mkdir(exist_ok=True)
 
+# ==================== STORE API ENDPOINTS ====================
+
+@api_router.get("/store/products")
+async def get_store_products(category: Optional[str] = None, current_user: dict = Depends(verify_token)):
+    """Get all active store products"""
+    try:
+        query = {"is_active": True}
+        if category:
+            query["category"] = category
+        
+        products = await db.store_products.find(query, {"_id": 0}).to_list(1000)
+        
+        # Check if user is a member for member pricing
+        is_member = current_user.get("role") == "admin" or await db.members.find_one({"email": current_user.get("email")})
+        
+        for product in products:
+            if isinstance(product.get('created_at'), str):
+                product['created_at'] = datetime.fromisoformat(product['created_at'])
+            if isinstance(product.get('updated_at'), str):
+                product['updated_at'] = datetime.fromisoformat(product['updated_at'])
+            # Apply member pricing if applicable
+            if is_member and product.get('member_price'):
+                product['display_price'] = product['member_price']
+                product['is_member_price'] = True
+            else:
+                product['display_price'] = product['price']
+                product['is_member_price'] = False
+        
+        return products
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.get("/store/products/{product_id}")
+async def get_store_product(product_id: str, current_user: dict = Depends(verify_token)):
+    """Get a single store product"""
+    product = await db.store_products.find_one({"id": product_id}, {"_id": 0})
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found")
+    return product
+
+@api_router.post("/store/products", response_model=StoreProduct)
+async def create_store_product(product_data: StoreProductCreate, current_user: dict = Depends(verify_token)):
+    """Create a new store product (admin only)"""
+    if current_user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    product = StoreProduct(**product_data.model_dump())
+    doc = product.model_dump()
+    doc['created_at'] = doc['created_at'].isoformat()
+    doc['updated_at'] = doc['updated_at'].isoformat()
+    
+    await db.store_products.insert_one(doc)
+    
+    await log_activity(
+        current_user["username"],
+        "create_product",
+        f"Created store product: {product.name}"
+    )
+    
+    return product
+
+@api_router.put("/store/products/{product_id}")
+async def update_store_product(product_id: str, product_data: StoreProductUpdate, current_user: dict = Depends(verify_token)):
+    """Update a store product (admin only)"""
+    if current_user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    product = await db.store_products.find_one({"id": product_id})
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found")
+    
+    update_data = {k: v for k, v in product_data.model_dump().items() if v is not None}
+    update_data['updated_at'] = datetime.now(timezone.utc).isoformat()
+    
+    await db.store_products.update_one({"id": product_id}, {"$set": update_data})
+    
+    updated_product = await db.store_products.find_one({"id": product_id}, {"_id": 0})
+    return updated_product
+
+@api_router.delete("/store/products/{product_id}")
+async def delete_store_product(product_id: str, current_user: dict = Depends(verify_token)):
+    """Delete a store product (admin only)"""
+    if current_user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    result = await db.store_products.delete_one({"id": product_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Product not found")
+    
+    return {"message": "Product deleted successfully"}
+
+# Shopping Cart Endpoints
+@api_router.get("/store/cart")
+async def get_cart(current_user: dict = Depends(verify_token)):
+    """Get the current user's shopping cart"""
+    cart = await db.store_carts.find_one({"user_id": current_user["username"]}, {"_id": 0})
+    if not cart:
+        return {"items": [], "total": 0, "item_count": 0}
+    
+    total = sum(item["price"] * item["quantity"] for item in cart.get("items", []))
+    item_count = sum(item["quantity"] for item in cart.get("items", []))
+    
+    return {
+        "items": cart.get("items", []),
+        "total": round(total, 2),
+        "item_count": item_count
+    }
+
+@api_router.post("/store/cart/add")
+async def add_to_cart(product_id: str, quantity: int = 1, current_user: dict = Depends(verify_token)):
+    """Add a product to the shopping cart"""
+    product = await db.store_products.find_one({"id": product_id, "is_active": True}, {"_id": 0})
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found")
+    
+    # Check inventory
+    if product.get("inventory_count", 0) < quantity and product.get("category") == "merchandise":
+        raise HTTPException(status_code=400, detail="Insufficient inventory")
+    
+    # Check if user is a member for pricing
+    is_member = current_user.get("role") == "admin" or await db.members.find_one({"email": current_user.get("email")})
+    price = product.get('member_price', product['price']) if is_member and product.get('member_price') else product['price']
+    
+    cart_item = {
+        "product_id": product_id,
+        "name": product["name"],
+        "price": price,
+        "quantity": quantity,
+        "image_url": product.get("image_url")
+    }
+    
+    # Check if item already in cart
+    existing_cart = await db.store_carts.find_one({"user_id": current_user["username"]})
+    
+    if existing_cart:
+        # Check if product already in cart
+        items = existing_cart.get("items", [])
+        found = False
+        for item in items:
+            if item["product_id"] == product_id:
+                item["quantity"] += quantity
+                found = True
+                break
+        
+        if not found:
+            items.append(cart_item)
+        
+        await db.store_carts.update_one(
+            {"user_id": current_user["username"]},
+            {"$set": {"items": items, "updated_at": datetime.now(timezone.utc).isoformat()}}
+        )
+    else:
+        cart = {
+            "id": str(uuid.uuid4()),
+            "user_id": current_user["username"],
+            "items": [cart_item],
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }
+        await db.store_carts.insert_one(cart)
+    
+    return {"message": "Item added to cart", "item": cart_item}
+
+@api_router.put("/store/cart/update")
+async def update_cart_item(product_id: str, quantity: int, current_user: dict = Depends(verify_token)):
+    """Update quantity of an item in cart"""
+    cart = await db.store_carts.find_one({"user_id": current_user["username"]})
+    if not cart:
+        raise HTTPException(status_code=404, detail="Cart not found")
+    
+    items = cart.get("items", [])
+    found = False
+    
+    if quantity <= 0:
+        # Remove item
+        items = [item for item in items if item["product_id"] != product_id]
+        found = True
+    else:
+        for item in items:
+            if item["product_id"] == product_id:
+                item["quantity"] = quantity
+                found = True
+                break
+    
+    if not found:
+        raise HTTPException(status_code=404, detail="Item not found in cart")
+    
+    await db.store_carts.update_one(
+        {"user_id": current_user["username"]},
+        {"$set": {"items": items, "updated_at": datetime.now(timezone.utc).isoformat()}}
+    )
+    
+    return {"message": "Cart updated"}
+
+@api_router.delete("/store/cart/clear")
+async def clear_cart(current_user: dict = Depends(verify_token)):
+    """Clear the shopping cart"""
+    await db.store_carts.delete_one({"user_id": current_user["username"]})
+    return {"message": "Cart cleared"}
+
+# Order Endpoints
+@api_router.post("/store/orders/create")
+async def create_order(shipping_address: Optional[str] = None, notes: Optional[str] = None, current_user: dict = Depends(verify_token)):
+    """Create an order from the current cart"""
+    cart = await db.store_carts.find_one({"user_id": current_user["username"]})
+    if not cart or not cart.get("items"):
+        raise HTTPException(status_code=400, detail="Cart is empty")
+    
+    items = cart["items"]
+    subtotal = sum(item["price"] * item["quantity"] for item in items)
+    tax = round(subtotal * 0.0825, 2)  # 8.25% tax
+    total = round(subtotal + tax, 2)
+    
+    order = {
+        "id": str(uuid.uuid4()),
+        "user_id": current_user["username"],
+        "user_name": current_user.get("username", "Unknown"),
+        "items": items,
+        "subtotal": subtotal,
+        "tax": tax,
+        "total": total,
+        "status": "pending",
+        "shipping_address": shipping_address,
+        "notes": notes,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.store_orders.insert_one(order)
+    
+    return {"order_id": order["id"], "total": total, "total_cents": int(total * 100)}
+
+@api_router.post("/store/orders/{order_id}/pay")
+async def process_payment(order_id: str, payment: PaymentRequest, current_user: dict = Depends(verify_token)):
+    """Process payment for an order using Square"""
+    order = await db.store_orders.find_one({"id": order_id})
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+    
+    if order["status"] != "pending":
+        raise HTTPException(status_code=400, detail="Order already processed")
+    
+    if not square_client:
+        raise HTTPException(status_code=500, detail="Payment system not configured")
+    
+    try:
+        # Create payment with Square
+        idempotency_key = str(uuid.uuid4())
+        
+        payment_body = {
+            "source_id": payment.source_id,
+            "amount_money": {
+                "amount": payment.amount_cents,
+                "currency": "USD"
+            },
+            "idempotency_key": idempotency_key,
+            "location_id": SQUARE_LOCATION_ID,
+            "autocomplete": True
+        }
+        
+        if payment.customer_email:
+            payment_body["buyer_email_address"] = payment.customer_email
+        
+        result = square_client.payments.create_payment(body=payment_body)
+        
+        if result.is_success():
+            square_payment = result.body.get("payment", {})
+            
+            # Update order status
+            await db.store_orders.update_one(
+                {"id": order_id},
+                {"$set": {
+                    "status": "paid",
+                    "square_payment_id": square_payment.get("id"),
+                    "payment_method": "card",
+                    "updated_at": datetime.now(timezone.utc).isoformat()
+                }}
+            )
+            
+            # Update inventory for merchandise items
+            for item in order["items"]:
+                product = await db.store_products.find_one({"id": item["product_id"]})
+                if product and product.get("category") == "merchandise":
+                    await db.store_products.update_one(
+                        {"id": item["product_id"]},
+                        {"$inc": {"inventory_count": -item["quantity"]}}
+                    )
+            
+            # Clear cart
+            await db.store_carts.delete_one({"user_id": current_user["username"]})
+            
+            # Log activity
+            await log_activity(
+                current_user["username"],
+                "payment_completed",
+                f"Payment of ${order['total']:.2f} completed for order {order_id}"
+            )
+            
+            return {
+                "success": True,
+                "payment_id": square_payment.get("id"),
+                "amount": square_payment.get("amount_money", {}).get("amount", 0) / 100,
+                "status": square_payment.get("status"),
+                "order_id": order_id
+            }
+        else:
+            errors = result.errors
+            error_msg = errors[0].get("detail", "Payment failed") if errors else "Payment failed"
+            raise HTTPException(status_code=400, detail=error_msg)
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Payment processing error: {str(e)}")
+
+@api_router.get("/store/orders")
+async def get_orders(current_user: dict = Depends(verify_token)):
+    """Get orders for the current user (or all orders for admin)"""
+    if current_user.get("role") == "admin":
+        orders = await db.store_orders.find({}, {"_id": 0}).sort("created_at", -1).to_list(1000)
+    else:
+        orders = await db.store_orders.find({"user_id": current_user["username"]}, {"_id": 0}).sort("created_at", -1).to_list(100)
+    
+    return orders
+
+@api_router.get("/store/orders/{order_id}")
+async def get_order(order_id: str, current_user: dict = Depends(verify_token)):
+    """Get a specific order"""
+    order = await db.store_orders.find_one({"id": order_id}, {"_id": 0})
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+    
+    # Only allow access to own orders unless admin
+    if current_user.get("role") != "admin" and order["user_id"] != current_user["username"]:
+        raise HTTPException(status_code=403, detail="Access denied")
+    
+    return order
+
+@api_router.put("/store/orders/{order_id}/status")
+async def update_order_status(order_id: str, status: str, current_user: dict = Depends(verify_token)):
+    """Update order status (admin only)"""
+    if current_user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    valid_statuses = ["pending", "paid", "shipped", "completed", "cancelled", "refunded"]
+    if status not in valid_statuses:
+        raise HTTPException(status_code=400, detail=f"Invalid status. Must be one of: {valid_statuses}")
+    
+    result = await db.store_orders.update_one(
+        {"id": order_id},
+        {"$set": {"status": status, "updated_at": datetime.now(timezone.utc).isoformat()}}
+    )
+    
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Order not found")
+    
+    return {"message": "Order status updated", "status": status}
+
+# Dues-specific endpoint
+@api_router.post("/store/dues/pay")
+async def pay_dues(amount: float, year: int, current_user: dict = Depends(verify_token)):
+    """Create a dues payment order"""
+    # Find or create dues product
+    dues_product = await db.store_products.find_one({"category": "dues", "name": f"{year} Annual Dues"})
+    
+    if not dues_product:
+        dues_product = {
+            "id": str(uuid.uuid4()),
+            "name": f"{year} Annual Dues",
+            "description": f"Annual membership dues for {year}",
+            "price": amount,
+            "category": "dues",
+            "is_active": True,
+            "inventory_count": 9999,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }
+        await db.store_products.insert_one(dues_product)
+    
+    # Create order directly
+    order = {
+        "id": str(uuid.uuid4()),
+        "user_id": current_user["username"],
+        "user_name": current_user.get("username", "Unknown"),
+        "items": [{
+            "product_id": dues_product["id"],
+            "name": dues_product["name"],
+            "price": amount,
+            "quantity": 1
+        }],
+        "subtotal": amount,
+        "tax": 0,  # No tax on dues
+        "total": amount,
+        "status": "pending",
+        "notes": f"Dues payment for {year}",
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.store_orders.insert_one(order)
+    
+    return {"order_id": order["id"], "total": amount, "total_cents": int(amount * 100)}
+
+# ==================== END STORE API ENDPOINTS ====================
+
 # Include the router in the main app
 app.include_router(api_router)
 
