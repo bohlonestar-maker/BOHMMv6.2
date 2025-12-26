@@ -1,0 +1,984 @@
+import { useState, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
+import axios from "axios";
+import { toast } from "sonner";
+import { PaymentForm, CreditCard } from "react-square-web-payments-sdk";
+import { Button } from "../components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "../components/ui/card";
+import { Input } from "../components/ui/input";
+import { Label } from "../components/ui/label";
+import { Badge } from "../components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "../components/ui/dialog";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "../components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../components/ui/select";
+import { Textarea } from "../components/ui/textarea";
+import {
+  ShoppingCart,
+  Plus,
+  Minus,
+  Trash2,
+  Package,
+  CreditCard as CreditCardIcon,
+  DollarSign,
+  ArrowLeft,
+  CheckCircle,
+  Clock,
+  Truck,
+  XCircle,
+  RefreshCw,
+  Edit,
+  Image as ImageIcon,
+} from "lucide-react";
+
+const API_URL = process.env.REACT_APP_BACKEND_URL;
+const SQUARE_APP_ID = process.env.REACT_APP_SQUARE_APPLICATION_ID;
+const SQUARE_LOCATION_ID = process.env.REACT_APP_SQUARE_LOCATION_ID;
+
+export default function Store({ userRole, userChapter }) {
+  const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState("merchandise");
+  const [products, setProducts] = useState([]);
+  const [cart, setCart] = useState({ items: [], total: 0, item_count: 0 });
+  const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [cartOpen, setCartOpen] = useState(false);
+  const [checkoutOpen, setCheckoutOpen] = useState(false);
+  const [addProductOpen, setAddProductOpen] = useState(false);
+  const [editingProduct, setEditingProduct] = useState(null);
+  const [processingPayment, setProcessingPayment] = useState(false);
+  const [currentOrder, setCurrentOrder] = useState(null);
+  const [shippingAddress, setShippingAddress] = useState("");
+  const [orderNotes, setOrderNotes] = useState("");
+  
+  // Dues state
+  const [duesAmount, setDuesAmount] = useState(100);
+  const [duesYear, setDuesYear] = useState(new Date().getFullYear());
+  const [duesCheckoutOpen, setDuesCheckoutOpen] = useState(false);
+  const [duesOrder, setDuesOrder] = useState(null);
+
+  // Product form state
+  const [productForm, setProductForm] = useState({
+    name: "",
+    description: "",
+    price: "",
+    category: "merchandise",
+    image_url: "",
+    inventory_count: 0,
+    member_price: "",
+  });
+
+  const isAdmin = userRole === "admin";
+
+  const fetchProducts = useCallback(async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const response = await axios.get(`${API_URL}/api/store/products`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setProducts(response.data);
+    } catch (error) {
+      console.error("Error fetching products:", error);
+      toast.error("Failed to load products");
+    }
+  }, []);
+
+  const fetchCart = useCallback(async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const response = await axios.get(`${API_URL}/api/store/cart`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setCart(response.data);
+    } catch (error) {
+      console.error("Error fetching cart:", error);
+    }
+  }, []);
+
+  const fetchOrders = useCallback(async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const response = await axios.get(`${API_URL}/api/store/orders`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setOrders(response.data);
+    } catch (error) {
+      console.error("Error fetching orders:", error);
+    }
+  }, []);
+
+  useEffect(() => {
+    const loadData = async () => {
+      setLoading(true);
+      await Promise.all([fetchProducts(), fetchCart(), fetchOrders()]);
+      setLoading(false);
+    };
+    loadData();
+  }, [fetchProducts, fetchCart, fetchOrders]);
+
+  const addToCart = async (productId) => {
+    try {
+      const token = localStorage.getItem("token");
+      await axios.post(
+        `${API_URL}/api/store/cart/add?product_id=${productId}&quantity=1`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      await fetchCart();
+      toast.success("Added to cart!");
+    } catch (error) {
+      toast.error(error.response?.data?.detail || "Failed to add to cart");
+    }
+  };
+
+  const updateCartItem = async (productId, quantity) => {
+    try {
+      const token = localStorage.getItem("token");
+      await axios.put(
+        `${API_URL}/api/store/cart/update?product_id=${productId}&quantity=${quantity}`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      await fetchCart();
+    } catch (error) {
+      toast.error("Failed to update cart");
+    }
+  };
+
+  const clearCart = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      await axios.delete(`${API_URL}/api/store/cart/clear`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      await fetchCart();
+      toast.success("Cart cleared");
+    } catch (error) {
+      toast.error("Failed to clear cart");
+    }
+  };
+
+  const createOrder = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const response = await axios.post(
+        `${API_URL}/api/store/orders/create`,
+        null,
+        {
+          params: { shipping_address: shippingAddress, notes: orderNotes },
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      setCurrentOrder(response.data);
+      setCartOpen(false);
+      setCheckoutOpen(true);
+    } catch (error) {
+      toast.error(error.response?.data?.detail || "Failed to create order");
+    }
+  };
+
+  const handlePaymentComplete = async (token) => {
+    if (!currentOrder) return;
+    
+    setProcessingPayment(true);
+    try {
+      const authToken = localStorage.getItem("token");
+      const response = await axios.post(
+        `${API_URL}/api/store/orders/${currentOrder.order_id}/pay`,
+        {
+          source_id: token.token,
+          amount_cents: currentOrder.total_cents,
+          order_id: currentOrder.order_id,
+        },
+        { headers: { Authorization: `Bearer ${authToken}` } }
+      );
+
+      if (response.data.success) {
+        toast.success("Payment successful!");
+        setCheckoutOpen(false);
+        setCurrentOrder(null);
+        setShippingAddress("");
+        setOrderNotes("");
+        await Promise.all([fetchCart(), fetchOrders()]);
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.detail || "Payment failed");
+    } finally {
+      setProcessingPayment(false);
+    }
+  };
+
+  // Dues payment handlers
+  const createDuesOrder = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const response = await axios.post(
+        `${API_URL}/api/store/dues/pay`,
+        null,
+        {
+          params: { amount: duesAmount, year: duesYear },
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      setDuesOrder(response.data);
+      setDuesCheckoutOpen(true);
+    } catch (error) {
+      toast.error(error.response?.data?.detail || "Failed to create dues order");
+    }
+  };
+
+  const handleDuesPaymentComplete = async (token) => {
+    if (!duesOrder) return;
+    
+    setProcessingPayment(true);
+    try {
+      const authToken = localStorage.getItem("token");
+      const response = await axios.post(
+        `${API_URL}/api/store/orders/${duesOrder.order_id}/pay`,
+        {
+          source_id: token.token,
+          amount_cents: duesOrder.total_cents,
+          order_id: duesOrder.order_id,
+        },
+        { headers: { Authorization: `Bearer ${authToken}` } }
+      );
+
+      if (response.data.success) {
+        toast.success("Dues payment successful!");
+        setDuesCheckoutOpen(false);
+        setDuesOrder(null);
+        await fetchOrders();
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.detail || "Dues payment failed");
+    } finally {
+      setProcessingPayment(false);
+    }
+  };
+
+  // Product management (admin)
+  const handleCreateProduct = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const data = {
+        ...productForm,
+        price: parseFloat(productForm.price),
+        member_price: productForm.member_price ? parseFloat(productForm.member_price) : null,
+        inventory_count: parseInt(productForm.inventory_count),
+      };
+      
+      if (editingProduct) {
+        await axios.put(
+          `${API_URL}/api/store/products/${editingProduct.id}`,
+          data,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        toast.success("Product updated!");
+      } else {
+        await axios.post(`${API_URL}/api/store/products`, data, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        toast.success("Product created!");
+      }
+      
+      setAddProductOpen(false);
+      setEditingProduct(null);
+      setProductForm({
+        name: "",
+        description: "",
+        price: "",
+        category: "merchandise",
+        image_url: "",
+        inventory_count: 0,
+        member_price: "",
+      });
+      await fetchProducts();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || "Failed to save product");
+    }
+  };
+
+  const handleEditProduct = (product) => {
+    setEditingProduct(product);
+    setProductForm({
+      name: product.name,
+      description: product.description || "",
+      price: product.price.toString(),
+      category: product.category,
+      image_url: product.image_url || "",
+      inventory_count: product.inventory_count,
+      member_price: product.member_price?.toString() || "",
+    });
+    setAddProductOpen(true);
+  };
+
+  const handleDeleteProduct = async (productId) => {
+    if (!window.confirm("Are you sure you want to delete this product?")) return;
+    
+    try {
+      const token = localStorage.getItem("token");
+      await axios.delete(`${API_URL}/api/store/products/${productId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      toast.success("Product deleted");
+      await fetchProducts();
+    } catch (error) {
+      toast.error("Failed to delete product");
+    }
+  };
+
+  const updateOrderStatus = async (orderId, status) => {
+    try {
+      const token = localStorage.getItem("token");
+      await axios.put(
+        `${API_URL}/api/store/orders/${orderId}/status?status=${status}`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      toast.success("Order status updated");
+      await fetchOrders();
+    } catch (error) {
+      toast.error("Failed to update order status");
+    }
+  };
+
+  const getStatusBadge = (status) => {
+    const statusConfig = {
+      pending: { color: "bg-yellow-500", icon: Clock },
+      paid: { color: "bg-green-500", icon: CheckCircle },
+      shipped: { color: "bg-blue-500", icon: Truck },
+      completed: { color: "bg-emerald-600", icon: CheckCircle },
+      cancelled: { color: "bg-red-500", icon: XCircle },
+      refunded: { color: "bg-purple-500", icon: RefreshCw },
+    };
+    const config = statusConfig[status] || statusConfig.pending;
+    const Icon = config.icon;
+    
+    return (
+      <Badge className={`${config.color} text-white flex items-center gap-1`}>
+        <Icon className="w-3 h-3" />
+        {status.charAt(0).toUpperCase() + status.slice(1)}
+      </Badge>
+    );
+  };
+
+  const merchandiseProducts = products.filter(p => p.category === "merchandise");
+  const duesProducts = products.filter(p => p.category === "dues");
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
+        <div className="text-white">Loading store...</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-slate-900 p-4 md:p-6">
+      {/* Header */}
+      <div className="max-w-7xl mx-auto">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-4">
+            <Button
+              variant="ghost"
+              onClick={() => navigate("/")}
+              className="text-slate-300 hover:text-white"
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back
+            </Button>
+            <h1 className="text-2xl font-bold text-white flex items-center gap-2">
+              <Package className="w-6 h-6" />
+              BOHTC Store
+            </h1>
+          </div>
+          
+          <div className="flex items-center gap-3">
+            {isAdmin && (
+              <Button
+                onClick={() => {
+                  setEditingProduct(null);
+                  setProductForm({
+                    name: "",
+                    description: "",
+                    price: "",
+                    category: "merchandise",
+                    image_url: "",
+                    inventory_count: 0,
+                    member_price: "",
+                  });
+                  setAddProductOpen(true);
+                }}
+                className="bg-green-600 hover:bg-green-700"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Add Product
+              </Button>
+            )}
+            <Button
+              onClick={() => setCartOpen(true)}
+              variant="outline"
+              className="relative border-slate-600 text-slate-200 hover:bg-slate-700"
+            >
+              <ShoppingCart className="w-4 h-4 mr-2" />
+              Cart
+              {cart.item_count > 0 && (
+                <Badge className="absolute -top-2 -right-2 bg-red-500 text-white text-xs px-1.5">
+                  {cart.item_count}
+                </Badge>
+              )}
+            </Button>
+          </div>
+        </div>
+
+        {/* Main Content Tabs */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="bg-slate-800 border-slate-700 mb-6">
+            <TabsTrigger value="merchandise" className="data-[state=active]:bg-slate-700">
+              <Package className="w-4 h-4 mr-2" />
+              Merchandise
+            </TabsTrigger>
+            <TabsTrigger value="dues" className="data-[state=active]:bg-slate-700">
+              <DollarSign className="w-4 h-4 mr-2" />
+              Pay Dues
+            </TabsTrigger>
+            <TabsTrigger value="orders" className="data-[state=active]:bg-slate-700">
+              <CreditCardIcon className="w-4 h-4 mr-2" />
+              My Orders
+            </TabsTrigger>
+          </TabsList>
+
+          {/* Merchandise Tab */}
+          <TabsContent value="merchandise">
+            {merchandiseProducts.length === 0 ? (
+              <div className="text-center py-12 text-slate-400">
+                <Package className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                <p>No merchandise available yet.</p>
+                {isAdmin && <p className="text-sm mt-2">Click "Add Product" to add items.</p>}
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                {merchandiseProducts.map((product) => (
+                  <Card key={product.id} className="bg-slate-800 border-slate-700">
+                    <CardHeader className="pb-2">
+                      {product.image_url ? (
+                        <img
+                          src={product.image_url}
+                          alt={product.name}
+                          className="w-full h-48 object-cover rounded-md mb-2"
+                        />
+                      ) : (
+                        <div className="w-full h-48 bg-slate-700 rounded-md flex items-center justify-center mb-2">
+                          <ImageIcon className="w-12 h-12 text-slate-500" />
+                        </div>
+                      )}
+                      <CardTitle className="text-white text-lg">{product.name}</CardTitle>
+                      {product.description && (
+                        <CardDescription className="text-slate-400">
+                          {product.description}
+                        </CardDescription>
+                      )}
+                    </CardHeader>
+                    <CardContent>
+                      <div className="flex items-center justify-between mb-2">
+                        <div>
+                          {product.is_member_price ? (
+                            <div className="flex items-center gap-2">
+                              <span className="text-xl font-bold text-green-400">
+                                ${product.display_price.toFixed(2)}
+                              </span>
+                              <span className="text-sm text-slate-500 line-through">
+                                ${product.price.toFixed(2)}
+                              </span>
+                              <Badge className="bg-green-600 text-xs">Member</Badge>
+                            </div>
+                          ) : (
+                            <span className="text-xl font-bold text-white">
+                              ${product.display_price.toFixed(2)}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="text-sm text-slate-400 mb-3">
+                        {product.inventory_count > 0 ? (
+                          <span className="text-green-400">{product.inventory_count} in stock</span>
+                        ) : (
+                          <span className="text-red-400">Out of stock</span>
+                        )}
+                      </div>
+                    </CardContent>
+                    <CardFooter className="flex gap-2">
+                      <Button
+                        onClick={() => addToCart(product.id)}
+                        disabled={product.inventory_count === 0}
+                        className="flex-1 bg-blue-600 hover:bg-blue-700"
+                      >
+                        <ShoppingCart className="w-4 h-4 mr-2" />
+                        Add to Cart
+                      </Button>
+                      {isAdmin && (
+                        <>
+                          <Button
+                            size="icon"
+                            variant="outline"
+                            onClick={() => handleEditProduct(product)}
+                            className="border-slate-600"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            size="icon"
+                            variant="outline"
+                            onClick={() => handleDeleteProduct(product.id)}
+                            className="border-red-600 text-red-400 hover:bg-red-900"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </>
+                      )}
+                    </CardFooter>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </TabsContent>
+
+          {/* Dues Tab */}
+          <TabsContent value="dues">
+            <Card className="bg-slate-800 border-slate-700 max-w-md mx-auto">
+              <CardHeader>
+                <CardTitle className="text-white flex items-center gap-2">
+                  <DollarSign className="w-5 h-5" />
+                  Pay Annual Dues
+                </CardTitle>
+                <CardDescription className="text-slate-400">
+                  Pay your membership dues securely online
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <Label className="text-slate-200">Year</Label>
+                  <Select value={duesYear.toString()} onValueChange={(v) => setDuesYear(parseInt(v))}>
+                    <SelectTrigger className="bg-slate-700 border-slate-600 text-white">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="bg-slate-800 border-slate-700">
+                      {[2024, 2025, 2026].map((year) => (
+                        <SelectItem key={year} value={year.toString()} className="text-white">
+                          {year}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label className="text-slate-200">Amount ($)</Label>
+                  <Input
+                    type="number"
+                    value={duesAmount}
+                    onChange={(e) => setDuesAmount(parseFloat(e.target.value) || 0)}
+                    className="bg-slate-700 border-slate-600 text-white"
+                    min="0"
+                    step="0.01"
+                  />
+                </div>
+              </CardContent>
+              <CardFooter>
+                <Button
+                  onClick={createDuesOrder}
+                  className="w-full bg-green-600 hover:bg-green-700"
+                  disabled={duesAmount <= 0}
+                >
+                  <CreditCardIcon className="w-4 h-4 mr-2" />
+                  Pay ${duesAmount.toFixed(2)}
+                </Button>
+              </CardFooter>
+            </Card>
+          </TabsContent>
+
+          {/* Orders Tab */}
+          <TabsContent value="orders">
+            {orders.length === 0 ? (
+              <div className="text-center py-12 text-slate-400">
+                <CreditCardIcon className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                <p>No orders yet.</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {orders.map((order) => (
+                  <Card key={order.id} className="bg-slate-800 border-slate-700">
+                    <CardHeader className="pb-2">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <CardTitle className="text-white text-lg">
+                            Order #{order.id.slice(0, 8)}
+                          </CardTitle>
+                          <CardDescription className="text-slate-400">
+                            {new Date(order.created_at).toLocaleDateString()} at{" "}
+                            {new Date(order.created_at).toLocaleTimeString()}
+                          </CardDescription>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {getStatusBadge(order.status)}
+                          {isAdmin && order.status === "paid" && (
+                            <Select
+                              value={order.status}
+                              onValueChange={(v) => updateOrderStatus(order.id, v)}
+                            >
+                              <SelectTrigger className="w-32 bg-slate-700 border-slate-600 text-white text-xs">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent className="bg-slate-800 border-slate-700">
+                                <SelectItem value="shipped" className="text-white">Ship</SelectItem>
+                                <SelectItem value="completed" className="text-white">Complete</SelectItem>
+                                <SelectItem value="cancelled" className="text-white">Cancel</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          )}
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <Table>
+                        <TableHeader>
+                          <TableRow className="border-slate-700">
+                            <TableHead className="text-slate-400">Item</TableHead>
+                            <TableHead className="text-slate-400 text-right">Qty</TableHead>
+                            <TableHead className="text-slate-400 text-right">Price</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {order.items.map((item, idx) => (
+                            <TableRow key={idx} className="border-slate-700">
+                              <TableCell className="text-white">{item.name}</TableCell>
+                              <TableCell className="text-white text-right">{item.quantity}</TableCell>
+                              <TableCell className="text-white text-right">
+                                ${(item.price * item.quantity).toFixed(2)}
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                      <div className="mt-4 pt-4 border-t border-slate-700 space-y-1 text-right">
+                        <div className="text-slate-400">Subtotal: ${order.subtotal.toFixed(2)}</div>
+                        {order.tax > 0 && (
+                          <div className="text-slate-400">Tax: ${order.tax.toFixed(2)}</div>
+                        )}
+                        <div className="text-xl font-bold text-white">
+                          Total: ${order.total.toFixed(2)}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
+      </div>
+
+      {/* Cart Dialog */}
+      <Dialog open={cartOpen} onOpenChange={setCartOpen}>
+        <DialogContent className="bg-slate-800 border-slate-700 max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="text-white flex items-center gap-2">
+              <ShoppingCart className="w-5 h-5" />
+              Shopping Cart
+            </DialogTitle>
+          </DialogHeader>
+          {cart.items.length === 0 ? (
+            <div className="text-center py-8 text-slate-400">
+              Your cart is empty
+            </div>
+          ) : (
+            <>
+              <div className="space-y-3 max-h-64 overflow-y-auto">
+                {cart.items.map((item) => (
+                  <div
+                    key={item.product_id}
+                    className="flex items-center justify-between p-3 bg-slate-700 rounded-lg"
+                  >
+                    <div className="flex-1">
+                      <div className="text-white font-medium">{item.name}</div>
+                      <div className="text-slate-400 text-sm">
+                        ${item.price.toFixed(2)} each
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        size="icon"
+                        variant="outline"
+                        onClick={() => updateCartItem(item.product_id, item.quantity - 1)}
+                        className="h-8 w-8 border-slate-600"
+                      >
+                        <Minus className="w-3 h-3" />
+                      </Button>
+                      <span className="text-white w-8 text-center">{item.quantity}</span>
+                      <Button
+                        size="icon"
+                        variant="outline"
+                        onClick={() => updateCartItem(item.product_id, item.quantity + 1)}
+                        className="h-8 w-8 border-slate-600"
+                      >
+                        <Plus className="w-3 h-3" />
+                      </Button>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => updateCartItem(item.product_id, 0)}
+                        className="h-8 w-8 text-red-400 hover:text-red-300"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="border-t border-slate-700 pt-4 space-y-3">
+                <div className="flex justify-between text-xl font-bold text-white">
+                  <span>Total:</span>
+                  <span>${cart.total.toFixed(2)}</span>
+                </div>
+                <div>
+                  <Label className="text-slate-200">Shipping Address (optional)</Label>
+                  <Textarea
+                    value={shippingAddress}
+                    onChange={(e) => setShippingAddress(e.target.value)}
+                    placeholder="Enter shipping address..."
+                    className="bg-slate-700 border-slate-600 text-white mt-1"
+                    rows={2}
+                  />
+                </div>
+                <div>
+                  <Label className="text-slate-200">Order Notes (optional)</Label>
+                  <Input
+                    value={orderNotes}
+                    onChange={(e) => setOrderNotes(e.target.value)}
+                    placeholder="Any special instructions..."
+                    className="bg-slate-700 border-slate-600 text-white mt-1"
+                  />
+                </div>
+              </div>
+            </>
+          )}
+          <DialogFooter className="flex gap-2">
+            <Button variant="outline" onClick={clearCart} className="border-slate-600">
+              Clear Cart
+            </Button>
+            <Button
+              onClick={createOrder}
+              disabled={cart.items.length === 0}
+              className="bg-green-600 hover:bg-green-700"
+            >
+              Proceed to Checkout
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Checkout Dialog */}
+      <Dialog open={checkoutOpen} onOpenChange={setCheckoutOpen}>
+        <DialogContent className="bg-slate-800 border-slate-700 max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-white flex items-center gap-2">
+              <CreditCardIcon className="w-5 h-5" />
+              Complete Payment
+            </DialogTitle>
+            <DialogDescription className="text-slate-400">
+              Total: ${currentOrder?.total.toFixed(2)}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <PaymentForm
+              applicationId={SQUARE_APP_ID}
+              locationId={SQUARE_LOCATION_ID}
+              cardTokenizeResponseReceived={handlePaymentComplete}
+              createPaymentRequest={() => ({
+                countryCode: "US",
+                currencyCode: "USD",
+                total: {
+                  amount: currentOrder?.total.toString() || "0",
+                  label: "Total",
+                },
+              })}
+            >
+              <CreditCard />
+              <Button
+                type="submit"
+                disabled={processingPayment}
+                className="w-full mt-4 bg-green-600 hover:bg-green-700"
+              >
+                {processingPayment ? "Processing..." : `Pay $${currentOrder?.total.toFixed(2)}`}
+              </Button>
+            </PaymentForm>
+          </div>
+          <div className="text-xs text-slate-500 text-center">
+            🔒 Payments processed securely by Square
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dues Checkout Dialog */}
+      <Dialog open={duesCheckoutOpen} onOpenChange={setDuesCheckoutOpen}>
+        <DialogContent className="bg-slate-800 border-slate-700 max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-white flex items-center gap-2">
+              <DollarSign className="w-5 h-5" />
+              Pay Dues - {duesYear}
+            </DialogTitle>
+            <DialogDescription className="text-slate-400">
+              Amount: ${duesOrder?.total.toFixed(2)}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <PaymentForm
+              applicationId={SQUARE_APP_ID}
+              locationId={SQUARE_LOCATION_ID}
+              cardTokenizeResponseReceived={handleDuesPaymentComplete}
+              createPaymentRequest={() => ({
+                countryCode: "US",
+                currencyCode: "USD",
+                total: {
+                  amount: duesOrder?.total.toString() || "0",
+                  label: "Annual Dues",
+                },
+              })}
+            >
+              <CreditCard />
+              <Button
+                type="submit"
+                disabled={processingPayment}
+                className="w-full mt-4 bg-green-600 hover:bg-green-700"
+              >
+                {processingPayment ? "Processing..." : `Pay $${duesOrder?.total.toFixed(2)}`}
+              </Button>
+            </PaymentForm>
+          </div>
+          <div className="text-xs text-slate-500 text-center">
+            🔒 Payments processed securely by Square
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add/Edit Product Dialog */}
+      <Dialog open={addProductOpen} onOpenChange={setAddProductOpen}>
+        <DialogContent className="bg-slate-800 border-slate-700 max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-white">
+              {editingProduct ? "Edit Product" : "Add New Product"}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label className="text-slate-200">Name</Label>
+              <Input
+                value={productForm.name}
+                onChange={(e) => setProductForm({ ...productForm, name: e.target.value })}
+                className="bg-slate-700 border-slate-600 text-white"
+                placeholder="Product name"
+              />
+            </div>
+            <div>
+              <Label className="text-slate-200">Description</Label>
+              <Textarea
+                value={productForm.description}
+                onChange={(e) => setProductForm({ ...productForm, description: e.target.value })}
+                className="bg-slate-700 border-slate-600 text-white"
+                placeholder="Product description"
+                rows={2}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label className="text-slate-200">Price ($)</Label>
+                <Input
+                  type="number"
+                  value={productForm.price}
+                  onChange={(e) => setProductForm({ ...productForm, price: e.target.value })}
+                  className="bg-slate-700 border-slate-600 text-white"
+                  placeholder="0.00"
+                  step="0.01"
+                />
+              </div>
+              <div>
+                <Label className="text-slate-200">Member Price ($)</Label>
+                <Input
+                  type="number"
+                  value={productForm.member_price}
+                  onChange={(e) => setProductForm({ ...productForm, member_price: e.target.value })}
+                  className="bg-slate-700 border-slate-600 text-white"
+                  placeholder="Optional"
+                  step="0.01"
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label className="text-slate-200">Category</Label>
+                <Select
+                  value={productForm.category}
+                  onValueChange={(v) => setProductForm({ ...productForm, category: v })}
+                >
+                  <SelectTrigger className="bg-slate-700 border-slate-600 text-white">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-slate-800 border-slate-700">
+                    <SelectItem value="merchandise" className="text-white">Merchandise</SelectItem>
+                    <SelectItem value="dues" className="text-white">Dues</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="text-slate-200">Inventory</Label>
+                <Input
+                  type="number"
+                  value={productForm.inventory_count}
+                  onChange={(e) => setProductForm({ ...productForm, inventory_count: parseInt(e.target.value) || 0 })}
+                  className="bg-slate-700 border-slate-600 text-white"
+                  min="0"
+                />
+              </div>
+            </div>
+            <div>
+              <Label className="text-slate-200">Image URL</Label>
+              <Input
+                value={productForm.image_url}
+                onChange={(e) => setProductForm({ ...productForm, image_url: e.target.value })}
+                className="bg-slate-700 border-slate-600 text-white"
+                placeholder="https://example.com/image.jpg"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAddProductOpen(false)} className="border-slate-600">
+              Cancel
+            </Button>
+            <Button onClick={handleCreateProduct} className="bg-green-600 hover:bg-green-700">
+              {editingProduct ? "Update" : "Create"} Product
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
