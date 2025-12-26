@@ -373,7 +373,7 @@ export default function WallOfHonor({ token, userRole, userChapter }) {
                   )}
                   
                   {/* Admin Actions */}
-                  {isAdmin && (
+                  {canEditWallOfHonor && (
                     <div className="flex justify-center gap-2 mt-4 pt-4 border-t border-slate-700">
                       <Button
                         size="sm"
