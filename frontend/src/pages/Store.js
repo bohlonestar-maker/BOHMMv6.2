@@ -782,9 +782,9 @@ export default function Store({ userRole, userChapter }) {
           ) : (
             <>
               <div className="space-y-3 max-h-64 overflow-y-auto">
-                {cart.items.map((item) => (
+                {cart.items.map((item, idx) => (
                   <div
-                    key={item.product_id}
+                    key={`${item.product_id}-${item.variation_id || ''}-${item.customization || ''}-${idx}`}
                     className="flex items-center justify-between p-3 bg-slate-700 rounded-lg"
                   >
                     <div className="flex-1">
@@ -797,7 +797,7 @@ export default function Store({ userRole, userChapter }) {
                       <Button
                         size="icon"
                         variant="outline"
-                        onClick={() => updateCartItem(item.product_id, item.quantity - 1)}
+                        onClick={() => updateCartItem(item, item.quantity - 1)}
                         className="h-8 w-8 border-slate-600"
                       >
                         <Minus className="w-3 h-3" />
@@ -806,7 +806,7 @@ export default function Store({ userRole, userChapter }) {
                       <Button
                         size="icon"
                         variant="outline"
-                        onClick={() => updateCartItem(item.product_id, item.quantity + 1)}
+                        onClick={() => updateCartItem(item, item.quantity + 1)}
                         className="h-8 w-8 border-slate-600"
                       >
                         <Plus className="w-3 h-3" />
@@ -814,7 +814,7 @@ export default function Store({ userRole, userChapter }) {
                       <Button
                         size="icon"
                         variant="ghost"
-                        onClick={() => updateCartItem(item.product_id, 0)}
+                        onClick={() => updateCartItem(item, 0)}
                         className="h-8 w-8 text-red-400 hover:text-red-300"
                       >
                         <Trash2 className="w-4 h-4" />
