@@ -3343,9 +3343,13 @@ async def get_fallen_members(current_user: dict = Depends(verify_token)):
 @api_router.post("/fallen", response_model=FallenMember, status_code=201)
 async def create_fallen_member(
     fallen: FallenMemberCreate,
-    current_user: dict = Depends(verify_admin)
+    current_user: dict = Depends(verify_token)
 ):
-    """Add a fallen member to the Wall of Honor (admin only)"""
+    """Add a fallen member to the Wall of Honor (National Admin only)"""
+    # Only National Admin can add to Wall of Honor
+    if not can_edit_fallen_member(current_user):
+        raise HTTPException(status_code=403, detail="Only National Admin can add to the Wall of Honor")
+    
     fallen_dict = fallen.model_dump()
     fallen_dict["id"] = str(uuid.uuid4())
     fallen_dict["created_at"] = datetime.now(timezone.utc)
@@ -3366,9 +3370,13 @@ async def create_fallen_member(
 async def update_fallen_member(
     fallen_id: str,
     fallen_update: FallenMemberUpdate,
-    current_user: dict = Depends(verify_admin)
+    current_user: dict = Depends(verify_token)
 ):
-    """Update a fallen member entry (admin only)"""
+    """Update a fallen member entry (National Admin only)"""
+    # Only National Admin can edit Wall of Honor
+    if not can_edit_fallen_member(current_user):
+        raise HTTPException(status_code=403, detail="Only National Admin can edit the Wall of Honor")
+    
     existing = await db.fallen_members.find_one({"id": fallen_id}, {"_id": 0})
     if not existing:
         raise HTTPException(status_code=404, detail="Fallen member not found")
