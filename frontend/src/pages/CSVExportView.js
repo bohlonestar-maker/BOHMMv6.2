@@ -84,7 +84,6 @@ export default function CSVExportView() {
 
   useEffect(() => {
     fetchCSVData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const filteredData = csvData.filter((row, index) => {
