@@ -1048,6 +1048,112 @@ export default function Store({ userRole, userChapter }) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Product Options Modal (Size/Customization) */}
+      <Dialog open={productModalOpen} onOpenChange={setProductModalOpen}>
+        <DialogContent className="bg-slate-800 border-slate-700 max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-white flex items-center gap-2">
+              <Package className="w-5 h-5" />
+              {selectedProduct?.name}
+            </DialogTitle>
+            {selectedProduct?.description && (
+              <DialogDescription className="text-slate-400 text-sm">
+                {selectedProduct.description}
+              </DialogDescription>
+            )}
+          </DialogHeader>
+          
+          {selectedProduct && (
+            <div className="space-y-4">
+              {/* Product Image */}
+              {selectedProduct.image_url && (
+                <img
+                  src={selectedProduct.image_url}
+                  alt={selectedProduct.name}
+                  className="w-full h-48 object-cover rounded-md"
+                />
+              )}
+              
+              {/* Size Selection */}
+              {selectedProduct.has_variations && selectedProduct.variations && (
+                <div>
+                  <Label className="text-slate-200 mb-2 block">Select Size *</Label>
+                  <div className="grid grid-cols-4 gap-2">
+                    {selectedProduct.variations.map((variation) => (
+                      <Button
+                        key={variation.id}
+                        variant={selectedVariation?.id === variation.id ? "default" : "outline"}
+                        disabled={variation.sold_out || variation.inventory_count === 0}
+                        onClick={() => setSelectedVariation(variation)}
+                        className={`
+                          ${selectedVariation?.id === variation.id 
+                            ? 'bg-blue-600 text-white' 
+                            : 'border-slate-600 text-slate-300 hover:bg-slate-700'}
+                          ${(variation.sold_out || variation.inventory_count === 0) && 'opacity-50 line-through'}
+                        `}
+                      >
+                        {variation.name}
+                      </Button>
+                    ))}
+                  </div>
+                  {selectedVariation && (
+                    <div className="mt-2 text-sm text-slate-400">
+                      Price: <span className="text-green-400 font-bold">${selectedVariation.price.toFixed(2)}</span>
+                      {selectedVariation.inventory_count > 0 && (
+                        <span className="ml-2">({selectedVariation.inventory_count} in stock)</span>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+              
+              {/* Handle Customization */}
+              {selectedProduct.allows_customization && (
+                <div>
+                  <Label className="text-slate-200 mb-2 block">
+                    Add Your Handle (Optional)
+                  </Label>
+                  <Input
+                    value={handleText}
+                    onChange={(e) => setHandleText(e.target.value)}
+                    placeholder="Enter your handle to print on shirt"
+                    className="bg-slate-700 border-slate-600 text-white"
+                    maxLength={30}
+                  />
+                  <p className="text-xs text-slate-500 mt-1">
+                    Your handle will be printed on the shirt
+                  </p>
+                </div>
+              )}
+              
+              {/* Price Summary */}
+              <div className="border-t border-slate-700 pt-3">
+                <div className="flex justify-between text-lg">
+                  <span className="text-slate-300">Price:</span>
+                  <span className="text-green-400 font-bold">
+                    ${(selectedVariation?.price || selectedProduct.display_price || selectedProduct.price).toFixed(2)}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setProductModalOpen(false)} className="border-slate-600">
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleConfirmAddToCart} 
+              className="bg-blue-600 hover:bg-blue-700"
+              disabled={selectedProduct?.has_variations && !selectedVariation}
+            >
+              <ShoppingCart className="w-4 h-4 mr-2" />
+              Add to Cart
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
