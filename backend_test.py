@@ -8378,6 +8378,218 @@ class BOHDirectoryAPITester:
         print(f"   📅 Flexible meeting attendance testing completed")
         return member_id, prospect_id
 
+    def test_role_based_permissions(self):
+        """Test role-based permission system for member management application"""
+        print(f"\n🔐 Testing Role-Based Permission System...")
+        
+        # Test with admin credentials (National chapter)
+        success, login_response = self.test_login("admin", "admin123")
+        if not success:
+            print("❌ Cannot continue without admin authentication")
+            return
+        
+        # Test 1: Auth Verify - Check chapter information
+        success, verify_response = self.run_test(
+            "Auth Verify - Returns Chapter Info",
+            "GET",
+            "auth/verify",
+            200
+        )
+        
+        if success:
+            expected_fields = ['username', 'role', 'chapter', 'permissions']
+            missing_fields = [field for field in expected_fields if field not in verify_response]
+            
+            if not missing_fields:
+                self.log_test("Auth Verify - Required Fields Present", True, f"All fields present: {expected_fields}")
+                
+                # Check if user is National Admin
+                if verify_response.get('role') == 'admin' and verify_response.get('chapter') == 'National':
+                    self.log_test("Auth Verify - National Admin Detected", True, f"User: {verify_response.get('username')} (admin - National)")
+                else:
+                    self.log_test("Auth Verify - National Admin Detected", False, f"Role: {verify_response.get('role')}, Chapter: {verify_response.get('chapter')}")
+            else:
+                self.log_test("Auth Verify - Required Fields Present", False, f"Missing fields: {missing_fields}")
+        
+        # Test 2: Member Permission Tests
+        print(f"\n   👥 Testing Member Permissions...")
+        
+        # Create test member for permission testing
+        test_member = {
+            "chapter": "AD",
+            "title": "Member",
+            "handle": "PermissionTestRider",
+            "name": "Permission Test Member",
+            "email": "permtest@example.com",
+            "phone": "555-0199",
+            "address": "199 Permission St"
+        }
+        
+        success, created_member = self.run_test(
+            "Create Test Member for Permissions",
+            "POST",
+            "members",
+            201,
+            data=test_member
+        )
+        
+        member_id = None
+        if success and 'id' in created_member:
+            member_id = created_member['id']
+        
+        # Test GET /api/members - Should return members with can_edit flag
+        success, members_list = self.run_test(
+            "Get Members - Check can_edit Flag",
+            "GET",
+            "members",
+            200
+        )
+        
+        if success and isinstance(members_list, list) and len(members_list) > 0:
+            # Check if can_edit flag is present
+            member_with_flag = None
+            for member in members_list:
+                if 'can_edit' in member:
+                    member_with_flag = member
+                    break
+            
+            if member_with_flag:
+                self.log_test("Members List - can_edit Flag Present", True, f"can_edit flag found: {member_with_flag.get('can_edit')}")
+                
+                # National Admin should be able to edit any member
+                if member_with_flag.get('can_edit') == True:
+                    self.log_test("National Admin - Can Edit Any Member", True, "National Admin has edit permissions")
+                else:
+                    self.log_test("National Admin - Can Edit Any Member", False, f"can_edit is {member_with_flag.get('can_edit')}")
+            else:
+                self.log_test("Members List - can_edit Flag Present", False, "No can_edit flag found in member objects")
+        
+        # Test PUT /api/members/{id} - National Admin should be able to edit
+        if member_id:
+            update_data = {"name": "Updated Permission Test Member"}
+            success, updated_member = self.run_test(
+                "National Admin - Edit Member",
+                "PUT",
+                f"members/{member_id}",
+                200,
+                data=update_data
+            )
+        
+        # Test 3: Prospects Permission Tests (National/HA Admin only)
+        print(f"\n   🏍️  Testing Prospects Permissions...")
+        
+        # Test GET /api/prospects - Should work for National Admin
+        success, prospects_list = self.run_test(
+            "National Admin - Get Prospects",
+            "GET",
+            "prospects",
+            200
+        )
+        
+        # Test POST /api/prospects - Should work for National Admin
+        test_prospect = {
+            "handle": "TestProspect",
+            "name": "Test Prospect Name",
+            "email": "testprospect@test.com",
+            "phone": "555-0123",
+            "address": "123 Test St"
+        }
+        
+        success, created_prospect = self.run_test(
+            "National Admin - Create Prospect",
+            "POST",
+            "prospects",
+            201,
+            data=test_prospect
+        )
+        
+        prospect_id = None
+        if success and 'id' in created_prospect:
+            prospect_id = created_prospect['id']
+        
+        # Test PUT /api/prospects/{id} - Should work for National Admin
+        if prospect_id:
+            update_prospect_data = {"name": "Updated Test Prospect"}
+            success, updated_prospect = self.run_test(
+                "National Admin - Edit Prospect",
+                "PUT",
+                f"prospects/{prospect_id}",
+                200,
+                data=update_prospect_data
+            )
+        
+        # Test DELETE /api/prospects/{id} - Should work for National Admin
+        if prospect_id:
+            success, deleted_prospect = self.run_test(
+                "National Admin - Archive Prospect",
+                "DELETE",
+                f"prospects/{prospect_id}?reason=test",
+                200
+            )
+        
+        # Test 4: Wall of Honor Permission Tests (National Admin only)
+        print(f"\n   🏛️  Testing Wall of Honor Permissions...")
+        
+        # Test GET /api/fallen - Should work for any authenticated user
+        success, fallen_list = self.run_test(
+            "Get Fallen Members List",
+            "GET",
+            "fallen",
+            200
+        )
+        
+        # Test POST /api/fallen - Should work for National Admin
+        test_fallen = {
+            "name": "Test Memorial",
+            "handle": "TestHandle",
+            "chapter": "National",
+            "tribute": "In memory"
+        }
+        
+        success, created_fallen = self.run_test(
+            "National Admin - Create Fallen Member",
+            "POST",
+            "fallen",
+            201,
+            data=test_fallen
+        )
+        
+        fallen_id = None
+        if success and 'id' in created_fallen:
+            fallen_id = created_fallen['id']
+        
+        # Test PUT /api/fallen/{id} - Should work for National Admin
+        if fallen_id:
+            update_fallen_data = {"tribute": "Updated memorial"}
+            success, updated_fallen = self.run_test(
+                "National Admin - Edit Fallen Member",
+                "PUT",
+                f"fallen/{fallen_id}",
+                200,
+                data=update_fallen_data
+            )
+        
+        # Test DELETE /api/fallen/{id} - Should work for National Admin
+        if fallen_id:
+            success, deleted_fallen = self.run_test(
+                "National Admin - Delete Fallen Member",
+                "DELETE",
+                f"fallen/{fallen_id}",
+                200
+            )
+        
+        # Clean up test data
+        if member_id:
+            success, response = self.run_test(
+                "Cleanup - Delete Test Member",
+                "DELETE",
+                f"members/{member_id}",
+                200
+            )
+        
+        print(f"   🔐 Role-based permission testing completed")
+        return True
+
     def run_all_tests(self):
         """Run all tests"""
         print("🚀 Starting Brothers of the Highway Directory API Tests")
