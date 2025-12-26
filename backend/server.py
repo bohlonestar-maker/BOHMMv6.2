@@ -3410,9 +3410,13 @@ async def update_fallen_member(
 @api_router.delete("/fallen/{fallen_id}")
 async def delete_fallen_member(
     fallen_id: str,
-    current_user: dict = Depends(verify_admin)
+    current_user: dict = Depends(verify_token)
 ):
-    """Remove a fallen member from the Wall of Honor (admin only)"""
+    """Remove a fallen member from the Wall of Honor (National Admin only)"""
+    # Only National Admin can delete from Wall of Honor
+    if not can_edit_fallen_member(current_user):
+        raise HTTPException(status_code=403, detail="Only National Admin can remove from the Wall of Honor")
+    
     existing = await db.fallen_members.find_one({"id": fallen_id}, {"_id": 0})
     if not existing:
         raise HTTPException(status_code=404, detail="Fallen member not found")
