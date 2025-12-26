@@ -273,7 +273,7 @@ export default function WallOfHonor({ token, userRole, userChapter }) {
             </p>
           </div>
           
-          {isAdmin && (
+          {canEditWallOfHonor && (
             <div className="flex justify-center">
               <Button
                 onClick={openAddDialog}
