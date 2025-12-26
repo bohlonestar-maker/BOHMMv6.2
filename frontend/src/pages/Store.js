@@ -479,7 +479,7 @@ export default function Store({ userRole, userChapter }) {
               <div className="text-center py-12 text-slate-400">
                 <Package className="w-12 h-12 mx-auto mb-4 opacity-50" />
                 <p>No merchandise available yet.</p>
-                {isAdmin && <p className="text-sm mt-2">Click "Add Product" to add items.</p>}
+                {canManageStore && <p className="text-sm mt-2">Click "Add Product" to add items.</p>}
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
