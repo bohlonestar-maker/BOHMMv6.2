@@ -200,10 +200,12 @@ class PermissionTester:
         )
         
         # Test POST /api/prospects - Should work for National Admin
+        import time
+        timestamp = str(int(time.time()))
         test_prospect = {
-            "handle": "TestProspect",
+            "handle": f"TestProspect{timestamp}",
             "name": "Test Prospect Name",
-            "email": "testprospect@test.com",
+            "email": f"testprospect{timestamp}@test.com",
             "phone": "555-0123",
             "address": "123 Test St"
         }
