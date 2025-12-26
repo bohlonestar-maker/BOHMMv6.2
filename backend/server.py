@@ -3159,12 +3159,16 @@ async def promote_prospect_to_member(
     prospect_id: str,
     chapter: str,
     title: str,
-    current_user: dict = Depends(verify_admin)
+    current_user: dict = Depends(verify_token)
 ):
     """
     Promote a prospect to a member by copying their data to members collection
     and deleting from prospects collection
     """
+    # Check if user can edit prospects (only National/HA can promote)
+    if not can_edit_prospect(current_user):
+        raise HTTPException(status_code=403, detail="Only National Admin and HA Admin can promote prospects")
+    
     # Get the prospect
     prospect = await db.prospects.find_one({"id": prospect_id}, {"_id": 0})
     if not prospect:
