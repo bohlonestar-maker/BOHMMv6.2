@@ -461,10 +461,7 @@ export default function CSVExportView() {
                 <button onClick={() => selectPreset('dues_q2')} className="bg-red-600 hover:bg-red-700 px-2 sm:px-3 py-1.5 sm:py-2 rounded text-xs sm:text-sm">Dues Q2</button>
                 <button onClick={() => selectPreset('dues_q3')} className="bg-orange-600 hover:bg-orange-700 px-2 sm:px-3 py-1.5 sm:py-2 rounded text-xs sm:text-sm">Dues Q3</button>
                 <button onClick={() => selectPreset('dues_q4')} className="bg-amber-600 hover:bg-amber-700 px-2 sm:px-3 py-1.5 sm:py-2 rounded text-xs sm:text-sm">Dues Q4</button>
-                <button onClick={() => selectPreset('meetings_q1')} className="bg-cyan-600 hover:bg-cyan-700 px-2 sm:px-3 py-1.5 sm:py-2 rounded text-xs sm:text-sm">Mtgs Q1</button>
-                <button onClick={() => selectPreset('meetings_q2')} className="bg-teal-600 hover:bg-teal-700 px-2 sm:px-3 py-1.5 sm:py-2 rounded text-xs sm:text-sm">Mtgs Q2</button>
-                <button onClick={() => selectPreset('meetings_q3')} className="bg-emerald-600 hover:bg-emerald-700 px-2 sm:px-3 py-1.5 sm:py-2 rounded text-xs sm:text-sm">Mtgs Q3</button>
-                <button onClick={() => selectPreset('meetings_q4')} className="bg-green-600 hover:bg-green-700 px-2 sm:px-3 py-1.5 sm:py-2 rounded text-xs sm:text-sm">Mtgs Q4</button>
+                <button onClick={() => selectPreset('meetings_q1')} className="bg-green-600 hover:bg-green-700 px-2 sm:px-3 py-1.5 sm:py-2 rounded text-xs sm:text-sm">Attendance</button>
                 <button onClick={() => setSelectedColumns([])} className="bg-slate-600 hover:bg-slate-700 px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 rounded text-xs sm:text-sm">Clear</button>
               </div>
             </div>
