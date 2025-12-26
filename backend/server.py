@@ -126,10 +126,9 @@ SQUARE_ENVIRONMENT = os.environ.get('SQUARE_ENVIRONMENT', 'sandbox')
 square_client = None
 if SQUARE_ACCESS_TOKEN:
     try:
-        from square.client import Client as SquareClient
-        square_client = SquareClient(
-            access_token=SQUARE_ACCESS_TOKEN,
-            environment=SQUARE_ENVIRONMENT
+        from square import Square
+        square_client = Square(
+            token=SQUARE_ACCESS_TOKEN,
         )
         sys.stderr.write(f"✅ [INIT] Square client initialized ({SQUARE_ENVIRONMENT})\n")
         sys.stderr.flush()
