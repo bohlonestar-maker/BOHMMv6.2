@@ -126,6 +126,93 @@ export default function EventCalendar({ userRole }) {
     }
   };
 
+  const fetchBirthdays = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const response = await axios.get(`${API}/api/birthdays/upcoming?days=60`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setBirthdays(response.data.members || []);
+    } catch (error) {
+      console.error("Failed to fetch birthdays:", error);
+    }
+  };
+
+  const fetchAnniversaries = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const response = await axios.get(`${API}/api/anniversaries/upcoming?months=3`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setAnniversaries(response.data.members || []);
+    } catch (error) {
+      console.error("Failed to fetch anniversaries:", error);
+    }
+  };
+
+  // Calendar helper functions
+  const getDaysInMonth = (date) => {
+    return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
+  };
+
+  const getFirstDayOfMonth = (date) => {
+    return new Date(date.getFullYear(), date.getMonth(), 1).getDay();
+  };
+
+  const formatMonthYear = (date) => {
+    return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+  };
+
+  const prevMonth = () => {
+    setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1));
+  };
+
+  const nextMonth = () => {
+    setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1));
+  };
+
+  const getItemsForDate = (day) => {
+    const dateStr = `${currentMonth.getFullYear()}-${String(currentMonth.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    const items = { events: [], birthdays: [], anniversaries: [] };
+    
+    // Check events
+    events.forEach(event => {
+      if (event.date === dateStr) {
+        items.events.push(event);
+      }
+    });
+    
+    // Check birthdays (compare month and day)
+    birthdays.forEach(bday => {
+      if (bday.birthday_date === dateStr) {
+        items.birthdays.push(bday);
+      }
+    });
+    
+    // Check anniversaries (compare month only for anniversary month)
+    anniversaries.forEach(anniv => {
+      const joinParts = anniv.join_date?.split('/');
+      if (joinParts && joinParts.length === 2) {
+        const joinMonth = parseInt(joinParts[0]);
+        // Show on first day of anniversary month
+        if (joinMonth === currentMonth.getMonth() + 1 && day === 1) {
+          items.anniversaries.push(anniv);
+        }
+      }
+    });
+    
+    return items;
+  };
+
+  const handleDateClick = (day) => {
+    const items = getItemsForDate(day);
+    if (items.events.length > 0 || items.birthdays.length > 0 || items.anniversaries.length > 0) {
+      const dateStr = `${currentMonth.getFullYear()}-${String(currentMonth.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+      setSelectedDateItems({ date: dateStr, ...items });
+      setDateDialogOpen(true);
+    }
+  };
+
   const applyFilters = () => {
     let filtered = [...events];
 
