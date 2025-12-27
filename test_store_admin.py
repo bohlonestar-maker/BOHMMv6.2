@@ -305,9 +305,9 @@ class StoreAdminTester:
         
         try:
             import subprocess
-            # Check supervisor backend logs for auto-sync messages
+            # Check supervisor backend error logs for auto-sync messages (they're logged there)
             result = subprocess.run(
-                ['tail', '-n', '100', '/var/log/supervisor/backend.out.log'],
+                ['tail', '-n', '100', '/var/log/supervisor/backend.err.log'],
                 capture_output=True,
                 text=True,
                 timeout=10
@@ -331,10 +331,10 @@ class StoreAdminTester:
                     self.log_test("Backend Logs - Auto-sync Completed", False, "No 'Auto-sync completed' message found in recent logs")
                 
                 # Show recent log entries related to sync
-                sync_lines = [line for line in log_content.split('\n') if 'sync' in line.lower()]
+                sync_lines = [line for line in log_content.split('\n') if 'Auto-sync' in line]
                 if sync_lines:
-                    print(f"   Recent sync-related log entries:")
-                    for line in sync_lines[-5:]:  # Show last 5 sync-related entries
+                    print(f"   Recent auto-sync log entries:")
+                    for line in sync_lines[-3:]:  # Show last 3 auto-sync entries
                         print(f"     {line}")
                 
             else:
