@@ -1084,8 +1084,9 @@ export default function EventCalendar({ userRole }) {
             </form>
           </DialogContent>
         </Dialog>
+        )}
 
-        {/* Event Detail View Dialog */}
+        {/* Event Detail View Dialog - For all users */}
         <Dialog open={detailDialogOpen} onOpenChange={setDetailDialogOpen}>
           <DialogContent className="max-w-3xl">
             <DialogHeader>
