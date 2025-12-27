@@ -76,6 +76,7 @@ export default function EventCalendar() {
 
   useEffect(() => {
     fetchEvents();
+    fetchDiscordChannels();
   }, []);
 
   useEffect(() => {
