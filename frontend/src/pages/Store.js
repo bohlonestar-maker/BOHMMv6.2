@@ -75,10 +75,15 @@ export default function Store({ userRole, userChapter }) {
   const [redirectingToCheckout, setRedirectingToCheckout] = useState(false);
   
   // Dues state
-  const [duesAmount, setDuesAmount] = useState(100);
   const [duesYear, setDuesYear] = useState(new Date().getFullYear());
+  const [duesMonth, setDuesMonth] = useState(new Date().getMonth()); // 0-indexed month
   const [duesCheckoutOpen, setDuesCheckoutOpen] = useState(false);
   const [duesOrder, setDuesOrder] = useState(null);
+  const MONTHLY_DUES_AMOUNT = 30.00; // Fixed monthly dues amount
+
+  // Month names for display
+  const monthNames = ["January", "February", "March", "April", "May", "June", 
+                      "July", "August", "September", "October", "November", "December"];
 
   // Product form state
   const [productForm, setProductForm] = useState({
