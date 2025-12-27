@@ -7966,6 +7966,243 @@ async def sync_square_catalog(current_user: dict = Depends(verify_token)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Sync error: {str(e)}")
 
+# ==================== SQUARE WEBHOOK ENDPOINT ====================
+
+@api_router.post("/webhooks/square")
+async def handle_square_webhook(request: Request):
+    """
+    Handle webhook events from Square.
+    
+    Events handled:
+    - payment.completed: Update order status to 'paid'
+    - payment.updated: Handle payment status changes
+    - order.updated: Handle order status changes
+    """
+    try:
+        # Get raw body for signature verification
+        body = await request.body()
+        body_str = body.decode('utf-8')
+        
+        # Get signature header
+        signature = request.headers.get('x-square-hmacsha256-signature', '')
+        
+        # Get the notification URL (must match what's configured in Square Dashboard)
+        notification_url = f"{os.environ.get('REACT_APP_BACKEND_URL', '')}/api/webhooks/square"
+        
+        # Verify signature if key is configured
+        if SQUARE_WEBHOOK_SIGNATURE_KEY:
+            try:
+                is_valid = square_verify_signature(
+                    request_body=body_str,
+                    signature_header=signature,
+                    signature_key=SQUARE_WEBHOOK_SIGNATURE_KEY,
+                    notification_url=notification_url
+                )
+                if not is_valid:
+                    logger.warning("Square webhook signature verification failed")
+                    raise HTTPException(status_code=401, detail="Invalid signature")
+            except NameError:
+                # square_verify_signature not imported (Square SDK issue)
+                logger.warning("Square signature verification not available, skipping...")
+        else:
+            logger.info("Square webhook signature key not configured, skipping verification")
+        
+        # Parse the event
+        import json
+        event_data = json.loads(body_str)
+        
+        event_type = event_data.get('type', '')
+        event_id = event_data.get('event_id', '')
+        
+        logger.info(f"Square webhook received: {event_type} (event_id: {event_id})")
+        
+        # Handle different event types
+        if event_type == 'payment.completed':
+            await handle_payment_completed(event_data)
+        elif event_type == 'payment.updated':
+            await handle_payment_updated(event_data)
+        elif event_type == 'order.updated':
+            await handle_order_updated(event_data)
+        else:
+            logger.info(f"Unhandled Square webhook event type: {event_type}")
+        
+        # Return 200 to acknowledge receipt (Square requires this)
+        return {"status": "ok", "event_id": event_id}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Square webhook error: {str(e)}")
+        # Still return 200 to prevent Square from retrying
+        return {"status": "error", "message": str(e)}
+
+async def handle_payment_completed(event_data: dict):
+    """Handle payment.completed webhook event"""
+    try:
+        payment = event_data.get('data', {}).get('object', {}).get('payment', {})
+        payment_id = payment.get('id')
+        order_id = payment.get('order_id')
+        status_value = payment.get('status')
+        
+        logger.info(f"Payment completed: payment_id={payment_id}, order_id={order_id}, status={status_value}")
+        
+        if not order_id:
+            logger.warning("Payment completed event missing order_id")
+            return
+        
+        # Find our local order by square_order_id
+        local_order = await db.store_orders.find_one({"square_order_id": order_id})
+        
+        if not local_order:
+            # Try finding by the reference_id we set (our local order ID)
+            reference_id = payment.get('reference_id')
+            if reference_id:
+                local_order = await db.store_orders.find_one({"id": reference_id})
+        
+        if not local_order:
+            logger.warning(f"Local order not found for Square order_id: {order_id}")
+            return
+        
+        # Update order status to paid
+        if local_order.get('status') != 'paid':
+            update_data = {
+                "status": "paid",
+                "square_payment_id": payment_id,
+                "payment_completed_at": datetime.now(timezone.utc).isoformat(),
+                "updated_at": datetime.now(timezone.utc).isoformat()
+            }
+            
+            await db.store_orders.update_one(
+                {"id": local_order["id"]},
+                {"$set": update_data}
+            )
+            
+            logger.info(f"Order {local_order['id']} updated to 'paid' via webhook")
+            
+            # Update member dues if this is a dues payment
+            dues_info = local_order.get("dues_info")
+            if dues_info and dues_info.get("member_id"):
+                await update_member_dues_from_webhook(dues_info)
+            
+            # Log activity
+            await log_activity(
+                local_order.get("user_id", "webhook"),
+                "order_paid_webhook",
+                f"Order {local_order['id']} marked as paid via Square webhook"
+            )
+    except Exception as e:
+        logger.error(f"Error handling payment.completed: {str(e)}")
+
+async def handle_payment_updated(event_data: dict):
+    """Handle payment.updated webhook event"""
+    try:
+        payment = event_data.get('data', {}).get('object', {}).get('payment', {})
+        payment_id = payment.get('id')
+        status_value = payment.get('status')
+        
+        logger.info(f"Payment updated: payment_id={payment_id}, status={status_value}")
+        
+        # If payment failed or was cancelled, update order
+        if status_value in ['FAILED', 'CANCELED']:
+            order_id = payment.get('order_id')
+            if order_id:
+                local_order = await db.store_orders.find_one({"square_order_id": order_id})
+                if local_order and local_order.get('status') == 'pending':
+                    await db.store_orders.update_one(
+                        {"id": local_order["id"]},
+                        {"$set": {
+                            "status": "cancelled",
+                            "cancellation_reason": f"Payment {status_value.lower()}",
+                            "updated_at": datetime.now(timezone.utc).isoformat()
+                        }}
+                    )
+                    logger.info(f"Order {local_order['id']} cancelled due to payment {status_value}")
+    except Exception as e:
+        logger.error(f"Error handling payment.updated: {str(e)}")
+
+async def handle_order_updated(event_data: dict):
+    """Handle order.updated webhook event"""
+    try:
+        order = event_data.get('data', {}).get('object', {}).get('order', {})
+        square_order_id = order.get('id')
+        state = order.get('state')
+        
+        logger.info(f"Order updated: square_order_id={square_order_id}, state={state}")
+        
+        # Find local order
+        local_order = await db.store_orders.find_one({"square_order_id": square_order_id})
+        
+        if not local_order:
+            reference_id = order.get('reference_id')
+            if reference_id:
+                local_order = await db.store_orders.find_one({"id": reference_id})
+        
+        if not local_order:
+            logger.warning(f"Local order not found for Square order: {square_order_id}")
+            return
+        
+        # Map Square order states to our statuses
+        status_map = {
+            'OPEN': 'pending',
+            'COMPLETED': 'paid',
+            'CANCELED': 'cancelled'
+        }
+        
+        new_status = status_map.get(state)
+        if new_status and local_order.get('status') != new_status:
+            await db.store_orders.update_one(
+                {"id": local_order["id"]},
+                {"$set": {
+                    "status": new_status,
+                    "updated_at": datetime.now(timezone.utc).isoformat()
+                }}
+            )
+            logger.info(f"Order {local_order['id']} status updated to '{new_status}' via order.updated webhook")
+    except Exception as e:
+        logger.error(f"Error handling order.updated: {str(e)}")
+
+async def update_member_dues_from_webhook(dues_info: dict):
+    """Update member dues status when payment is confirmed via webhook"""
+    try:
+        member_id = dues_info.get("member_id")
+        year = str(dues_info.get("year"))
+        month = dues_info.get("month")
+        
+        if not member_id:
+            return
+        
+        member = await db.members.find_one({"id": member_id})
+        if not member:
+            logger.warning(f"Member not found for dues update: {member_id}")
+            return
+        
+        dues = member.get("dues", {})
+        
+        # Initialize year if not exists
+        if year not in dues:
+            dues[year] = [{"status": "unpaid", "note": ""} for _ in range(12)]
+        
+        # Update the specific month to paid
+        if isinstance(dues[year], list) and len(dues[year]) > month:
+            dues[year][month] = {
+                "status": "paid",
+                "note": f"Paid via store (webhook confirmed) on {datetime.now(timezone.utc).strftime('%Y-%m-%d')}"
+            }
+        
+        # Update member record
+        await db.members.update_one(
+            {"id": member_id},
+            {"$set": {
+                "dues": dues,
+                "updated_at": datetime.now(timezone.utc).isoformat()
+            }}
+        )
+        
+        logger.info(f"Member {member_id} dues updated for {year}-{int(month)+1:02d} via webhook")
+        
+    except Exception as e:
+        logger.error(f"Error updating member dues from webhook: {str(e)}")
+
 # ==================== END STORE API ENDPOINTS ====================
 
 # Include the router in the main app
