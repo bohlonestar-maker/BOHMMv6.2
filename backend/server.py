@@ -7093,9 +7093,9 @@ async def get_store_product(product_id: str, current_user: dict = Depends(verify
 
 @api_router.post("/store/products", response_model=StoreProduct)
 async def create_store_product(product_data: StoreProductCreate, current_user: dict = Depends(verify_token)):
-    """Create a new store product (National Prez, VP, SEC only)"""
-    if not can_manage_store(current_user):
-        raise HTTPException(status_code=403, detail="Only National Prez, VP, and SEC can add store products")
+    """Create a new store product (Store admins only)"""
+    if not await can_manage_store_async(current_user):
+        raise HTTPException(status_code=403, detail="Only store admins can add store products")
     
     product = StoreProduct(**product_data.model_dump())
     doc = product.model_dump()
