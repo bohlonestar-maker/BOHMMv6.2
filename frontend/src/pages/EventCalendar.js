@@ -97,6 +97,21 @@ export default function EventCalendar() {
     }
   };
 
+  const fetchDiscordChannels = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const response = await axios.get(`${API}/api/events/discord-channels`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setAvailableChannels(response.data.channels || []);
+      setCanSchedule(response.data.can_schedule || false);
+    } catch (error) {
+      console.error("Failed to fetch Discord channels:", error);
+      setAvailableChannels([]);
+      setCanSchedule(false);
+    }
+  };
+
   const applyFilters = () => {
     let filtered = [...events];
 
@@ -125,6 +140,7 @@ export default function EventCalendar() {
       chapter: "all",
       title_filter: "all",
       discord_notifications_enabled: true,
+      discord_channel: availableChannels.length > 0 ? availableChannels[0].id : "member-chat",
     });
   };
 
