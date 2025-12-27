@@ -335,7 +335,7 @@ export default function Store({ userRole, userChapter }) {
         `${API_URL}/api/store/dues/pay`,
         null,
         {
-          params: { amount: duesAmount, year: duesYear },
+          params: { amount: MONTHLY_DUES_AMOUNT, year: duesYear, month: duesMonth },
           headers: { Authorization: `Bearer ${token}` },
         }
       );
@@ -363,7 +363,7 @@ export default function Store({ userRole, userChapter }) {
       );
 
       if (response.data.success) {
-        toast.success("Dues payment successful!");
+        toast.success("Dues payment successful! Your member record has been updated.");
         setDuesCheckoutOpen(false);
         setDuesOrder(null);
         await fetchOrders();
