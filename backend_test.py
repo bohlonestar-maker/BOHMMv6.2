@@ -9033,6 +9033,10 @@ class BOHDirectoryAPITester:
         self.test_square_checkout_functionality()
         self.test_square_checkout_edge_cases()
         
+        # NEW HIGH PRIORITY FEATURE: Store Admin Management and Auto-Sync
+        print("\n🏪 TESTING STORE ADMIN MANAGEMENT AND AUTO-SYNC (NEW FEATURE)")
+        self.test_store_admin_management()
+        
         # NEW HIGH PRIORITY FEATURE: AI Chatbot Endpoint
         self.test_ai_chatbot_endpoint()
         
