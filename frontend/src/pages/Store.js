@@ -1252,7 +1252,7 @@ export default function Store({ userRole, userChapter }) {
                       </div>
                     ) : (
                       <div className="text-center text-slate-400 py-4">
-                        Click "Load Dues Payments" to view payment history
+                        Click &quot;Load Dues Payments&quot; to view payment history
                       </div>
                     )}
                   </CardContent>
