@@ -7909,6 +7909,14 @@ async def sync_square_catalog(current_user: dict = Depends(verify_token)):
             size_order = {'XS': 0, 'S': 1, 'M': 2, 'L': 3, 'LT': 4, 'XL': 5, 'XLT': 6, '2XL': 7, '2XLT': 8, '3XL': 9, '3XLT': 10, '4XL': 11, '5XL': 12, 'Regular': 0}
             product_variations.sort(key=lambda x: size_order.get(x['name'], 99))
             
+            # Determine if product should be shown in supporter store
+            # Default: show everything EXCEPT member-only items
+            is_member_only = (
+                'member' in name_lower and 
+                'supporter' not in name_lower
+            )
+            show_in_supporter = not is_member_only
+            
             # Check if product already exists
             existing = await db.store_products.find_one({"square_catalog_id": item_id})
             
@@ -7925,18 +7933,22 @@ async def sync_square_catalog(current_user: dict = Depends(verify_token)):
             }
             
             if existing:
-                # Update existing product
+                # Update existing product, but preserve show_in_supporter_store if already set
+                # This allows admins to manually override the default
+                if existing.get("show_in_supporter_store") is None:
+                    product_data["show_in_supporter_store"] = show_in_supporter
                 await db.store_products.update_one(
                     {"square_catalog_id": item_id},
                     {"$set": product_data}
                 )
             else:
-                # Create new product
+                # Create new product with default supporter store visibility
                 product_data.update({
                     "id": str(uuid.uuid4()),
                     "category": "merchandise",
                     "square_catalog_id": item_id,
                     "is_active": True,
+                    "show_in_supporter_store": show_in_supporter,
                     "created_at": datetime.now(timezone.utc).isoformat()
                 })
                 await db.store_products.insert_one(product_data)
