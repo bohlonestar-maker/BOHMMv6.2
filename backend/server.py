@@ -1267,6 +1267,19 @@ class PaymentRequest(BaseModel):
     order_id: str
     customer_email: Optional[str] = None
 
+# ==================== STORE ADMIN MODELS ====================
+
+class StoreAdmin(BaseModel):
+    """Delegated store admin - users granted store management permissions by primary admins"""
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    username: str  # Username of the user being granted access
+    granted_by: str  # Username of the primary admin who granted access
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class StoreAdminCreate(BaseModel):
+    username: str
+
 # ==================== END STORE MODELS ====================
 
 # Initialize default admin user
