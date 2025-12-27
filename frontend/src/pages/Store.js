@@ -690,20 +690,20 @@ export default function Store({ userRole, userChapter }) {
           {/* Dues Tab */}
           <TabsContent value="dues">
             <Card className="bg-slate-800 border-slate-700 max-w-md mx-auto">
-              <CardHeader>
-                <CardTitle className="text-white flex items-center gap-2">
-                  <DollarSign className="w-5 h-5" />
+              <CardHeader className="p-3 sm:p-4">
+                <CardTitle className="text-white flex items-center gap-2 text-base sm:text-lg">
+                  <DollarSign className="w-4 h-4 sm:w-5 sm:h-5" />
                   Pay Annual Dues
                 </CardTitle>
-                <CardDescription className="text-slate-400">
+                <CardDescription className="text-slate-400 text-xs sm:text-sm">
                   Pay your membership dues securely online
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-3 sm:space-y-4 p-3 sm:p-4 pt-0">
                 <div>
-                  <Label className="text-slate-200">Year</Label>
+                  <Label className="text-slate-200 text-xs sm:text-sm">Year</Label>
                   <Select value={duesYear.toString()} onValueChange={(v) => setDuesYear(parseInt(v))}>
-                    <SelectTrigger className="bg-slate-700 border-slate-600 text-white">
+                    <SelectTrigger className="bg-slate-700 border-slate-600 text-white text-sm">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent className="bg-slate-800 border-slate-700">
@@ -716,21 +716,21 @@ export default function Store({ userRole, userChapter }) {
                   </Select>
                 </div>
                 <div>
-                  <Label className="text-slate-200">Amount ($)</Label>
+                  <Label className="text-slate-200 text-xs sm:text-sm">Amount ($)</Label>
                   <Input
                     type="number"
                     value={duesAmount}
                     onChange={(e) => setDuesAmount(parseFloat(e.target.value) || 0)}
-                    className="bg-slate-700 border-slate-600 text-white"
+                    className="bg-slate-700 border-slate-600 text-white text-sm"
                     min="0"
                     step="0.01"
                   />
                 </div>
               </CardContent>
-              <CardFooter>
+              <CardFooter className="p-3 sm:p-4 pt-0">
                 <Button
                   onClick={createDuesOrder}
-                  className="w-full bg-green-600 hover:bg-green-700"
+                  className="w-full bg-green-600 hover:bg-green-700 text-sm"
                   disabled={duesAmount <= 0}
                 >
                   <CreditCardIcon className="w-4 h-4 mr-2" />
