@@ -537,6 +537,7 @@ export default function Store({ userRole, userChapter }) {
                     inventory_count: 0,
                     member_price: "",
                     show_in_supporter_store: true,
+                    allows_customization: false,
                   });
                   setAddProductOpen(true);
                 }}
