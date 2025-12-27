@@ -167,6 +167,22 @@ export default function Login({ onLogin }) {
               {loading ? "Signing in..." : "Sign In"}
             </Button>
           </form>
+          
+          {/* Supporter Store Button */}
+          <div className="mt-4 pt-4 border-t border-slate-700">
+            <Button
+              type="button"
+              onClick={() => navigate("/supporter-store")}
+              variant="outline"
+              className="w-full border-green-600 text-green-400 hover:bg-green-900/30 py-4 sm:py-5 rounded-lg font-medium text-sm sm:text-base"
+            >
+              <ShoppingBag className="w-4 h-4 mr-2" />
+              Supporter Store
+            </Button>
+            <p className="text-center text-slate-500 text-xs mt-2">
+              Browse merchandise without logging in
+            </p>
+          </div>
         </div>
       </div>
       
