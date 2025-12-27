@@ -7034,8 +7034,8 @@ async def get_store_products(category: Optional[str] = None, current_user: dict 
         # Check if user is a member for member pricing
         is_member = current_user.get("role") == "admin" or await db.members.find_one({"email": current_user.get("email")})
         
-        # Check if user can manage store
-        user_can_manage = can_manage_store(current_user)
+        # Check if user can manage store (async to check delegated admins)
+        user_can_manage = await can_manage_store_async(current_user)
         
         for product in products:
             if isinstance(product.get('created_at'), str):
