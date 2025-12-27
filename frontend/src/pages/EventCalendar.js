@@ -29,7 +29,7 @@ import {
   TableHeader,
   TableRow,
 } from "../components/ui/table";
-import { Calendar, Plus, Edit, Trash2, MapPin, Clock, Users, Filter, Send } from "lucide-react";
+import { Calendar, Plus, Edit, Trash2, MapPin, Clock, Users, Filter, Send, Hash } from "lucide-react";
 import PageLayout from "@/components/PageLayout";
 
 const API = process.env.REACT_APP_BACKEND_URL || "";
@@ -44,6 +44,10 @@ export default function EventCalendar() {
   const [editingEvent, setEditingEvent] = useState(null);
   const [selectedEvent, setSelectedEvent] = useState(null);
   
+  // Discord channel state
+  const [availableChannels, setAvailableChannels] = useState([]);
+  const [canSchedule, setCanSchedule] = useState(false);
+  
   const [chapterFilter, setChapterFilter] = useState("");
   const [titleFilter, setTitleFilter] = useState("");
 
@@ -56,6 +60,7 @@ export default function EventCalendar() {
     chapter: "all",
     title_filter: "all",
     discord_notifications_enabled: true,
+    discord_channel: "member-chat",
   });
 
   const [editFormData, setEditFormData] = useState({
