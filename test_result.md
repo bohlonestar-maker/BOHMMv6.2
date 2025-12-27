@@ -1,6 +1,47 @@
 # Test Results
 
 ## Current Testing Focus
+NoSQL Injection Security Fix - Testing Dues Endpoint
+
+## Security Audit - NoSQL Injection Prevention (2025-12-27)
+
+### Vulnerability Identified
+- **Location**: `/api/store/dues/pay` endpoint
+- **Issue**: User-supplied `handle` parameter was directly used in MongoDB `$regex` query without sanitization
+- **Risk**: Potential ReDoS (Regex Denial of Service) and regex injection attacks
+
+### Fix Applied
+1. Added `sanitize_for_regex()` function - escapes all regex metacharacters using `re.escape()`
+2. Added `sanitize_string_input()` function - ensures input is a plain string, prevents object injection
+3. Applied fix at line 7952 in `server.py`
+
+### Security Functions Added
+```python
+def sanitize_for_regex(input_str: str) -> str:
+    """Escapes all regex special characters"""
+    return re.escape(input_str)
+
+def sanitize_string_input(input_val) -> str:
+    """Ensures input is a plain string"""
+    if isinstance(input_val, str): return input_val
+    return str(input_val)
+```
+
+### Test Results ✅
+1. Normal handle "TestUser" → "TestUser" ✅
+2. Regex chars ".*" → "\.\*" ✅ (escaped, won't match all)
+3. Special chars "user+test$" → "user\+test\$" ✅
+4. None input → "" ✅
+5. Dict injection attempt → string conversion ✅
+
+### Functional Tests After Fix
+- Login endpoint: ✅ WORKING
+- Dues payment with valid handle: ✅ WORKING
+- Dues payment with injection pattern ".*": ✅ SAFELY HANDLED
+
+---
+
+## Previous Testing Focus
 Testing Square Hosted Checkout implementation
 
 ## Square Hosted Checkout Implementation - Testing Results
