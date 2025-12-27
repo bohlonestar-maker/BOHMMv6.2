@@ -118,7 +118,7 @@ export default function Login({ onLogin }) {
             Brothers of the Highway
           </h1>
           <p className="text-center text-slate-300 mb-2 text-sm sm:text-base">
-            Member Management <span className="text-slate-500 text-xs sm:text-sm ml-2">v.5.1</span>
+            Member Management <span className="text-slate-500 text-xs sm:text-sm ml-2">v5.5</span>
           </p>
           <div className="flex justify-center mb-4">
             <span className="inline-flex items-center gap-1 px-3 py-1 bg-green-900 text-green-300 text-xs font-semibold rounded-full border border-green-700">
