@@ -382,7 +382,105 @@ export default function EventCalendar({ userRole }) {
     );
   }
 
-  const headerActions = (
+  // Render calendar grid
+  const renderCalendar = () => {
+    const daysInMonth = getDaysInMonth(currentMonth);
+    const firstDay = getFirstDayOfMonth(currentMonth);
+    const days = [];
+    const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    
+    // Day headers
+    const dayHeaders = dayNames.map(day => (
+      <div key={day} className="text-center text-xs font-medium text-slate-400 py-2">
+        {day}
+      </div>
+    ));
+    
+    // Empty cells before first day
+    for (let i = 0; i < firstDay; i++) {
+      days.push(<div key={`empty-${i}`} className="p-1 min-h-[60px] sm:min-h-[80px]"></div>);
+    }
+    
+    // Days of the month
+    for (let day = 1; day <= daysInMonth; day++) {
+      const items = getItemsForDate(day);
+      const hasItems = items.events.length > 0 || items.birthdays.length > 0 || items.anniversaries.length > 0;
+      const isToday = new Date().toDateString() === new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day).toDateString();
+      
+      days.push(
+        <div 
+          key={day} 
+          onClick={() => handleDateClick(day)}
+          className={`p-1 min-h-[60px] sm:min-h-[80px] border border-slate-700 rounded-lg ${
+            hasItems ? 'cursor-pointer hover:bg-slate-700/50' : ''
+          } ${isToday ? 'bg-blue-900/30 border-blue-500' : 'bg-slate-800/50'}`}
+        >
+          <div className={`text-xs sm:text-sm font-medium mb-1 ${isToday ? 'text-blue-400' : 'text-slate-300'}`}>
+            {day}
+          </div>
+          <div className="space-y-0.5">
+            {items.events.slice(0, 2).map((event, idx) => (
+              <div key={`e-${idx}`} className="text-[9px] sm:text-[10px] px-1 py-0.5 bg-green-600/80 text-white rounded truncate">
+                📅 {event.title}
+              </div>
+            ))}
+            {items.birthdays.slice(0, 2).map((bday, idx) => (
+              <div key={`b-${idx}`} className="text-[9px] sm:text-[10px] px-1 py-0.5 bg-pink-600/80 text-white rounded truncate">
+                🎂 {bday.name}
+              </div>
+            ))}
+            {items.anniversaries.slice(0, 2).map((anniv, idx) => (
+              <div key={`a-${idx}`} className="text-[9px] sm:text-[10px] px-1 py-0.5 bg-purple-600/80 text-white rounded truncate">
+                🎉 {anniv.name}
+              </div>
+            ))}
+            {(items.events.length + items.birthdays.length + items.anniversaries.length > 2) && (
+              <div className="text-[9px] text-slate-400">+more</div>
+            )}
+          </div>
+        </div>
+      );
+    }
+    
+    return (
+      <div className="bg-slate-800 rounded-lg p-3 sm:p-4 mb-6">
+        {/* Calendar Header */}
+        <div className="flex items-center justify-between mb-4">
+          <Button variant="ghost" size="sm" onClick={prevMonth} className="text-slate-300 hover:text-white">
+            <ChevronLeft className="w-5 h-5" />
+          </Button>
+          <h3 className="text-lg sm:text-xl font-bold text-white">{formatMonthYear(currentMonth)}</h3>
+          <Button variant="ghost" size="sm" onClick={nextMonth} className="text-slate-300 hover:text-white">
+            <ChevronRight className="w-5 h-5" />
+          </Button>
+        </div>
+        
+        {/* Legend */}
+        <div className="flex flex-wrap gap-2 sm:gap-4 mb-4 text-xs">
+          <div className="flex items-center gap-1">
+            <div className="w-3 h-3 bg-green-600 rounded"></div>
+            <span className="text-slate-400">Events</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <div className="w-3 h-3 bg-pink-600 rounded"></div>
+            <span className="text-slate-400">Birthdays</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <div className="w-3 h-3 bg-purple-600 rounded"></div>
+            <span className="text-slate-400">Anniversaries</span>
+          </div>
+        </div>
+        
+        {/* Calendar Grid */}
+        <div className="grid grid-cols-7 gap-1">
+          {dayHeaders}
+          {days}
+        </div>
+      </div>
+    );
+  };
+
+  const headerActions = isAdmin ? (
     <>
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
               <DialogTrigger asChild>
