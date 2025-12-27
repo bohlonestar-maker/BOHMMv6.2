@@ -122,11 +122,13 @@ SQUARE_ACCESS_TOKEN = os.environ.get('SQUARE_ACCESS_TOKEN')
 SQUARE_APPLICATION_ID = os.environ.get('SQUARE_APPLICATION_ID')
 SQUARE_LOCATION_ID = os.environ.get('SQUARE_LOCATION_ID')
 SQUARE_ENVIRONMENT = os.environ.get('SQUARE_ENVIRONMENT', 'sandbox')
+SQUARE_WEBHOOK_SIGNATURE_KEY = os.environ.get('SQUARE_WEBHOOK_SIGNATURE_KEY', '')
 
 square_client = None
 if SQUARE_ACCESS_TOKEN:
     try:
         from square import Square
+        from square.utils.webhooks_helper import verify_signature as square_verify_signature
         square_client = Square(
             token=SQUARE_ACCESS_TOKEN,
         )
