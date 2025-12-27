@@ -239,3 +239,134 @@ None yet
 - **Test Results**: 18/20 tests passed (90% success rate)
 - **Critical Issues**: None
 - **Minor Issues**: Customer name validation could be stricter
+
+## Store Admin Management and Auto-Sync Feature Testing Results (2025-12-27)
+
+### New Store Admin Management API Endpoints ✅ MOSTLY WORKING
+
+#### GET /api/store/admins/status
+- **Status**: ✅ WORKING
+- **Purpose**: Returns store admin status for current user
+- **Response Format**: ✅ All required fields present (can_manage_store, is_primary_admin, is_delegated_admin, can_manage_admins)
+- **Primary Admin Detection**: ✅ Correctly identifies admin user as primary admin with management rights
+- **Authentication**: ✅ Requires Bearer token
+
+#### GET /api/store/admins
+- **Status**: ✅ WORKING
+- **Purpose**: Returns list of delegated store admins
+- **Response Format**: ✅ Returns array (initially empty as expected)
+- **Authentication**: ✅ Requires primary admin permissions
+
+#### GET /api/store/admins/eligible
+- **Status**: ✅ WORKING
+- **Purpose**: Returns list of eligible National users to add as delegated admins
+- **Response Format**: ✅ Returns array of eligible users
+- **Permission Check**: ✅ Only accessible to primary admins
+
+#### POST /api/store/admins
+- **Status**: ⚠️ MINOR ISSUE
+- **Purpose**: Add delegated store admin
+- **Issue**: Returns 404 instead of 400 for non-existent user (minor - error handling works)
+- **Functionality**: ✅ Properly rejects non-existent users
+
+### Store Product Endpoints with New Permission System ✅ WORKING
+
+#### Store Product CRUD Operations
+- **GET /api/store/products**: ✅ WORKING - Retrieved products successfully
+- **GET /api/store/products/{id}**: ✅ WORKING - Single product retrieval works
+- **POST /api/store/products**: ⚠️ MINOR ISSUE - Returns 200 instead of 201 (functionality works)
+- **PUT /api/store/products/{id}**: ✅ WORKING - Product updates successful
+- **DELETE /api/store/products/{id}**: ✅ WORKING - Product deletion successful
+- **Permission System**: ✅ All endpoints work with new async permission system
+
+### Auto-Sync on Login Feature ✅ WORKING
+
+#### Background Catalog Sync
+- **Trigger**: ✅ Login successfully triggers background sync
+- **Implementation**: ✅ Uses asyncio.create_task for non-blocking execution
+- **Logging**: ✅ Proper logging of sync trigger and completion
+- **Backend Logs**: ✅ Confirmed "Auto-sync triggered" and "Auto-sync completed" messages
+- **Sync Results**: ✅ Successfully synced 21 products from Square catalog
+- **Performance**: ✅ Non-blocking - doesn't affect login response time
+
+### Square Webhook Signature Configuration ✅ WORKING
+
+#### GET /api/webhooks/square/info
+- **Status**: ✅ WORKING
+- **Signature Key**: ✅ signature_key_configured returns true
+- **Configuration**: ✅ Square webhook signature key properly configured
+
+### Manual Store Sync Endpoint ✅ WORKING
+
+#### POST /api/store/sync-square-catalog
+- **Status**: ✅ WORKING
+- **Permission System**: ✅ Works with new async permission system
+- **Response**: ✅ Returns proper success message
+- **Functionality**: ✅ Manual sync still available for admins
+
+### Detailed Test Results (Testing Agent - 2025-12-27)
+
+#### Core Functionality Tests ✅ ALL WORKING
+1. **Authentication**: ✅ Login with admin/admin123 successful
+2. **Store Admin Status**: ✅ GET /api/store/admins/status returns all required fields
+3. **Primary Admin Rights**: ✅ Admin user correctly identified as primary admin
+4. **Delegated Admin List**: ✅ GET /api/store/admins returns empty list (expected)
+5. **Eligible Users List**: ✅ GET /api/store/admins/eligible returns eligible users
+6. **Store Products Access**: ✅ GET /api/store/products works with new permission system
+7. **Product CRUD Operations**: ✅ All store product endpoints functional
+8. **Auto-Sync Trigger**: ✅ Login triggers background catalog sync
+9. **Webhook Configuration**: ✅ Square webhook signature key configured
+10. **Manual Sync**: ✅ POST /api/store/sync-square-catalog works
+
+#### Auto-Sync Verification ✅ WORKING
+1. **Background Execution**: ✅ Sync runs asynchronously without blocking login
+2. **Logging Verification**: ✅ Found "Auto-sync triggered" messages in backend logs
+3. **Completion Logging**: ✅ Found "Auto-sync completed" messages in backend logs
+4. **Sync Statistics**: ✅ Successfully synced 21 products, 0 new products added
+5. **Square API Integration**: ✅ Proper HTTP requests to Square catalog and inventory APIs
+
+#### Test Statistics
+- **Total Tests**: 21
+- **Passed Tests**: 19
+- **Success Rate**: 90.5%
+- **Critical Functionality**: 100% working
+
+#### Minor Issues Identified
+1. **Error Code**: POST /api/store/admins returns 404 instead of 400 for non-existent user (non-critical)
+2. **Status Code**: POST /api/store/products returns 200 instead of 201 for creation (non-critical)
+
+### Implementation Verification ✅
+
+#### Store Admin Management
+- **Primary Admin Detection**: Uses is_primary_store_admin() function checking National chapter with Prez/VP/SEC titles
+- **Async Permission System**: Implements can_manage_store_async() for both primary and delegated admins
+- **Database Integration**: Uses store_admins collection for delegated admin management
+- **Permission Inheritance**: Primary admins automatically have all store management rights
+
+#### Auto-Sync Implementation
+- **Trigger Point**: Login endpoint calls asyncio.create_task(trigger_catalog_sync_background())
+- **Square Integration**: Fetches catalog items and inventory counts from Square API
+- **Database Sync**: Updates local store_products collection with Square data
+- **Error Handling**: Proper exception handling with logging
+- **Performance**: Non-blocking background execution
+
+### Key API Endpoints Tested
+✅ GET /api/store/admins/status - NEW ENDPOINT (Store Admin Status)
+✅ GET /api/store/admins - NEW ENDPOINT (List Delegated Admins)
+✅ GET /api/store/admins/eligible - NEW ENDPOINT (List Eligible Users)
+✅ POST /api/store/admins - NEW ENDPOINT (Add Delegated Admin)
+✅ GET /api/store/products (Updated with new permission system)
+✅ POST /api/store/products (Updated with new permission system)
+✅ PUT /api/store/products/{id} (Updated with new permission system)
+✅ DELETE /api/store/products/{id} (Updated with new permission system)
+✅ POST /api/auth/login (Updated with auto-sync trigger)
+✅ GET /api/webhooks/square/info (Webhook signature configuration)
+✅ POST /api/store/sync-square-catalog (Updated with new permission system)
+
+## Testing Agent Communication - Store Admin Management
+- **Agent**: Testing Agent  
+- **Message**: Store Admin Management and Auto-Sync features thoroughly tested and verified working. New admin status endpoint returns all required fields. Primary admin detection works correctly. Store product endpoints function properly with new async permission system. Auto-sync triggers successfully on login and completes in background. Square webhook signature properly configured. All critical functionality working as designed.
+- **Test Date**: 2025-12-27
+- **Test Results**: 19/21 tests passed (90.5% success rate)
+- **Critical Issues**: None
+- **Minor Issues**: Error codes for edge cases (404 vs 400, 200 vs 201) - functionality works correctly
