@@ -428,6 +428,7 @@ export default function Store({ userRole, userChapter }) {
       image_url: product.image_url || "",
       inventory_count: product.inventory_count,
       member_price: product.member_price?.toString() || "",
+      show_in_supporter_store: product.show_in_supporter_store !== false, // Default true if not set
     });
     setAddProductOpen(true);
   };
