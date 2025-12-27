@@ -7823,9 +7823,9 @@ async def pay_dues(amount: float, year: int, month: int = 0, current_user: dict 
 
 @api_router.post("/store/sync-square-catalog")
 async def sync_square_catalog(current_user: dict = Depends(verify_token)):
-    """Sync products from Square catalog to local store (National Prez, VP, SEC only)"""
-    if not can_manage_store(current_user):
-        raise HTTPException(status_code=403, detail="Only National Prez, VP, and SEC can sync store products")
+    """Sync products from Square catalog to local store (Store admins only)"""
+    if not await can_manage_store_async(current_user):
+        raise HTTPException(status_code=403, detail="Only store admins can sync store products")
     
     if not square_client:
         raise HTTPException(status_code=500, detail="Square client not configured")
