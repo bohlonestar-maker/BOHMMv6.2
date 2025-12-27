@@ -168,6 +168,86 @@ export default function Store({ userRole, userChapter }) {
     }
   }, []);
 
+  // Fetch store admin status and list
+  const fetchStoreAdminStatus = useCallback(async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const response = await axios.get(`${API_URL}/api/store/admins/status`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setIsPrimaryAdmin(response.data.is_primary_admin);
+      setCanManageStore(response.data.can_manage_store);
+    } catch (error) {
+      console.error("Error fetching store admin status:", error);
+    }
+  }, []);
+
+  const fetchStoreAdmins = useCallback(async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const response = await axios.get(`${API_URL}/api/store/admins`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setStoreAdmins(response.data);
+    } catch (error) {
+      // User doesn't have permission - that's ok
+      console.error("Error fetching store admins:", error);
+    }
+  }, []);
+
+  const fetchEligibleUsers = useCallback(async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const response = await axios.get(`${API_URL}/api/store/admins/eligible`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setEligibleUsers(response.data);
+    } catch (error) {
+      console.error("Error fetching eligible users:", error);
+    }
+  }, []);
+
+  const handleAddStoreAdmin = async () => {
+    if (!selectedUserToAdd) {
+      toast.error("Please select a user to add");
+      return;
+    }
+    
+    setAddingAdmin(true);
+    try {
+      const token = localStorage.getItem("token");
+      await axios.post(
+        `${API_URL}/api/store/admins`,
+        { username: selectedUserToAdd },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      toast.success(`Store admin access granted to ${selectedUserToAdd}`);
+      setSelectedUserToAdd("");
+      // Refresh the lists
+      await Promise.all([fetchStoreAdmins(), fetchEligibleUsers()]);
+    } catch (error) {
+      toast.error(error.response?.data?.detail || "Failed to add store admin");
+    } finally {
+      setAddingAdmin(false);
+    }
+  };
+
+  const handleRemoveStoreAdmin = async (adminId, username) => {
+    if (!window.confirm(`Remove store admin access from ${username}?`)) return;
+    
+    try {
+      const token = localStorage.getItem("token");
+      await axios.delete(`${API_URL}/api/store/admins/${adminId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      toast.success(`Store admin access removed from ${username}`);
+      // Refresh the lists
+      await Promise.all([fetchStoreAdmins(), fetchEligibleUsers()]);
+    } catch (error) {
+      toast.error(error.response?.data?.detail || "Failed to remove store admin");
+    }
+  };
+
   const copyToClipboard = async (text, field) => {
     try {
       await navigator.clipboard.writeText(text);
