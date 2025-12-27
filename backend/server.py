@@ -2309,6 +2309,8 @@ async def export_members_csv(current_user: dict = Depends(verify_token)):
     
     permissions = user.get("permissions", {})
     is_admin = user.get("role") == "admin"
+    user_chapter = current_user.get('chapter')
+    is_national_member = user_chapter == 'National'
     
     # Check if user has admin_actions permission or any data permission (required to export)
     has_data_permission = any([
@@ -2324,6 +2326,10 @@ async def export_members_csv(current_user: dict = Depends(verify_token)):
         raise HTTPException(status_code=403, detail="Data access permission required to export CSV")
     
     members = await db.members.find({}, {"_id": 0}).to_list(10000)
+    
+    # Filter out National chapter members for non-National users
+    if not is_national_member:
+        members = [m for m in members if m.get('chapter') != 'National']
     
     # Decrypt sensitive data for all members
     decrypted_members = [decrypt_member_sensitive_data(member) for member in members]
