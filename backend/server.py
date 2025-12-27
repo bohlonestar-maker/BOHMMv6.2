@@ -7896,7 +7896,7 @@ async def update_order_status(order_id: str, status: str, current_user: dict = D
 
 # Dues-specific endpoint
 @api_router.post("/store/dues/pay")
-async def pay_dues(amount: float, year: int, month: int = 0, current_user: dict = Depends(verify_token)):
+async def pay_dues(amount: float, year: int, month: int = 0, handle: str = None, current_user: dict = Depends(verify_token)):
     """Create a dues payment order and update member dues status"""
     # Validate month (0-11)
     if month < 0 or month > 11:
@@ -7923,18 +7923,24 @@ async def pay_dues(amount: float, year: int, month: int = 0, current_user: dict 
         }
         await db.store_products.insert_one(dues_product)
     
-    # Find the member record for this user
-    member = await db.members.find_one({"$or": [
-        {"name": current_user.get("username")},
-        {"email": current_user.get("email")},
-        {"user_id": current_user.get("id")}
-    ]})
+    # Find the member record for this user - try handle first, then username/email
+    member = None
+    if handle:
+        member = await db.members.find_one({"handle": {"$regex": f"^{handle}$", "$options": "i"}})
+    
+    if not member:
+        member = await db.members.find_one({"$or": [
+            {"name": current_user.get("username")},
+            {"email": current_user.get("email")},
+            {"user_id": current_user.get("id")}
+        ]})
     
     # Create order with member info for dues update after payment
     order = {
         "id": str(uuid.uuid4()),
         "user_id": current_user["username"],
         "user_name": current_user.get("username", "Unknown"),
+        "member_handle": handle,  # Store the handle for reference
         "items": [{
             "product_id": dues_product["id"],
             "name": dues_product["name"],
@@ -7945,11 +7951,13 @@ async def pay_dues(amount: float, year: int, month: int = 0, current_user: dict 
         "tax": 0,  # No tax on dues
         "total": amount,
         "status": "pending",
-        "notes": f"Monthly dues payment for {month_names[month]} {year}",
+        "notes": f"Monthly dues payment for {month_names[month]} {year}" + (f" - Handle: {handle}" if handle else ""),
         "dues_info": {  # Store dues info to update member record after payment
             "year": year,
             "month": month,
-            "member_id": member["id"] if member else None
+            "month_name": month_names[month],
+            "member_id": member["id"] if member else None,
+            "member_handle": handle
         },
         "created_at": datetime.now(timezone.utc).isoformat(),
         "updated_at": datetime.now(timezone.utc).isoformat()
@@ -7958,6 +7966,20 @@ async def pay_dues(amount: float, year: int, month: int = 0, current_user: dict 
     await db.store_orders.insert_one(order)
     
     return {"order_id": order["id"], "total": amount, "total_cents": int(amount * 100)}
+
+@api_router.get("/store/dues/payments")
+async def get_dues_payments(current_user: dict = Depends(verify_token)):
+    """Get all dues payments (Store admins only)"""
+    if not await can_manage_store_async(current_user):
+        raise HTTPException(status_code=403, detail="Only store admins can view dues payments")
+    
+    # Find all orders that have dues_info
+    dues_orders = await db.store_orders.find(
+        {"dues_info": {"$exists": True, "$ne": None}},
+        {"_id": 0}
+    ).sort("created_at", -1).to_list(500)
+    
+    return dues_orders
 
 @api_router.post("/store/sync-square-catalog")
 async def sync_square_catalog(current_user: dict = Depends(verify_token)):
