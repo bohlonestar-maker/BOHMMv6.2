@@ -1149,10 +1149,141 @@ export default function Store({ userRole, userChapter }) {
                       Sync Products from Square
                     </Button>
                     <p className="text-xs text-slate-500 mt-2">
-                      This will update products, prices, and inventory from your Square catalog
+                      This will update products, prices, and inventory from your Square catalog.
+                      Products also sync automatically when any user logs in.
                     </p>
                   </CardContent>
                 </Card>
+
+                {/* Store Admin Management Card - Only for Primary Admins */}
+                {isPrimaryAdmin && (
+                  <Card className="bg-slate-800 border-slate-700">
+                    <CardHeader className="p-3 sm:p-4">
+                      <CardTitle className="text-white flex items-center gap-2 text-base sm:text-lg">
+                        <Shield className="w-4 h-4 sm:w-5 sm:h-5" />
+                        Store Admin Management
+                      </CardTitle>
+                      <CardDescription className="text-slate-400 text-xs sm:text-sm">
+                        Grant or revoke store management access to other National members
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="p-3 sm:p-4 pt-0 space-y-4">
+                      {/* Add New Admin */}
+                      <div>
+                        <Label className="text-slate-200 text-xs sm:text-sm font-medium">Add Store Admin</Label>
+                        <div className="mt-2 flex flex-col sm:flex-row gap-2">
+                          <Select value={selectedUserToAdd} onValueChange={setSelectedUserToAdd}>
+                            <SelectTrigger className="bg-slate-700 border-slate-600 text-white flex-1">
+                              <SelectValue placeholder="Select a National member..." />
+                            </SelectTrigger>
+                            <SelectContent className="bg-slate-800 border-slate-700">
+                              {eligibleUsers.length === 0 ? (
+                                <SelectItem value="none" disabled className="text-slate-400">
+                                  No eligible users available
+                                </SelectItem>
+                              ) : (
+                                eligibleUsers.map((user) => (
+                                  <SelectItem 
+                                    key={user.username} 
+                                    value={user.username}
+                                    className="text-white"
+                                  >
+                                    {user.username} {user.title && `(${user.title})`}
+                                  </SelectItem>
+                                ))
+                              )}
+                            </SelectContent>
+                          </Select>
+                          <Button
+                            onClick={handleAddStoreAdmin}
+                            disabled={!selectedUserToAdd || addingAdmin}
+                            className="bg-green-600 hover:bg-green-700"
+                          >
+                            {addingAdmin ? (
+                              <RefreshCw className="w-4 h-4 animate-spin" />
+                            ) : (
+                              <>
+                                <UserPlus className="w-4 h-4 mr-2" />
+                                Add
+                              </>
+                            )}
+                          </Button>
+                        </div>
+                        <p className="text-xs text-slate-500 mt-1">
+                          Only National chapter members can be granted store access
+                        </p>
+                      </div>
+
+                      {/* Current Store Admins */}
+                      <div className="border-t border-slate-700 pt-4">
+                        <Label className="text-slate-200 text-xs sm:text-sm font-medium flex items-center gap-2">
+                          <Users className="w-4 h-4" />
+                          Current Store Admins
+                        </Label>
+                        
+                        {/* Primary Admins - Always shown */}
+                        <div className="mt-3 space-y-2">
+                          <div className="text-xs text-slate-400 font-medium">Primary Admins (Built-in Access)</div>
+                          <div className="flex flex-wrap gap-2">
+                            <Badge className="bg-blue-600 text-white">
+                              <Shield className="w-3 h-3 mr-1" />
+                              Prez
+                            </Badge>
+                            <Badge className="bg-blue-600 text-white">
+                              <Shield className="w-3 h-3 mr-1" />
+                              VP
+                            </Badge>
+                            <Badge className="bg-blue-600 text-white">
+                              <Shield className="w-3 h-3 mr-1" />
+                              SEC
+                            </Badge>
+                          </div>
+                        </div>
+
+                        {/* Delegated Admins */}
+                        <div className="mt-3 space-y-2">
+                          <div className="text-xs text-slate-400 font-medium">Delegated Admins</div>
+                          {storeAdmins.length === 0 ? (
+                            <p className="text-xs text-slate-500">No delegated admins added yet</p>
+                          ) : (
+                            <div className="space-y-2">
+                              {storeAdmins.map((admin) => (
+                                <div 
+                                  key={admin.id} 
+                                  className="flex items-center justify-between p-2 bg-slate-700/50 rounded-lg"
+                                >
+                                  <div className="flex items-center gap-2">
+                                    <Badge className="bg-green-600 text-white text-xs">
+                                      {admin.username}
+                                    </Badge>
+                                    {admin.user_info?.title && (
+                                      <span className="text-xs text-slate-400">
+                                        ({admin.user_info.title})
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-xs text-slate-500">
+                                      by {admin.granted_by}
+                                    </span>
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      onClick={() => handleRemoveStoreAdmin(admin.id, admin.username)}
+                                      className="h-7 w-7 p-0 text-red-400 hover:text-red-300 hover:bg-red-900/20"
+                                    >
+                                      <UserMinus className="w-4 h-4" />
+                                    </Button>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
               </div>
             </TabsContent>
           )}
