@@ -967,17 +967,17 @@ export default function Store({ userRole, userChapter }) {
 
       {/* Dues Checkout Dialog */}
       <Dialog open={duesCheckoutOpen} onOpenChange={setDuesCheckoutOpen}>
-        <DialogContent className="bg-slate-800 border-slate-700 max-w-md">
+        <DialogContent className="bg-slate-800 border-slate-700 max-w-[95vw] sm:max-w-md mx-2 sm:mx-auto">
           <DialogHeader>
-            <DialogTitle className="text-white flex items-center gap-2">
-              <DollarSign className="w-5 h-5" />
-              Pay Dues - {duesYear}
+            <DialogTitle className="text-white flex items-center gap-2 text-sm sm:text-base">
+              <DollarSign className="w-4 h-4 sm:w-5 sm:h-5" />
+              Pay Monthly Dues
             </DialogTitle>
-            <DialogDescription className="text-slate-400">
-              Amount: ${duesOrder?.total.toFixed(2)}
+            <DialogDescription className="text-slate-400 text-xs sm:text-sm">
+              {monthNames[duesMonth]} {duesYear} - ${duesOrder?.total.toFixed(2)}
             </DialogDescription>
           </DialogHeader>
-          <div className="py-4">
+          <div className="py-3 sm:py-4">
             <PaymentForm
               applicationId={SQUARE_APP_ID}
               locationId={SQUARE_LOCATION_ID}
@@ -987,7 +987,7 @@ export default function Store({ userRole, userChapter }) {
                 currencyCode: "USD",
                 total: {
                   amount: duesOrder?.total.toString() || "0",
-                  label: "Annual Dues",
+                  label: "Monthly Dues",
                 },
               })}
             >
@@ -995,7 +995,7 @@ export default function Store({ userRole, userChapter }) {
               <Button
                 type="submit"
                 disabled={processingPayment}
-                className="w-full mt-4 bg-green-600 hover:bg-green-700"
+                className="w-full mt-4 bg-green-600 hover:bg-green-700 text-sm"
               >
                 {processingPayment ? "Processing..." : `Pay $${duesOrder?.total.toFixed(2)}`}
               </Button>
