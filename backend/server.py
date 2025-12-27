@@ -1211,6 +1211,7 @@ class StoreProductCreate(BaseModel):
     inventory_count: int = 0
     member_price: Optional[float] = None
     show_in_supporter_store: bool = True
+    allows_customization: bool = False
 
 class StoreProductUpdate(BaseModel):
     name: Optional[str] = None
@@ -1222,6 +1223,7 @@ class StoreProductUpdate(BaseModel):
     is_active: Optional[bool] = None
     member_price: Optional[float] = None
     show_in_supporter_store: Optional[bool] = None
+    allows_customization: Optional[bool] = None
 
 class CartItem(BaseModel):
     product_id: str
