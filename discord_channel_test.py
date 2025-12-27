@@ -180,17 +180,11 @@ class DiscordChannelTester:
             print(f"   Created event ID: {event_id}")
             print(f"   Event details: {json.dumps(created_event, indent=2)}")
             
-            # Verify discord_channel was saved
-            if created_event.get('discord_channel') == test_event_data['discord_channel']:
-                self.log_test("Event Creation - Discord Channel Saved", True, f"Channel: {created_event.get('discord_channel')}")
-            else:
-                self.log_test("Event Creation - Discord Channel Saved", False, f"Expected: {test_event_data['discord_channel']}, Got: {created_event.get('discord_channel')}")
-            
-            # Verify discord_notifications_enabled was saved
-            if created_event.get('discord_notifications_enabled') == test_event_data['discord_notifications_enabled']:
-                self.log_test("Event Creation - Discord Notifications Enabled", True, f"Enabled: {created_event.get('discord_notifications_enabled')}")
-            else:
-                self.log_test("Event Creation - Discord Notifications Enabled", False, f"Expected: {test_event_data['discord_notifications_enabled']}, Got: {created_event.get('discord_notifications_enabled')}")
+            # Note: The create endpoint only returns success message and ID, not the full event
+            # We'll verify the discord_channel was saved when we retrieve the event later
+            self.log_test("Event Creation - Response Format", True, "Event created successfully with ID returned")
+        else:
+            self.log_test("Event Creation - Response Format", False, "Event creation failed or no ID returned")
         
         return event_id
 
