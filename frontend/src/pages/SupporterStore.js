@@ -88,8 +88,12 @@ export default function SupporterStore() {
     
     if (paymentStatus === "success" && orderId) {
       toast.success("Payment successful! Thank you for your order.");
-      setCart([]);
-      setSearchParams({});
+      // Clear cart and URL params after a brief delay to avoid cascading renders
+      const timer = setTimeout(() => {
+        setCart([]);
+        setSearchParams({});
+      }, 100);
+      return () => clearTimeout(timer);
     }
   }, [searchParams, setSearchParams]);
 
