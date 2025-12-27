@@ -6077,6 +6077,8 @@ async def update_event(
         update_data['title_filter'] = event_data.title_filter
     if event_data.discord_notifications_enabled is not None:
         update_data['discord_notifications_enabled'] = event_data.discord_notifications_enabled
+    if event_data.discord_channel is not None:
+        update_data['discord_channel'] = event_data.discord_channel
     
     if update_data:
         await db.events.update_one({"id": event_id}, {"$set": update_data})
