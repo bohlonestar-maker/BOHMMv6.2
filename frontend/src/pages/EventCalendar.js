@@ -904,20 +904,23 @@ export default function EventCalendar({ userRole }) {
               )}
             </TableBody>
           </Table>
-        </div>
+            </div>
+          </>
+        )}
 
-        {/* Edit Dialog */}
-        <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>Edit Event</DialogTitle>
-            </DialogHeader>
-            <form onSubmit={handleEditSubmit} className="space-y-4 mt-4">
-              <div>
-                <Label>Event Title *</Label>
-                <Input
-                  value={editFormData.title}
-                  onChange={(e) =>
+        {/* Edit Dialog - Admin only */}
+        {isAdmin && (
+          <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+            <DialogContent className="max-w-2xl">
+              <DialogHeader>
+                <DialogTitle>Edit Event</DialogTitle>
+              </DialogHeader>
+              <form onSubmit={handleEditSubmit} className="space-y-4 mt-4">
+                <div>
+                  <Label>Event Title *</Label>
+                  <Input
+                    value={editFormData.title}
+                    onChange={(e) =>
                     setEditFormData({ ...editFormData, title: e.target.value })
                   }
                   required
