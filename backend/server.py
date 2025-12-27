@@ -6522,19 +6522,22 @@ async def send_discord_notification(event: dict, hours_before: int, channel: str
                 "inline": False
             })
         
+        # Add channel info to footer
+        channel_display = target_channel.replace("-", " ").title()
+        
         payload = {
             "content": content,
             "embeds": [embed]
         }
         
-        response = requests.post(DISCORD_WEBHOOK_URL, json=payload)
+        response = requests.post(webhook_url, json=payload)
         
         if response.status_code == 204:
             hours_text = "now" if hours_before == 0 else f"{hours_before}h before"
-            print(f"✅ Discord notification sent for event: {event['title']} ({hours_text})")
+            print(f"✅ Discord notification sent to #{target_channel} for event: {event['title']} ({hours_text})")
             return True
         else:
-            print(f"❌ Discord notification failed: {response.status_code} - {response.text}")
+            print(f"❌ Discord notification failed to #{target_channel}: {response.status_code} - {response.text}")
             return False
             
     except Exception as e:
