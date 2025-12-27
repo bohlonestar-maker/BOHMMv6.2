@@ -663,7 +663,7 @@ export default function EventCalendar({ userRole }) {
               </DialogContent>
             </Dialog>
     </>
-  );
+  ) : null;
 
   return (
     <PageLayout
@@ -673,48 +673,124 @@ export default function EventCalendar({ userRole }) {
       backLabel="Back"
       actions={headerActions}
     >
-        {/* Filters */}
-        <div className="bg-slate-800 rounded-lg p-4 mb-6">
-          <div className="flex items-center gap-2 mb-3">
-            <Filter className="w-4 h-4 text-slate-400" />
-            <h3 className="text-sm font-semibold text-slate-300">Filters</h3>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <Label className="text-sm text-slate-400">Chapter</Label>
-              <Select value={chapterFilter} onValueChange={setChapterFilter}>
-                <SelectTrigger>
-                  <SelectValue placeholder="All Chapters" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Chapters</SelectItem>
-                  <SelectItem value="National">National</SelectItem>
-                  <SelectItem value="AD">Asphalt Demons</SelectItem>
-                  <SelectItem value="HA">Highway Asylum</SelectItem>
-                  <SelectItem value="HS">Highway Souls</SelectItem>
-                </SelectContent>
-              </Select>
+        {/* Monthly Calendar */}
+        {renderCalendar()}
+        
+        {/* Date Details Dialog */}
+        <Dialog open={dateDialogOpen} onOpenChange={setDateDialogOpen}>
+          <DialogContent className="max-w-lg bg-slate-800 border-slate-700">
+            <DialogHeader>
+              <DialogTitle className="text-white flex items-center gap-2">
+                <CalendarDays className="w-5 h-5" />
+                {selectedDateItems?.date && new Date(selectedDateItems.date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 mt-4">
+              {/* Events */}
+              {selectedDateItems?.events?.length > 0 && (
+                <div>
+                  <h4 className="text-sm font-semibold text-green-400 flex items-center gap-2 mb-2">
+                    <Calendar className="w-4 h-4" />
+                    Events
+                  </h4>
+                  <div className="space-y-2">
+                    {selectedDateItems.events.map((event, idx) => (
+                      <div key={idx} className="bg-green-900/30 border border-green-600/30 rounded-lg p-3">
+                        <div className="font-medium text-white">{event.title}</div>
+                        {event.time && <div className="text-sm text-slate-400"><Clock className="w-3 h-3 inline mr-1" />{event.time} CST</div>}
+                        {event.location && <div className="text-sm text-slate-400"><MapPin className="w-3 h-3 inline mr-1" />{event.location}</div>}
+                        {event.description && <div className="text-sm text-slate-300 mt-2">{event.description}</div>}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
+              {/* Birthdays */}
+              {selectedDateItems?.birthdays?.length > 0 && (
+                <div>
+                  <h4 className="text-sm font-semibold text-pink-400 flex items-center gap-2 mb-2">
+                    <Cake className="w-4 h-4" />
+                    Birthdays
+                  </h4>
+                  <div className="space-y-2">
+                    {selectedDateItems.birthdays.map((bday, idx) => (
+                      <div key={idx} className="bg-pink-900/30 border border-pink-600/30 rounded-lg p-3">
+                        <div className="font-medium text-white">🎂 {bday.name}</div>
+                        <div className="text-sm text-slate-400">{bday.chapter} {bday.title && `• ${bday.title}`}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
+              {/* Anniversaries */}
+              {selectedDateItems?.anniversaries?.length > 0 && (
+                <div>
+                  <h4 className="text-sm font-semibold text-purple-400 flex items-center gap-2 mb-2">
+                    <Award className="w-4 h-4" />
+                    Anniversaries
+                  </h4>
+                  <div className="space-y-2">
+                    {selectedDateItems.anniversaries.map((anniv, idx) => (
+                      <div key={idx} className="bg-purple-900/30 border border-purple-600/30 rounded-lg p-3">
+                        <div className="font-medium text-white">🎉 {anniv.name}</div>
+                        <div className="text-sm text-slate-400">{anniv.chapter} {anniv.title && `• ${anniv.title}`}</div>
+                        <div className="text-sm text-purple-300">{anniv.years} years with the Brotherhood</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
+          </DialogContent>
+        </Dialog>
 
-            <div>
-              <Label className="text-sm text-slate-400">Title</Label>
-              <Select value={titleFilter} onValueChange={setTitleFilter}>
-                <SelectTrigger>
-                  <SelectValue placeholder="All Titles" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Titles</SelectItem>
-                  <SelectItem value="Prez">Prez</SelectItem>
-                  <SelectItem value="VP">VP</SelectItem>
-                  <SelectItem value="S@A">S@A</SelectItem>
-                  <SelectItem value="Secretary">Secretary</SelectItem>
-                  <SelectItem value="Member">Member</SelectItem>
-                  <SelectItem value="Prospect">Prospect</SelectItem>
-                </SelectContent>
-              </Select>
+        {/* Admin-only: Filters and Events Table */}
+        {isAdmin && (
+          <>
+            {/* Filters */}
+            <div className="bg-slate-800 rounded-lg p-4 mb-6">
+              <div className="flex items-center gap-2 mb-3">
+                <Filter className="w-4 h-4 text-slate-400" />
+                <h3 className="text-sm font-semibold text-slate-300">Event Filters</h3>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-sm text-slate-400">Chapter</Label>
+                  <Select value={chapterFilter} onValueChange={setChapterFilter}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="All Chapters" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Chapters</SelectItem>
+                      <SelectItem value="National">National</SelectItem>
+                      <SelectItem value="AD">Asphalt Demons</SelectItem>
+                      <SelectItem value="HA">Highway Asylum</SelectItem>
+                      <SelectItem value="HS">Highway Souls</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label className="text-sm text-slate-400">Title</Label>
+                  <Select value={titleFilter} onValueChange={setTitleFilter}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="All Titles" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Titles</SelectItem>
+                      <SelectItem value="Prez">Prez</SelectItem>
+                      <SelectItem value="VP">VP</SelectItem>
+                      <SelectItem value="S@A">S@A</SelectItem>
+                      <SelectItem value="Secretary">Secretary</SelectItem>
+                      <SelectItem value="Member">Member</SelectItem>
+                      <SelectItem value="Prospect">Prospect</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
 
         {/* Events Table */}
         <div className="bg-slate-800 rounded-lg shadow-lg overflow-hidden">
