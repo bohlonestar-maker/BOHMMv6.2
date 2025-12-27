@@ -1673,9 +1673,14 @@ async def get_members(current_user: dict = Depends(verify_token)):
     # Check if user can see private info:
     # - National chapter admins can see everything
     # - Officers (Prez, VP, S@A, Enf, SEC) of any chapter can see private emails
-    is_national_admin = user_role == 'admin' and user_chapter == 'National'
+    is_national_member = user_chapter == 'National'
+    is_national_admin = user_role == 'admin' and is_national_member
     is_officer = user_title in officer_titles
     can_see_private_emails = is_national_admin or is_officer
+    
+    # Filter out National chapter members if user is not in National chapter
+    if not is_national_member:
+        members = [m for m in members if m.get('chapter') != 'National']
     
     # Debug logging
     print(f"[EMAIL PRIVACY DEBUG] User: chapter={user_chapter}, title={user_title}, is_national={is_national_admin}, is_officer={is_officer}, can_see_private={can_see_private_emails}")
