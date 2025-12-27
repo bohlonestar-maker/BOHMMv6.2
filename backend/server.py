@@ -410,6 +410,28 @@ def format_phone_number(phone: str) -> str:
     # Return original if not 10 digits
     return phone
 
+def sanitize_for_regex(input_str: str) -> str:
+    """
+    Sanitize user input for safe use in MongoDB regex queries.
+    Escapes all regex special characters to prevent ReDoS and injection attacks.
+    """
+    if not isinstance(input_str, str):
+        return ""
+    # Escape all regex metacharacters
+    return re.escape(input_str)
+
+def sanitize_string_input(input_val) -> str:
+    """
+    Ensure input is a plain string - prevents NoSQL injection via object injection.
+    If input is not a string, convert it or return empty string.
+    """
+    if input_val is None:
+        return ""
+    if isinstance(input_val, str):
+        return input_val
+    # If someone tries to pass {"$ne": ""} or similar, convert to string representation
+    return str(input_val)
+
 def decrypt_member_sensitive_data(member_data: dict) -> dict:
     """Decrypt sensitive member fields"""
     decrypted = member_data.copy()
