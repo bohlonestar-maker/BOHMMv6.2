@@ -605,7 +605,7 @@ export default function Store({ userRole, userChapter }) {
 
         {/* Main Content Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="bg-slate-800 border-slate-700 mb-4 sm:mb-6 w-full sm:w-auto grid grid-cols-3 sm:flex">
+          <TabsList className={`bg-slate-800 border-slate-700 mb-4 sm:mb-6 w-full sm:w-auto grid ${canManageStore ? 'grid-cols-4' : 'grid-cols-3'} sm:flex`}>
             <TabsTrigger value="merchandise" className="data-[state=active]:bg-slate-700 text-xs sm:text-sm px-2 sm:px-4">
               <Package className="w-3 h-3 sm:w-4 sm:h-4 sm:mr-2" />
               <span className="hidden sm:inline">Merchandise</span>
