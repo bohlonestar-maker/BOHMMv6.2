@@ -532,6 +532,7 @@ export default function Store({ userRole, userChapter }) {
                     image_url: "",
                     inventory_count: 0,
                     member_price: "",
+                    show_in_supporter_store: true,
                   });
                   setAddProductOpen(true);
                 }}
