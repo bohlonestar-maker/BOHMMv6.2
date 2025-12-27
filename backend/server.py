@@ -7520,16 +7520,24 @@ async def update_order_status(order_id: str, status: str, current_user: dict = D
 
 # Dues-specific endpoint
 @api_router.post("/store/dues/pay")
-async def pay_dues(amount: float, year: int, current_user: dict = Depends(verify_token)):
-    """Create a dues payment order"""
-    # Find or create dues product
-    dues_product = await db.store_products.find_one({"category": "dues", "name": f"{year} Annual Dues"})
+async def pay_dues(amount: float, year: int, month: int = 0, current_user: dict = Depends(verify_token)):
+    """Create a dues payment order and update member dues status"""
+    # Validate month (0-11)
+    if month < 0 or month > 11:
+        raise HTTPException(status_code=400, detail="Invalid month. Must be 0-11")
+    
+    month_names = ["January", "February", "March", "April", "May", "June", 
+                   "July", "August", "September", "October", "November", "December"]
+    
+    # Find or create dues product for this month/year
+    product_name = f"{month_names[month]} {year} Monthly Dues"
+    dues_product = await db.store_products.find_one({"category": "dues", "name": product_name})
     
     if not dues_product:
         dues_product = {
             "id": str(uuid.uuid4()),
-            "name": f"{year} Annual Dues",
-            "description": f"Annual membership dues for {year}",
+            "name": product_name,
+            "description": f"Monthly membership dues for {month_names[month]} {year}",
             "price": amount,
             "category": "dues",
             "is_active": True,
@@ -7539,7 +7547,14 @@ async def pay_dues(amount: float, year: int, current_user: dict = Depends(verify
         }
         await db.store_products.insert_one(dues_product)
     
-    # Create order directly
+    # Find the member record for this user
+    member = await db.members.find_one({"$or": [
+        {"name": current_user.get("username")},
+        {"email": current_user.get("email")},
+        {"user_id": current_user.get("id")}
+    ]})
+    
+    # Create order with member info for dues update after payment
     order = {
         "id": str(uuid.uuid4()),
         "user_id": current_user["username"],
@@ -7554,7 +7569,12 @@ async def pay_dues(amount: float, year: int, current_user: dict = Depends(verify
         "tax": 0,  # No tax on dues
         "total": amount,
         "status": "pending",
-        "notes": f"Dues payment for {year}",
+        "notes": f"Monthly dues payment for {month_names[month]} {year}",
+        "dues_info": {  # Store dues info to update member record after payment
+            "year": year,
+            "month": month,
+            "member_id": member["id"] if member else None
+        },
         "created_at": datetime.now(timezone.utc).isoformat(),
         "updated_at": datetime.now(timezone.utc).isoformat()
     }
