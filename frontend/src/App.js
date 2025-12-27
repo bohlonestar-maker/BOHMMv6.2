@@ -187,7 +187,7 @@ function App() {
             path="/events"
             element={
               isAuthenticated ? (
-                <EventCalendar onLogout={handleLogout} />
+                <EventCalendar onLogout={handleLogout} userRole={userRole} />
               ) : (
                 <Navigate to="/" replace />
               )
