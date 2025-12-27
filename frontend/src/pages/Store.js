@@ -855,6 +855,18 @@ export default function Store({ userRole, userChapter }) {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-3 sm:space-y-4 p-3 sm:p-4 pt-0">
+                {/* Member Handle Input */}
+                <div>
+                  <Label className="text-slate-200 text-xs sm:text-sm">Your Handle *</Label>
+                  <Input
+                    value={duesHandle}
+                    onChange={(e) => setDuesHandle(e.target.value)}
+                    placeholder="Enter your handle (e.g., Lonestar)"
+                    className="bg-slate-700 border-slate-600 text-white text-sm mt-1"
+                  />
+                  <p className="text-xs text-slate-500 mt-1">This helps us match your payment to your member record</p>
+                </div>
+                
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <Label className="text-slate-200 text-xs sm:text-sm">Year</Label>
@@ -900,7 +912,8 @@ export default function Store({ userRole, userChapter }) {
               <CardFooter className="p-3 sm:p-4 pt-0">
                 <Button
                   onClick={createDuesOrder}
-                  className="w-full bg-green-600 hover:bg-green-700 text-sm"
+                  disabled={!duesHandle.trim()}
+                  className="w-full bg-green-600 hover:bg-green-700 text-sm disabled:opacity-50"
                 >
                   <CreditCardIcon className="w-4 h-4 mr-2" />
                   Pay ${MONTHLY_DUES_AMOUNT.toFixed(2)} for {monthNames[duesMonth]}
