@@ -8280,6 +8280,309 @@ async def get_square_webhook_info(current_user: dict = Depends(verify_token)):
         }
     }
 
+# ==================== STORE ADMIN MANAGEMENT ENDPOINTS ====================
+
+@api_router.get("/store/admins")
+async def get_store_admins(current_user: dict = Depends(verify_token)):
+    """Get list of store admins (Primary admins only)"""
+    # Only primary admins can view/manage store admin list
+    if not is_primary_store_admin(current_user):
+        raise HTTPException(status_code=403, detail="Only National Prez, VP, or SEC can manage store admins")
+    
+    # Get all delegated store admins
+    delegated_admins = await db.store_admins.find({}, {"_id": 0}).to_list(100)
+    
+    # Get user info for each delegated admin
+    admin_list = []
+    for admin in delegated_admins:
+        user = await db.users.find_one({"username": admin["username"]}, {"_id": 0, "password_hash": 0})
+        if user:
+            admin_list.append({
+                "id": admin["id"],
+                "username": admin["username"],
+                "granted_by": admin["granted_by"],
+                "created_at": admin["created_at"],
+                "user_info": {
+                    "title": user.get("title", ""),
+                    "chapter": user.get("chapter", ""),
+                    "role": user.get("role", "")
+                }
+            })
+    
+    return admin_list
+
+@api_router.get("/store/admins/eligible")
+async def get_eligible_store_admins(current_user: dict = Depends(verify_token)):
+    """Get list of National users who can be granted store admin access (Primary admins only)"""
+    if not is_primary_store_admin(current_user):
+        raise HTTPException(status_code=403, detail="Only National Prez, VP, or SEC can manage store admins")
+    
+    # Get all current store admins usernames
+    current_admins = await db.store_admins.find({}, {"username": 1}).to_list(100)
+    current_admin_usernames = {a["username"] for a in current_admins}
+    
+    # Primary admin titles - these users don't need to be added (they already have access)
+    primary_titles = ["Prez", "VP", "SEC"]
+    
+    # Get all National chapter admins who are not already delegated admins and not primary admins
+    users = await db.users.find(
+        {"role": "admin", "chapter": "National"},
+        {"_id": 0, "password_hash": 0}
+    ).to_list(1000)
+    
+    eligible = []
+    for user in users:
+        # Skip if already a delegated admin
+        if user["username"] in current_admin_usernames:
+            continue
+        # Skip if a primary admin (they already have access)
+        if user.get("title", "") in primary_titles:
+            continue
+        eligible.append({
+            "username": user["username"],
+            "title": user.get("title", ""),
+            "chapter": user.get("chapter", "")
+        })
+    
+    return eligible
+
+@api_router.post("/store/admins")
+async def add_store_admin(admin_data: StoreAdminCreate, current_user: dict = Depends(verify_token)):
+    """Grant store admin access to a user (Primary admins only)"""
+    if not is_primary_store_admin(current_user):
+        raise HTTPException(status_code=403, detail="Only National Prez, VP, or SEC can grant store admin access")
+    
+    # Verify the user exists and is a National admin
+    user = await db.users.find_one({"username": admin_data.username})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    if user.get("role") != "admin" or user.get("chapter") != "National":
+        raise HTTPException(status_code=400, detail="Only National chapter admins can be granted store access")
+    
+    # Check if already a store admin
+    existing = await db.store_admins.find_one({"username": admin_data.username})
+    if existing:
+        raise HTTPException(status_code=400, detail="User is already a store admin")
+    
+    # Check if they're a primary admin (don't need to add them)
+    primary_titles = ["Prez", "VP", "SEC"]
+    if user.get("title", "") in primary_titles:
+        raise HTTPException(status_code=400, detail="This user already has store access as a primary admin")
+    
+    # Create the store admin record
+    store_admin = StoreAdmin(
+        username=admin_data.username,
+        granted_by=current_user["username"]
+    )
+    
+    doc = store_admin.model_dump()
+    doc["created_at"] = doc["created_at"].isoformat()
+    await db.store_admins.insert_one(doc)
+    
+    await log_activity(
+        current_user["username"],
+        "grant_store_admin",
+        f"Granted store admin access to {admin_data.username}"
+    )
+    
+    return {"message": f"Store admin access granted to {admin_data.username}", "id": store_admin.id}
+
+@api_router.delete("/store/admins/{admin_id}")
+async def remove_store_admin(admin_id: str, current_user: dict = Depends(verify_token)):
+    """Remove store admin access from a user (Primary admins only)"""
+    if not is_primary_store_admin(current_user):
+        raise HTTPException(status_code=403, detail="Only National Prez, VP, or SEC can remove store admin access")
+    
+    # Find and delete the store admin
+    admin = await db.store_admins.find_one({"id": admin_id})
+    if not admin:
+        raise HTTPException(status_code=404, detail="Store admin not found")
+    
+    await db.store_admins.delete_one({"id": admin_id})
+    
+    await log_activity(
+        current_user["username"],
+        "revoke_store_admin",
+        f"Revoked store admin access from {admin['username']}"
+    )
+    
+    return {"message": f"Store admin access revoked from {admin['username']}"}
+
+# ==================== END STORE ADMIN MANAGEMENT ENDPOINTS ====================
+
+# ==================== AUTO-SYNC ON LOGIN ====================
+
+async def trigger_catalog_sync_background():
+    """Background task to sync Square catalog"""
+    try:
+        if not square_client:
+            logger.warning("Square client not configured, skipping auto-sync")
+            return
+        
+        # Fetch catalog items from Square
+        result = square_client.catalog.list(types="ITEM")
+        items = list(result)
+        
+        if not items:
+            logger.info("No items found in Square catalog during auto-sync")
+            return
+        
+        # Collect all variation IDs for inventory fetch
+        all_variation_ids = []
+        for item in items:
+            item_data = item.item_data
+            if not item_data:
+                continue
+            for var in (item_data.variations or []):
+                all_variation_ids.append(var.id)
+        
+        # Fetch inventory counts
+        inventory_map = {}
+        if all_variation_ids:
+            try:
+                inv_result = square_client.inventory.batch_get_counts(
+                    catalog_object_ids=all_variation_ids,
+                    location_ids=[SQUARE_LOCATION_ID]
+                )
+                inv_items = list(inv_result)
+                for count in inv_items:
+                    qty = int(count.quantity) if count.quantity else 0
+                    inventory_map[count.catalog_object_id] = qty
+            except Exception as inv_e:
+                logger.warning(f"Could not fetch inventory during auto-sync: {inv_e}")
+        
+        synced_count = 0
+        new_count = 0
+        
+        for item in items:
+            item_data = item.item_data
+            if not item_data:
+                continue
+            
+            item_id = item.id
+            name = item_data.name or "Unknown"
+            description = item_data.description or ""
+            
+            # Get ecom image URLs
+            image_url = None
+            if item_data.ecom_image_uris and len(item_data.ecom_image_uris) > 0:
+                image_url = item_data.ecom_image_uris[0]
+            
+            variations_list = item_data.variations or []
+            if not variations_list:
+                continue
+            
+            # Build variations data
+            product_variations = []
+            total_inventory = 0
+            min_price = float('inf')
+            has_size_variations = False
+            
+            name_lower = name.lower()
+            is_apparel = any(word in name_lower for word in ['shirt', 'hoodie', 'tee', 'jersey', 'long sleeve'])
+            is_excluded = (
+                'hi-viz' in name_lower or 
+                'hiviz' in name_lower or
+                'hi viz' in name_lower or
+                'ladiez' in name_lower or
+                ('member long sleeve' in name_lower and 'original logo design' in name_lower)
+            )
+            allows_customization = is_apparel and not is_excluded
+            
+            for var in variations_list:
+                var_data = var.item_variation_data
+                if not var_data:
+                    continue
+                
+                price_money = var_data.price_money
+                if not price_money:
+                    continue
+                
+                price = price_money.amount / 100
+                if price <= 0:
+                    continue
+                
+                if price < min_price:
+                    min_price = price
+                
+                var_name = var_data.name or "Default"
+                var_id = var.id
+                inv_count = inventory_map.get(var_id, 0)
+                total_inventory += inv_count
+                
+                sold_out = inv_count == 0
+                if var_data.location_overrides:
+                    for lo in var_data.location_overrides:
+                        if lo.sold_out:
+                            sold_out = True
+                            break
+                
+                size_indicators = ['S', 'M', 'L', 'XL', '2XL', '3XL', '4XL', '5XL', 'XS', 'XXL', 'LT', 'XLT', '2XLT', '3XLT']
+                if var_name.upper() in size_indicators or any(s in var_name.upper() for s in size_indicators):
+                    has_size_variations = True
+                
+                product_variations.append({
+                    "id": str(uuid.uuid4()),
+                    "name": var_name,
+                    "price": price,
+                    "square_variation_id": var_id,
+                    "inventory_count": inv_count,
+                    "sold_out": sold_out
+                })
+            
+            if min_price == float('inf'):
+                continue
+            
+            # Sort variations by size order
+            size_order = {'XS': 0, 'S': 1, 'M': 2, 'L': 3, 'LT': 4, 'XL': 5, 'XLT': 6, '2XL': 7, '2XLT': 8, '3XL': 9, '3XLT': 10, '4XL': 11, '5XL': 12, 'Regular': 0}
+            product_variations.sort(key=lambda x: size_order.get(x['name'], 99))
+            
+            # Check if product already exists
+            existing = await db.store_products.find_one({"square_catalog_id": item_id})
+            
+            product_data = {
+                "name": name,
+                "description": description[:500] if description else "",
+                "price": min_price,
+                "image_url": image_url,
+                "variations": product_variations,
+                "has_variations": len(product_variations) > 1 or has_size_variations,
+                "allows_customization": allows_customization,
+                "inventory_count": total_inventory,
+                "updated_at": datetime.now(timezone.utc).isoformat()
+            }
+            
+            if existing:
+                # Update existing - preserve admin-controlled settings
+                await db.store_products.update_one(
+                    {"square_catalog_id": item_id},
+                    {"$set": product_data}
+                )
+            else:
+                # New product - default to NOT showing in supporter store
+                product_data.update({
+                    "id": str(uuid.uuid4()),
+                    "category": "merchandise",
+                    "square_catalog_id": item_id,
+                    "is_active": True,
+                    "show_in_supporter_store": False,  # NEW items default to hidden from supporter store
+                    "allows_customization": False,  # Default FALSE, admin must enable
+                    "created_at": datetime.now(timezone.utc).isoformat()
+                })
+                await db.store_products.insert_one(product_data)
+                new_count += 1
+                logger.info(f"Auto-sync: New product added: {name} (hidden from supporter store)")
+            
+            synced_count += 1
+        
+        logger.info(f"Auto-sync completed: {synced_count} products synced, {new_count} new products added")
+    
+    except Exception as e:
+        logger.error(f"Auto-sync error: {str(e)}")
+
+# ==================== END AUTO-SYNC ====================
+
 # ==================== END STORE API ENDPOINTS ====================
 
 # Include the router in the main app
