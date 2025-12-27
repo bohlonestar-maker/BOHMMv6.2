@@ -76,6 +76,7 @@ sys.stderr.flush()
 import discord
 import asyncio
 import aiohttp
+import re  # For regex escaping (security)
 
 sys.stderr.write("✅ [INIT] All imports completed successfully\n")
 sys.stderr.flush()
