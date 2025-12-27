@@ -7919,7 +7919,9 @@ async def sync_square_catalog(current_user: dict = Depends(verify_token)):
                 'member' in name_lower and 
                 'supporter' not in name_lower
             )
-            show_in_supporter = not is_member_only
+            # NEW ITEMS: Default to NOT showing in supporter store
+            # Store admins must manually enable each item for supporter store
+            show_in_supporter = False  # Always false for new items
             
             # Check if product already exists
             existing = await db.store_products.find_one({"square_catalog_id": item_id})
@@ -7937,25 +7939,25 @@ async def sync_square_catalog(current_user: dict = Depends(verify_token)):
             }
             
             if existing:
-                # Update existing product, but preserve show_in_supporter_store if already set
-                # This allows admins to manually override the default
-                if existing.get("show_in_supporter_store") is None:
-                    product_data["show_in_supporter_store"] = show_in_supporter
+                # Update existing product - preserve show_in_supporter_store setting
+                # Admins control this manually
                 await db.store_products.update_one(
                     {"square_catalog_id": item_id},
                     {"$set": product_data}
                 )
             else:
-                # Create new product with default supporter store visibility
+                # Create new product - default to NOT in supporter store
                 product_data.update({
                     "id": str(uuid.uuid4()),
                     "category": "merchandise",
                     "square_catalog_id": item_id,
                     "is_active": True,
-                    "show_in_supporter_store": show_in_supporter,
+                    "show_in_supporter_store": show_in_supporter,  # Default FALSE for new items
+                    "allows_customization": False,  # Default FALSE, admin must enable
                     "created_at": datetime.now(timezone.utc).isoformat()
                 })
                 await db.store_products.insert_one(product_data)
+                logger.info(f"New product synced: {name} (supporter store: {show_in_supporter})")
             
             synced_count += 1
         
