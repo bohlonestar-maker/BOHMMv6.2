@@ -1188,6 +1188,76 @@ export default function Store({ userRole, userChapter }) {
                   </CardContent>
                 </Card>
 
+                {/* Dues Payments Card */}
+                <Card className="bg-slate-800 border-slate-700">
+                  <CardHeader className="p-3 sm:p-4">
+                    <CardTitle className="text-white flex items-center gap-2 text-base sm:text-lg">
+                      <DollarSign className="w-4 h-4 sm:w-5 sm:h-5" />
+                      Dues Payments
+                    </CardTitle>
+                    <CardDescription className="text-slate-400 text-xs sm:text-sm">
+                      View all dues payments submitted by members
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="p-3 sm:p-4 pt-0">
+                    <Button
+                      onClick={fetchDuesPayments}
+                      className="w-full bg-blue-600 hover:bg-blue-700 mb-4"
+                    >
+                      <RefreshCw className="w-4 h-4 mr-2" />
+                      Load Dues Payments
+                    </Button>
+                    
+                    {duesPayments.length > 0 ? (
+                      <div className="space-y-2 max-h-96 overflow-y-auto">
+                        {duesPayments.map((payment) => (
+                          <div 
+                            key={payment.id} 
+                            className={`p-3 rounded-lg border ${
+                              payment.status === 'paid' 
+                                ? 'bg-green-900/20 border-green-600/30' 
+                                : 'bg-slate-700/50 border-slate-600'
+                            }`}
+                          >
+                            <div className="flex justify-between items-start">
+                              <div>
+                                <div className="font-medium text-white">
+                                  {payment.dues_info?.member_handle || payment.member_handle || 'Unknown'}
+                                </div>
+                                <div className="text-sm text-slate-400">
+                                  {payment.dues_info?.month_name || 'Unknown Month'} {payment.dues_info?.year}
+                                </div>
+                                <div className="text-xs text-slate-500">
+                                  User: {payment.user_name || payment.user_id}
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <div className="font-bold text-green-400">${payment.total?.toFixed(2)}</div>
+                                <Badge className={
+                                  payment.status === 'paid' 
+                                    ? 'bg-green-600' 
+                                    : payment.status === 'pending' 
+                                      ? 'bg-yellow-600' 
+                                      : 'bg-slate-600'
+                                }>
+                                  {payment.status}
+                                </Badge>
+                              </div>
+                            </div>
+                            <div className="text-xs text-slate-500 mt-2">
+                              {new Date(payment.created_at).toLocaleString()}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center text-slate-400 py-4">
+                        Click "Load Dues Payments" to view payment history
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
                 {/* Store Admin Management Card - Only for Primary Admins */}
                 {isPrimaryAdmin && (
                   <Card className="bg-slate-800 border-slate-700">
