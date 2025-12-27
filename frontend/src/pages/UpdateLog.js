@@ -11,10 +11,11 @@ export default function UpdateLog() {
       version: "v5.6",
       date: "December 27, 2025",
       changes: [
+        "National Privacy: National chapter members are now hidden from non-National users in the member database",
+        "Access Control: Non-National users cannot view individual National member profiles",
+        "CSV Export: National members excluded from exports for non-National users",
         "Security Patch: Fixed NoSQL injection vulnerability in dues payment endpoint",
-        "Input Sanitization: Added regex escaping for all user-supplied search patterns",
-        "Object Injection Prevention: New validation ensures only string inputs reach database queries",
-        "Security Testing: Comprehensive security audit with 25 tests passed (100% success rate)"
+        "Input Sanitization: Added regex escaping for all user-supplied search patterns"
       ]
     },
     {
