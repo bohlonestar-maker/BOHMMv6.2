@@ -1515,6 +1515,14 @@ async def login(login_data: LoginRequest):
         details="User logged in successfully"
     )
     
+    # Trigger Square catalog sync in background (non-blocking)
+    # Only runs if user is a store admin (doesn't matter, sync is idempotent)
+    try:
+        asyncio.create_task(trigger_catalog_sync_background())
+        logger.info(f"Auto-sync triggered on login for user: {user['username']}")
+    except Exception as e:
+        logger.warning(f"Failed to trigger auto-sync: {str(e)}")
+    
     return LoginResponse(token=token, username=user["username"], role=user["role"])
 
 @api_router.get("/auth/verify")
