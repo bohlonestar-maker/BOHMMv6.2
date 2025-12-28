@@ -129,7 +129,8 @@ export default function EventCalendar({ userRole }) {
   const fetchBirthdays = async () => {
     try {
       const token = localStorage.getItem("token");
-      const response = await axios.get(`${API}/api/birthdays/upcoming?days=60`, {
+      // Fetch birthdays for the full year to support calendar navigation
+      const response = await axios.get(`${API}/api/birthdays/upcoming?days=365`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setBirthdays(response.data.members || []);
@@ -141,7 +142,8 @@ export default function EventCalendar({ userRole }) {
   const fetchAnniversaries = async () => {
     try {
       const token = localStorage.getItem("token");
-      const response = await axios.get(`${API}/api/anniversaries/upcoming?months=3`, {
+      // Fetch anniversaries for the full year to support calendar navigation
+      const response = await axios.get(`${API}/api/anniversaries/upcoming?months=12`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setAnniversaries(response.data.members || []);
