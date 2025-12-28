@@ -88,9 +88,13 @@ export default function EventCalendar({ userRole }) {
   useEffect(() => {
     fetchEvents();
     fetchDiscordChannels();
+  }, []);
+
+  // Fetch birthdays and anniversaries when month changes
+  useEffect(() => {
     fetchBirthdays();
     fetchAnniversaries();
-  }, []);
+  }, [currentMonth]);
 
   useEffect(() => {
     applyFilters();
@@ -129,8 +133,9 @@ export default function EventCalendar({ userRole }) {
   const fetchBirthdays = async () => {
     try {
       const token = localStorage.getItem("token");
-      // Fetch birthdays for the full year to support calendar navigation
-      const response = await axios.get(`${API}/api/birthdays/upcoming?days=365`, {
+      const month = currentMonth.getMonth() + 1;
+      const year = currentMonth.getFullYear();
+      const response = await axios.get(`${API}/api/birthdays/monthly?month=${month}&year=${year}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setBirthdays(response.data.members || []);
@@ -142,8 +147,9 @@ export default function EventCalendar({ userRole }) {
   const fetchAnniversaries = async () => {
     try {
       const token = localStorage.getItem("token");
-      // Fetch anniversaries for the full year to support calendar navigation
-      const response = await axios.get(`${API}/api/anniversaries/upcoming?months=12`, {
+      const month = currentMonth.getMonth() + 1;
+      const year = currentMonth.getFullYear();
+      const response = await axios.get(`${API}/api/anniversaries/monthly?month=${month}&year=${year}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setAnniversaries(response.data.members || []);
