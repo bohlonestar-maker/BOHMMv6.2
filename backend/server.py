@@ -6611,7 +6611,7 @@ async def get_monthly_anniversaries(month: int, year: int, current_user: dict = 
     
     # Fetch all members with join_date set
     members = await db.members.find(
-        {"join_date": {"$exists": True, "$ne": None, "$ne": ""}},
+        {"join_date": {"$exists": True, "$ne": None, "$ne": "", "$ne": "None"}},
         {"_id": 0}
     ).to_list(1000)
     
@@ -6622,16 +6622,21 @@ async def get_monthly_anniversaries(month: int, year: int, current_user: dict = 
     monthly_anniversaries = []
     for member in members:
         join_date_str = member.get('join_date', '')
-        if not join_date_str:
+        if not join_date_str or join_date_str == 'None':
             continue
         try:
-            # join_date is stored as "MM/YY" format
+            # join_date can be stored as "MM/YYYY" or "MM/YY" format
             parts = join_date_str.split('/')
             if len(parts) == 2:
                 join_month = int(parts[0])
-                join_year_short = int(parts[1])
-                # Convert 2-digit year to 4-digit
-                join_year = 2000 + join_year_short if join_year_short < 50 else 1900 + join_year_short
+                join_year_str = parts[1]
+                
+                # Handle both 2-digit and 4-digit years
+                if len(join_year_str) == 4:
+                    join_year = int(join_year_str)
+                else:
+                    join_year_short = int(join_year_str)
+                    join_year = 2000 + join_year_short if join_year_short < 50 else 1900 + join_year_short
                 
                 if join_month == month:
                     years_member = year - join_year
