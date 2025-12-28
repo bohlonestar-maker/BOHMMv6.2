@@ -596,6 +596,51 @@ SUPPORT_EMAIL = "support@boh2158.org"
 # Create the main app without a prefix
 app = FastAPI()
 
+# Security Headers Middleware - Addresses HSTS, CSP, Clickjacking, and Cookie security
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.requests import Request
+
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        response = await call_next(request)
+        
+        # 1. Strict-Transport-Security (HSTS) - Forces HTTPS connections
+        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+        
+        # 2. Content-Security-Policy (CSP) - Prevents XSS attacks
+        # Allow self, inline scripts/styles (needed for React), and common CDNs
+        csp_policy = (
+            "default-src 'self'; "
+            "script-src 'self' 'unsafe-inline' 'unsafe-eval'; "
+            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+            "font-src 'self' https://fonts.gstatic.com data:; "
+            "img-src 'self' data: blob: https:; "
+            "connect-src 'self' https: wss:; "
+            "frame-ancestors 'self'; "
+            "form-action 'self'; "
+            "base-uri 'self'"
+        )
+        response.headers["Content-Security-Policy"] = csp_policy
+        
+        # 3. X-Frame-Options - Prevents Clickjacking attacks
+        response.headers["X-Frame-Options"] = "SAMEORIGIN"
+        
+        # 4. X-Content-Type-Options - Prevents MIME type sniffing
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        
+        # 5. X-XSS-Protection - Legacy XSS protection for older browsers
+        response.headers["X-XSS-Protection"] = "1; mode=block"
+        
+        # 6. Referrer-Policy - Controls referrer information
+        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+        
+        # 7. Permissions-Policy - Controls browser features
+        response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()"
+        
+        return response
+
+app.add_middleware(SecurityHeadersMiddleware)
+
 # Health check endpoint for Kubernetes - must be at root level (not /api/health)
 @app.get("/health")
 async def health_check():
