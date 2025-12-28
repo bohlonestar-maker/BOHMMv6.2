@@ -716,7 +716,7 @@ export default function EventCalendar({ userRole }) {
                   <div className="space-y-2">
                     {selectedDateItems.birthdays.map((bday, idx) => (
                       <div key={idx} className="bg-pink-900/30 border border-pink-600/30 rounded-lg p-3">
-                        <div className="font-medium text-white">🎂 {bday.name}</div>
+                        <div className="font-medium text-white">🎂 {bday.handle}</div>
                         <div className="text-sm text-slate-400">{bday.chapter} {bday.title && `• ${bday.title}`}</div>
                       </div>
                     ))}
