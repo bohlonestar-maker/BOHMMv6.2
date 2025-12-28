@@ -6549,6 +6549,116 @@ async def get_upcoming_birthdays(days: int = 30, current_user: dict = Depends(ve
     }
 
 
+@api_router.get("/birthdays/monthly")
+async def get_monthly_birthdays(month: int, year: int, current_user: dict = Depends(verify_token)):
+    """Get all members with birthdays in a specific month"""
+    from datetime import datetime
+    
+    user_chapter = current_user.get('chapter')
+    is_national_member = user_chapter == 'National'
+    
+    # Fetch all members with DOB set
+    members = await db.members.find(
+        {"dob": {"$exists": True, "$ne": None, "$ne": ""}},
+        {"_id": 0}
+    ).to_list(1000)
+    
+    # Filter out National members for non-National users
+    if not is_national_member:
+        members = [m for m in members if m.get('chapter') != 'National']
+    
+    monthly_birthdays = []
+    for member in members:
+        dob = member.get('dob', '')
+        if not dob:
+            continue
+        try:
+            dob_date = datetime.strptime(dob, "%Y-%m-%d")
+            # Check if birthday is in the requested month
+            if dob_date.month == month:
+                birthday_this_year = dob_date.replace(year=year)
+                monthly_birthdays.append({
+                    "id": member.get("id"),
+                    "handle": member.get("handle"),
+                    "name": member.get("name"),
+                    "chapter": member.get("chapter"),
+                    "title": member.get("title"),
+                    "dob": dob,
+                    "birthday_date": birthday_this_year.strftime("%Y-%m-%d"),
+                    "day": dob_date.day
+                })
+        except:
+            pass
+    
+    # Sort by day of month
+    monthly_birthdays.sort(key=lambda x: x["day"])
+    
+    return {
+        "month": month,
+        "year": year,
+        "count": len(monthly_birthdays),
+        "members": monthly_birthdays
+    }
+
+
+@api_router.get("/anniversaries/monthly")
+async def get_monthly_anniversaries(month: int, year: int, current_user: dict = Depends(verify_token)):
+    """Get all members with anniversaries in a specific month"""
+    from datetime import datetime
+    
+    user_chapter = current_user.get('chapter')
+    is_national_member = user_chapter == 'National'
+    
+    # Fetch all members with join_date set
+    members = await db.members.find(
+        {"join_date": {"$exists": True, "$ne": None, "$ne": ""}},
+        {"_id": 0}
+    ).to_list(1000)
+    
+    # Filter out National members for non-National users
+    if not is_national_member:
+        members = [m for m in members if m.get('chapter') != 'National']
+    
+    monthly_anniversaries = []
+    for member in members:
+        join_date_str = member.get('join_date', '')
+        if not join_date_str:
+            continue
+        try:
+            # join_date is stored as "MM/YY" format
+            parts = join_date_str.split('/')
+            if len(parts) == 2:
+                join_month = int(parts[0])
+                join_year_short = int(parts[1])
+                # Convert 2-digit year to 4-digit
+                join_year = 2000 + join_year_short if join_year_short < 50 else 1900 + join_year_short
+                
+                if join_month == month:
+                    years_member = year - join_year
+                    if years_member > 0:  # Only show if at least 1 year
+                        monthly_anniversaries.append({
+                            "id": member.get("id"),
+                            "handle": member.get("handle"),
+                            "name": member.get("name"),
+                            "chapter": member.get("chapter"),
+                            "title": member.get("title"),
+                            "join_date": join_date_str,
+                            "years": years_member,
+                            "anniversary_date": f"{year}-{str(month).zfill(2)}-01"
+                        })
+        except:
+            pass
+    
+    # Sort by years (longest members first)
+    monthly_anniversaries.sort(key=lambda x: x["years"], reverse=True)
+    
+    return {
+        "month": month,
+        "year": year,
+        "count": len(monthly_anniversaries),
+        "members": monthly_anniversaries
+    }
+
 
 # ==================== DISCORD NOTIFICATION SYSTEM ====================
 
