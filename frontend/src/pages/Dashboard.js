@@ -2017,6 +2017,75 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
             </div>
           </div>
         )}
+
+        {/* Change Password Dialog */}
+        <Dialog open={passwordDialogOpen} onOpenChange={(open) => {
+          setPasswordDialogOpen(open);
+          if (!open) {
+            setPasswordForm({ currentPassword: "", newPassword: "", confirmPassword: "" });
+            setPasswordError("");
+            setPasswordSuccess("");
+          }
+        }}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Change Password</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              {passwordError && (
+                <div className="p-3 bg-red-900/50 border border-red-600 rounded text-red-200 text-sm">
+                  {passwordError}
+                </div>
+              )}
+              {passwordSuccess && (
+                <div className="p-3 bg-green-900/50 border border-green-600 rounded text-green-200 text-sm">
+                  {passwordSuccess}
+                </div>
+              )}
+              <div>
+                <Label className="text-slate-200">Current Password</Label>
+                <Input
+                  type="password"
+                  value={passwordForm.currentPassword}
+                  onChange={(e) => setPasswordForm({ ...passwordForm, currentPassword: e.target.value })}
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <Label className="text-slate-200">New Password</Label>
+                <Input
+                  type="password"
+                  value={passwordForm.newPassword}
+                  onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <Label className="text-slate-200">Confirm New Password</Label>
+                <Input
+                  type="password"
+                  value={passwordForm.confirmPassword}
+                  onChange={(e) => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
+                  className="mt-1"
+                />
+              </div>
+              <div className="flex justify-end gap-3 pt-4">
+                <Button
+                  variant="outline"
+                  onClick={() => setPasswordDialogOpen(false)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleChangePassword}
+                  disabled={!passwordForm.currentPassword || !passwordForm.newPassword || !passwordForm.confirmPassword}
+                >
+                  Change Password
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
