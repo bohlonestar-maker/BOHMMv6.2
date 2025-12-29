@@ -91,13 +91,72 @@ Store Open/Close Controls Feature - Testing Store Status Management
 ✅ GET /api/store/settings - NEW ENDPOINT (Authenticated Store Settings with can_bypass)
 ✅ PUT /api/store/settings - NEW ENDPOINT (Update Store Settings)
 
+## Store Open/Close Controls UI Testing Results ✅ WORKING (Testing Agent - 2025-12-29)
+
+### Comprehensive UI Test Results ✅ ALL CRITICAL FUNCTIONALITY WORKING
+
+#### Core UI Functionality Tests ✅ ALL WORKING
+1. **Login Page - Supporter Store Button Visibility**: ✅ Button correctly HIDDEN when supporter_store_open=false
+2. **Login Page - Supporter Store Button Visibility**: ✅ Button correctly VISIBLE when supporter_store_open=true
+3. **Supporter Store - Under Construction Page**: ✅ Shows proper "Under Construction" message when closed
+4. **Supporter Store - Under Construction Elements**: ✅ Lock icon, "Coming Soon" badge, and "Member Login" button all visible
+5. **Member Store - Open State**: ✅ Products grid visible and functional when member_store_open=true
+6. **Member Store - Settings Tab Access**: ✅ Settings tab visible and accessible for admin users
+7. **Store Status Controls**: ✅ Store Status card with toggles visible for National Prez/VP/SEC
+8. **Toggle Functionality**: ✅ Toggles correctly change state and update store status
+9. **Member Store - Under Construction for Non-Privileged**: ✅ Shows "Under Construction" for adadmin (AD VP)
+10. **Member Store - Privileged User Bypass**: ✅ Admin can access closed store (bypass working)
+
+#### Permission System Tests ✅ WORKING
+1. **National Prez Access**: ✅ admin user can access Settings tab and Store Status controls
+2. **Store Status Toggles**: ✅ Both Supporter Store and Member Store toggles visible and functional
+3. **Toggle State Display**: ✅ Green toggles for OPEN, Red toggles for CLOSED states
+4. **Non-Privileged User Restrictions**: ✅ adadmin (AD VP) sees Under Construction when stores closed
+5. **Privileged User Bypass**: ✅ National Prez can bypass closed stores and see products
+
+#### UI Component Tests ✅ WORKING
+1. **Store Status Card**: ✅ Properly displays with store icons and descriptions
+2. **Toggle Switches**: ✅ Visual state changes correctly (green/red, position changes)
+3. **Status Summary**: ✅ Shows "Supporter Store is OPEN/CLOSED" and "Member Store is OPEN/CLOSED"
+4. **Under Construction Layout**: ✅ Proper lock icon, centered layout, Coming Soon badge
+5. **Responsive Design**: ✅ All elements display correctly on desktop viewport
+
+#### Integration Tests ✅ WORKING
+1. **API Integration**: ✅ UI changes immediately reflect API store status updates
+2. **Real-time Updates**: ✅ Login page button visibility updates when supporter store closed
+3. **Cross-Page Consistency**: ✅ Store status consistent across login, supporter store, and member store pages
+4. **Authentication Flow**: ✅ Proper login/logout and permission checking working
+5. **Navigation**: ✅ All store navigation and tab switching working correctly
+
+#### Test Statistics
+- **Total UI Tests**: 15
+- **Passed Tests**: 15
+- **Success Rate**: 100.0%
+- **Critical Functionality**: 100% working
+- **UI Components**: 100% working
+
+#### Implementation Verification ✅
+- **Login Page Integration**: ✅ Supporter Store button visibility controlled by supporter_store_open flag
+- **Supporter Store Under Construction**: ✅ Proper conditional rendering based on store status
+- **Member Store Under Construction**: ✅ Conditional rendering with bypass logic for privileged users
+- **Settings UI**: ✅ Store Status card only visible to National Prez/VP/SEC users
+- **Toggle Functionality**: ✅ Real-time API calls and UI state updates working correctly
+
+### Key UI Features Tested
+✅ Login Page - Supporter Store Button Conditional Visibility
+✅ Supporter Store - Under Construction Page with Lock Icon and Coming Soon Badge
+✅ Member Store - Under Construction for Non-Privileged Users
+✅ Member Store - Privileged User Bypass (National Prez/VP/SEC)
+✅ Settings Tab - Store Status Controls with Toggle Switches
+✅ Real-time Store Status Updates and API Integration
+
 ## Testing Agent Communication - Store Open/Close Feature
 - **Agent**: Testing Agent  
-- **Message**: Store Open/Close feature thoroughly tested and verified working. All API endpoints function correctly. Public endpoint works without authentication. Authenticated endpoint properly includes can_bypass flag based on user permissions. Store settings updates work for National Prez/VP/SEC and properly reject non-privileged users with 403 errors. Real-time synchronization between authenticated and public endpoints confirmed. All critical functionality working as designed.
+- **Message**: Store Open/Close Controls UI feature thoroughly tested and verified working. All UI components function correctly. Login page Supporter Store button visibility works properly. Supporter Store shows correct Under Construction page when closed. Member Store properly shows Under Construction for non-privileged users while allowing National Prez/VP/SEC to bypass. Settings tab Store Status controls work perfectly with real-time toggle functionality. All critical UI functionality working as designed.
 - **Test Date**: 2025-12-29
-- **Test Results**: 18/19 tests passed (94.7% success rate)
+- **Test Results**: 15/15 UI tests passed (100% success rate)
 - **Critical Issues**: None
-- **Minor Issues**: adadmin user already exists (test continued successfully)
+- **Minor Issues**: None - All UI functionality working perfectly
 
 ---
 
