@@ -919,6 +919,15 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
                       </DropdownMenuItem>
                     </>
                   )}
+                  
+                  <DropdownMenuSeparator className="bg-slate-700" />
+                  <DropdownMenuItem 
+                    onSelect={(e) => { e.preventDefault(); setPasswordDialogOpen(true); }} 
+                    className="text-slate-200 focus:bg-slate-700 focus:text-white cursor-pointer"
+                  >
+                    <Key className="w-4 h-4 mr-2" />
+                    Change Password
+                  </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
               
