@@ -138,9 +138,15 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
   // Check if current user is a National officer who can act on National members
   const isNationalOfficer = userChapter === 'National' && NATIONAL_OFFICER_TITLES.includes(userTitle);
   
+  // PM (Prospect Master) has read-only access - no action buttons
+  const isPM = userTitle === 'PM';
+  
   // Check if user can edit a specific member (based on chapter and title restrictions)
   const canEditMember = (memberChapter) => {
     if (userRole !== 'admin') return false;
+    
+    // PM has read-only access - cannot edit any members
+    if (isPM) return false;
     
     // For National chapter members, only specific National officers can edit
     if (memberChapter === 'National') {
@@ -154,8 +160,8 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
     return userChapter === memberChapter;
   };
 
-  // Check if user can access prospects (National or HA Admin)
-  const canAccessProspects = userRole === 'admin' && (userChapter === 'National' || userChapter === 'HA');
+  // Check if user can access prospects (National, HA Admin, or PM)
+  const canAccessProspects = userRole === 'admin' && (userChapter === 'National' || userChapter === 'HA' || userTitle === 'PM');
 
   // Helper to check permissions
   const hasPermission = (permission) => {
