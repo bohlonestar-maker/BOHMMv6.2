@@ -217,6 +217,40 @@ export default function Store({ userRole, userChapter, userTitle }) {
     }
   }, []);
 
+  // Fetch store settings
+  const fetchStoreSettings = useCallback(async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const response = await axios.get(`${API_URL}/api/store/settings`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setStoreSettings(response.data);
+    } catch (error) {
+      console.error("Error fetching store settings:", error);
+    }
+  }, []);
+
+  // Update store settings
+  const updateStoreSettings = async (field, value) => {
+    setUpdatingSettings(true);
+    try {
+      const token = localStorage.getItem("token");
+      const params = new URLSearchParams();
+      params.append(field, value);
+      
+      await axios.put(`${API_URL}/api/store/settings?${params.toString()}`, {}, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      
+      setStoreSettings(prev => ({ ...prev, [field]: value }));
+      toast.success(`Store setting updated: ${field.replace(/_/g, ' ')}`);
+    } catch (error) {
+      toast.error(error.response?.data?.detail || "Failed to update store settings");
+    } finally {
+      setUpdatingSettings(false);
+    }
+  };
+
   const handleAddStoreAdmin = async () => {
     if (!selectedUserToAdd) {
       toast.error("Please select a user to add");
