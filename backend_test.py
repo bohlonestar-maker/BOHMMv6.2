@@ -9396,6 +9396,198 @@ class BOHDirectoryAPITester:
         print(f"   🔒 NoSQL Injection Security Testing Completed")
         return member_id
 
+    def test_store_open_close_feature(self):
+        """Test Store Open/Close feature - NEW FEATURE"""
+        print(f"\n🏪 Testing Store Open/Close Feature...")
+        
+        # Test 1: Public Store Settings (No Auth Required)
+        success, public_settings = self.run_test(
+            "Get Public Store Settings",
+            "GET",
+            "store/settings/public",
+            200
+        )
+        
+        if success:
+            # Verify required fields are present
+            required_fields = ['supporter_store_open', 'member_store_open', 'supporter_store_message', 'member_store_message']
+            missing_fields = [field for field in required_fields if field not in public_settings]
+            
+            if not missing_fields:
+                self.log_test("Public Settings - Required Fields", True, f"All required fields present: {required_fields}")
+            else:
+                self.log_test("Public Settings - Required Fields", False, f"Missing fields: {missing_fields}")
+        
+        # Test 2: Authenticated Store Settings with admin (National Prez)
+        success, auth_settings = self.run_test(
+            "Get Authenticated Store Settings (admin)",
+            "GET",
+            "store/settings",
+            200
+        )
+        
+        if success:
+            # Verify can_bypass flag is present and true for admin
+            if 'can_bypass' in auth_settings:
+                if auth_settings['can_bypass'] == True:
+                    self.log_test("Admin Can Bypass - Flag Present", True, "can_bypass=true for National Prez")
+                else:
+                    self.log_test("Admin Can Bypass - Flag Present", False, f"can_bypass={auth_settings['can_bypass']} (expected true)")
+            else:
+                self.log_test("Admin Can Bypass - Flag Present", False, "can_bypass field missing")
+        
+        # Test 3: Create adadmin user (AD VP) for testing non-bypass user
+        adadmin_user = {
+            "username": "adadmin",
+            "email": "adadmin@test.com",
+            "password": "test",
+            "role": "admin",
+            "chapter": "AD",
+            "title": "VP"
+        }
+        
+        success, created_adadmin = self.run_test(
+            "Create adadmin User (AD VP)",
+            "POST",
+            "users",
+            201,
+            data=adadmin_user
+        )
+        
+        adadmin_id = None
+        if success and 'id' in created_adadmin:
+            adadmin_id = created_adadmin['id']
+            print(f"   Created adadmin ID: {adadmin_id}")
+        
+        # Test 4: Login as adadmin and test can_bypass=false
+        original_token = self.token
+        success, adadmin_login = self.run_test(
+            "Login as adadmin (AD VP)",
+            "POST",
+            "auth/login",
+            200,
+            data={"username": "adadmin", "password": "test"}
+        )
+        
+        if success and 'token' in adadmin_login:
+            self.token = adadmin_login['token']
+            
+            # Test authenticated settings with adadmin
+            success, adadmin_settings = self.run_test(
+                "Get Authenticated Store Settings (adadmin)",
+                "GET",
+                "store/settings",
+                200
+            )
+            
+            if success:
+                # Verify can_bypass flag is false for adadmin
+                if 'can_bypass' in adadmin_settings:
+                    if adadmin_settings['can_bypass'] == False:
+                        self.log_test("adadmin Cannot Bypass - Flag Present", True, "can_bypass=false for AD VP")
+                    else:
+                        self.log_test("adadmin Cannot Bypass - Flag Present", False, f"can_bypass={adadmin_settings['can_bypass']} (expected false)")
+                else:
+                    self.log_test("adadmin Cannot Bypass - Flag Present", False, "can_bypass field missing")
+            
+            # Test 5: Try to update settings as adadmin (should fail with 403)
+            success, update_response = self.run_test(
+                "Update Settings as adadmin (Should Fail)",
+                "PUT",
+                "store/settings?member_store_open=false",
+                403
+            )
+        
+        # Restore admin token
+        self.token = original_token
+        
+        # Test 6: Update store settings as admin (should succeed)
+        # First, close member store
+        success, close_response = self.run_test(
+            "Close Member Store (admin)",
+            "PUT",
+            "store/settings?member_store_open=false",
+            200
+        )
+        
+        if success:
+            if 'message' in close_response and 'settings' in close_response:
+                self.log_test("Close Member Store - Response Format", True, "Response contains message and settings")
+                
+                # Verify the setting was updated
+                settings = close_response['settings']
+                if settings.get('member_store_open') == False:
+                    self.log_test("Close Member Store - Setting Updated", True, "member_store_open=false")
+                else:
+                    self.log_test("Close Member Store - Setting Updated", False, f"member_store_open={settings.get('member_store_open')}")
+            else:
+                self.log_test("Close Member Store - Response Format", False, "Missing message or settings in response")
+        
+        # Test 7: Verify public endpoint reflects the change
+        success, updated_public_settings = self.run_test(
+            "Verify Public Settings After Update",
+            "GET",
+            "store/settings/public",
+            200
+        )
+        
+        if success:
+            if updated_public_settings.get('member_store_open') == False:
+                self.log_test("Public Settings Reflect Update", True, "member_store_open=false in public endpoint")
+            else:
+                self.log_test("Public Settings Reflect Update", False, f"member_store_open={updated_public_settings.get('member_store_open')} (expected false)")
+        
+        # Test 8: Close supporter store as well
+        success, close_supporter_response = self.run_test(
+            "Close Supporter Store (admin)",
+            "PUT",
+            "store/settings?supporter_store_open=false",
+            200
+        )
+        
+        # Test 9: Update both stores with custom messages
+        success, update_both_response = self.run_test(
+            "Update Both Stores with Messages (admin)",
+            "PUT",
+            "store/settings?supporter_store_open=true&member_store_open=true",
+            200
+        )
+        
+        # Test 10: Reset stores back to open (cleanup)
+        success, reset_response = self.run_test(
+            "Reset Stores to Open (cleanup)",
+            "PUT",
+            "store/settings?supporter_store_open=true&member_store_open=true",
+            200
+        )
+        
+        # Test 11: Verify final state
+        success, final_public_settings = self.run_test(
+            "Verify Final Public Settings",
+            "GET",
+            "store/settings/public",
+            200
+        )
+        
+        if success:
+            if (final_public_settings.get('supporter_store_open') == True and 
+                final_public_settings.get('member_store_open') == True):
+                self.log_test("Final State - Both Stores Open", True, "Both stores reset to open")
+            else:
+                self.log_test("Final State - Both Stores Open", False, f"supporter_store_open={final_public_settings.get('supporter_store_open')}, member_store_open={final_public_settings.get('member_store_open')}")
+        
+        # Clean up adadmin user
+        if adadmin_id:
+            success, delete_response = self.run_test(
+                "Delete adadmin User (cleanup)",
+                "DELETE",
+                f"users/{adadmin_id}",
+                200
+            )
+        
+        print(f"   🏪 Store Open/Close feature testing completed")
+        return True
+
     def run_all_tests(self):
         """Run all tests"""
         print("🚀 Starting Brothers of the Highway Directory API Tests")
