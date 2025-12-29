@@ -660,7 +660,8 @@ export default function UserManagement({ onLogout }) {
                 </DialogContent>
               </Dialog>
 
-              {/* Add User Dialog */}
+              {/* Add User Dialog - Only for National Prez, VP, SEC */}
+              {canEditUsers && (
               <Dialog open={dialogOpen} onOpenChange={(open) => {
                 setDialogOpen(open);
                 if (!open) resetForm();
