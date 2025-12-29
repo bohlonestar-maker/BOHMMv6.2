@@ -151,18 +151,20 @@ export default function Login({ onLogin }) {
             </span>
           </div>
           
-          {/* Supporter Store Button - Compact */}
-          <div className="mb-4">
-            <Button
-              type="button"
-              onClick={() => navigate("/supporter-store")}
-              variant="outline"
-              className="w-full border-green-600 text-green-400 hover:bg-green-900/30 py-2.5 rounded-lg font-medium text-sm"
-            >
-              <ShoppingBag className="w-4 h-4 mr-2" />
-              Supporter Store
-            </Button>
-          </div>
+          {/* Supporter Store Button - Only show if store is open */}
+          {supporterStoreOpen && (
+            <div className="mb-4">
+              <Button
+                type="button"
+                onClick={() => navigate("/supporter-store")}
+                variant="outline"
+                className="w-full border-green-600 text-green-400 hover:bg-green-900/30 py-2.5 rounded-lg font-medium text-sm"
+              >
+                <ShoppingBag className="w-4 h-4 mr-2" />
+                Supporter Store
+              </Button>
+            </div>
+          )}
 
           <form onSubmit={handleSubmit} className="space-y-3">
             <div>
