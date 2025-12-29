@@ -304,6 +304,34 @@ export default function SupporterStore() {
           </p>
         </div>
 
+        {/* Under Construction View */}
+        {!storeOpen ? (
+          <div className="flex flex-col items-center justify-center py-16 sm:py-24">
+            <div className="bg-slate-800 border border-yellow-600/30 rounded-xl p-8 sm:p-12 text-center max-w-md">
+              <div className="w-16 h-16 sm:w-20 sm:h-20 bg-yellow-600/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Lock className="w-8 h-8 sm:w-10 sm:h-10 text-yellow-500" />
+              </div>
+              <h2 className="text-xl sm:text-2xl font-bold text-white mb-2">Under Construction</h2>
+              <p className="text-slate-400 text-sm sm:text-base mb-4">
+                The Supporter Store is currently closed for maintenance. Please check back soon!
+              </p>
+              <Badge className="bg-yellow-600/20 text-yellow-400 border border-yellow-600/30">
+                Coming Soon
+              </Badge>
+              <div className="mt-6">
+                <Button
+                  variant="outline"
+                  onClick={() => navigate("/login")}
+                  className="border-slate-600 text-slate-300 hover:bg-slate-700"
+                >
+                  <LogIn className="w-4 h-4 mr-2" />
+                  Member Login
+                </Button>
+              </div>
+            </div>
+          </div>
+        ) : (
+        <>
         {/* Products Grid */}
         {products.length === 0 ? (
           <div className="text-center py-8 sm:py-12 text-slate-400">
