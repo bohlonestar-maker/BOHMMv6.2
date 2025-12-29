@@ -8890,6 +8890,113 @@ async def remove_store_admin(admin_id: str, current_user: dict = Depends(verify_
 
 # ==================== END STORE ADMIN MANAGEMENT ENDPOINTS ====================
 
+# ==================== STORE SETTINGS ENDPOINTS ====================
+
+@api_router.get("/store/settings")
+async def get_store_settings(current_user: dict = Depends(verify_token)):
+    """Get store settings - check if stores are open or closed"""
+    settings = await db.store_settings.find_one({"id": "store_status"}, {"_id": 0})
+    
+    if not settings:
+        # Default settings - both stores open
+        settings = {
+            "id": "store_status",
+            "supporter_store_open": True,
+            "member_store_open": True,
+            "supporter_store_message": "Under Construction - Check back soon!",
+            "member_store_message": "Under Construction - Check back soon!"
+        }
+    
+    # Check if user can bypass store closure (National Prez, VP, SEC)
+    can_bypass = is_primary_store_admin(current_user)
+    
+    return {
+        **settings,
+        "can_bypass": can_bypass
+    }
+
+@api_router.get("/store/settings/public")
+async def get_store_settings_public():
+    """Public endpoint to get store settings - for login page and supporter store"""
+    settings = await db.store_settings.find_one({"id": "store_status"}, {"_id": 0})
+    
+    if not settings:
+        # Default settings - both stores open
+        settings = {
+            "supporter_store_open": True,
+            "member_store_open": True,
+            "supporter_store_message": "Under Construction - Check back soon!",
+            "member_store_message": "Under Construction - Check back soon!"
+        }
+    
+    return {
+        "supporter_store_open": settings.get("supporter_store_open", True),
+        "member_store_open": settings.get("member_store_open", True),
+        "supporter_store_message": settings.get("supporter_store_message", "Under Construction - Check back soon!"),
+        "member_store_message": settings.get("member_store_message", "Under Construction - Check back soon!")
+    }
+
+@api_router.put("/store/settings")
+async def update_store_settings(
+    supporter_store_open: bool = None,
+    member_store_open: bool = None,
+    supporter_store_message: str = None,
+    member_store_message: str = None,
+    current_user: dict = Depends(verify_token)
+):
+    """Update store settings - only National Prez, VP, SEC can update"""
+    if not is_primary_store_admin(current_user):
+        raise HTTPException(status_code=403, detail="Only National Prez, VP, or SEC can update store settings")
+    
+    # Get current settings
+    settings = await db.store_settings.find_one({"id": "store_status"})
+    
+    if not settings:
+        settings = {
+            "id": "store_status",
+            "supporter_store_open": True,
+            "member_store_open": True,
+            "supporter_store_message": "Under Construction - Check back soon!",
+            "member_store_message": "Under Construction - Check back soon!"
+        }
+    
+    # Update only provided fields
+    if supporter_store_open is not None:
+        settings["supporter_store_open"] = supporter_store_open
+    if member_store_open is not None:
+        settings["member_store_open"] = member_store_open
+    if supporter_store_message is not None:
+        settings["supporter_store_message"] = supporter_store_message
+    if member_store_message is not None:
+        settings["member_store_message"] = member_store_message
+    
+    settings["updated_at"] = datetime.now(timezone.utc).isoformat()
+    settings["updated_by"] = current_user.get("username", "unknown")
+    
+    # Upsert the settings
+    await db.store_settings.update_one(
+        {"id": "store_status"},
+        {"$set": settings},
+        upsert=True
+    )
+    
+    # Log the activity
+    changes = []
+    if supporter_store_open is not None:
+        changes.append(f"Supporter Store: {'Open' if supporter_store_open else 'Closed'}")
+    if member_store_open is not None:
+        changes.append(f"Member Store: {'Open' if member_store_open else 'Closed'}")
+    
+    await log_activity(
+        current_user["username"],
+        "update_store_settings",
+        f"Updated store settings: {', '.join(changes)}"
+    )
+    
+    return {"message": "Store settings updated", "settings": settings}
+
+# ==================== END STORE SETTINGS ENDPOINTS ====================
+
 # ==================== AUTO-SYNC ON LOGIN ====================
 
 async def trigger_catalog_sync_background():
