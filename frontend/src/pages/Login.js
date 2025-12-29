@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { Button } from "@/components/ui/button";
@@ -23,6 +23,9 @@ export default function Login({ onLogin }) {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   
+  // Store status
+  const [supporterStoreOpen, setSupporterStoreOpen] = useState(true);
+  
   // Support form state
   const [supportDialogOpen, setSupportDialogOpen] = useState(false);
   const [supportForm, setSupportForm] = useState({
@@ -32,6 +35,21 @@ export default function Login({ onLogin }) {
     reason: ""
   });
   const [submittingSupport, setSubmittingSupport] = useState(false);
+
+  // Fetch store settings on mount
+  useEffect(() => {
+    const fetchStoreSettings = async () => {
+      try {
+        const response = await axios.get(`${API}/store/settings/public`);
+        setSupporterStoreOpen(response.data.supporter_store_open);
+      } catch (error) {
+        console.error("Error fetching store settings:", error);
+        // Default to open if can't fetch
+        setSupporterStoreOpen(true);
+      }
+    };
+    fetchStoreSettings();
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
