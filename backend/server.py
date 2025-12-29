@@ -1760,6 +1760,10 @@ async def get_members(current_user: dict = Depends(verify_token)):
         if is_national_admin:
             pass  # No filtering needed
         else:
+            # Apply name privacy settings (same rules as email)
+            if members[i].get('name_private', False) and not can_see_private_emails:
+                members[i]['name'] = 'Private'
+            
             # Apply email privacy settings
             if members[i].get('email_private', False) and not can_see_private_emails:
                 members[i]['email'] = 'Private'
