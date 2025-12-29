@@ -3248,17 +3248,22 @@ async def update_prospect_action(
 # Prospect management endpoints (admin only)
 @api_router.get("/prospects", response_model=List[Prospect])
 async def get_prospects(current_user: dict = Depends(verify_token)):
-    # Check if user can view prospects (National Admin or HA Admin only)
+    # Check if user can view prospects (National Admin, HA Admin, or PM)
     if not can_view_prospects(current_user):
-        raise HTTPException(status_code=403, detail="Only National Admin and HA Admin can view prospects")
+        raise HTTPException(status_code=403, detail="Only National Admin, HA Admin, or PM can view prospects")
     
     prospects = await db.prospects.find({}, {"_id": 0}).to_list(1000)
+    
+    # Add can_edit flag for each prospect
+    user_can_edit = can_edit_prospect(current_user)
     
     for prospect in prospects:
         if isinstance(prospect.get('created_at'), str):
             prospect['created_at'] = datetime.fromisoformat(prospect['created_at'])
         if isinstance(prospect.get('updated_at'), str):
             prospect['updated_at'] = datetime.fromisoformat(prospect['updated_at'])
+        # Add can_edit flag for frontend to show/hide action buttons
+        prospect['can_edit'] = user_can_edit
     
     return prospects
 
