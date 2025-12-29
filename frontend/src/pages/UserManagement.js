@@ -49,6 +49,11 @@ export default function UserManagement({ onLogout }) {
   const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
   const navigate = useNavigate();
+  
+  // Check if current user can edit system users (National Prez, VP, SEC only)
+  const userChapter = localStorage.getItem('chapter') || '';
+  const userTitle = localStorage.getItem('title') || '';
+  const canEditUsers = userChapter === 'National' && ['Prez', 'VP', 'SEC'].includes(userTitle);
 
   const [formData, setFormData] = useState({
     username: "",
