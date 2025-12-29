@@ -524,6 +524,7 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
       phone_private: false,
       address_private: false,
       email_private: false,
+      name_private: false,
       military_service: false,
       military_branch: "",
       is_first_responder: false,
