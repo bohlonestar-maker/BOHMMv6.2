@@ -8,6 +8,17 @@ export default function UpdateLog() {
 
   const updates = [
     {
+      version: "v5.9",
+      date: "December 29, 2025",
+      changes: [
+        "Store Open/Close Controls: National Prez, VP, and SEC can now open or close both Supporter Store and Member Store",
+        "Under Construction Mode: Closed stores display an 'Under Construction' message to visitors",
+        "Admin Bypass: National Prez, VP, and SEC can still access closed stores for management purposes",
+        "Settings UI: Added store status toggles in the Store Settings tab with visual indicators",
+        "Login Page Update: Supporter Store button is hidden when the store is closed"
+      ]
+    },
+    {
       version: "v5.8",
       date: "December 29, 2025",
       changes: [
