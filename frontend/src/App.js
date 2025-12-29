@@ -166,7 +166,7 @@ function App() {
             path="/"
             element={
               isAuthenticated ? (
-                <Dashboard onLogout={handleLogout} userRole={userRole} userPermissions={userPermissions} userChapter={userChapter} />
+                <Dashboard onLogout={handleLogout} userRole={userRole} userPermissions={userPermissions} userChapter={userChapter} userTitle={userTitle} />
               ) : (
                 <Navigate to="/login" replace />
               )
