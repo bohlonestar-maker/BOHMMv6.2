@@ -1789,10 +1789,9 @@ async def get_member(member_id: str, current_user: dict = Depends(verify_token))
     user_chapter = current_user.get('chapter')
     user_title = current_user.get('title', '')
     
-    # Non-National users cannot view National chapter members
+    # NOTE: National members are viewable by all users
+    # Action buttons are restricted via can_edit_member function
     is_national_member = user_chapter == 'National'
-    if not is_national_member and member.get('chapter') == 'National':
-        raise HTTPException(status_code=403, detail="Access denied")
     
     # Titles that can see private emails
     officer_titles = ['Prez', 'VP', 'S@A', 'Enf', 'SEC']
