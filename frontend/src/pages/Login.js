@@ -138,7 +138,7 @@ export default function Login({ onLogin }) {
             Brothers of the Highway
           </h1>
           <p className="text-center text-slate-300 mb-2 text-xs sm:text-sm">
-            Member Management <span className="text-slate-500 ml-1">v5.8</span>
+            Member Management <span className="text-slate-500 ml-1">v5.9</span>
           </p>
           
           {/* Encryption badge - smaller */}
