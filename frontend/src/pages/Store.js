@@ -1150,13 +1150,13 @@ export default function Store({ userRole, userChapter, userTitle }) {
                         <button
                           onClick={() => updateStoreSettings('supporter_store_open', !storeSettings.supporter_store_open)}
                           disabled={updatingSettings}
-                          className={`relative w-14 h-7 rounded-full transition-colors ${
+                          className={`relative w-12 h-6 rounded-full transition-colors flex-shrink-0 ${
                             storeSettings.supporter_store_open ? 'bg-green-600' : 'bg-red-600'
                           } ${updatingSettings ? 'opacity-50' : ''}`}
                         >
                           <span 
-                            className={`absolute top-1 w-5 h-5 bg-white rounded-full shadow transition-transform ${
-                              storeSettings.supporter_store_open ? 'translate-x-8' : 'translate-x-1'
+                            className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${
+                              storeSettings.supporter_store_open ? 'translate-x-6' : 'translate-x-0'
                             }`} 
                           />
                         </button>
@@ -1178,13 +1178,13 @@ export default function Store({ userRole, userChapter, userTitle }) {
                         <button
                           onClick={() => updateStoreSettings('member_store_open', !storeSettings.member_store_open)}
                           disabled={updatingSettings}
-                          className={`relative w-14 h-7 rounded-full transition-colors ${
+                          className={`relative w-12 h-6 rounded-full transition-colors flex-shrink-0 ${
                             storeSettings.member_store_open ? 'bg-green-600' : 'bg-red-600'
                           } ${updatingSettings ? 'opacity-50' : ''}`}
                         >
                           <span 
-                            className={`absolute top-1 w-5 h-5 bg-white rounded-full shadow transition-transform ${
-                              storeSettings.member_store_open ? 'translate-x-8' : 'translate-x-1'
+                            className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${
+                              storeSettings.member_store_open ? 'translate-x-6' : 'translate-x-0'
                             }`} 
                           />
                         </button>
