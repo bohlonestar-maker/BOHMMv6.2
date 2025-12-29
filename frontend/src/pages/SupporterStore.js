@@ -34,6 +34,7 @@ import {
   RefreshCw,
   Image as ImageIcon,
   LogIn,
+  Lock,
 } from "lucide-react";
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
@@ -47,6 +48,9 @@ export default function SupporterStore() {
   const [loading, setLoading] = useState(true);
   const [cartOpen, setCartOpen] = useState(false);
   const [redirectingToCheckout, setRedirectingToCheckout] = useState(false);
+  
+  // Store status
+  const [storeOpen, setStoreOpen] = useState(true);
   
   // Product modal state
   const [productModalOpen, setProductModalOpen] = useState(false);
@@ -62,6 +66,18 @@ export default function SupporterStore() {
   const [customerEmail, setCustomerEmail] = useState("");
   const [shippingAddress, setShippingAddress] = useState("");
 
+  // Fetch store settings (public)
+  const fetchStoreSettings = useCallback(async () => {
+    try {
+      const response = await axios.get(`${API_URL}/api/store/settings/public`);
+      setStoreOpen(response.data.supporter_store_open);
+    } catch (error) {
+      console.error("Error fetching store settings:", error);
+      // Default to open if we can't fetch settings
+      setStoreOpen(true);
+    }
+  }, []);
+
   // Fetch supporter products (public endpoint)
   const fetchProducts = useCallback(async () => {
     try {
@@ -75,11 +91,11 @@ export default function SupporterStore() {
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
-      await fetchProducts();
+      await Promise.all([fetchProducts(), fetchStoreSettings()]);
       setLoading(false);
     };
     loadData();
-  }, [fetchProducts]);
+  }, [fetchProducts, fetchStoreSettings]);
 
   // Handle return from Square checkout
   useEffect(() => {
