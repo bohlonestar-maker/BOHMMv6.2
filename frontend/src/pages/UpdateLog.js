@@ -8,6 +8,24 @@ export default function UpdateLog() {
 
   const updates = [
     {
+      version: "v5.8",
+      date: "December 29, 2025",
+      changes: [
+        "System User Permissions: Only National Prez, VP, and SEC can edit, delete, or change passwords for other system users",
+        "Self-Service Password: All users can now change their own password from the Dashboard menu",
+        "National Member Visibility: Non-National users can now view National members but cannot perform actions on them",
+        "Chapter Privacy: Chapter officers can view private info (name, phone, address) for their own chapter members only",
+        "Name Privacy Option: Members can now choose to make their name private in their profile",
+        "PM Role Restrictions: Prospect Manager role is now read-only for both members and prospects",
+        "Event Calendar Fix: Birthdays and anniversaries now populate correctly for all months",
+        "Anniversary Bug Fix: Fixed date parsing issue preventing anniversaries from displaying",
+        "Calendar API: New monthly endpoints for birthdays and anniversaries improve calendar performance",
+        "Dashboard Menu Fix: Fixed accidental navigation issue when clicking dropdown menu items",
+        "Subresource Integrity: Added SRI attributes to external scripts for enhanced security",
+        "Detectify Verification: Added domain verification file for security scanner"
+      ]
+    },
+    {
       version: "v5.7",
       date: "December 28, 2025",
       changes: [
