@@ -215,6 +215,7 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
     address: "",
     dob: "",
     join_date: "",
+    experience_start: "",
     phone_private: false,
     address_private: false,
     email_private: false,
