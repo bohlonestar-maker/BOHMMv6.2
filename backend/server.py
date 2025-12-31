@@ -8945,6 +8945,38 @@ async def get_store_settings_public():
         "member_store_message": settings.get("member_store_message", "Under Construction - Check back soon!")
     }
 
+@api_router.get("/stats/experience")
+async def get_total_experience():
+    """Public endpoint to get total years of trucking experience across all members"""
+    members = await db.members.find({}, {"experience_start": 1, "_id": 0}).to_list(10000)
+    
+    total_years = 0.0
+    members_with_experience = 0
+    now = datetime.now(timezone.utc)
+    
+    for member in members:
+        exp_start = member.get("experience_start")
+        if exp_start:
+            try:
+                # Parse MM/YYYY format
+                parts = exp_start.split("/")
+                if len(parts) == 2:
+                    month = int(parts[0])
+                    year = int(parts[1])
+                    start_date = datetime(year, month, 1, tzinfo=timezone.utc)
+                    years = (now - start_date).days / 365.25
+                    if years > 0:
+                        total_years += years
+                        members_with_experience += 1
+            except (ValueError, IndexError):
+                continue
+    
+    return {
+        "total_years": round(total_years, 1),
+        "total_years_formatted": f"{int(total_years):,}",
+        "members_with_experience": members_with_experience
+    }
+
 @api_router.put("/store/settings")
 async def update_store_settings(
     supporter_store_open: bool = None,
