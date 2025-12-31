@@ -5783,12 +5783,17 @@ async def get_discord_analytics(days: int = 90, current_user: dict = Depends(ver
         analytics_dict = analytics.model_dump()
         analytics_dict["least_active_members"] = least_active_members
         analytics_dict["channel_stats"] = channel_stats
+        
+        # Calculate engagement rate using UNIQUE active users (not double-counting)
+        all_active_users = voice_active_users.union(text_active_users)
+        engagement_rate = round((len(all_active_users) / total_members * 100), 1) if total_members > 0 else 0
+        
         analytics_dict["engagement_stats"] = {
             "total_members": total_members,
             "voice_active_members": len(voice_active_users),
             "text_active_members": len(text_active_users),
             "inactive_members": len(least_active_members),
-            "engagement_rate": round(((len(voice_active_users) + len(text_active_users)) / total_members * 100), 1) if total_members > 0 else 0
+            "engagement_rate": engagement_rate
         }
         
         return analytics_dict
