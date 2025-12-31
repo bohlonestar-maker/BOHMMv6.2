@@ -4197,10 +4197,12 @@ async def create_invite(invite_data: InviteCreate, current_user: dict = Depends(
     if existing_invite:
         raise HTTPException(status_code=400, detail="An active invitation already exists for this email")
     
-    # Create invite
+    # Create invite - include chapter and title
     invite = Invite(
         email=invite_data.email,
         role=invite_data.role,
+        chapter=invite_data.chapter,
+        title=invite_data.title,
         permissions=invite_data.permissions,
         expires_at=datetime.now(timezone.utc) + timedelta(days=7)
     )
