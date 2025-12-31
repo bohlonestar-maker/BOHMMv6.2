@@ -296,7 +296,7 @@ function App() {
           <Route
             path="/quarterly-reports"
             element={
-              isAuthenticated && userTitle && !['PM', 'Member'].includes(userTitle) ? (
+              isAuthenticated && userTitle && !['PM', 'Member', 'CC', 'CCLC', 'MD'].includes(userTitle) ? (
                 <QuarterlyReports />
               ) : (
                 <Navigate to="/" replace />
