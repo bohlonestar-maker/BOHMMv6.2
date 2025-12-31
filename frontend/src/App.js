@@ -296,7 +296,7 @@ function App() {
           <Route
             path="/quarterly-reports"
             element={
-              isAuthenticated && (userRole === 'admin' || userPermissions?.admin_actions) ? (
+              isAuthenticated && userTitle && !['PM', 'Member'].includes(userTitle) ? (
                 <QuarterlyReports />
               ) : (
                 <Navigate to="/" replace />
