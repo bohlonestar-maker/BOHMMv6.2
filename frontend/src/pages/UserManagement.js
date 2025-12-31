@@ -563,7 +563,6 @@ export default function UserManagement({ onLogout }) {
                             <SelectItem value="SEC">SEC</SelectItem>
                             <SelectItem value="T">T</SelectItem>
                             <SelectItem value="S@A">S@A</SelectItem>
-                            <SelectItem value="RoadCpt">RoadCpt</SelectItem>
                             <SelectItem value="PM">PM</SelectItem>
                             <SelectItem value="Member">Member</SelectItem>
                           </SelectContent>
