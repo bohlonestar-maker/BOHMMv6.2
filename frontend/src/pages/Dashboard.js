@@ -1036,6 +1036,17 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
                   </span>
                 )}
               </div>
+              
+              {/* Total Experience Badge */}
+              {totalExperience && totalExperience.total_years > 0 && (
+                <div className="flex items-center gap-2 px-3 py-2 bg-blue-900/50 rounded-lg border border-blue-700/50">
+                  <span className="text-lg">🚛</span>
+                  <span className="text-sm font-medium text-blue-300">
+                    {totalExperience.total_years_formatted}+ <span className="text-blue-400/80">Years Experience</span>
+                  </span>
+                </div>
+              )}
+              
               <Button
                 onClick={handleViewCSV}
                 size="sm"
