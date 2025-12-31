@@ -485,7 +485,8 @@ async def send_invite_email(email: str, token: str, role: str):
     
     message = MIMEMultipart("alternative")
     message["Subject"] = "Invitation to Brothers of the Highway Directory"
-    message["From"] = SMTP_EMAIL
+    message["From"] = "Brothers of the Highway <support@boh2158.org>"
+    message["Reply-To"] = "support@boh2158.org"
     message["To"] = email
     
     text = f"""
