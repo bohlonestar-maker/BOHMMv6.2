@@ -118,6 +118,7 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
   const [meetingDates, setMeetingDates] = useState([]);
   const [unreadPrivateCount, setUnreadPrivateCount] = useState(0);
   const [upcomingEventsCount, setUpcomingEventsCount] = useState(0);
+  const [totalExperience, setTotalExperience] = useState(null);
   const [attendanceExpanded, setAttendanceExpanded] = useState(false);
   const [editingNoteIndex, setEditingNoteIndex] = useState(null);
   const [availableYears, setAvailableYears] = useState([new Date().getFullYear().toString()]);
