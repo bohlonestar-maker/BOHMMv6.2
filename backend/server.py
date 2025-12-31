@@ -2749,24 +2749,28 @@ async def get_attendance_quarterly_report(
 @api_router.get("/reports/dues/quarterly")
 async def get_dues_quarterly_report(
     year: int = None,
-    quarter: int = None,
+    quarter: str = None,
     chapter: str = None,
     current_user: dict = Depends(verify_admin)
 ):
-    """Get quarterly dues report by chapter"""
+    """Get quarterly or yearly dues report by chapter"""
     if year is None:
         year = datetime.now(timezone.utc).year
-    if quarter is None:
-        quarter = (datetime.now(timezone.utc).month - 1) // 3 + 1
     
-    # Calculate quarter months
-    quarter_months = {
-        1: (1, 2, 3),
-        2: (4, 5, 6),
-        3: (7, 8, 9),
-        4: (10, 11, 12)
-    }
-    months = quarter_months.get(quarter, (1, 2, 3))
+    # Determine months based on quarter or full year
+    if quarter == "all" or quarter is None:
+        months = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12)
+        period_name = f"Full Year {year}"
+    else:
+        quarter_int = int(quarter)
+        quarter_months = {
+            1: (1, 2, 3),
+            2: (4, 5, 6),
+            3: (7, 8, 9),
+            4: (10, 11, 12)
+        }
+        months = quarter_months.get(quarter_int, (1, 2, 3))
+        period_name = f"Q{quarter_int} {year}"
     
     # Build query
     query = {}
