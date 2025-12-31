@@ -526,6 +526,51 @@ export default function UserManagement({ onLogout }) {
                       </Select>
                     </div>
 
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label>Chapter</Label>
+                        <Select
+                          value={inviteFormData.chapter}
+                          onValueChange={(value) =>
+                            setInviteFormData({ ...inviteFormData, chapter: value })
+                          }
+                        >
+                          <SelectTrigger data-testid="invite-chapter-select">
+                            <SelectValue placeholder="Select chapter" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="National">National</SelectItem>
+                            <SelectItem value="AD">AD</SelectItem>
+                            <SelectItem value="HA">HA</SelectItem>
+                            <SelectItem value="HS">HS</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label>Title</Label>
+                        <Select
+                          value={inviteFormData.title}
+                          onValueChange={(value) =>
+                            setInviteFormData({ ...inviteFormData, title: value })
+                          }
+                        >
+                          <SelectTrigger data-testid="invite-title-select">
+                            <SelectValue placeholder="Select title" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="Prez">Prez</SelectItem>
+                            <SelectItem value="VP">VP</SelectItem>
+                            <SelectItem value="SEC">SEC</SelectItem>
+                            <SelectItem value="T">T</SelectItem>
+                            <SelectItem value="S@A">S@A</SelectItem>
+                            <SelectItem value="RoadCpt">RoadCpt</SelectItem>
+                            <SelectItem value="PM">PM</SelectItem>
+                            <SelectItem value="Member">Member</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+
                     <div className="space-y-3">
                       <Label>Permissions</Label>
                       <div className="space-y-2 border rounded-lg p-4">
