@@ -44,6 +44,7 @@ export default function Login({ onLogin }) {
   const [resetDialogOpen, setResetDialogOpen] = useState(false);
   const [resetStep, setResetStep] = useState(1); // 1 = enter email, 2 = enter code & new password
   const [resetEmail, setResetEmail] = useState("");
+  const [resetEmailDisplay, setResetEmailDisplay] = useState(""); // Masked email for display
   const [resetCode, setResetCode] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmNewPassword, setConfirmNewPassword] = useState("");
