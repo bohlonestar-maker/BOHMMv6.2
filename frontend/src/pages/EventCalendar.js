@@ -509,40 +509,44 @@ export default function EventCalendar({ userRole }) {
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
               <DialogTrigger asChild>
                 <Button className="bg-green-600 hover:bg-green-700">
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add Event
+                  <Plus className="w-4 h-4 sm:mr-2" />
+                  <span className="hidden sm:inline">Add Event</span>
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-2xl">
+              <DialogContent className="w-[95vw] max-w-2xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
-                  <DialogTitle>Create New Event</DialogTitle>
+                  <DialogTitle className="text-lg sm:text-xl">Create New Event</DialogTitle>
                 </DialogHeader>
-                <form onSubmit={handleSubmit} className="space-y-4 mt-4">
+                <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4 mt-3 sm:mt-4">
                   <div>
-                    <Label>Event Title *</Label>
+                    <Label className="text-sm">Event Title *</Label>
                     <Input
                       value={formData.title}
                       onChange={(e) =>
                         setFormData({ ...formData, title: e.target.value })
                       }
                       required
+                      className="mt-1 h-10"
+                      placeholder="e.g., Chapter Meeting"
                     />
                   </div>
 
                   <div>
-                    <Label>Description</Label>
+                    <Label className="text-sm">Description</Label>
                     <Textarea
                       value={formData.description}
                       onChange={(e) =>
                         setFormData({ ...formData, description: e.target.value })
                       }
-                      rows={3}
+                      rows={2}
+                      className="mt-1"
+                      placeholder="Optional event details..."
                     />
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                     <div>
-                      <Label>Date *</Label>
+                      <Label className="text-sm">Date *</Label>
                       <Input
                         type="date"
                         value={formData.date}
@@ -550,40 +554,44 @@ export default function EventCalendar({ userRole }) {
                           setFormData({ ...formData, date: e.target.value })
                         }
                         required
+                        className="mt-1 h-10"
                       />
                     </div>
                     <div>
-                      <Label>Time (Central Time - CST/CDT)</Label>
+                      <Label className="text-sm">Time (CST/CDT)</Label>
                       <Input
                         type="time"
                         value={formData.time}
                         onChange={(e) =>
                           setFormData({ ...formData, time: e.target.value })
                         }
+                        className="mt-1 h-10"
                       />
                     </div>
                   </div>
 
                   <div>
-                    <Label>Location</Label>
+                    <Label className="text-sm">Location</Label>
                     <Input
                       value={formData.location}
                       onChange={(e) =>
                         setFormData({ ...formData, location: e.target.value })
                       }
+                      className="mt-1 h-10"
+                      placeholder="e.g., Discord, City Park"
                     />
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                     <div>
-                      <Label>Chapter (Leave empty for all chapters)</Label>
+                      <Label className="text-sm">Chapter</Label>
                       <Select
                         value={formData.chapter}
                         onValueChange={(value) =>
                           setFormData({ ...formData, chapter: value })
                         }
                       >
-                        <SelectTrigger>
+                        <SelectTrigger className="mt-1 h-10">
                           <SelectValue placeholder="All Chapters" />
                         </SelectTrigger>
                         <SelectContent>
@@ -597,14 +605,14 @@ export default function EventCalendar({ userRole }) {
                     </div>
 
                     <div>
-                      <Label>Title (Leave empty for all titles)</Label>
+                      <Label className="text-sm">Title Filter</Label>
                       <Select
                         value={formData.title_filter}
                         onValueChange={(value) =>
                           setFormData({ ...formData, title_filter: value })
                         }
                       >
-                        <SelectTrigger>
+                        <SelectTrigger className="mt-1 h-10">
                           <SelectValue placeholder="All Titles" />
                         </SelectTrigger>
                         <SelectContent>
@@ -621,26 +629,27 @@ export default function EventCalendar({ userRole }) {
                   </div>
 
                   {/* Discord Notifications Toggle */}
-                  <div className="flex items-center space-x-2 bg-slate-700/30 p-4 rounded-lg">
+                  <div className="flex items-start sm:items-center space-x-2 bg-slate-700/30 p-3 sm:p-4 rounded-lg">
                     <Checkbox
                       id="discord-notifications"
                       checked={formData.discord_notifications_enabled}
                       onCheckedChange={(checked) =>
                         setFormData({ ...formData, discord_notifications_enabled: checked })
                       }
+                      className="mt-0.5 sm:mt-0"
                     />
                     <label
                       htmlFor="discord-notifications"
-                      className="text-sm font-medium leading-none cursor-pointer"
+                      className="text-xs sm:text-sm font-medium leading-tight sm:leading-none cursor-pointer"
                     >
-                      📢 Send Discord notifications (24 hours & 3 hours before event)
+                      📢 Send Discord notifications (24h & 3h before)
                     </label>
                   </div>
 
                   {/* Discord Channel Selector */}
                   {formData.discord_notifications_enabled && availableChannels.length > 0 && (
-                    <div className="bg-slate-700/30 p-4 rounded-lg">
-                      <Label className="flex items-center gap-2 mb-2">
+                    <div className="bg-slate-700/30 p-3 sm:p-4 rounded-lg">
+                      <Label className="flex items-center gap-2 mb-2 text-sm">
                         <Hash className="w-4 h-4 text-blue-400" />
                         Discord Channel
                       </Label>
@@ -650,7 +659,7 @@ export default function EventCalendar({ userRole }) {
                           setFormData({ ...formData, discord_channel: value })
                         }
                       >
-                        <SelectTrigger className="bg-slate-700 border-slate-600">
+                        <SelectTrigger className="bg-slate-700 border-slate-600 h-10">
                           <SelectValue placeholder="Select channel" />
                         </SelectTrigger>
                         <SelectContent className="bg-slate-800 border-slate-700">
@@ -665,15 +674,12 @@ export default function EventCalendar({ userRole }) {
                           ))}
                         </SelectContent>
                       </Select>
-                      <p className="text-xs text-slate-400 mt-1">
-                        Choose which Discord channel to post the event notification
-                      </p>
                     </div>
                   )}
 
                   {/* Repeat/Recurring Event Options */}
-                  <div className="bg-slate-700/30 p-4 rounded-lg space-y-4">
-                    <Label className="flex items-center gap-2">
+                  <div className="bg-slate-700/30 p-3 sm:p-4 rounded-lg space-y-3 sm:space-y-4">
+                    <Label className="flex items-center gap-2 text-sm">
                       <Repeat className="w-4 h-4 text-purple-400" />
                       Repeat Event
                     </Label>
@@ -684,7 +690,7 @@ export default function EventCalendar({ userRole }) {
                         setFormData({ ...formData, repeat_type: value, repeat_days: [] })
                       }
                     >
-                      <SelectTrigger className="bg-slate-700 border-slate-600">
+                      <SelectTrigger className="bg-slate-700 border-slate-600 h-10">
                         <SelectValue placeholder="Does not repeat" />
                       </SelectTrigger>
                       <SelectContent className="bg-slate-800 border-slate-700">
@@ -698,27 +704,25 @@ export default function EventCalendar({ userRole }) {
 
                     {/* Repeat interval (for daily, weekly, monthly) */}
                     {formData.repeat_type && formData.repeat_type !== "none" && (
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <Label className="text-sm text-slate-300">Repeat every</Label>
-                          <div className="flex items-center gap-2 mt-1">
-                            <Input
-                              type="number"
-                              min="1"
-                              max="30"
-                              value={formData.repeat_interval}
-                              onChange={(e) =>
-                                setFormData({ ...formData, repeat_interval: parseInt(e.target.value) || 1 })
-                              }
-                              className="w-20 bg-slate-700 border-slate-600"
-                            />
-                            <span className="text-slate-300">
-                              {formData.repeat_type === "daily" && "day(s)"}
-                              {formData.repeat_type === "weekly" && "week(s)"}
-                              {formData.repeat_type === "monthly" && "month(s)"}
-                              {formData.repeat_type === "custom" && "day(s)"}
-                            </span>
-                          </div>
+                      <div>
+                        <Label className="text-xs sm:text-sm text-slate-300">Repeat every</Label>
+                        <div className="flex items-center gap-2 mt-1">
+                          <Input
+                            type="number"
+                            min="1"
+                            max="30"
+                            value={formData.repeat_interval}
+                            onChange={(e) =>
+                              setFormData({ ...formData, repeat_interval: parseInt(e.target.value) || 1 })
+                            }
+                            className="w-16 sm:w-20 bg-slate-700 border-slate-600 h-10"
+                          />
+                          <span className="text-sm text-slate-300">
+                            {formData.repeat_type === "daily" && "day(s)"}
+                            {formData.repeat_type === "weekly" && "week(s)"}
+                            {formData.repeat_type === "monthly" && "month(s)"}
+                            {formData.repeat_type === "custom" && "day(s)"}
+                          </span>
                         </div>
                       </div>
                     )}
@@ -726,8 +730,8 @@ export default function EventCalendar({ userRole }) {
                     {/* Day selection for weekly repeat */}
                     {formData.repeat_type === "weekly" && (
                       <div>
-                        <Label className="text-sm text-slate-300 mb-2 block">Repeat on (optional - leave empty for same day each week)</Label>
-                        <div className="flex flex-wrap gap-2">
+                        <Label className="text-xs sm:text-sm text-slate-300 mb-2 block">Repeat on (optional)</Label>
+                        <div className="flex flex-wrap gap-1.5 sm:gap-2">
                           {dayNames.map((day, index) => (
                             <button
                               key={index}
@@ -738,7 +742,7 @@ export default function EventCalendar({ userRole }) {
                                   : [...formData.repeat_days, index];
                                 setFormData({ ...formData, repeat_days: days.sort() });
                               }}
-                              className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
+                              className={`px-2 sm:px-3 py-1.5 sm:py-1 rounded text-xs sm:text-sm font-medium transition-colors ${
                                 formData.repeat_days.includes(index)
                                   ? "bg-purple-600 text-white"
                                   : "bg-slate-700 text-slate-300 hover:bg-slate-600"
@@ -753,9 +757,9 @@ export default function EventCalendar({ userRole }) {
 
                     {/* End condition */}
                     {formData.repeat_type && formData.repeat_type !== "none" && (
-                      <div className="grid grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                         <div>
-                          <Label className="text-sm text-slate-300">End date (optional)</Label>
+                          <Label className="text-xs sm:text-sm text-slate-300">End date</Label>
                           <Input
                             type="date"
                             value={formData.repeat_end_date}
@@ -763,11 +767,11 @@ export default function EventCalendar({ userRole }) {
                               setFormData({ ...formData, repeat_end_date: e.target.value, repeat_count: "" })
                             }
                             min={formData.date}
-                            className="mt-1 bg-slate-700 border-slate-600"
+                            className="mt-1 bg-slate-700 border-slate-600 h-10"
                           />
                         </div>
                         <div>
-                          <Label className="text-sm text-slate-300">Or # of occurrences</Label>
+                          <Label className="text-xs sm:text-sm text-slate-300">Or # of times</Label>
                           <Input
                             type="number"
                             min="2"
@@ -777,7 +781,7 @@ export default function EventCalendar({ userRole }) {
                             onChange={(e) =>
                               setFormData({ ...formData, repeat_count: e.target.value, repeat_end_date: "" })
                             }
-                            className="mt-1 bg-slate-700 border-slate-600"
+                            className="mt-1 bg-slate-700 border-slate-600 h-10"
                           />
                         </div>
                       </div>
@@ -785,20 +789,21 @@ export default function EventCalendar({ userRole }) {
 
                     {formData.repeat_type && formData.repeat_type !== "none" && (
                       <p className="text-xs text-slate-400">
-                        💡 Tip: If no end date or count is set, up to 52 occurrences will be created.
+                        💡 Default: up to 52 occurrences if no end set
                       </p>
                     )}
                   </div>
 
-                  <div className="flex justify-end gap-2 mt-6">
+                  <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 mt-4 sm:mt-6 pt-2 border-t border-slate-700">
                     <Button
                       type="button"
                       variant="outline"
                       onClick={() => setDialogOpen(false)}
+                      className="w-full sm:w-auto"
                     >
                       Cancel
                     </Button>
-                    <Button type="submit" className="bg-green-600 hover:bg-green-700">
+                    <Button type="submit" className="w-full sm:w-auto bg-green-600 hover:bg-green-700">
                       Create Event
                     </Button>
                   </div>
