@@ -252,6 +252,11 @@ export default function EventCalendar({ userRole }) {
       title_filter: "all",
       discord_notifications_enabled: true,
       discord_channel: availableChannels.length > 0 ? availableChannels[0].id : "member-chat",
+      repeat_type: "none",
+      repeat_interval: 1,
+      repeat_end_date: "",
+      repeat_count: "",
+      repeat_days: [],
     });
   };
 
