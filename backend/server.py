@@ -983,6 +983,14 @@ class LoginResponse(BaseModel):
     username: str
     role: str
 
+class PasswordResetRequest(BaseModel):
+    email: str
+
+class PasswordResetConfirm(BaseModel):
+    email: str
+    code: str
+    new_password: str
+
 class AuditLog(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
