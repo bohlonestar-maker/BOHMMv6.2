@@ -1663,13 +1663,20 @@ async def request_password_reset(request: PasswordResetRequest):
     """Send a password reset code to the user's email"""
     import random
     
-    # Find user by email
+    # Find user by email OR username (case-insensitive)
     user = await db.users.find_one({"email": request.email.lower()})
     if not user:
-        # For security, don't reveal if email exists or not
-        # But still return success to prevent email enumeration
-        logger.info(f"Password reset requested for non-existent email: {request.email}")
-        raise HTTPException(status_code=404, detail="No account found with this email address")
+        # Try finding by username (case-insensitive)
+        user = await db.users.find_one({"username": {"$regex": f"^{request.email}$", "$options": "i"}})
+    
+    if not user:
+        logger.info(f"Password reset requested for non-existent email/username: {request.email}")
+        raise HTTPException(status_code=404, detail="No account found with this email or username")
+    
+    # Get the user's email
+    user_email = user.get("email")
+    if not user_email:
+        raise HTTPException(status_code=400, detail="This account does not have an email address on file. Please contact support.")
     
     # Generate 6-digit reset code
     reset_code = ''.join([str(random.randint(0, 9)) for _ in range(6)])
@@ -1678,10 +1685,11 @@ async def request_password_reset(request: PasswordResetRequest):
     expiration = datetime.now(timezone.utc) + timedelta(minutes=15)
     
     await db.password_resets.update_one(
-        {"email": request.email.lower()},
+        {"email": user_email.lower()},
         {
             "$set": {
-                "email": request.email.lower(),
+                "email": user_email.lower(),
+                "username": user.get("username"),
                 "code": reset_code,
                 "expires_at": expiration,
                 "attempts": 0
