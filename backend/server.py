@@ -1019,6 +1019,14 @@ class Event(BaseModel):
     discord_channel: Optional[str] = "member-chat"  # Discord channel to post to
     notification_24h_sent: bool = False  # Track if 24h notification was sent
     notification_3h_sent: bool = False   # Track if 3h notification was sent
+    # Repeat/Recurring fields
+    repeat_type: Optional[str] = None  # none, daily, weekly, monthly, custom
+    repeat_interval: Optional[int] = 1  # Every X days/weeks/months
+    repeat_end_date: Optional[str] = None  # When to stop repeating (YYYY-MM-DD)
+    repeat_count: Optional[int] = None  # Number of occurrences (alternative to end_date)
+    repeat_days: Optional[List[int]] = None  # For weekly: [0,1,2,3,4,5,6] (Mon-Sun)
+    parent_event_id: Optional[str] = None  # For recurring instances, link to parent
+    is_recurring_instance: bool = False  # True if this is a generated instance
 
 class EventCreate(BaseModel):
     title: str
@@ -1030,6 +1038,12 @@ class EventCreate(BaseModel):
     title_filter: Optional[str] = None
     discord_notifications_enabled: bool = True
     discord_channel: Optional[str] = "member-chat"  # Discord channel to post to
+    # Repeat options
+    repeat_type: Optional[str] = None  # none, daily, weekly, monthly, custom
+    repeat_interval: Optional[int] = 1
+    repeat_end_date: Optional[str] = None
+    repeat_count: Optional[int] = None
+    repeat_days: Optional[List[int]] = None  # For weekly custom: days of week
 
 class EventUpdate(BaseModel):
     title: Optional[str] = None
