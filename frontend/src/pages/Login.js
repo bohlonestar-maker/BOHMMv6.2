@@ -146,20 +146,24 @@ export default function Login({ onLogin }) {
     setResetError("");
     
     if (!resetEmail.trim()) {
-      setResetError("Please enter your email address");
-      toast.error("Please enter your email address");
+      setResetError("Please enter your email or username");
+      toast.error("Please enter your email or username");
       return;
     }
     
     setResetLoading(true);
     
     try {
-      await axios.post(`${API}/auth/request-reset`, { email: resetEmail });
+      const response = await axios.post(`${API}/auth/request-reset`, { email: resetEmail });
+      // Extract masked email from response message
+      const message = response.data.message || "";
+      const maskedMatch = message.match(/sent to (.+)$/);
+      setResetEmailDisplay(maskedMatch ? maskedMatch[1] : resetEmail);
       toast.success("Reset code sent! Check your email.");
       setResetStep(2);
     } catch (error) {
       console.error("Reset request error:", error);
-      const errorMsg = error.response?.data?.detail || "Failed to send reset code. Please verify your email is correct.";
+      const errorMsg = error.response?.data?.detail || "Failed to send reset code. Please verify your email or username is correct.";
       setResetError(errorMsg);
       toast.error(errorMsg);
     } finally {
