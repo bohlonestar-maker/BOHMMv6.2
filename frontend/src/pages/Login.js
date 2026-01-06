@@ -173,19 +173,36 @@ export default function Login({ onLogin }) {
 
   const handleResetPassword = async (e) => {
     e.preventDefault();
+    setResetError("");
     
-    if (!resetCode.trim() || !newPassword.trim() || !confirmNewPassword.trim()) {
-      toast.error("Please fill in all fields");
+    // Clean the reset code - ensure only digits
+    const cleanCode = resetCode.replace(/\D/g, '');
+    
+    if (!cleanCode || !newPassword.trim() || !confirmNewPassword.trim()) {
+      const errorMsg = "Please fill in all fields";
+      setResetError(errorMsg);
+      toast.error(errorMsg);
+      return;
+    }
+    
+    if (cleanCode.length !== 6) {
+      const errorMsg = "Reset code must be exactly 6 digits";
+      setResetError(errorMsg);
+      toast.error(errorMsg);
       return;
     }
     
     if (newPassword !== confirmNewPassword) {
-      toast.error("Passwords do not match");
+      const errorMsg = "Passwords do not match";
+      setResetError(errorMsg);
+      toast.error(errorMsg);
       return;
     }
     
     if (newPassword.length < 6) {
-      toast.error("Password must be at least 6 characters");
+      const errorMsg = "Password must be at least 6 characters";
+      setResetError(errorMsg);
+      toast.error(errorMsg);
       return;
     }
     
@@ -194,14 +211,16 @@ export default function Login({ onLogin }) {
     try {
       await axios.post(`${API}/auth/reset-password`, {
         email: resetEmail,
-        code: resetCode,
+        code: cleanCode,
         new_password: newPassword
       });
       toast.success("Password reset successfully! You can now log in.");
       closeResetDialog();
     } catch (error) {
       console.error("Password reset error:", error);
-      toast.error(error.response?.data?.detail || "Failed to reset password. Please check your code and try again.");
+      const errorMsg = error.response?.data?.detail || "Failed to reset password. Please check your code and try again.";
+      setResetError(errorMsg);
+      toast.error(errorMsg);
     } finally {
       setResetLoading(false);
     }
