@@ -1765,8 +1765,6 @@ If you did not request this password reset, please ignore this email.
             raise HTTPException(status_code=500, detail="Failed to send reset email. Please try again.")
     else:
         raise HTTPException(status_code=500, detail="Email service not configured")
-    
-    return {"message": "Reset code sent to your email"}
 
 # Password Reset - Confirm and set new password
 @api_router.post("/auth/reset-password")
