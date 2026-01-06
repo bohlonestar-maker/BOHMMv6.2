@@ -6468,7 +6468,8 @@ async def get_upcoming_events_count(current_user: dict = Depends(verify_token)):
 
 @api_router.post("/events")
 async def create_event(event_data: EventCreate, current_user: dict = Depends(verify_admin)):
-    """Create a new event (admin only)"""
+    """Create a new event (admin only) - supports recurring events"""
+    from dateutil.relativedelta import relativedelta
     
     # Get creator's chapter and title from current_user
     creator_chapter = current_user.get("chapter")
@@ -6480,34 +6481,123 @@ async def create_event(event_data: EventCreate, current_user: dict = Depends(ver
     if member:
         creator_handle = member.get("handle")
     
-    event = Event(
-        title=event_data.title,
-        description=event_data.description,
-        date=event_data.date,
-        time=event_data.time,
-        location=event_data.location,
-        chapter=event_data.chapter,
-        title_filter=event_data.title_filter,
-        discord_notifications_enabled=event_data.discord_notifications_enabled,
-        discord_channel=event_data.discord_channel,
-        created_by=current_user["username"],
-        creator_chapter=creator_chapter,
-        creator_title=creator_title,
-        creator_handle=creator_handle
-    )
+    # Helper function to create a single event
+    def create_single_event(event_date: str, parent_id: str = None, is_instance: bool = False) -> dict:
+        event = Event(
+            title=event_data.title,
+            description=event_data.description,
+            date=event_date,
+            time=event_data.time,
+            location=event_data.location,
+            chapter=event_data.chapter,
+            title_filter=event_data.title_filter,
+            discord_notifications_enabled=event_data.discord_notifications_enabled,
+            discord_channel=event_data.discord_channel,
+            created_by=current_user["username"],
+            creator_chapter=creator_chapter,
+            creator_title=creator_title,
+            creator_handle=creator_handle,
+            repeat_type=event_data.repeat_type if not is_instance else None,
+            repeat_interval=event_data.repeat_interval if not is_instance else None,
+            repeat_end_date=event_data.repeat_end_date if not is_instance else None,
+            repeat_count=event_data.repeat_count if not is_instance else None,
+            repeat_days=event_data.repeat_days if not is_instance else None,
+            parent_event_id=parent_id,
+            is_recurring_instance=is_instance
+        )
+        doc = event.model_dump()
+        doc['created_at'] = doc['created_at'].isoformat()
+        return doc
     
-    doc = event.model_dump()
-    doc['created_at'] = doc['created_at'].isoformat()
-    await db.events.insert_one(doc)
+    created_events = []
     
-    # Log activity
-    await log_activity(
-        username=current_user["username"],
-        action="event_create",
-        details=f"Created event: {event.title} on {event.date}"
-    )
-    
-    return {"message": "Event created successfully", "id": event.id}
+    # Check if this is a recurring event
+    if event_data.repeat_type and event_data.repeat_type != "none":
+        start_date = datetime.strptime(event_data.date, "%Y-%m-%d")
+        
+        # Determine end condition
+        max_occurrences = event_data.repeat_count or 52  # Default max 52 occurrences (1 year of weekly)
+        end_date = None
+        if event_data.repeat_end_date:
+            end_date = datetime.strptime(event_data.repeat_end_date, "%Y-%m-%d")
+        
+        # Create the parent event first
+        parent_doc = create_single_event(event_data.date, None, False)
+        parent_id = parent_doc['id']
+        await db.events.insert_one(parent_doc)
+        created_events.append(parent_doc)
+        
+        # Generate recurring instances
+        current_date = start_date
+        occurrences = 1
+        interval = event_data.repeat_interval or 1
+        
+        while occurrences < max_occurrences:
+            # Calculate next date based on repeat type
+            if event_data.repeat_type == "daily":
+                current_date = current_date + timedelta(days=interval)
+            elif event_data.repeat_type == "weekly":
+                if event_data.repeat_days and len(event_data.repeat_days) > 0:
+                    # Custom weekly - specific days of week
+                    found_next = False
+                    check_date = current_date + timedelta(days=1)
+                    days_checked = 0
+                    while not found_next and days_checked < 14:  # Check up to 2 weeks
+                        if check_date.weekday() in event_data.repeat_days:
+                            current_date = check_date
+                            found_next = True
+                        else:
+                            check_date = check_date + timedelta(days=1)
+                        days_checked += 1
+                    if not found_next:
+                        break
+                else:
+                    # Standard weekly - same day each week
+                    current_date = current_date + timedelta(weeks=interval)
+            elif event_data.repeat_type == "monthly":
+                current_date = current_date + relativedelta(months=interval)
+            elif event_data.repeat_type == "custom":
+                # Custom interval in days
+                current_date = current_date + timedelta(days=interval)
+            else:
+                break
+            
+            # Check end conditions
+            if end_date and current_date > end_date:
+                break
+            
+            # Create the recurring instance
+            instance_date = current_date.strftime("%Y-%m-%d")
+            instance_doc = create_single_event(instance_date, parent_id, True)
+            await db.events.insert_one(instance_doc)
+            created_events.append(instance_doc)
+            occurrences += 1
+        
+        # Log activity
+        await log_activity(
+            username=current_user["username"],
+            action="event_create",
+            details=f"Created recurring event: {event_data.title} ({event_data.repeat_type}) - {len(created_events)} occurrences"
+        )
+        
+        return {
+            "message": f"Recurring event created successfully ({len(created_events)} occurrences)",
+            "id": parent_id,
+            "occurrences": len(created_events)
+        }
+    else:
+        # Single event (non-recurring)
+        doc = create_single_event(event_data.date, None, False)
+        await db.events.insert_one(doc)
+        
+        # Log activity
+        await log_activity(
+            username=current_user["username"],
+            action="event_create",
+            details=f"Created event: {event_data.title} on {event_data.date}"
+        )
+        
+        return {"message": "Event created successfully", "id": doc['id']}
 
 @api_router.put("/events/{event_id}")
 async def update_event(
