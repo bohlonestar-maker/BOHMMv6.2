@@ -441,6 +441,158 @@ export default function Login({ onLogin }) {
           </p>
         </DialogContent>
       </Dialog>
+
+      {/* Password Reset Dialog */}
+      <Dialog open={resetDialogOpen} onOpenChange={(open) => !open && closeResetDialog()}>
+        <DialogContent className="bg-slate-800 border-slate-700 w-[95vw] max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-white flex items-center gap-2">
+              <KeyRound className="w-5 h-5 text-blue-400" />
+              Reset Password
+            </DialogTitle>
+          </DialogHeader>
+          
+          {resetStep === 1 ? (
+            // Step 1: Enter email
+            <form onSubmit={handleRequestResetCode} className="space-y-4 mt-2">
+              <p className="text-sm text-slate-400">
+                Enter your email address and we'll send you a reset code.
+              </p>
+              
+              <div>
+                <Label htmlFor="reset-email" className="text-slate-200">
+                  Email Address <span className="text-red-400">*</span>
+                </Label>
+                <Input
+                  id="reset-email"
+                  type="email"
+                  value={resetEmail}
+                  onChange={(e) => setResetEmail(e.target.value)}
+                  placeholder="Enter your email"
+                  required
+                  className="mt-1.5 bg-slate-700 border-slate-600 text-white placeholder:text-slate-400"
+                />
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={closeResetDialog}
+                  className="flex-1 border-slate-600 text-slate-300 hover:bg-slate-700"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={resetLoading}
+                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+                >
+                  {resetLoading ? (
+                    "Sending..."
+                  ) : (
+                    <>
+                      <Mail className="w-4 h-4 mr-2" />
+                      Send Code
+                    </>
+                  )}
+                </Button>
+              </div>
+            </form>
+          ) : (
+            // Step 2: Enter code and new password
+            <form onSubmit={handleResetPassword} className="space-y-4 mt-2">
+              <p className="text-sm text-slate-400">
+                Enter the 6-digit code sent to <span className="text-blue-400">{resetEmail}</span>
+              </p>
+              
+              <div>
+                <Label htmlFor="reset-code" className="text-slate-200">
+                  Reset Code <span className="text-red-400">*</span>
+                </Label>
+                <Input
+                  id="reset-code"
+                  type="text"
+                  value={resetCode}
+                  onChange={(e) => setResetCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                  placeholder="Enter 6-digit code"
+                  required
+                  maxLength={6}
+                  className="mt-1.5 bg-slate-700 border-slate-600 text-white placeholder:text-slate-400 text-center tracking-widest text-lg font-mono"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="new-password" className="text-slate-200">
+                  New Password <span className="text-red-400">*</span>
+                </Label>
+                <div className="relative mt-1.5">
+                  <Input
+                    id="new-password"
+                    type={showNewPassword ? "text" : "password"}
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="Enter new password"
+                    required
+                    minLength={6}
+                    className="bg-slate-700 border-slate-600 text-white placeholder:text-slate-400 pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowNewPassword(!showNewPassword)}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 p-1"
+                    tabIndex={-1}
+                  >
+                    {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <Label htmlFor="confirm-new-password" className="text-slate-200">
+                  Confirm Password <span className="text-red-400">*</span>
+                </Label>
+                <Input
+                  id="confirm-new-password"
+                  type={showNewPassword ? "text" : "password"}
+                  value={confirmNewPassword}
+                  onChange={(e) => setConfirmNewPassword(e.target.value)}
+                  placeholder="Confirm new password"
+                  required
+                  className="mt-1.5 bg-slate-700 border-slate-600 text-white placeholder:text-slate-400"
+                />
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setResetStep(1)}
+                  className="flex-1 border-slate-600 text-slate-300 hover:bg-slate-700"
+                >
+                  Back
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={resetLoading}
+                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+                >
+                  {resetLoading ? "Resetting..." : "Reset Password"}
+                </Button>
+              </div>
+              
+              <button
+                type="button"
+                onClick={handleRequestResetCode}
+                className="w-full text-xs text-slate-400 hover:text-slate-300"
+                disabled={resetLoading}
+              >
+                Didn't receive the code? Send again
+              </button>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
