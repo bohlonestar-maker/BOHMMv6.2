@@ -381,9 +381,10 @@ function OfficerTracking() {
                   </TableBody>
                 </Table>
               </div>
-            </TabsContent>
+          )}
 
-            <TabsContent value="dues">
+          {/* Dues Content */}
+          {activeTab === 'dues' && (
               <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
