@@ -292,6 +292,10 @@ async def start_discord_bot():
                 """Track text message activity"""
                 if message.author.bot or not message.guild:
                     return
+                
+                # Check if user should be ignored
+                if should_ignore_user(message.author):
+                    return
                     
                 user_id = str(message.author.id)
                 channel_id = str(message.channel.id)
