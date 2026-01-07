@@ -6422,11 +6422,11 @@ ADDITIONAL OFFICER DUTIES:
 - National Secretary: Keeps all records/minutes, performs roll calls, handles correspondence, reports to NPrez
 - Club Chaplain: Counselor for members, confidential conversations, mental health support (limited capacity)"""
 
-        # Combine contexts based on user role
-        if is_admin:
-            system_context = base_context + admin_context
-        else:
-            system_context = base_context
+            # Combine contexts based on user role (fallback hardcoded)
+            if is_admin:
+                system_context = base_context + admin_context
+            else:
+                system_context = base_context
 
         # Initialize OpenAI client
         client = OpenAI(api_key=api_key)
