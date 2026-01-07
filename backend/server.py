@@ -7134,23 +7134,21 @@ async def get_dues_records(
 
 @api_router.post("/officer-tracking/dues")
 async def record_dues(record: DuesRecord, current_user: dict = Depends(verify_token)):
-    """Record dues payment - only Secretaries can edit"""
+    """Record dues status - only Secretaries, NVP, and NPrez can edit"""
     if not is_secretary(current_user):
-        raise HTTPException(status_code=403, detail="Only Secretaries (NSEC, ADSEC, HASEC, HSSEC) can edit dues")
+        raise HTTPException(status_code=403, detail="Only Secretaries, NVP, and NPrez can edit dues")
     
     # Check for existing record
     existing = await db.officer_dues.find_one({
         "member_id": record.member_id,
-        "quarter": record.quarter
+        "month": record.month
     })
     
     record_data = {
         "id": existing.get("id") if existing else str(uuid.uuid4()),
         "member_id": record.member_id,
-        "quarter": record.quarter,
-        "status": record.status,
-        "amount_paid": record.amount_paid,
-        "payment_date": record.payment_date,
+        "month": record.month,
+        "status": record.status,  # 'paid', 'late', 'unpaid'
         "notes": record.notes,
         "updated_at": datetime.now(timezone.utc).isoformat(),
         "updated_by": current_user.get('username')
@@ -7168,17 +7166,15 @@ async def record_dues(record: DuesRecord, current_user: dict = Depends(verify_to
     
     # Update member's dues_history array in member database
     dues_entry = {
-        "quarter": record.quarter,
+        "month": record.month,
         "status": record.status,
-        "amount_paid": record.amount_paid,
-        "payment_date": record.payment_date,
         "notes": record.notes
     }
     
-    # Remove old entry for same quarter if exists, then add new one
+    # Remove old entry for same month if exists, then add new one
     await db.members.update_one(
         {"id": record.member_id},
-        {"$pull": {"dues_history": {"quarter": record.quarter}}}
+        {"$pull": {"dues_history": {"month": record.month}}}
     )
     await db.members.update_one(
         {"id": record.member_id},
