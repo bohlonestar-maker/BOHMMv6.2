@@ -24,6 +24,13 @@ const MEETING_TYPES = [
   { value: 'member', label: 'Member Meeting' }
 ];
 
+// Dues status options with colors
+const DUES_STATUSES = [
+  { value: 'paid', label: 'Paid', color: 'bg-green-600', icon: CheckCircle },
+  { value: 'late', label: 'Late', color: 'bg-orange-500', icon: Clock },
+  { value: 'unpaid', label: 'Not Paid', color: 'bg-red-600', icon: XCircle }
+];
+
 function OfficerTracking() {
   const navigate = useNavigate();
   const [members, setMembers] = useState({});
@@ -46,13 +53,10 @@ function OfficerTracking() {
     notes: ''
   });
   
-  // Dues Dialog
+  // Dues Dialog - Simplified
   const [duesDialog, setDuesDialog] = useState(false);
   const [duesForm, setDuesForm] = useState({
-    quarter: `Q${Math.ceil((new Date().getMonth() + 1) / 3)}_${new Date().getFullYear()}`,
     status: 'paid',
-    amount_paid: '',
-    payment_date: new Date().toISOString().split('T')[0],
     notes: ''
   });
   
@@ -60,10 +64,9 @@ function OfficerTracking() {
   const userTitle = localStorage.getItem('title');
   const userRole = localStorage.getItem('role');
   
-  // Check if user can edit (Secretaries: NSEC, ADSEC, HASEC, HSSEC + NVP)
-  // SEC = any secretary title, NVP = National Vice President
+  // Check if user can edit (Secretaries: NSEC, ADSEC, HASEC, HSSEC + NVP + NPrez)
   useEffect(() => {
-    const editTitles = ['SEC', 'NVP'];
+    const editTitles = ['SEC', 'NVP', 'NPrez'];
     const canUserEdit = userRole === 'admin' || editTitles.includes(userTitle);
     setCanEdit(canUserEdit);
   }, [userTitle, userRole]);
@@ -113,9 +116,11 @@ function OfficerTracking() {
     return { present, total, rate: total > 0 ? Math.round(present / total * 100) : 0 };
   };
 
-  const getCurrentQuarterDues = (memberId) => {
-    const currentQuarter = `Q${Math.ceil((new Date().getMonth() + 1) / 3)}_${new Date().getFullYear()}`;
-    return dues.find(d => d.member_id === memberId && d.quarter === currentQuarter);
+  // Get current month dues status for a member
+  const getCurrentMonthDues = (memberId) => {
+    const now = new Date();
+    const currentMonth = `${now.toLocaleString('en-US', { month: 'short' })}_${now.getFullYear()}`;
+    return dues.find(d => d.member_id === memberId && d.month === currentMonth);
   };
 
   const openAttendanceDialog = (member) => {
@@ -129,14 +134,11 @@ function OfficerTracking() {
     setAttendanceDialog(true);
   };
 
-  const openDuesDialog = (member) => {
+  const openDuesDialog = (member, preselectedStatus = null) => {
     setSelectedMember(member);
-    const existing = getCurrentQuarterDues(member.id);
+    const existing = getCurrentMonthDues(member.id);
     setDuesForm({
-      quarter: `Q${Math.ceil((new Date().getMonth() + 1) / 3)}_${new Date().getFullYear()}`,
-      status: existing?.status || 'unpaid',
-      amount_paid: existing?.amount_paid || '',
-      payment_date: existing?.payment_date || new Date().toISOString().split('T')[0],
+      status: preselectedStatus || existing?.status || 'paid',
       notes: existing?.notes || ''
     });
     setDuesDialog(true);
@@ -149,7 +151,7 @@ function OfficerTracking() {
         ...attendanceForm
       }, { headers: { Authorization: `Bearer ${token}` } });
       
-      toast.success("Attendance recorded & member updated");
+      toast.success("Attendance recorded");
       setAttendanceDialog(false);
       fetchData();
     } catch (error) {
@@ -159,14 +161,38 @@ function OfficerTracking() {
 
   const handleDuesSubmit = async () => {
     try {
+      const now = new Date();
+      const currentMonth = `${now.toLocaleString('en-US', { month: 'short' })}_${now.getFullYear()}`;
+      
       await axios.post(`${BACKEND_URL}/api/officer-tracking/dues`, {
         member_id: selectedMember.id,
-        ...duesForm,
-        amount_paid: duesForm.amount_paid ? parseFloat(duesForm.amount_paid) : null
+        month: currentMonth,
+        status: duesForm.status,
+        notes: duesForm.notes
       }, { headers: { Authorization: `Bearer ${token}` } });
       
-      toast.success("Dues updated & member record updated");
+      toast.success("Dues status updated");
       setDuesDialog(false);
+      fetchData();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || "Failed to update dues");
+    }
+  };
+
+  // Quick dues update without dialog
+  const handleQuickDuesUpdate = async (member, status) => {
+    try {
+      const now = new Date();
+      const currentMonth = `${now.toLocaleString('en-US', { month: 'short' })}_${now.getFullYear()}`;
+      
+      await axios.post(`${BACKEND_URL}/api/officer-tracking/dues`, {
+        member_id: member.id,
+        month: currentMonth,
+        status: status,
+        notes: ''
+      }, { headers: { Authorization: `Bearer ${token}` } });
+      
+      toast.success(`Dues marked as ${status}`);
       fetchData();
     } catch (error) {
       toast.error(error.response?.data?.detail || "Failed to update dues");
@@ -179,22 +205,10 @@ function OfficerTracking() {
       absent: <Badge className="bg-red-600"><XCircle className="w-3 h-3 mr-1" />Absent</Badge>,
       excused: <Badge className="bg-yellow-600"><Clock className="w-3 h-3 mr-1" />Excused</Badge>,
       paid: <Badge className="bg-green-600"><CheckCircle className="w-3 h-3 mr-1" />Paid</Badge>,
-      unpaid: <Badge className="bg-red-600"><XCircle className="w-3 h-3 mr-1" />Unpaid</Badge>,
-      partial: <Badge className="bg-yellow-600"><Clock className="w-3 h-3 mr-1" />Partial</Badge>,
-      exempt: <Badge className="bg-blue-600">Exempt</Badge>
+      unpaid: <Badge className="bg-red-600"><XCircle className="w-3 h-3 mr-1" />Not Paid</Badge>,
+      late: <Badge className="bg-orange-500"><Clock className="w-3 h-3 mr-1" />Late</Badge>
     };
     return badges[status] || <Badge>{status}</Badge>;
-  };
-
-  const getQuarters = () => {
-    const quarters = [];
-    const now = new Date();
-    for (let i = 0; i < 4; i++) {
-      const date = new Date(now.getFullYear(), now.getMonth() - (i * 3), 1);
-      const q = Math.ceil((date.getMonth() + 1) / 3);
-      quarters.push(`Q${q}_${date.getFullYear()}`);
-    }
-    return [...new Set(quarters)];
   };
 
   // Filter members by search term
@@ -223,11 +237,11 @@ function OfficerTracking() {
           <div>
             <h1 className="text-2xl font-bold flex items-center gap-2">
               <Users className="h-6 w-6" />
-              Member Tracking
+              A & D
             </h1>
             <p className="text-muted-foreground text-sm">
-              Meeting Attendance & Dues by Chapter
-              {!canEdit && <span className="text-yellow-500 ml-2">(View Only - Secretaries & NVP can edit)</span>}
+              Attendance & Dues Tracking
+              {!canEdit && <span className="text-yellow-500 ml-2">(View Only)</span>}
             </p>
           </div>
         </div>
@@ -270,7 +284,7 @@ function OfficerTracking() {
         <CardHeader>
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
-              <CardTitle>{selectedChapter} Chapter Members</CardTitle>
+              <CardTitle>{selectedChapter} Chapter</CardTitle>
               <CardDescription>Track attendance and dues for all {selectedChapter} members</CardDescription>
             </div>
             <div className="relative w-full sm:w-64">
@@ -362,14 +376,14 @@ function OfficerTracking() {
                     <TableRow>
                       <TableHead>Member</TableHead>
                       <TableHead>Title</TableHead>
-                      <TableHead>Current Quarter</TableHead>
-                      <TableHead>Payment Date</TableHead>
-                      {canEdit && <TableHead>Action</TableHead>}
+                      <TableHead>Current Month Status</TableHead>
+                      {canEdit && <TableHead>Quick Update</TableHead>}
+                      {canEdit && <TableHead>Notes</TableHead>}
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {filteredMembers.map(member => {
-                      const currentDues = getCurrentQuarterDues(member.id);
+                      const currentDues = getCurrentMonthDues(member.id);
                       
                       return (
                         <TableRow key={member.id}>
@@ -380,17 +394,44 @@ function OfficerTracking() {
                               <Badge variant="outline">Not Recorded</Badge>
                             )}
                           </TableCell>
-                          <TableCell>
-                            {currentDues?.payment_date ? (
-                              <span className="text-xs">{currentDues.payment_date}</span>
-                            ) : (
-                              <span className="text-muted-foreground text-xs">-</span>
-                            )}
-                          </TableCell>
                           {canEdit && (
                             <TableCell>
-                              <Button size="sm" onClick={() => openDuesDialog(member)}>
-                                {currentDues ? 'Update' : 'Record'}
+                              <div className="flex gap-1">
+                                <Button 
+                                  size="sm" 
+                                  className="bg-green-600 hover:bg-green-700 h-8 px-2"
+                                  onClick={() => handleQuickDuesUpdate(member, 'paid')}
+                                  title="Mark as Paid"
+                                >
+                                  <CheckCircle className="w-4 h-4" />
+                                </Button>
+                                <Button 
+                                  size="sm" 
+                                  className="bg-orange-500 hover:bg-orange-600 h-8 px-2"
+                                  onClick={() => handleQuickDuesUpdate(member, 'late')}
+                                  title="Mark as Late"
+                                >
+                                  <Clock className="w-4 h-4" />
+                                </Button>
+                                <Button 
+                                  size="sm" 
+                                  className="bg-red-600 hover:bg-red-700 h-8 px-2"
+                                  onClick={() => handleQuickDuesUpdate(member, 'unpaid')}
+                                  title="Mark as Not Paid"
+                                >
+                                  <XCircle className="w-4 h-4" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          )}
+                          {canEdit && (
+                            <TableCell>
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                onClick={() => openDuesDialog(member)}
+                              >
+                                + Note
                               </Button>
                             </TableCell>
                           )}
@@ -461,63 +502,41 @@ function OfficerTracking() {
         </DialogContent>
       </Dialog>
 
-      {/* Dues Dialog */}
+      {/* Dues Dialog - Simplified */}
       <Dialog open={duesDialog} onOpenChange={setDuesDialog}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Update Dues</DialogTitle>
             <DialogDescription>
-              Recording dues for {selectedMember?.handle}
+              Update dues status for {selectedMember?.handle}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label>Quarter</Label>
-              <Select value={duesForm.quarter} onValueChange={(v) => setDuesForm({...duesForm, quarter: v})}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {getQuarters().map(q => (
-                    <SelectItem key={q} value={q}>{q.replace('_', ' ')}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
               <Label>Status</Label>
-              <Select value={duesForm.status} onValueChange={(v) => setDuesForm({...duesForm, status: v})}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="paid">Paid</SelectItem>
-                  <SelectItem value="unpaid">Unpaid</SelectItem>
-                  <SelectItem value="partial">Partial</SelectItem>
-                  <SelectItem value="exempt">Exempt</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label>Amount Paid</Label>
-              <Input 
-                type="number" 
-                step="0.01"
-                value={duesForm.amount_paid}
-                onChange={(e) => setDuesForm({...duesForm, amount_paid: e.target.value})}
-                placeholder="0.00"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Payment Date</Label>
-              <Input 
-                type="date" 
-                value={duesForm.payment_date}
-                onChange={(e) => setDuesForm({...duesForm, payment_date: e.target.value})}
-              />
+              <div className="flex gap-2">
+                {DUES_STATUSES.map(status => {
+                  const Icon = status.icon;
+                  return (
+                    <Button
+                      key={status.value}
+                      type="button"
+                      className={`flex-1 ${duesForm.status === status.value ? status.color : 'bg-gray-600'}`}
+                      onClick={() => setDuesForm({...duesForm, status: status.value})}
+                    >
+                      <Icon className="w-4 h-4 mr-1" />
+                      {status.label}
+                    </Button>
+                  );
+                })}
+              </div>
             </div>
             <div className="space-y-2">
               <Label>Notes (Optional)</Label>
               <Textarea 
                 value={duesForm.notes}
                 onChange={(e) => setDuesForm({...duesForm, notes: e.target.value})}
-                placeholder="Any additional notes..."
+                placeholder="Any additional notes about this dues status..."
               />
             </div>
           </div>
