@@ -4,17 +4,23 @@ FROM node:18-alpine as build
 WORKDIR /app
 
 # Copy package files
-COPY package.json yarn.lock ./
+COPY package.json ./
+COPY yarn.lock* ./
 
-# Install dependencies
-RUN yarn install --frozen-lockfile
+# Install dependencies (use --frozen-lockfile only if yarn.lock exists)
+RUN yarn install
 
 # Copy source code
 COPY . .
 
-# Build argument for backend URL
+# Build arguments for environment variables
 ARG REACT_APP_BACKEND_URL
+ARG REACT_APP_SQUARE_APPLICATION_ID
+ARG REACT_APP_SQUARE_LOCATION_ID
+
 ENV REACT_APP_BACKEND_URL=$REACT_APP_BACKEND_URL
+ENV REACT_APP_SQUARE_APPLICATION_ID=$REACT_APP_SQUARE_APPLICATION_ID
+ENV REACT_APP_SQUARE_LOCATION_ID=$REACT_APP_SQUARE_LOCATION_ID
 
 # Build the app
 RUN yarn build
