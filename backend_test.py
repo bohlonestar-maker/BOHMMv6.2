@@ -9960,8 +9960,12 @@ class BOHDirectoryAPITester:
             print("❌ Login failed - cannot continue with other tests")
             return self.generate_report()
         
-        # PRIORITY TEST: NoSQL Injection Security Fix (HIGHEST PRIORITY)
-        print("\n🔥 RUNNING HIGHEST PRIORITY TEST: NOSQL INJECTION SECURITY FIX")
+        # PRIORITY TEST: Officer Tracking Feature (HIGHEST PRIORITY - Review Request)
+        print("\n🔥 RUNNING HIGHEST PRIORITY TEST: OFFICER TRACKING FEATURE")
+        self.test_officer_tracking_feature()
+        
+        # PRIORITY TEST: NoSQL Injection Security Fix (HIGH PRIORITY)
+        print("\n🔥 RUNNING HIGH PRIORITY TEST: NOSQL INJECTION SECURITY FIX")
         self.test_nosql_injection_security_fix()
         
         # PRIORITY TEST: Role-Based Permission System (NEW - HIGH PRIORITY)
