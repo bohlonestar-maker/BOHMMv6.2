@@ -651,6 +651,12 @@ async def health_check():
 # Create a router with the /api prefix
 api_router = APIRouter(prefix="/api")
 
+# Keep-alive ping endpoint
+@api_router.get("/ping")
+async def ping():
+    """Simple ping endpoint for keep-alive requests"""
+    return {"pong": True, "timestamp": datetime.now(timezone.utc).isoformat()}
+
 # Password hashing
 def hash_password(password: str) -> str:
     return pwd_context.hash(password)
