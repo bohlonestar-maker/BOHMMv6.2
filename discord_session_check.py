@@ -32,7 +32,7 @@ def check_discord_sessions():
     
     # Login to API
     login_response = requests.post(
-        'https://riderportal.preview.emergentagent.com/api/auth/login',
+        'https://memberportal-12.preview.emergentagent.com/api/auth/login',
         json={'username': 'testadmin', 'password': 'testpass123'},
         verify=False
     )
@@ -89,7 +89,7 @@ def check_discord_sessions():
     
     # Get bot status
     bot_response = requests.get(
-        'https://riderportal.preview.emergentagent.com/api/discord/test-activity',
+        'https://memberportal-12.preview.emergentagent.com/api/discord/test-activity',
         headers=headers,
         verify=False
     )
@@ -108,7 +108,7 @@ def check_discord_sessions():
     
     # Get analytics
     analytics_response = requests.get(
-        'https://riderportal.preview.emergentagent.com/api/discord/analytics',
+        'https://memberportal-12.preview.emergentagent.com/api/discord/analytics',
         headers=headers,
         verify=False
     )
