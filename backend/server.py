@@ -6924,10 +6924,11 @@ AD_EDIT_TITLES = ['SEC', 'NVP', 'NPrez']
 CHAPTERS = ['National', 'AD', 'HA', 'HS']
 
 def is_secretary(user: dict) -> bool:
-    """Check if user can edit A&D (NSEC, ADSEC, HASEC, HSSEC, NVP, NPrez)"""
+    """Check if user can edit A&D (NSEC, ADSEC, HASEC, HSSEC, NVP, NPrez only)"""
     user_title = user.get('title', '')
-    # Check if title is SEC (Secretary), NVP (National Vice President), or NPrez (National President)
-    return user_title in AD_EDIT_TITLES or user.get('role') == 'admin'
+    # Only SEC (Secretary), NVP (National Vice President), or NPrez (National President) can edit
+    # Admin role does NOT grant edit access - must have specific title
+    return user_title in AD_EDIT_TITLES
 
 def is_any_officer(user: dict) -> bool:
     """Check if user is any officer (can view)"""
