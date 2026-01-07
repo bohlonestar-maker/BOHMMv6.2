@@ -188,7 +188,7 @@ async def start_discord_bot():
                     # Scan for users already in voice channels and start tracking them
                     for voice_channel in guild.voice_channels:
                         for member in voice_channel.members:
-                            if not member.bot:
+                            if not member.bot and not should_ignore_user(member):
                                 user_id = str(member.id)
                                 if user_id not in self.voice_sessions:
                                     self.voice_sessions[user_id] = {
