@@ -2,6 +2,9 @@
   "name": "frontend",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "dependencies": {
     "@daily-co/daily-js": "^0.85.0",
     "@daily-co/daily-react": "^0.23.2",
