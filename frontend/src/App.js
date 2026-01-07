@@ -328,6 +328,7 @@ function App() {
             }
           />
         </Routes>
+        <KeepAlive />
         {isAuthenticated && <MessageNotifier />}
         {isAuthenticated && <ChatBot />}
       </BrowserRouter>
