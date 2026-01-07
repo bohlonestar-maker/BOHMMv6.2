@@ -26,6 +26,30 @@ import { Toaster } from "@/components/ui/sonner";
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
+// Keep-alive component to prevent backend from sleeping
+function KeepAlive() {
+  useEffect(() => {
+    const ping = async () => {
+      try {
+        await axios.get(`${API}/ping`, { timeout: 5000 });
+      } catch (error) {
+        // Silently ignore ping errors - this is just keep-alive
+        console.debug("Keep-alive ping failed:", error.message);
+      }
+    };
+
+    // Initial ping
+    ping();
+
+    // Ping every 30 seconds
+    const interval = setInterval(ping, 30000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  return null;
+}
+
 // Component to handle message notifications
 function MessageNotifier() {
   const previousUnreadCount = useRef(0);
