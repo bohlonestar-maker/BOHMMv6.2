@@ -9588,6 +9588,366 @@ class BOHDirectoryAPITester:
         print(f"   🏪 Store Open/Close feature testing completed")
         return True
 
+    def test_officer_tracking_feature(self):
+        """Test Officer Tracking feature API endpoints with new permission logic"""
+        print(f"\n👮 Testing Officer Tracking Feature...")
+        
+        # Test credentials from review request
+        admin_credentials = {"username": "admin", "password": "2X13y75Z"}
+        lonestar_credentials = {"username": "Lonestar", "password": "boh2158tc"}
+        
+        # Save original token
+        original_token = self.token
+        
+        # Test 1: Login as admin user
+        print(f"\n   🔐 Testing Admin Access...")
+        success, admin_login = self.run_test(
+            "Login as Admin (admin/2X13y75Z)",
+            "POST",
+            "auth/login",
+            200,
+            data=admin_credentials
+        )
+        
+        if success and 'token' in admin_login:
+            self.token = admin_login['token']
+            
+            # Test GET /api/officer-tracking/members
+            success, members_response = self.run_test(
+                "Admin - GET /api/officer-tracking/members",
+                "GET",
+                "officer-tracking/members",
+                200
+            )
+            
+            if success:
+                # Verify response structure (members grouped by chapter)
+                expected_chapters = ['National', 'AD', 'HA', 'HS']
+                if isinstance(members_response, dict):
+                    found_chapters = list(members_response.keys())
+                    if all(chapter in found_chapters for chapter in expected_chapters):
+                        self.log_test("Admin - Members Response Structure", True, f"All chapters found: {found_chapters}")
+                    else:
+                        self.log_test("Admin - Members Response Structure", False, f"Expected {expected_chapters}, got {found_chapters}")
+                else:
+                    self.log_test("Admin - Members Response Structure", False, "Response is not a dictionary")
+            
+            # Test POST /api/officer-tracking/attendance (admin should have edit access)
+            test_attendance = {
+                "member_id": "test-member-id",
+                "meeting_date": "2025-01-06",
+                "meeting_type": "national_officer",
+                "status": "present",
+                "notes": "Test attendance record"
+            }
+            
+            success, attendance_response = self.run_test(
+                "Admin - POST /api/officer-tracking/attendance",
+                "POST",
+                "officer-tracking/attendance",
+                200,
+                data=test_attendance
+            )
+            
+            # Test GET /api/officer-tracking/attendance
+            success, attendance_list = self.run_test(
+                "Admin - GET /api/officer-tracking/attendance",
+                "GET",
+                "officer-tracking/attendance",
+                200
+            )
+            
+            # Test POST /api/officer-tracking/dues (admin should have edit access)
+            test_dues = {
+                "member_id": "test-member-id",
+                "quarter": "Q1_2025",
+                "status": "paid",
+                "amount_paid": 25.00,
+                "payment_date": "2025-01-06",
+                "notes": "Test dues payment"
+            }
+            
+            success, dues_response = self.run_test(
+                "Admin - POST /api/officer-tracking/dues",
+                "POST",
+                "officer-tracking/dues",
+                200,
+                data=test_dues
+            )
+            
+            # Test GET /api/officer-tracking/dues
+            success, dues_list = self.run_test(
+                "Admin - GET /api/officer-tracking/dues",
+                "GET",
+                "officer-tracking/dues",
+                200
+            )
+            
+            # Test GET /api/officer-tracking/summary
+            success, summary_response = self.run_test(
+                "Admin - GET /api/officer-tracking/summary",
+                "GET",
+                "officer-tracking/summary",
+                200
+            )
+        
+        # Test 2: Login as Lonestar (SEC title - should have edit access)
+        print(f"\n   🔐 Testing SEC Officer Access...")
+        success, lonestar_login = self.run_test(
+            "Login as Lonestar (SEC)",
+            "POST",
+            "auth/login",
+            200,
+            data=lonestar_credentials
+        )
+        
+        if success and 'token' in lonestar_login:
+            self.token = lonestar_login['token']
+            
+            # Test GET /api/officer-tracking/members (should succeed - all officers can view)
+            success, members_response = self.run_test(
+                "SEC Officer - GET /api/officer-tracking/members",
+                "GET",
+                "officer-tracking/members",
+                200
+            )
+            
+            # Test POST /api/officer-tracking/attendance (should succeed - SEC has edit access)
+            test_attendance_sec = {
+                "member_id": "test-member-id-2",
+                "meeting_date": "2025-01-06",
+                "meeting_type": "chapter_officer",
+                "status": "absent",
+                "notes": "SEC test attendance record"
+            }
+            
+            success, attendance_response = self.run_test(
+                "SEC Officer - POST /api/officer-tracking/attendance",
+                "POST",
+                "officer-tracking/attendance",
+                200,
+                data=test_attendance_sec
+            )
+            
+            # Test POST /api/officer-tracking/dues (should succeed - SEC has edit access)
+            test_dues_sec = {
+                "member_id": "test-member-id-2",
+                "quarter": "Q1_2025",
+                "status": "unpaid",
+                "notes": "SEC test dues record"
+            }
+            
+            success, dues_response = self.run_test(
+                "SEC Officer - POST /api/officer-tracking/dues",
+                "POST",
+                "officer-tracking/dues",
+                200,
+                data=test_dues_sec
+            )
+        
+        # Test 3: Create a regular officer (non-SEC, non-NVP) to test view-only access
+        print(f"\n   🔐 Testing Regular Officer Access...")
+        
+        # First restore admin token to create test user
+        if admin_login and 'token' in admin_login:
+            self.token = admin_login['token']
+            
+            # Create a regular officer user (VP title - should have view access but not edit)
+            test_officer = {
+                "username": "testofficer",
+                "password": "testpass123",
+                "role": "admin",
+                "chapter": "AD",
+                "title": "VP"
+            }
+            
+            success, created_officer = self.run_test(
+                "Create Test Officer (VP)",
+                "POST",
+                "users",
+                201,
+                data=test_officer
+            )
+            
+            officer_id = None
+            if success and 'id' in created_officer:
+                officer_id = created_officer['id']
+                
+                # Login as the test officer
+                success, officer_login = self.run_test(
+                    "Login as Test Officer (VP)",
+                    "POST",
+                    "auth/login",
+                    200,
+                    data={"username": "testofficer", "password": "testpass123"}
+                )
+                
+                if success and 'token' in officer_login:
+                    self.token = officer_login['token']
+                    
+                    # Test GET /api/officer-tracking/members (should succeed - all officers can view)
+                    success, members_response = self.run_test(
+                        "Regular Officer - GET /api/officer-tracking/members",
+                        "GET",
+                        "officer-tracking/members",
+                        200
+                    )
+                    
+                    # Test GET /api/officer-tracking/attendance (should succeed - all officers can view)
+                    success, attendance_list = self.run_test(
+                        "Regular Officer - GET /api/officer-tracking/attendance",
+                        "GET",
+                        "officer-tracking/attendance",
+                        200
+                    )
+                    
+                    # Test GET /api/officer-tracking/dues (should succeed - all officers can view)
+                    success, dues_list = self.run_test(
+                        "Regular Officer - GET /api/officer-tracking/dues",
+                        "GET",
+                        "officer-tracking/dues",
+                        200
+                    )
+                    
+                    # Test GET /api/officer-tracking/summary (should succeed - all officers can view)
+                    success, summary_response = self.run_test(
+                        "Regular Officer - GET /api/officer-tracking/summary",
+                        "GET",
+                        "officer-tracking/summary",
+                        200
+                    )
+                    
+                    # Test POST /api/officer-tracking/attendance (should FAIL - only SEC and NVP can edit)
+                    test_attendance_fail = {
+                        "member_id": "test-member-id-3",
+                        "meeting_date": "2025-01-06",
+                        "meeting_type": "chapter_officer",
+                        "status": "present",
+                        "notes": "Should fail - VP cannot edit"
+                    }
+                    
+                    success, attendance_response = self.run_test(
+                        "Regular Officer - POST /api/officer-tracking/attendance (Should Fail)",
+                        "POST",
+                        "officer-tracking/attendance",
+                        403,
+                        data=test_attendance_fail
+                    )
+                    
+                    # Test POST /api/officer-tracking/dues (should FAIL - only SEC and NVP can edit)
+                    test_dues_fail = {
+                        "member_id": "test-member-id-3",
+                        "quarter": "Q1_2025",
+                        "status": "paid",
+                        "notes": "Should fail - VP cannot edit"
+                    }
+                    
+                    success, dues_response = self.run_test(
+                        "Regular Officer - POST /api/officer-tracking/dues (Should Fail)",
+                        "POST",
+                        "officer-tracking/dues",
+                        403,
+                        data=test_dues_fail
+                    )
+            
+            # Clean up test officer
+            if officer_id:
+                # Restore admin token for cleanup
+                self.token = admin_login['token']
+                success, delete_response = self.run_test(
+                    "Delete Test Officer (Cleanup)",
+                    "DELETE",
+                    f"users/{officer_id}",
+                    200
+                )
+        
+        # Test 4: Test non-officer access (should be denied)
+        print(f"\n   🔐 Testing Non-Officer Access...")
+        
+        # Create a regular member (non-officer)
+        if admin_login and 'token' in admin_login:
+            self.token = admin_login['token']
+            
+            test_member_user = {
+                "username": "testmember",
+                "password": "testpass123",
+                "role": "member",
+                "chapter": "National",
+                "title": "Member"
+            }
+            
+            success, created_member = self.run_test(
+                "Create Test Member (Non-Officer)",
+                "POST",
+                "users",
+                201,
+                data=test_member_user
+            )
+            
+            member_id = None
+            if success and 'id' in created_member:
+                member_id = created_member['id']
+                
+                # Login as the test member
+                success, member_login = self.run_test(
+                    "Login as Test Member (Non-Officer)",
+                    "POST",
+                    "auth/login",
+                    200,
+                    data={"username": "testmember", "password": "testpass123"}
+                )
+                
+                if success and 'token' in member_login:
+                    self.token = member_login['token']
+                    
+                    # Test GET /api/officer-tracking/members (should FAIL - only officers can access)
+                    success, members_response = self.run_test(
+                        "Non-Officer - GET /api/officer-tracking/members (Should Fail)",
+                        "GET",
+                        "officer-tracking/members",
+                        403
+                    )
+                    
+                    # Test GET /api/officer-tracking/attendance (should FAIL - only officers can access)
+                    success, attendance_list = self.run_test(
+                        "Non-Officer - GET /api/officer-tracking/attendance (Should Fail)",
+                        "GET",
+                        "officer-tracking/attendance",
+                        403
+                    )
+                    
+                    # Test GET /api/officer-tracking/dues (should FAIL - only officers can access)
+                    success, dues_list = self.run_test(
+                        "Non-Officer - GET /api/officer-tracking/dues (Should Fail)",
+                        "GET",
+                        "officer-tracking/dues",
+                        403
+                    )
+                    
+                    # Test GET /api/officer-tracking/summary (should FAIL - only officers can access)
+                    success, summary_response = self.run_test(
+                        "Non-Officer - GET /api/officer-tracking/summary (Should Fail)",
+                        "GET",
+                        "officer-tracking/summary",
+                        403
+                    )
+            
+            # Clean up test member
+            if member_id:
+                # Restore admin token for cleanup
+                self.token = admin_login['token']
+                success, delete_response = self.run_test(
+                    "Delete Test Member (Cleanup)",
+                    "DELETE",
+                    f"users/{member_id}",
+                    200
+                )
+        
+        # Restore original token
+        self.token = original_token
+        
+        print(f"   👮 Officer Tracking feature testing completed")
+
     def run_all_tests(self):
         """Run all tests"""
         print("🚀 Starting Brothers of the Highway Directory API Tests")
