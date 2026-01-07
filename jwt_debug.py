@@ -11,7 +11,7 @@ import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 def test_jwt_contents():
-    base_url = "https://memberportal-12.preview.emergentagent.com/api"
+    base_url = "https://boh-tracker.preview.emergentagent.com/api"
     
     # Login as testadmin
     print("🔐 Testing testadmin JWT contents...")
