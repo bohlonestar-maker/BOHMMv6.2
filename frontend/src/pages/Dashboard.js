@@ -836,7 +836,7 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start" className="w-56 bg-slate-800 border-slate-700" sideOffset={8}>
-                  {/* People Section */}
+                  {/* === MEMBER MANAGEMENT === */}
                   {canAccessProspects && (
                     <DropdownMenuItem 
                       onSelect={(e) => { e.preventDefault(); navigate("/prospects"); }} 
@@ -846,28 +846,21 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
                       Prospects
                     </DropdownMenuItem>
                   )}
-                  {userRole === 'admin' && (
+                  
+                  {/* A & D (Attendance & Dues) - All officers can view */}
+                  {['Prez', 'VP', 'S@A', 'Enf', 'SEC', 'CD', 'T', 'ENF', 'PM', 'CC', 'CMD', 'CCLC', 'NVP', 'NPrez'].includes(userTitle) && (
                     <DropdownMenuItem 
-                      onSelect={(e) => { e.preventDefault(); navigate("/users"); }} 
-                      className="text-slate-200 focus:bg-slate-700 focus:text-white cursor-pointer"
+                      onSelect={(e) => { e.preventDefault(); navigate("/officer-tracking"); }} 
+                      className="text-amber-400 focus:bg-amber-900/30 focus:text-amber-300 cursor-pointer"
                     >
-                      <Settings className="w-4 h-4 mr-2" />
-                      Admin
+                      <Users className="w-4 h-4 mr-2" />
+                      A & D
                     </DropdownMenuItem>
                   )}
                   
                   <DropdownMenuSeparator className="bg-slate-700" />
                   
-                  {/* Activity Section */}
-                  {userRole === 'admin' && (
-                    <DropdownMenuItem 
-                      onSelect={(e) => { e.preventDefault(); navigate("/discord-analytics"); }} 
-                      className="text-slate-200 focus:bg-slate-700 focus:text-white cursor-pointer"
-                    >
-                      <Headphones className="w-4 h-4 mr-2" />
-                      Discord Analytics
-                    </DropdownMenuItem>
-                  )}
+                  {/* === COMMUNICATION === */}
                   <DropdownMenuItem 
                     onSelect={(e) => { e.preventDefault(); navigate("/events"); }} 
                     className="text-slate-200 focus:bg-slate-700 focus:text-white cursor-pointer"
@@ -895,7 +888,7 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
                   
                   <DropdownMenuSeparator className="bg-slate-700" />
                   
-                  {/* Features Section */}
+                  {/* === CLUB FEATURES === */}
                   <DropdownMenuItem 
                     onSelect={(e) => { e.preventDefault(); navigate("/store"); }} 
                     className="text-green-400 focus:bg-green-900/30 focus:text-green-300 cursor-pointer"
@@ -922,31 +915,42 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
                     </DropdownMenuItem>
                   )}
                   
-                  {/* AI Knowledge Manager - NPrez, NVP, NSEC only */}
-                  {(userRole === 'admin' || ['National President', 'National Vice President', 'National Secretary', 'NPrez', 'NVP', 'NSEC'].includes(userTitle)) && (
-                    <DropdownMenuItem 
-                      onSelect={(e) => { e.preventDefault(); navigate("/ai-knowledge"); }} 
-                      className="text-cyan-400 focus:bg-cyan-900/30 focus:text-cyan-300 cursor-pointer"
-                    >
-                      <Database className="w-4 h-4 mr-2" />
-                      AI Knowledge
-                    </DropdownMenuItem>
+                  {/* === NATIONALS ONLY === */}
+                  {userChapter === 'National' && (
+                    <>
+                      <DropdownMenuSeparator className="bg-slate-700" />
+                      
+                      {/* AI Knowledge Manager - Nationals only */}
+                      <DropdownMenuItem 
+                        onSelect={(e) => { e.preventDefault(); navigate("/ai-knowledge"); }} 
+                        className="text-cyan-400 focus:bg-cyan-900/30 focus:text-cyan-300 cursor-pointer"
+                      >
+                        <Database className="w-4 h-4 mr-2" />
+                        AI Knowledge
+                      </DropdownMenuItem>
+                      
+                      {/* Discord Analytics - Nationals only */}
+                      <DropdownMenuItem 
+                        onSelect={(e) => { e.preventDefault(); navigate("/discord-analytics"); }} 
+                        className="text-slate-200 focus:bg-slate-700 focus:text-white cursor-pointer"
+                      >
+                        <Headphones className="w-4 h-4 mr-2" />
+                        Discord Analytics
+                      </DropdownMenuItem>
+                    </>
                   )}
                   
-                  {/* A & D (Attendance & Dues) - All officers can view */}
-                  {(userRole === 'admin' || ['Prez', 'VP', 'S@A', 'Enf', 'SEC', 'CD', 'T', 'ENF', 'PM', 'CC', 'CMD', 'CCLC', 'NVP', 'NPrez'].includes(userTitle)) && (
-                    <DropdownMenuItem 
-                      onSelect={(e) => { e.preventDefault(); navigate("/officer-tracking"); }} 
-                      className="text-amber-400 focus:bg-amber-900/30 focus:text-amber-300 cursor-pointer"
-                    >
-                      <Users className="w-4 h-4 mr-2" />
-                      A & D
-                    </DropdownMenuItem>
-                  )}
-                  
+                  {/* === ADMIN ONLY === */}
                   {userRole === 'admin' && (
                     <>
                       <DropdownMenuSeparator className="bg-slate-700" />
+                      <DropdownMenuItem 
+                        onSelect={(e) => { e.preventDefault(); navigate("/users"); }} 
+                        className="text-red-400 focus:bg-red-900/30 focus:text-red-300 cursor-pointer"
+                      >
+                        <Settings className="w-4 h-4 mr-2" />
+                        Admin
+                      </DropdownMenuItem>
                       <DropdownMenuItem 
                         onSelect={(e) => { e.preventDefault(); navigate("/update-log"); }} 
                         className="text-slate-200 focus:bg-slate-700 focus:text-white cursor-pointer"
@@ -957,6 +961,7 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
                     </>
                   )}
                   
+                  {/* Message Monitor - Lonestar only */}
                   {localStorage.getItem("username") === "Lonestar" && (
                     <>
                       <DropdownMenuSeparator className="bg-slate-700" />
@@ -970,6 +975,7 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
                     </>
                   )}
                   
+                  {/* === SETTINGS === */}
                   <DropdownMenuSeparator className="bg-slate-700" />
                   <DropdownMenuItem 
                     onSelect={(e) => { e.preventDefault(); setPasswordDialogOpen(true); }} 
