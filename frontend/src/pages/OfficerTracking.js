@@ -298,25 +298,34 @@ function OfficerTracking() {
           </div>
         </CardHeader>
         <CardContent>
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="mb-4 bg-slate-800 p-1 gap-2">
-              <TabsTrigger 
-                value="attendance"
-                className="data-[state=active]:bg-blue-600 data-[state=active]:text-white px-6 py-2.5 text-base font-semibold"
-              >
-                <Calendar className="w-5 h-5 mr-2" />
-                Attendance
-              </TabsTrigger>
-              <TabsTrigger 
-                value="dues"
-                className="data-[state=active]:bg-green-600 data-[state=active]:text-white px-6 py-2.5 text-base font-semibold"
-              >
-                <DollarSign className="w-5 h-5 mr-2" />
-                Dues
-              </TabsTrigger>
-            </TabsList>
+          {/* Separate View Buttons */}
+          <div className="flex gap-4 mb-6">
+            <Button
+              onClick={() => setActiveTab('attendance')}
+              className={`flex-1 h-14 text-lg font-bold ${
+                activeTab === 'attendance' 
+                  ? 'bg-blue-600 hover:bg-blue-700 text-white' 
+                  : 'bg-slate-700 hover:bg-slate-600 text-slate-300'
+              }`}
+            >
+              <Calendar className="w-6 h-6 mr-3" />
+              Attendance
+            </Button>
+            <Button
+              onClick={() => setActiveTab('dues')}
+              className={`flex-1 h-14 text-lg font-bold ${
+                activeTab === 'dues' 
+                  ? 'bg-green-600 hover:bg-green-700 text-white' 
+                  : 'bg-slate-700 hover:bg-slate-600 text-slate-300'
+              }`}
+            >
+              <DollarSign className="w-6 h-6 mr-3" />
+              Dues
+            </Button>
+          </div>
 
-            <TabsContent value="attendance">
+          {/* Attendance Content */}
+          {activeTab === 'attendance' && (
               <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
