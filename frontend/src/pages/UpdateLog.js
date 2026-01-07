@@ -8,6 +8,27 @@ export default function UpdateLog() {
 
   const updates = [
     {
+      version: "v6.1",
+      date: "January 7, 2026",
+      changes: [
+        "AI Knowledge Manager: New admin page for NPrez, NVP, and NSEC to manage AI assistant knowledge base",
+        "Dynamic AI Content: AI chatbot now pulls information from database instead of hardcoded content",
+        "Knowledge Categories: Organize AI knowledge into General, Chain of Command, Bylaws, Meetings, and Admin Only",
+        "Toggle Knowledge: Enable/disable individual knowledge entries without deleting them",
+        "Discord Analytics Ignore List: Added ability to exclude specific users from Discord tracking",
+        "Discord Analytics Reset: Reset all Discord analytics data to start fresh from January 1, 2026",
+        "DigitalOcean Deployment: Full deployment configuration for always-on production hosting",
+        "No More Cold Starts: App now runs 24/7 on DigitalOcean without sleeping",
+        "Password Reset: Full forgot password flow with email verification codes",
+        "View Password Toggle: Added eye icon to show/hide password on login form",
+        "Recurring Events: Create daily, weekly, monthly, or custom recurring calendar events",
+        "Responsive Event Dialog: Add Event form optimized for mobile, tablet, and desktop",
+        "OpenAI Integration: Switched AI chat to use standard OpenAI API for external deployment",
+        "Keep-Alive Ping: Backend ping system to prevent server sleeping",
+        "Page Title Update: Changed browser tab title from 'Emergent' to 'BOH Hub'"
+      ]
+    },
+    {
       version: "v6.0",
       date: "December 31, 2025",
       changes: [
