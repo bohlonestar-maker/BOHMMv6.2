@@ -2718,6 +2718,26 @@ async def export_members_csv(current_user: dict = Depends(verify_token)):
             row.append(member.get('military_branch', '') or '')
             row.append('Yes' if member.get('is_first_responder', False) else 'No')
         
+        # Add Trucking Experience for basic_info permission
+        if is_admin or permissions.get("basic_info"):
+            exp_start = member.get('experience_start', '')
+            row.append(exp_start or '')
+            # Calculate years of experience
+            years_exp = ''
+            if exp_start:
+                try:
+                    from datetime import datetime
+                    parts = exp_start.split('/')
+                    if len(parts) == 2:
+                        month, year = int(parts[0]), int(parts[1])
+                        start_date = datetime(year, month, 1)
+                        now = datetime.now()
+                        years = (now.year - start_date.year) + (now.month - start_date.month) / 12
+                        years_exp = f"{years:.1f}"
+                except:
+                    years_exp = ''
+            row.append(years_exp)
+        
         if is_admin or permissions.get("dues_tracking"):
             dues = member.get('dues', {})
             
