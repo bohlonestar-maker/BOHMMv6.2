@@ -6171,8 +6171,35 @@ async def chat_with_bot(chat_msg: ChatMessage, current_user: dict = Depends(veri
         # Check if user is admin
         is_admin = current_user.get('role') == 'admin'
         
-        # Base knowledge for all users
-        base_context = """You are an AI assistant for Brothers of the Highway Trucker Club (BOH TC), a 501(c)(3) organization for professional truck drivers. Your role is to answer questions about the organization using ONLY the information provided below.
+        # Try to get knowledge from database first
+        db_knowledge = await db.ai_knowledge.find({"is_active": True}, {"_id": 0}).to_list(length=None)
+        
+        if db_knowledge:
+            # Build context from database entries
+            base_parts = ["You are an AI assistant for Brothers of the Highway Trucker Club (BOH TC), a 501(c)(3) organization for professional truck drivers. Your role is to answer questions about the organization using ONLY the information provided below.\n"]
+            admin_parts = []
+            
+            for entry in db_knowledge:
+                section = f"\n{entry['title'].upper()}:\n{entry['content']}\n"
+                if entry.get('admin_only'):
+                    admin_parts.append(section)
+                else:
+                    base_parts.append(section)
+            
+            base_parts.append("\nIf asked about something not covered in this knowledge base, politely say you don't have that information and suggest they contact their Chain of Command or check Discord channels.\n\nBe helpful, respectful, and direct. Use BOH terminology (handles, Chain of Command, COC, prospects, Brother, S@A, NPrez, NVP, etc.).")
+            
+            base_context = "".join(base_parts)
+            admin_context = "".join(admin_parts) if admin_parts else ""
+            
+            # Combine contexts based on user role
+            if is_admin:
+                system_context = base_context + admin_context
+            else:
+                system_context = base_context
+        else:
+            # Fallback to hardcoded content if database is empty
+            # Base knowledge for all users
+            base_context = """You are an AI assistant for Brothers of the Highway Trucker Club (BOH TC), a 501(c)(3) organization for professional truck drivers. Your role is to answer questions about the organization using ONLY the information provided below.
 
 ORGANIZATION OVERVIEW:
 - Brothers of the Highway TC is a men-only trucking organization
