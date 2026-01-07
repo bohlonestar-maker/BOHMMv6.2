@@ -205,6 +205,10 @@ async def start_discord_bot():
                 """Track voice channel activity"""
                 if member.bot:
                     return
+                
+                # Check if user should be ignored
+                if should_ignore_user(member):
+                    return
                     
                 user_id = str(member.id)
                 now = datetime.now(timezone.utc)
