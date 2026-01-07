@@ -7038,9 +7038,9 @@ async def get_attendance_records(
 
 @api_router.post("/officer-tracking/attendance")
 async def record_attendance(record: AttendanceRecord, current_user: dict = Depends(verify_token)):
-    """Record attendance - only Secretaries can edit"""
+    """Record attendance - only Secretaries, NVP, and NPrez can edit"""
     if not is_secretary(current_user):
-        raise HTTPException(status_code=403, detail="Only Secretaries (NSEC, ADSEC, HASEC, HSSEC) can edit attendance")
+        raise HTTPException(status_code=403, detail="Only Secretaries, NVP, and NPrez can edit attendance")
     
     # Check for existing record
     existing = await db.officer_attendance.find_one({
