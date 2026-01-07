@@ -1,0 +1,70 @@
+name: bohhub
+region: nyc
+
+services:
+  - name: backend
+    github:
+      repo: YOUR_GITHUB_USERNAME/YOUR_REPO_NAME
+      branch: main
+      deploy_on_push: true
+    source_dir: /backend
+    dockerfile_path: backend/Dockerfile
+    http_port: 8001
+    instance_count: 1
+    instance_size_slug: basic-xxs
+    routes:
+      - path: /api
+      - path: /health
+    envs:
+      - key: MONGO_URL
+        value: "mongodb://bohAdmin:BOH2158SecurePass!@104.248.71.87:27017/test_database?authSource=admin"
+        type: SECRET
+      - key: DB_NAME
+        value: "test_database"
+      - key: JWT_SECRET
+        value: "your-jwt-secret-change-this"
+        type: SECRET
+      - key: CORS_ORIGINS
+        value: "https://bohhub.com,https://www.bohhub.com"
+      - key: SMTP_HOST
+        value: "smtp.zoho.com"
+      - key: SMTP_PORT
+        value: "465"
+      - key: SMTP_EMAIL
+        value: "support@boh2158.org"
+        type: SECRET
+      - key: SMTP_PASSWORD
+        value: "your-smtp-password"
+        type: SECRET
+      - key: SQUARE_ACCESS_TOKEN
+        value: "your-square-token"
+        type: SECRET
+      - key: SQUARE_ENVIRONMENT
+        value: "production"
+      - key: DISCORD_BOT_TOKEN
+        value: "your-discord-token"
+        type: SECRET
+
+  - name: frontend
+    github:
+      repo: YOUR_GITHUB_USERNAME/YOUR_REPO_NAME
+      branch: main
+      deploy_on_push: true
+    source_dir: /frontend
+    dockerfile_path: frontend/Dockerfile
+    http_port: 80
+    instance_count: 1
+    instance_size_slug: basic-xxs
+    routes:
+      - path: /
+    build_command: |
+      export REACT_APP_BACKEND_URL=https://bohhub.com
+    envs:
+      - key: REACT_APP_BACKEND_URL
+        value: "https://bohhub.com"
+
+domains:
+  - domain: bohhub.com
+    type: PRIMARY
+  - domain: www.bohhub.com
+    type: ALIAS
