@@ -5857,7 +5857,7 @@ async def get_discord_analytics(days: int = 90, current_user: dict = Depends(ver
         
         # Find least active members - include ALL members, sorted by activity score
         # Filter out bots and excluded usernames
-        EXCLUDED_USERNAMES = ['bot', 'tv', 'aoh', 'craig', 'testdummy', 'gearjammerbot', 'bohadmin', 'boh admin', 'bohtc']
+        EXCLUDED_USERNAMES = ['bot', 'tv', 'aoh', 'craig', 'testdummy', 'gearjammerbot', 'bohadmin', 'boh admin', 'bohtc', 'hsb hillbilly', 'hillbilly']
         
         least_active_members = []
         for member in all_members:
