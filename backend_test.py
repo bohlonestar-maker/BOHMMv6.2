@@ -117,20 +117,15 @@ class BOHDirectoryAPITester:
             self.log_test(name, False, f"Exception: {str(e)}")
             return False, {}
 
-    def test_login(self, username="admin", password="admin123"):
+    def test_login(self, username="admin", password="2X13y75Z"):
         """Test login and get token - try multiple credentials if first fails"""
         print(f"\n🔐 Testing Authentication...")
         
-        # Try multiple credential combinations based on existing users
+        # Try multiple credential combinations based on review request
         credentials_to_try = [
-            ("testadmin", "testpass123"),  # Requested test admin
-            ("admin", "admin123"),         # Default admin
-            ("Lonestar", "password"),      # Existing admin user
-            ("Lonestar", "admin123"),      # Try different password
-            ("Lonestar", "testpass123"),   # Try test password
-            ("testuser", "password"),      # Existing regular user
-            ("testuser", "testpass123"),   # Try test password
-            ("admin", "password"),         # Try different password
+            ("admin", "2X13y75Z"),         # Admin from review request
+            ("Lonestar", "boh2158tc"),     # SEC user from review request
+            ("admin", "admin123"),         # Default admin fallback
         ]
         
         for user, pwd in credentials_to_try:
