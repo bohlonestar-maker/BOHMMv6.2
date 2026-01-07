@@ -133,12 +133,14 @@ class ADFeatureTester:
                 self.log_test("Officer Tracking Members - Response Format", False, "Response is not a dictionary")
         
         # Test 2: Create a test member for dues testing
+        import time
+        unique_id = str(int(time.time()))
         test_member = {
             "chapter": "National",
             "title": "Member",
-            "handle": "ADTestMember",
+            "handle": f"ADTest{unique_id}",
             "name": "A&D Test Member",
-            "email": "adtest@example.com",
+            "email": f"adtest{unique_id}@example.com",
             "phone": "555-0123",
             "address": "123 Test Street"
         }
