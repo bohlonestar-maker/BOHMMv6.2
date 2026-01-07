@@ -933,14 +933,14 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
                     </DropdownMenuItem>
                   )}
                   
-                  {/* Officer Tracking - All officers can view */}
-                  {(userRole === 'admin' || ['Prez', 'VP', 'S@A', 'Enf', 'SEC', 'CD', 'T', 'ENF', 'PM', 'CC', 'CMD', 'CCLC'].includes(userTitle)) && (
+                  {/* A & D (Attendance & Dues) - All officers can view */}
+                  {(userRole === 'admin' || ['Prez', 'VP', 'S@A', 'Enf', 'SEC', 'CD', 'T', 'ENF', 'PM', 'CC', 'CMD', 'CCLC', 'NVP', 'NPrez'].includes(userTitle)) && (
                     <DropdownMenuItem 
                       onSelect={(e) => { e.preventDefault(); navigate("/officer-tracking"); }} 
                       className="text-amber-400 focus:bg-amber-900/30 focus:text-amber-300 cursor-pointer"
                     >
                       <Users className="w-4 h-4 mr-2" />
-                      Officer Tracking
+                      A & D
                     </DropdownMenuItem>
                   )}
                   
