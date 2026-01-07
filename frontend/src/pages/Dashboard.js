@@ -922,6 +922,17 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
                     </DropdownMenuItem>
                   )}
                   
+                  {/* AI Knowledge Manager - NPrez, NVP, NSEC only */}
+                  {(userRole === 'admin' || ['National President', 'National Vice President', 'National Secretary', 'NPrez', 'NVP', 'NSEC'].includes(userTitle)) && (
+                    <DropdownMenuItem 
+                      onSelect={(e) => { e.preventDefault(); navigate("/ai-knowledge"); }} 
+                      className="text-cyan-400 focus:bg-cyan-900/30 focus:text-cyan-300 cursor-pointer"
+                    >
+                      <Database className="w-4 h-4 mr-2" />
+                      AI Knowledge
+                    </DropdownMenuItem>
+                  )}
+                  
                   {userRole === 'admin' && (
                     <>
                       <DropdownMenuSeparator className="bg-slate-700" />
