@@ -6916,6 +6916,260 @@ SANCTIONS (Progressive Discipline):
     return {"message": f"Initialized {len(default_entries)} knowledge entries"}
 
 
+# ==================== OFFICER TRACKING (Attendance & Dues) ====================
+
+OFFICER_TITLES = ['Prez', 'VP', 'S@A', 'Enf', 'SEC', 'CD', 'T', 'ENF', 'PM', 'CC', 'CMD', 'CCLC']
+NATIONAL_EDIT_TITLES = ['Prez', 'VP', 'S@A', 'ENF', 'SEC', 'T', 'CD']
+CHAPTERS = ['National', 'AD', 'HA', 'HS']
+
+def is_national_officer(user: dict) -> bool:
+    """Check if user is a National officer who can edit"""
+    return user.get('chapter') == 'National' and user.get('title') in NATIONAL_EDIT_TITLES
+
+def is_any_officer(user: dict) -> bool:
+    """Check if user is any officer (can view)"""
+    return user.get('title') in OFFICER_TITLES or user.get('role') == 'admin'
+
+class AttendanceRecord(BaseModel):
+    member_id: str
+    meeting_date: str  # YYYY-MM-DD
+    meeting_type: str  # 'national_officer', 'chapter_officer', 'prospect', 'member'
+    status: str  # 'present', 'absent', 'excused'
+    notes: Optional[str] = None
+
+class DuesRecord(BaseModel):
+    member_id: str
+    quarter: str  # 'Q1_2026', 'Q2_2026', etc.
+    status: str  # 'paid', 'unpaid', 'partial', 'exempt'
+    amount_paid: Optional[float] = None
+    payment_date: Optional[str] = None
+    notes: Optional[str] = None
+
+@api_router.get("/officer-tracking/officers")
+async def get_officers_by_chapter(current_user: dict = Depends(verify_token)):
+    """Get all officers organized by chapter - all officers can view"""
+    if not is_any_officer(current_user) and current_user.get('role') != 'admin':
+        raise HTTPException(status_code=403, detail="Only officers can access this page")
+    
+    result = {}
+    for chapter in CHAPTERS:
+        # Get members who are officers in this chapter
+        query = {
+            "chapter": chapter,
+            "title": {"$in": OFFICER_TITLES}
+        }
+        officers = await db.members.find(query, {"_id": 0}).to_list(length=None)
+        
+        # Sort by title importance
+        title_order = {t: i for i, t in enumerate(OFFICER_TITLES)}
+        officers.sort(key=lambda x: title_order.get(x.get('title', ''), 999))
+        
+        result[chapter] = [{
+            "id": o.get("id"),
+            "handle": o.get("handle"),
+            "name": o.get("name"),
+            "title": o.get("title"),
+            "chapter": o.get("chapter"),
+            "email": o.get("email")
+        } for o in officers]
+    
+    return result
+
+@api_router.get("/officer-tracking/attendance")
+async def get_attendance_records(
+    chapter: Optional[str] = None,
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
+    current_user: dict = Depends(verify_token)
+):
+    """Get attendance records - all officers can view"""
+    if not is_any_officer(current_user) and current_user.get('role') != 'admin':
+        raise HTTPException(status_code=403, detail="Only officers can access this page")
+    
+    query = {}
+    if chapter:
+        # Get member IDs for this chapter
+        chapter_members = await db.members.find({"chapter": chapter}, {"id": 1}).to_list(length=None)
+        member_ids = [m.get("id") for m in chapter_members]
+        query["member_id"] = {"$in": member_ids}
+    
+    if start_date:
+        query["meeting_date"] = {"$gte": start_date}
+    if end_date:
+        if "meeting_date" in query:
+            query["meeting_date"]["$lte"] = end_date
+        else:
+            query["meeting_date"] = {"$lte": end_date}
+    
+    records = await db.officer_attendance.find(query, {"_id": 0}).to_list(length=None)
+    return records
+
+@api_router.post("/officer-tracking/attendance")
+async def record_attendance(record: AttendanceRecord, current_user: dict = Depends(verify_token)):
+    """Record attendance - only National officers can edit"""
+    if not is_national_officer(current_user) and current_user.get('role') != 'admin':
+        raise HTTPException(status_code=403, detail="Only National officers can edit attendance")
+    
+    # Check for existing record
+    existing = await db.officer_attendance.find_one({
+        "member_id": record.member_id,
+        "meeting_date": record.meeting_date,
+        "meeting_type": record.meeting_type
+    })
+    
+    record_data = {
+        "id": existing.get("id") if existing else str(uuid.uuid4()),
+        "member_id": record.member_id,
+        "meeting_date": record.meeting_date,
+        "meeting_type": record.meeting_type,
+        "status": record.status,
+        "notes": record.notes,
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+        "updated_by": current_user.get('username')
+    }
+    
+    if existing:
+        await db.officer_attendance.update_one(
+            {"id": existing.get("id")},
+            {"$set": record_data}
+        )
+        return {"message": "Attendance updated", "id": existing.get("id")}
+    else:
+        record_data["created_at"] = datetime.now(timezone.utc).isoformat()
+        record_data["created_by"] = current_user.get('username')
+        await db.officer_attendance.insert_one(record_data)
+        return {"message": "Attendance recorded", "id": record_data["id"]}
+
+@api_router.delete("/officer-tracking/attendance/{record_id}")
+async def delete_attendance(record_id: str, current_user: dict = Depends(verify_token)):
+    """Delete attendance record - only National officers can edit"""
+    if not is_national_officer(current_user) and current_user.get('role') != 'admin':
+        raise HTTPException(status_code=403, detail="Only National officers can delete attendance")
+    
+    result = await db.officer_attendance.delete_one({"id": record_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Attendance record not found")
+    return {"message": "Attendance record deleted"}
+
+@api_router.get("/officer-tracking/dues")
+async def get_dues_records(
+    chapter: Optional[str] = None,
+    quarter: Optional[str] = None,
+    current_user: dict = Depends(verify_token)
+):
+    """Get dues records - all officers can view"""
+    if not is_any_officer(current_user) and current_user.get('role') != 'admin':
+        raise HTTPException(status_code=403, detail="Only officers can access this page")
+    
+    query = {}
+    if chapter:
+        chapter_members = await db.members.find({"chapter": chapter}, {"id": 1}).to_list(length=None)
+        member_ids = [m.get("id") for m in chapter_members]
+        query["member_id"] = {"$in": member_ids}
+    
+    if quarter:
+        query["quarter"] = quarter
+    
+    records = await db.officer_dues.find(query, {"_id": 0}).to_list(length=None)
+    return records
+
+@api_router.post("/officer-tracking/dues")
+async def record_dues(record: DuesRecord, current_user: dict = Depends(verify_token)):
+    """Record dues payment - only National officers can edit"""
+    if not is_national_officer(current_user) and current_user.get('role') != 'admin':
+        raise HTTPException(status_code=403, detail="Only National officers can edit dues")
+    
+    # Check for existing record
+    existing = await db.officer_dues.find_one({
+        "member_id": record.member_id,
+        "quarter": record.quarter
+    })
+    
+    record_data = {
+        "id": existing.get("id") if existing else str(uuid.uuid4()),
+        "member_id": record.member_id,
+        "quarter": record.quarter,
+        "status": record.status,
+        "amount_paid": record.amount_paid,
+        "payment_date": record.payment_date,
+        "notes": record.notes,
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+        "updated_by": current_user.get('username')
+    }
+    
+    if existing:
+        await db.officer_dues.update_one(
+            {"id": existing.get("id")},
+            {"$set": record_data}
+        )
+        return {"message": "Dues record updated", "id": existing.get("id")}
+    else:
+        record_data["created_at"] = datetime.now(timezone.utc).isoformat()
+        record_data["created_by"] = current_user.get('username')
+        await db.officer_dues.insert_one(record_data)
+        return {"message": "Dues recorded", "id": record_data["id"]}
+
+@api_router.delete("/officer-tracking/dues/{record_id}")
+async def delete_dues(record_id: str, current_user: dict = Depends(verify_token)):
+    """Delete dues record - only National officers can edit"""
+    if not is_national_officer(current_user) and current_user.get('role') != 'admin':
+        raise HTTPException(status_code=403, detail="Only National officers can delete dues records")
+    
+    result = await db.officer_dues.delete_one({"id": record_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Dues record not found")
+    return {"message": "Dues record deleted"}
+
+@api_router.get("/officer-tracking/summary")
+async def get_tracking_summary(current_user: dict = Depends(verify_token)):
+    """Get summary of attendance and dues by chapter - all officers can view"""
+    if not is_any_officer(current_user) and current_user.get('role') != 'admin':
+        raise HTTPException(status_code=403, detail="Only officers can access this page")
+    
+    # Get current quarter
+    now = datetime.now()
+    quarter_num = (now.month - 1) // 3 + 1
+    current_quarter = f"Q{quarter_num}_{now.year}"
+    
+    summary = {}
+    for chapter in CHAPTERS:
+        # Get officers in chapter
+        officers = await db.members.find(
+            {"chapter": chapter, "title": {"$in": OFFICER_TITLES}},
+            {"id": 1}
+        ).to_list(length=None)
+        member_ids = [o.get("id") for o in officers]
+        
+        # Get attendance stats for last 30 days
+        thirty_days_ago = (now - timedelta(days=30)).strftime("%Y-%m-%d")
+        attendance = await db.officer_attendance.find({
+            "member_id": {"$in": member_ids},
+            "meeting_date": {"$gte": thirty_days_ago}
+        }).to_list(length=None)
+        
+        present_count = sum(1 for a in attendance if a.get("status") == "present")
+        total_attendance = len(attendance)
+        
+        # Get dues stats for current quarter
+        dues = await db.officer_dues.find({
+            "member_id": {"$in": member_ids},
+            "quarter": current_quarter
+        }).to_list(length=None)
+        
+        paid_count = sum(1 for d in dues if d.get("status") == "paid")
+        
+        summary[chapter] = {
+            "officer_count": len(member_ids),
+            "attendance_rate": round(present_count / total_attendance * 100, 1) if total_attendance > 0 else 0,
+            "meetings_tracked": total_attendance,
+            "dues_paid": paid_count,
+            "dues_total": len(member_ids),
+            "current_quarter": current_quarter
+        }
+    
+    return summary
+
+
 # ==================== EVENT ENDPOINTS ====================
 
 @api_router.get("/events")
