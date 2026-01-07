@@ -20,6 +20,7 @@ import WallOfHonor from "@/pages/WallOfHonor";
 import Store from "@/pages/Store";
 import SupporterStore from "@/pages/SupporterStore";
 import QuarterlyReports from "@/pages/QuarterlyReports";
+import AIKnowledgeManager from "@/pages/AIKnowledgeManager";
 import ChatBot from "@/components/ChatBot";
 import { Toaster } from "@/components/ui/sonner";
 
