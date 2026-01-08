@@ -133,6 +133,14 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
   const [passwordForm, setPasswordForm] = useState({ currentPassword: "", newPassword: "", confirmPassword: "" });
   const [passwordError, setPasswordError] = useState("");
   const [passwordSuccess, setPasswordSuccess] = useState("");
+  
+  // Suggestion Box state
+  const [suggestions, setSuggestions] = useState([]);
+  const [suggestionDialogOpen, setSuggestionDialogOpen] = useState(false);
+  const [newSuggestion, setNewSuggestion] = useState({ title: "", description: "", is_anonymous: false });
+  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
+  const [suggestionBoxExpanded, setSuggestionBoxExpanded] = useState(true);
+  
   const navigate = useNavigate();
 
   // Check if user is National Admin
