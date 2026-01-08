@@ -394,8 +394,9 @@ export default function UserManagement({ onLogout }) {
 
   // Calculate member statistics
   const getMemberStats = () => {
-    const totalMembers = members.length;
-    const chapterCounts = members.reduce((acc, member) => {
+    const membersArray = Array.isArray(members) ? members : [];
+    const totalMembers = membersArray.length;
+    const chapterCounts = membersArray.reduce((acc, member) => {
       const chapter = member.chapter || 'Unknown';
       acc[chapter] = (acc[chapter] || 0) + 1;
       return acc;
