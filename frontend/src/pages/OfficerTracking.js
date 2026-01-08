@@ -378,6 +378,7 @@ function OfficerTracking() {
                       <TableHead>Title</TableHead>
                       <TableHead>Attendance Rate</TableHead>
                       <TableHead>Last Meeting</TableHead>
+                      <TableHead>View</TableHead>
                       {canEdit && <TableHead>Action</TableHead>}
                     </TableRow>
                   </TableHeader>
@@ -411,6 +412,11 @@ function OfficerTracking() {
                             ) : (
                               <span className="text-muted-foreground text-xs">No records</span>
                             )}
+                          </TableCell>
+                          <TableCell>
+                            <Button size="sm" variant="outline" onClick={() => openViewMeetingsDialog(member)}>
+                              View All
+                            </Button>
                           </TableCell>
                           {canEdit && (
                             <TableCell>
