@@ -30,30 +30,26 @@ Build a member management application with attendance tracking, dues management,
 
 ### What's Been Implemented
 
-#### January 8, 2026
-- [x] **Batch API Performance Enhancement**
-  - Implemented `bulk_retrieve_customers` for Square API
-  - Reduced 32 individual API calls to 1 batch call
-  - Performance improved from ~15+ seconds to ~4 seconds
-- [x] **Fuzzy Name Matching**
-  - Implemented using RapidFuzz library with 75% threshold
-  - Supports exact_name, exact_handle, fuzzy_name, fuzzy_handle, partial_name matches
-  - Match scores displayed in UI (e.g., "Fuzzy 90%")
-- [x] **Manual Linking UI**
-  - Added "Link" buttons for unmatched subscriptions
-  - Member dropdown with all members (Handle - Name (Chapter))
-  - Confirm/Cancel workflow for linking
-  - Links stored in `member_subscriptions` collection
+#### January 8, 2026 - Suggestion Box Feature
+- [x] **Backend API Endpoints:**
+  - `GET /api/suggestions` - Get all suggestions with vote counts
+  - `POST /api/suggestions` - Submit new suggestion (with anonymous option)
+  - `POST /api/suggestions/{id}/vote` - Upvote or downvote
+  - `PATCH /api/suggestions/{id}/status` - Update status (National Officers only)
+  - `DELETE /api/suggestions/{id}` - Delete suggestion
+- [x] **Frontend UI on Dashboard:**
+  - Suggestion Box section with collapsible view
+  - "New Suggestion" dialog with title, description, anonymous checkbox
+  - Vote buttons (thumbs up/down) with vote count display
+  - Status badges (color-coded)
+  - Status dropdown for National Officers to manage
+  - Delete functionality
 
-#### Earlier Implementation
-- [x] Fixed Square SDK integration (updated from deprecated API methods)
-- [x] `GET /api/dues/subscriptions` - Fetch and match subscriptions
-- [x] `POST /api/dues/sync-subscriptions` - Sync subscriptions to dues
-- [x] View Subscriptions dialog showing matched and unmatched subscriptions
-- [x] A&D page with Attendance and Dues tabs
-- [x] Quick dues update buttons (Paid/Late/Not Paid)
-- [x] Meeting attendance tracking with chapter-specific types
-- [x] View All meetings with monthly filter and print functionality
+#### January 8, 2026 - Square Sync Enhancements
+- [x] **Batch API Performance** - Using `bulk_retrieve_customers`
+- [x] **Fuzzy Name Matching** - RapidFuzz with 75% threshold
+- [x] **Manual Linking UI** - Link buttons for unmatched subscriptions
+- [x] **A&D Dues Sync Fix** - Summary now correctly counts monthly dues
 
 ### Technical Architecture
 
