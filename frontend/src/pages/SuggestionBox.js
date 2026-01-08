@@ -322,9 +322,12 @@ export default function SuggestionBox() {
           <DialogHeader>
             <DialogTitle className="text-white flex items-center gap-2">
               <Lightbulb className="w-5 h-5 text-yellow-400" />
-              Submit a Suggestion
+              Submit App Suggestion
             </DialogTitle>
           </DialogHeader>
+          <div className="bg-yellow-900/30 border border-yellow-700/50 rounded-lg p-2 mb-2 text-xs text-yellow-200">
+            💡 Suggestions should be about improving the BOH Hub app features and functionality only.
+          </div>
           <form onSubmit={handleSubmitSuggestion} className="space-y-4">
             <div>
               <Label className="text-slate-300">Title</Label>
