@@ -1050,8 +1050,8 @@ function OfficerTracking() {
             <div className="space-y-2">
               <Label className="text-slate-300">Status</Label>
               <Select value={attendanceForm.status} onValueChange={(v) => setAttendanceForm({...attendanceForm, status: v})}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
+                <SelectTrigger className="bg-slate-700 border-slate-600 text-white"><SelectValue /></SelectTrigger>
+                <SelectContent className="bg-slate-700 border-slate-600">
                   <SelectItem value="present">Present</SelectItem>
                   <SelectItem value="absent">Absent</SelectItem>
                   <SelectItem value="excused">Excused</SelectItem>
@@ -1059,34 +1059,35 @@ function OfficerTracking() {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Notes (Optional)</Label>
+              <Label className="text-slate-300">Notes (Optional)</Label>
               <Textarea 
                 value={attendanceForm.notes}
                 onChange={(e) => setAttendanceForm({...attendanceForm, notes: e.target.value})}
                 placeholder="Any additional notes..."
+                className="bg-slate-700 border-slate-600 text-white"
               />
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setAttendanceDialog(false)}>Cancel</Button>
-            <Button onClick={handleAttendanceSubmit}>Save</Button>
+          <DialogFooter className="flex-col sm:flex-row gap-2">
+            <Button variant="outline" onClick={() => setAttendanceDialog(false)} className="w-full sm:w-auto">Cancel</Button>
+            <Button onClick={handleAttendanceSubmit} className="w-full sm:w-auto">Save</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       {/* Dues Dialog - Simplified */}
       <Dialog open={duesDialog} onOpenChange={setDuesDialog}>
-        <DialogContent>
+        <DialogContent className="bg-slate-800 border-slate-700 max-w-md mx-4 sm:mx-auto">
           <DialogHeader>
-            <DialogTitle>Update Dues</DialogTitle>
+            <DialogTitle className="text-white">Update Dues</DialogTitle>
             <DialogDescription>
               Update dues status for {selectedMember?.handle}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label>Status</Label>
-              <div className="flex gap-2">
+              <Label className="text-slate-300">Status</Label>
+              <div className="flex flex-col sm:flex-row gap-2">
                 {DUES_STATUSES.map(status => {
                   const Icon = status.icon;
                   return (
@@ -1104,26 +1105,27 @@ function OfficerTracking() {
               </div>
             </div>
             <div className="space-y-2">
-              <Label>Notes (Optional)</Label>
+              <Label className="text-slate-300">Notes (Optional)</Label>
               <Textarea 
                 value={duesForm.notes}
                 onChange={(e) => setDuesForm({...duesForm, notes: e.target.value})}
                 placeholder="Any additional notes about this dues status..."
+                className="bg-slate-700 border-slate-600 text-white"
               />
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDuesDialog(false)}>Cancel</Button>
-            <Button onClick={handleDuesSubmit}>Save</Button>
+          <DialogFooter className="flex-col sm:flex-row gap-2">
+            <Button variant="outline" onClick={() => setDuesDialog(false)} className="w-full sm:w-auto">Cancel</Button>
+            <Button onClick={handleDuesSubmit} className="w-full sm:w-auto">Save</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       {/* View Member Meetings Dialog */}
       <Dialog open={viewMeetingsDialog} onOpenChange={setViewMeetingsDialog}>
-        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+        <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto bg-slate-800 border-slate-700 mx-2 sm:mx-auto">
           <DialogHeader>
-            <DialogTitle>Meeting Attendance History</DialogTitle>
+            <DialogTitle className="text-white">Meeting Attendance History</DialogTitle>
             <DialogDescription>
               Meetings attended by {viewMeetingsMember?.handle}
             </DialogDescription>
