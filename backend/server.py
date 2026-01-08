@@ -7138,14 +7138,66 @@ async def delete_attendance(record_id: str, current_user: dict = Depends(verify_
     if not record:
         raise HTTPException(status_code=404, detail="Attendance record not found")
     
-    # Remove from member's attendance array
-    await db.members.update_one(
-        {"id": record["member_id"]},
-        {"$pull": {"meeting_attendance": {"date": record["meeting_date"], "type": record["meeting_type"]}}}
-    )
+    # Remove from member's meeting_attendance (format: {year: [{date, status, note}, ...]})
+    try:
+        year_str = record["meeting_date"].split('-')[0]
+        member = await db.members.find_one({"id": record["member_id"]})
+        if member:
+            attendance = member.get('meeting_attendance', {})
+            if year_str in attendance and isinstance(attendance[year_str], list):
+                # Filter out the meeting with matching date
+                attendance[year_str] = [
+                    m for m in attendance[year_str] 
+                    if not (isinstance(m, dict) and m.get('date') == record["meeting_date"])
+                ]
+                await db.members.update_one(
+                    {"id": record["member_id"]},
+                    {"$set": {"meeting_attendance": attendance}}
+                )
+    except Exception as e:
+        logger.error(f"Failed to update member attendance on delete: {str(e)}")
     
     result = await db.officer_attendance.delete_one({"id": record_id})
     return {"message": "Attendance record deleted"}
+
+# Endpoint to delete attendance from member side (syncs to officer_attendance)
+@api_router.delete("/members/{member_id}/attendance")
+async def delete_member_attendance(
+    member_id: str, 
+    meeting_date: str,
+    current_user: dict = Depends(verify_token)
+):
+    """Delete a meeting from member's attendance - syncs to officer_attendance collection"""
+    # Check permission
+    if not is_secretary(current_user) and current_user.get('role') != 'admin':
+        raise HTTPException(status_code=403, detail="Only Secretaries can delete attendance")
+    
+    # Remove from officer_attendance collection
+    result = await db.officer_attendance.delete_many({
+        "member_id": member_id,
+        "meeting_date": meeting_date
+    })
+    logger.info(f"Deleted {result.deleted_count} records from officer_attendance for member {member_id}, date {meeting_date}")
+    
+    # Remove from member's meeting_attendance
+    try:
+        year_str = meeting_date.split('-')[0]
+        member = await db.members.find_one({"id": member_id})
+        if member:
+            attendance = member.get('meeting_attendance', {})
+            if year_str in attendance and isinstance(attendance[year_str], list):
+                attendance[year_str] = [
+                    m for m in attendance[year_str] 
+                    if not (isinstance(m, dict) and m.get('date') == meeting_date)
+                ]
+                await db.members.update_one(
+                    {"id": member_id},
+                    {"$set": {"meeting_attendance": attendance}}
+                )
+    except Exception as e:
+        logger.error(f"Failed to update member attendance on delete: {str(e)}")
+    
+    return {"message": "Attendance record deleted from both locations"}
 
 @api_router.get("/officer-tracking/dues")
 async def get_dues_records(
