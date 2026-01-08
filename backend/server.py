@@ -10171,33 +10171,30 @@ async def get_square_subscriptions(current_user: dict = Depends(verify_token)):
         raise HTTPException(status_code=500, detail="Square client not configured")
     
     try:
-        # Get all subscriptions from Square
+        # Get all subscriptions from Square using new SDK format
         subscriptions = []
         cursor = None
         
         while True:
-            result = square_client.subscriptions.search_subscriptions(
-                body={
-                    "cursor": cursor,
-                    "limit": 100,
-                    "query": {
-                        "filter": {
-                            "status_info": {
-                                "statuses": ["ACTIVE"]
-                            }
-                        }
+            # New Square SDK uses .search() method with keyword arguments
+            result = square_client.subscriptions.search(
+                cursor=cursor,
+                limit=100,
+                query={
+                    "filter": {
+                        "location_ids": [SQUARE_LOCATION_ID]
                     }
                 }
             )
             
-            if result.is_success():
-                subs = result.body.get('subscriptions', [])
-                subscriptions.extend(subs)
-                cursor = result.body.get('cursor')
-                if not cursor:
-                    break
-            else:
-                logger.error(f"Square subscription search failed: {result.errors}")
+            # New SDK returns object with .subscriptions attribute
+            subs = result.subscriptions or []
+            # Filter for ACTIVE only
+            active_subs = [s for s in subs if s.status == "ACTIVE"]
+            subscriptions.extend(active_subs)
+            
+            cursor = result.cursor
+            if not cursor:
                 break
         
         # Get all members for matching
@@ -10208,10 +10205,10 @@ async def get_square_subscriptions(current_user: dict = Depends(verify_token)):
         unmatched_subs = []
         
         for sub in subscriptions:
-            customer_id = sub.get('customer_id')
-            sub_id = sub.get('id')
-            status = sub.get('status')
-            charged_through_date = sub.get('charged_through_date')
+            customer_id = sub.customer_id
+            sub_id = sub.id
+            status = sub.status
+            charged_through_date = sub.charged_through_date
             
             # Get customer name from Square
             customer_name = None
@@ -10219,13 +10216,14 @@ async def get_square_subscriptions(current_user: dict = Depends(verify_token)):
             
             if customer_id:
                 try:
-                    cust_result = square_client.customers.retrieve_customer(customer_id=customer_id)
-                    if cust_result.is_success():
-                        customer = cust_result.body.get('customer', {})
-                        given_name = customer.get('given_name', '')
-                        family_name = customer.get('family_name', '')
+                    # New SDK uses .get() method
+                    cust_result = square_client.customers.get(customer_id=customer_id)
+                    if cust_result.customer:
+                        customer = cust_result.customer
+                        given_name = customer.given_name or ''
+                        family_name = customer.family_name or ''
                         customer_name = f"{given_name} {family_name}".strip()
-                        customer_email = customer.get('email_address')
+                        customer_email = customer.email_address
                 except Exception as e:
                     logger.warning(f"Failed to get customer {customer_id}: {e}")
             
