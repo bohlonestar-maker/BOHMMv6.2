@@ -652,6 +652,7 @@ function OfficerTracking() {
                       <TableHead>Meeting Type</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Notes</TableHead>
+                      {canEdit && <TableHead>Delete</TableHead>}
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -663,12 +664,23 @@ function OfficerTracking() {
                           <TableCell>{getMeetingTypeLabel(record.meeting_type)}</TableCell>
                           <TableCell>{getStatusBadge(record.status)}</TableCell>
                           <TableCell className="text-sm text-muted-foreground">{record.notes || '-'}</TableCell>
+                          {canEdit && (
+                            <TableCell>
+                              <Button 
+                                size="sm" 
+                                variant="destructive"
+                                onClick={() => handleDeleteAttendance(record.id)}
+                              >
+                                <XCircle className="w-4 h-4" />
+                              </Button>
+                            </TableCell>
+                          )}
                         </TableRow>
                       ))
                     }
                     {getAttendanceForMember(viewMeetingsMember?.id || '').length === 0 && (
                       <TableRow>
-                        <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
+                        <TableCell colSpan={canEdit ? 5 : 4} className="text-center text-muted-foreground py-8">
                           No meeting records found
                         </TableCell>
                       </TableRow>
