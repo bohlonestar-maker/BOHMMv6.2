@@ -7317,17 +7317,17 @@ async def get_tracking_summary(current_user: dict = Depends(verify_token)):
     if not is_any_officer(current_user) and current_user.get('role') != 'admin':
         raise HTTPException(status_code=403, detail="Only officers can access this page")
     
-    # Get current quarter
+    # Get current month info
     now = datetime.now()
-    quarter_num = (now.month - 1) // 3 + 1
-    current_quarter = f"Q{quarter_num}_{now.year}"
+    month_names = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+    current_month = f"{month_names[now.month - 1]}_{now.year}"  # e.g., "Jan_2026"
     
     summary = {}
     for chapter in CHAPTERS:
         # Get ALL members in chapter
         members = await db.members.find(
             {"chapter": chapter},
-            {"id": 1}
+            {"id": 1, "dues": 1}
         ).to_list(length=None)
         member_ids = [m.get("id") for m in members]
         
@@ -7341,13 +7341,26 @@ async def get_tracking_summary(current_user: dict = Depends(verify_token)):
         present_count = sum(1 for a in attendance if a.get("status") == "present")
         total_attendance = len(attendance)
         
-        # Get dues stats for current quarter
-        dues = await db.officer_dues.find({
+        # Count dues paid for current month from officer_dues collection
+        dues_from_officer_dues = await db.officer_dues.find({
             "member_id": {"$in": member_ids},
-            "quarter": current_quarter
+            "month": current_month,
+            "status": "paid"
         }).to_list(length=None)
+        paid_from_officer_dues = len(dues_from_officer_dues)
         
-        paid_count = sum(1 for d in dues if d.get("status") == "paid")
+        # Also count from members.dues field for members not in officer_dues
+        paid_member_ids_from_collection = set(d.get("member_id") for d in dues_from_officer_dues)
+        year_str = str(now.year)
+        month_idx = now.month - 1  # 0-indexed
+        
+        paid_count = paid_from_officer_dues
+        for m in members:
+            if m.get("id") not in paid_member_ids_from_collection:
+                dues = m.get("dues", {})
+                if year_str in dues and isinstance(dues[year_str], list) and len(dues[year_str]) > month_idx:
+                    if dues[year_str][month_idx].get("status") == "paid":
+                        paid_count += 1
         
         summary[chapter] = {
             "member_count": len(member_ids),
@@ -7355,7 +7368,7 @@ async def get_tracking_summary(current_user: dict = Depends(verify_token)):
             "meetings_tracked": total_attendance,
             "dues_paid": paid_count,
             "dues_total": len(member_ids),
-            "current_quarter": current_quarter
+            "current_month": current_month
         }
     
     return summary
