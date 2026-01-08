@@ -610,6 +610,79 @@ function OfficerTracking() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* View Member Meetings Dialog */}
+      <Dialog open={viewMeetingsDialog} onOpenChange={setViewMeetingsDialog}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Meeting Attendance History</DialogTitle>
+            <DialogDescription>
+              All meetings attended by {viewMeetingsMember?.handle}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            {viewMeetingsMember && (
+              <>
+                <div className="flex items-center justify-between bg-slate-800 p-3 rounded-lg">
+                  <div>
+                    <span className="font-bold text-lg">{viewMeetingsMember.handle}</span>
+                    <span className="text-muted-foreground ml-2">({viewMeetingsMember.title || 'Member'})</span>
+                  </div>
+                  <div className="text-right">
+                    {(() => {
+                      const stats = getAttendanceStats(viewMeetingsMember.id);
+                      return (
+                        <div>
+                          <span className={stats.rate >= 80 ? 'text-green-500' : stats.rate >= 50 ? 'text-yellow-500' : 'text-red-500'}>
+                            {stats.rate}% Attendance
+                          </span>
+                          <span className="text-muted-foreground text-sm ml-2">
+                            ({stats.present}/{stats.total} meetings)
+                          </span>
+                        </div>
+                      );
+                    })()}
+                  </div>
+                </div>
+                
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Date</TableHead>
+                      <TableHead>Meeting Type</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Notes</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {getAttendanceForMember(viewMeetingsMember.id)
+                      .sort((a, b) => new Date(b.meeting_date) - new Date(a.meeting_date))
+                      .map((record, idx) => (
+                        <TableRow key={idx}>
+                          <TableCell>{record.meeting_date}</TableCell>
+                          <TableCell>{getMeetingTypeLabel(record.meeting_type)}</TableCell>
+                          <TableCell>{getStatusBadge(record.status)}</TableCell>
+                          <TableCell className="text-sm text-muted-foreground">{record.notes || '-'}</TableCell>
+                        </TableRow>
+                      ))
+                    }
+                    {getAttendanceForMember(viewMeetingsMember?.id || '').length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
+                          No meeting records found
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </>
+            )}
+          </div>
+          <DialogFooter>
+            <Button onClick={() => setViewMeetingsDialog(false)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
