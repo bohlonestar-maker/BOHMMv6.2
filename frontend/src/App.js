@@ -22,6 +22,7 @@ import SupporterStore from "@/pages/SupporterStore";
 import QuarterlyReports from "@/pages/QuarterlyReports";
 import AIKnowledgeManager from "@/pages/AIKnowledgeManager";
 import OfficerTracking from "@/pages/OfficerTracking";
+import SuggestionBox from "@/pages/SuggestionBox";
 import ChatBot from "@/components/ChatBot";
 import { Toaster } from "@/components/ui/sonner";
 
