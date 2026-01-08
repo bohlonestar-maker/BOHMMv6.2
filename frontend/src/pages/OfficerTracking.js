@@ -281,6 +281,52 @@ function OfficerTracking() {
     printWindow.print();
   };
 
+  // Fetch unmatched Square payments
+  const fetchUnmatchedPayments = async () => {
+    try {
+      const response = await axios.get(`${BACKEND_URL}/api/dues/unmatched-payments`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setUnmatchedPayments(response.data || []);
+    } catch (error) {
+      console.error("Failed to fetch unmatched payments:", error);
+    }
+  };
+
+  // Sync subscriptions from Square
+  const handleSyncSubscriptions = async () => {
+    try {
+      toast.info("Syncing subscriptions from Square...");
+      const response = await axios.post(`${BACKEND_URL}/api/dues/sync-subscriptions`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      toast.success(`Synced ${response.data.synced} subscriptions for ${response.data.month}`);
+      fetchData(); // Refresh dues data
+    } catch (error) {
+      toast.error(error.response?.data?.detail || "Failed to sync subscriptions");
+    }
+  };
+
+  // View subscriptions
+  const [subscriptions, setSubscriptions] = useState({ matched: [], unmatched: [] });
+  const [showSubscriptionsDialog, setShowSubscriptionsDialog] = useState(false);
+  const [loadingSubscriptions, setLoadingSubscriptions] = useState(false);
+
+  const handleViewSubscriptions = async () => {
+    setLoadingSubscriptions(true);
+    setShowSubscriptionsDialog(true);
+    try {
+      const response = await axios.get(`${BACKEND_URL}/api/dues/subscriptions`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setSubscriptions(response.data);
+    } catch (error) {
+      toast.error(error.response?.data?.detail || "Failed to fetch subscriptions");
+    } finally {
+      setLoadingSubscriptions(false);
+    }
+  };
+
   const openDuesDialog = (member, preselectedStatus = null) => {
     setSelectedMember(member);
     const existing = getCurrentMonthDues(member.id);
