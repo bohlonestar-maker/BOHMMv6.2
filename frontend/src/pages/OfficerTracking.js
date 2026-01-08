@@ -504,7 +504,7 @@ function OfficerTracking() {
               <Select value={attendanceForm.meeting_type} onValueChange={(v) => setAttendanceForm({...attendanceForm, meeting_type: v})}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {MEETING_TYPES.map(t => (
+                  {(MEETING_TYPES_BY_CHAPTER[selectedChapter] || []).map(t => (
                     <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
                   ))}
                 </SelectContent>
