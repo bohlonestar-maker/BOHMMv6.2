@@ -600,7 +600,22 @@ function OfficerTracking() {
 
           {/* Dues Content */}
           {activeTab === 'dues' && (
-              <div className="overflow-x-auto">
+              <div className="space-y-4">
+                {/* Square Sync Button */}
+                {canEdit && (
+                  <div className="flex gap-2 justify-end">
+                    <Button variant="outline" onClick={handleViewSubscriptions}>
+                      <CreditCard className="w-4 h-4 mr-2" />
+                      View Subscriptions
+                    </Button>
+                    <Button onClick={handleSyncSubscriptions} className="bg-purple-600 hover:bg-purple-700">
+                      <CreditCard className="w-4 h-4 mr-2" />
+                      Sync from Square
+                    </Button>
+                  </div>
+                )}
+                
+                <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
