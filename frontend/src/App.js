@@ -350,6 +350,16 @@ function App() {
               )
             }
           />
+          <Route
+            path="/suggestions"
+            element={
+              isAuthenticated ? (
+                <SuggestionBox />
+              ) : (
+                <Navigate to="/" replace />
+              )
+            }
+          />
         </Routes>
         <KeepAlive />
         {isAuthenticated && <MessageNotifier />}
