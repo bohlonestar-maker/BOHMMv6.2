@@ -1019,27 +1019,28 @@ function OfficerTracking() {
 
       {/* Attendance Dialog */}
       <Dialog open={attendanceDialog} onOpenChange={setAttendanceDialog}>
-        <DialogContent>
+        <DialogContent className="bg-slate-800 border-slate-700 max-w-md mx-4 sm:mx-auto">
           <DialogHeader>
-            <DialogTitle>Record Attendance</DialogTitle>
+            <DialogTitle className="text-white">Record Attendance</DialogTitle>
             <DialogDescription>
               Recording attendance for {selectedMember?.handle}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label>Meeting Date</Label>
+              <Label className="text-slate-300">Meeting Date</Label>
               <Input 
                 type="date" 
                 value={attendanceForm.meeting_date}
                 onChange={(e) => setAttendanceForm({...attendanceForm, meeting_date: e.target.value})}
+                className="bg-slate-700 border-slate-600 text-white"
               />
             </div>
             <div className="space-y-2">
-              <Label>Meeting Type</Label>
+              <Label className="text-slate-300">Meeting Type</Label>
               <Select value={attendanceForm.meeting_type} onValueChange={(v) => setAttendanceForm({...attendanceForm, meeting_type: v})}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
+                <SelectTrigger className="bg-slate-700 border-slate-600 text-white"><SelectValue /></SelectTrigger>
+                <SelectContent className="bg-slate-700 border-slate-600">
                   {(MEETING_TYPES_BY_CHAPTER[selectedChapter] || []).map(t => (
                     <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
                   ))}
@@ -1047,7 +1048,7 @@ function OfficerTracking() {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Status</Label>
+              <Label className="text-slate-300">Status</Label>
               <Select value={attendanceForm.status} onValueChange={(v) => setAttendanceForm({...attendanceForm, status: v})}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
