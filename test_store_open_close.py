@@ -12,7 +12,7 @@ import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 class StoreOpenCloseAPITester:
-    def __init__(self, base_url="https://boh-tracker.preview.emergentagent.com/api"):
+    def __init__(self, base_url="https://dues-tracker-15.preview.emergentagent.com/api"):
         self.base_url = base_url
         self.token = None
         self.tests_run = 0
