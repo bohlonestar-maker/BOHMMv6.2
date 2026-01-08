@@ -861,60 +861,12 @@ function OfficerTracking() {
           </CardContent>
         </Card>
       </div>
-                                <Button 
-                                  size="sm" 
-                                  className="bg-green-600 hover:bg-green-700 h-8 px-2"
-                                  onClick={() => handleQuickDuesUpdate(member, 'paid')}
-                                  title="Mark as Paid"
-                                >
-                                  <CheckCircle className="w-4 h-4" />
-                                </Button>
-                                <Button 
-                                  size="sm" 
-                                  className="bg-orange-500 hover:bg-orange-600 h-8 px-2"
-                                  onClick={() => handleQuickDuesUpdate(member, 'late')}
-                                  title="Mark as Late"
-                                >
-                                  <Clock className="w-4 h-4" />
-                                </Button>
-                                <Button 
-                                  size="sm" 
-                                  className="bg-red-600 hover:bg-red-700 h-8 px-2"
-                                  onClick={() => handleQuickDuesUpdate(member, 'unpaid')}
-                                  title="Mark as Not Paid"
-                                >
-                                  <XCircle className="w-4 h-4" />
-                                </Button>
-                              </div>
-                            </TableCell>
-                          )}
-                          {canEdit && (
-                            <TableCell>
-                              <Button 
-                                size="sm" 
-                                variant="outline"
-                                onClick={() => openDuesDialog(member)}
-                              >
-                                + Note
-                              </Button>
-                            </TableCell>
-                          )}
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
-              </div>
-              </div>
-          )}
-        </CardContent>
-      </Card>
 
       {/* Subscriptions Dialog */}
       <Dialog open={showSubscriptionsDialog} onOpenChange={setShowSubscriptionsDialog}>
-        <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto">
+        <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto bg-slate-800 border-slate-700">
           <DialogHeader>
-            <DialogTitle>Square Subscriptions</DialogTitle>
+            <DialogTitle className="text-white">Square Subscriptions</DialogTitle>
             <DialogDescription>
               Active dues subscriptions from Square • {subscriptions.customer_fetch_method === 'batch' && '⚡ Using batch API'}
             </DialogDescription>
