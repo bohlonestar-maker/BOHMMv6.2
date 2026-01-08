@@ -65,20 +65,18 @@ Build a member management application with attendance tracking, dues management,
 
 ### API Endpoints
 
-#### Subscription Endpoints
-- `GET /api/dues/subscriptions` - Get Square subscriptions with member matching (returns match_score, match_type, customer_fetch_method)
-- `POST /api/dues/sync-subscriptions` - Sync active subscriptions to member dues
-- `POST /api/dues/link-subscription` - Manually link member to Square customer
-- `DELETE /api/dues/link-subscription/{customer_id}` - Remove manual link
-- `GET /api/dues/all-members-for-linking` - Get members for linking dropdown
+#### Suggestion Box Endpoints (NEW)
+- `GET /api/suggestions` - Get all suggestions
+- `POST /api/suggestions` - Create suggestion
+- `POST /api/suggestions/{id}/vote` - Vote (upvote/downvote)
+- `PATCH /api/suggestions/{id}/status` - Update status
+- `DELETE /api/suggestions/{id}` - Delete suggestion
 
-#### A&D Endpoints
-- `GET /api/officer-tracking/members` - Get members for tracking
-- `GET /api/officer-tracking/attendance` - Get attendance records
-- `POST /api/officer-tracking/attendance` - Record attendance
-- `DELETE /api/officer-tracking/attendance/{id}` - Delete attendance
-- `GET /api/officer-tracking/dues` - Get dues records
-- `POST /api/officer-tracking/dues` - Update dues status
+#### Subscription Endpoints
+- `GET /api/dues/subscriptions` - Get Square subscriptions with matching
+- `POST /api/dues/sync-subscriptions` - Sync subscriptions to dues
+- `POST /api/dues/link-subscription` - Manual linking
+- `GET /api/dues/all-members-for-linking` - Get members for dropdown
 
 ### Database Collections
 - `member_subscriptions` - Stores manual/automatic subscription-to-member links
