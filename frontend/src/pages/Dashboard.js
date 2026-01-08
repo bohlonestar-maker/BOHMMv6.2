@@ -333,8 +333,10 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
       const response = await axios.get(`${API}/members`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      console.log("Members loaded successfully:", response.data.length, "members");
-      const sortedMembers = sortMembers(response.data);
+      // Ensure response.data is an array
+      const membersArray = Array.isArray(response.data) ? response.data : [];
+      console.log("Members loaded successfully:", membersArray.length, "members");
+      const sortedMembers = sortMembers(membersArray);
       setMembers(sortedMembers);
     } catch (error) {
       if (handleApiError(error, "Failed to load members")) {
