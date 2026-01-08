@@ -63,6 +63,10 @@ function OfficerTracking() {
   const [canEdit, setCanEdit] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   
+  // View Member Meetings Dialog
+  const [viewMeetingsDialog, setViewMeetingsDialog] = useState(false);
+  const [viewMeetingsMember, setViewMeetingsMember] = useState(null);
+  
   // Attendance Dialog
   const [attendanceDialog, setAttendanceDialog] = useState(false);
   const [selectedMember, setSelectedMember] = useState(null);
