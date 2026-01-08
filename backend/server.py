@@ -7359,7 +7359,12 @@ async def get_tracking_summary(current_user: dict = Depends(verify_token)):
             if m.get("id") not in paid_member_ids_from_collection:
                 dues = m.get("dues", {})
                 if year_str in dues and isinstance(dues[year_str], list) and len(dues[year_str]) > month_idx:
-                    if dues[year_str][month_idx].get("status") == "paid":
+                    month_data = dues[year_str][month_idx]
+                    # Handle different formats: dict with status, or just a status string/bool
+                    if isinstance(month_data, dict):
+                        if month_data.get("status") == "paid":
+                            paid_count += 1
+                    elif month_data == "paid" or month_data is True:
                         paid_count += 1
         
         summary[chapter] = {
