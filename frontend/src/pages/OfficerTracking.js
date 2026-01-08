@@ -749,16 +749,17 @@ function OfficerTracking() {
 
       {/* Subscriptions Dialog */}
       <Dialog open={showSubscriptionsDialog} onOpenChange={setShowSubscriptionsDialog}>
-        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+        <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Square Subscriptions</DialogTitle>
             <DialogDescription>
-              Active dues subscriptions from Square
+              Active dues subscriptions from Square • {subscriptions.customer_fetch_method === 'batch' && '⚡ Using batch API'}
             </DialogDescription>
           </DialogHeader>
           {loadingSubscriptions ? (
             <div className="flex items-center justify-center py-8">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+              <span className="ml-3 text-muted-foreground">Loading subscriptions...</span>
             </div>
           ) : (
             <div className="space-y-6">
@@ -773,19 +774,28 @@ function OfficerTracking() {
                       <TableRow>
                         <TableHead>Customer Name</TableHead>
                         <TableHead>Matched Member</TableHead>
+                        <TableHead>Match</TableHead>
                         <TableHead>Status</TableHead>
                         <TableHead>Paid Through</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {subscriptions.matched.map((sub, idx) => (
-                        <TableRow key={idx}>
-                          <TableCell>{sub.customer_name}</TableCell>
-                          <TableCell className="text-green-500 font-medium">{sub.matched_member_handle}</TableCell>
-                          <TableCell><Badge className="bg-green-600">{sub.status}</Badge></TableCell>
-                          <TableCell>{sub.charged_through_date}</TableCell>
-                        </TableRow>
-                      ))}
+                      {subscriptions.matched.map((sub, idx) => {
+                        const matchInfo = getMatchTypeLabel(sub.match_type, sub.match_score);
+                        return (
+                          <TableRow key={idx}>
+                            <TableCell>{sub.customer_name}</TableCell>
+                            <TableCell className="text-green-500 font-medium">{sub.matched_member_handle}</TableCell>
+                            <TableCell>
+                              {matchInfo && (
+                                <Badge className={`${matchInfo.color} text-xs`}>{matchInfo.text}</Badge>
+                              )}
+                            </TableCell>
+                            <TableCell><Badge className="bg-green-600">{sub.status}</Badge></TableCell>
+                            <TableCell>{sub.charged_through_date}</TableCell>
+                          </TableRow>
+                        );
+                      })}
                     </TableBody>
                   </Table>
                 ) : (
@@ -793,10 +803,15 @@ function OfficerTracking() {
                 )}
               </div>
 
-              {/* Unmatched Subscriptions */}
+              {/* Unmatched Subscriptions with Manual Linking */}
               <div>
                 <h3 className="font-semibold text-yellow-500 mb-2">
                   ⚠ Unmatched Subscriptions ({subscriptions.unmatched?.length || 0})
+                  {subscriptions.unmatched?.length > 0 && canEdit && (
+                    <span className="text-xs font-normal text-muted-foreground ml-2">
+                      Click "Link" to manually assign a member
+                    </span>
+                  )}
                 </h3>
                 {subscriptions.unmatched?.length > 0 ? (
                   <Table>
@@ -805,22 +820,77 @@ function OfficerTracking() {
                         <TableHead>Customer Name</TableHead>
                         <TableHead>Email</TableHead>
                         <TableHead>Status</TableHead>
+                        {canEdit && <TableHead>Action</TableHead>}
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {subscriptions.unmatched.map((sub, idx) => (
                         <TableRow key={idx}>
                           <TableCell>{sub.customer_name || 'Unknown'}</TableCell>
-                          <TableCell>{sub.customer_email || '-'}</TableCell>
+                          <TableCell className="text-sm text-muted-foreground">{sub.customer_email || '-'}</TableCell>
                           <TableCell><Badge variant="outline">{sub.status}</Badge></TableCell>
+                          {canEdit && (
+                            <TableCell>
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                onClick={() => {
+                                  setLinkingSubscription(sub);
+                                  setSelectedMemberForLink('');
+                                }}
+                              >
+                                Link
+                              </Button>
+                            </TableCell>
+                          )}
                         </TableRow>
                       ))}
                     </TableBody>
                   </Table>
                 ) : (
-                  <p className="text-muted-foreground text-sm">All subscriptions matched!</p>
+                  <p className="text-green-500 text-sm">🎉 All subscriptions matched!</p>
                 )}
               </div>
+
+              {/* Manual Linking Section */}
+              {linkingSubscription && (
+                <div className="border rounded-lg p-4 bg-slate-800">
+                  <h4 className="font-semibold mb-3">Link Subscription to Member</h4>
+                  <div className="space-y-3">
+                    <div>
+                      <Label className="text-muted-foreground">Customer from Square:</Label>
+                      <p className="font-medium">{linkingSubscription.customer_name} ({linkingSubscription.customer_email || 'No email'})</p>
+                    </div>
+                    <div>
+                      <Label>Select Member to Link:</Label>
+                      <Select value={selectedMemberForLink} onValueChange={setSelectedMemberForLink}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Choose a member..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {allMembersForLinking.map(member => (
+                            <SelectItem key={member.id} value={member.id}>
+                              {member.handle} - {member.name} ({member.chapter})
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button 
+                        onClick={handleLinkSubscription} 
+                        disabled={!selectedMemberForLink || linkingInProgress}
+                        className="bg-blue-600 hover:bg-blue-700"
+                      >
+                        {linkingInProgress ? 'Linking...' : 'Confirm Link'}
+                      </Button>
+                      <Button variant="outline" onClick={() => setLinkingSubscription(null)}>
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           )}
           <DialogFooter>
