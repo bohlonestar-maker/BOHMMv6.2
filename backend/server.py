@@ -10355,7 +10355,7 @@ async def get_square_subscriptions(current_user: dict = Depends(verify_token)):
 
 @api_router.post("/dues/sync-subscriptions")
 async def sync_subscriptions_to_dues(current_user: dict = Depends(verify_token)):
-    """Sync active Square subscriptions to member dues (marks current month as paid)"""
+    """Sync active Square subscriptions to member dues using batch API calls and fuzzy matching"""
     if not is_secretary(current_user) and current_user.get('role') != 'admin':
         raise HTTPException(status_code=403, detail="Only Secretaries can sync subscriptions")
     
@@ -10363,7 +10363,7 @@ async def sync_subscriptions_to_dues(current_user: dict = Depends(verify_token))
         raise HTTPException(status_code=500, detail="Square client not configured")
     
     try:
-        # Get active subscriptions using new SDK format
+        # Get active subscriptions
         subscriptions = []
         cursor = None
         
@@ -10378,9 +10378,7 @@ async def sync_subscriptions_to_dues(current_user: dict = Depends(verify_token))
                 }
             )
             
-            # New SDK returns object with .subscriptions attribute
             subs = result.subscriptions or []
-            # Filter for ACTIVE only
             active_subs = [s for s in subs if s.status == "ACTIVE"]
             subscriptions.extend(active_subs)
             
@@ -10388,66 +10386,79 @@ async def sync_subscriptions_to_dues(current_user: dict = Depends(verify_token))
             if not cursor:
                 break
         
-        # Get all members
-        members = await db.members.find({}, {"_id": 0}).to_list(1000)
-        
         # Current month info
         now = datetime.now(timezone.utc)
         year = str(now.year)
         month = now.month - 1  # 0-indexed
         month_names = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-        month_str = f"{month_names[month]}_{year}"
+        
+        # Filter subscriptions that cover current month
+        valid_subscriptions = []
+        for sub in subscriptions:
+            charged_through = sub.charged_through_date
+            if charged_through:
+                charged_year, charged_month, _ = charged_through.split('-')
+                if int(charged_year) >= now.year and (int(charged_year) > now.year or int(charged_month) >= now.month):
+                    valid_subscriptions.append(sub)
+        
+        # Batch retrieve customers for valid subscriptions
+        customer_ids = list(set(sub.customer_id for sub in valid_subscriptions if sub.customer_id))
+        customer_map = {}
+        
+        for i in range(0, len(customer_ids), 100):
+            batch_ids = customer_ids[i:i+100]
+            try:
+                batch_result = square_client.customers.bulk_retrieve_customers(
+                    customer_ids=batch_ids
+                )
+                if batch_result.responses:
+                    for cust_id, response in batch_result.responses.items():
+                        if response.customer:
+                            cust = response.customer
+                            given_name = cust.given_name or ''
+                            family_name = cust.family_name or ''
+                            customer_map[cust_id] = f"{given_name} {family_name}".strip()
+            except Exception as e:
+                logger.warning(f"Batch customer fetch failed: {e}")
+                # Fallback to individual fetches
+                for cust_id in batch_ids:
+                    try:
+                        cust_result = square_client.customers.get(customer_id=cust_id)
+                        if cust_result.customer:
+                            cust = cust_result.customer
+                            given_name = cust.given_name or ''
+                            family_name = cust.family_name or ''
+                            customer_map[cust_id] = f"{given_name} {family_name}".strip()
+                    except:
+                        pass
+        
+        # Get all members and manual links
+        members = await db.members.find({}, {"_id": 0}).to_list(1000)
+        manual_links = await db.member_subscriptions.find({}, {"_id": 0}).to_list(1000)
+        manual_link_map = {link.get("square_customer_id"): link.get("member_id") for link in manual_links if link.get("square_customer_id")}
         
         synced_count = 0
         skipped_count = 0
         errors = []
         
-        for sub in subscriptions:
+        for sub in valid_subscriptions:
             customer_id = sub.customer_id
-            charged_through = sub.charged_through_date  # e.g., "2026-01-31"
+            customer_name = customer_map.get(customer_id)
             
-            # Check if subscription covers current month
-            if charged_through:
-                charged_year, charged_month, _ = charged_through.split('-')
-                if int(charged_year) < now.year or (int(charged_year) == now.year and int(charged_month) < now.month):
-                    # Subscription hasn't been charged for this month yet
-                    skipped_count += 1
-                    continue
-            
-            # Get customer name using new SDK
-            customer_name = None
-            if customer_id:
-                try:
-                    cust_result = square_client.customers.get(customer_id=customer_id)
-                    if cust_result.customer:
-                        customer = cust_result.customer
-                        given_name = customer.given_name or ''
-                        family_name = customer.family_name or ''
-                        customer_name = f"{given_name} {family_name}".strip()
-                except:
-                    pass
-            
-            if not customer_name:
+            if not customer_name and customer_id not in manual_link_map:
                 skipped_count += 1
                 continue
             
-            # Match to member
             matched_member = None
-            customer_name_lower = customer_name.lower().strip()
             
-            for member in members:
-                member_name = member.get('name', '').lower().strip()
-                member_handle = member.get('handle', '').lower().strip()
-                
-                if customer_name_lower == member_name or customer_name_lower == member_handle:
-                    matched_member = member
-                    break
-                if customer_name_lower in member_name or member_name in customer_name_lower:
-                    matched_member = member
-                    break
-                if member_handle and (member_handle in customer_name_lower or customer_name_lower in member_handle):
-                    matched_member = member
-                    break
+            # First check manual link
+            if customer_id in manual_link_map:
+                member_id = manual_link_map[customer_id]
+                matched_member = next((m for m in members if m.get("id") == member_id), None)
+            
+            # Then try fuzzy matching
+            if not matched_member and customer_name:
+                matched_member, score, match_type = fuzzy_match_member(customer_name, members)
             
             if not matched_member:
                 skipped_count += 1
@@ -10463,7 +10474,7 @@ async def sync_subscriptions_to_dues(current_user: dict = Depends(verify_token))
                 await update_member_dues_from_webhook(dues_info)
                 synced_count += 1
                 
-                # Save subscription link for future reference
+                # Save/update subscription link
                 await db.member_subscriptions.update_one(
                     {"member_id": matched_member["id"]},
                     {"$set": {
@@ -10481,9 +10492,11 @@ async def sync_subscriptions_to_dues(current_user: dict = Depends(verify_token))
                 errors.append(f"Failed to update {matched_member.get('handle')}: {str(e)}")
         
         return {
-            "message": f"Subscription sync complete",
+            "message": "Subscription sync complete",
             "synced": synced_count,
             "skipped": skipped_count,
+            "total_subscriptions": len(subscriptions),
+            "valid_for_month": len(valid_subscriptions),
             "month": f"{month_names[month]} {year}",
             "errors": errors if errors else None
         }
