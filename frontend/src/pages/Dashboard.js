@@ -84,7 +84,8 @@ const formatMeetingDate = (date) => {
 
 // Helper function to sort members by chapter and title
 const sortMembers = (members) => {
-  return members.sort((a, b) => {
+  if (!Array.isArray(members)) return [];
+  return [...members].sort((a, b) => {
     // First sort by chapter
     const chapterA = CHAPTERS.indexOf(a.chapter);
     const chapterB = CHAPTERS.indexOf(b.chapter);
