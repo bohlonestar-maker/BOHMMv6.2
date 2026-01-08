@@ -724,16 +724,17 @@ function OfficerTracking() {
 
       {/* View Member Meetings Dialog */}
       <Dialog open={viewMeetingsDialog} onOpenChange={setViewMeetingsDialog}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Meeting Attendance History</DialogTitle>
             <DialogDescription>
-              All meetings attended by {viewMeetingsMember?.handle}
+              Meetings attended by {viewMeetingsMember?.handle}
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
+          <div className="space-y-4" ref={printRef}>
             {viewMeetingsMember && (
               <>
+                {/* Header with stats */}
                 <div className="flex items-center justify-between bg-slate-800 p-3 rounded-lg">
                   <div>
                     <span className="font-bold text-lg">{viewMeetingsMember.handle}</span>
@@ -755,6 +756,28 @@ function OfficerTracking() {
                     })()}
                   </div>
                 </div>
+
+                {/* Filter and Print Controls */}
+                <div className="flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-2">
+                    <Label>Filter by Month:</Label>
+                    <Select value={viewMeetingsFilter} onValueChange={setViewMeetingsFilter}>
+                      <SelectTrigger className="w-40">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Time</SelectItem>
+                        {getAvailableMonths(viewMeetingsMember.id).map(month => (
+                          <SelectItem key={month} value={month}>{formatMonth(month)}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <Button variant="outline" onClick={handlePrintMeetings}>
+                    <Printer className="w-4 h-4 mr-2" />
+                    Print
+                  </Button>
+                </div>
                 
                 <Table>
                   <TableHeader>
@@ -767,8 +790,7 @@ function OfficerTracking() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {getAttendanceForMember(viewMeetingsMember.id)
-                      .sort((a, b) => new Date(b.meeting_date) - new Date(a.meeting_date))
+                    {getFilteredMeetings(viewMeetingsMember.id)
                       .map((record, idx) => (
                         <TableRow key={idx}>
                           <TableCell>{record.meeting_date}</TableCell>
