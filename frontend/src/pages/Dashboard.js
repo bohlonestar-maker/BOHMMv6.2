@@ -240,7 +240,6 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
     fetchUnreadPrivateCount();
     fetchUpcomingEventsCount();
     fetchTotalExperience();
-    fetchSuggestions();
     // Auto-refresh counts every 30 seconds
     const interval = setInterval(() => {
       fetchUnreadPrivateCount();
