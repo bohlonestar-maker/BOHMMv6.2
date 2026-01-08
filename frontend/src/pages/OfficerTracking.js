@@ -16,12 +16,33 @@ import axios from 'axios';
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
 const CHAPTERS = ['National', 'AD', 'HA', 'HS'];
-const MEETING_TYPES = [
-  { value: 'national_officer', label: 'National Officer Meeting' },
-  { value: 'chapter_officer', label: 'Chapter Officer Meeting' },
-  { value: 'prospect', label: 'Prospect Meeting' },
-  { value: 'member', label: 'Member Meeting' }
-];
+
+// Meeting types based on chapter
+const MEETING_TYPES_BY_CHAPTER = {
+  National: [
+    { value: 'national_board', label: 'National Board' },
+    { value: 'national_quarterly', label: 'National Quarterly' },
+    { value: 'budget_committee', label: 'Budget Committee' }
+  ],
+  AD: [
+    { value: 'national_quarterly', label: 'National Quarterly' },
+    { value: 'joint_officers', label: 'Joint Officers' },
+    { value: 'chapter_officers', label: 'Chapter Officers' },
+    { value: 'ad_chapter', label: 'AD Chapter' }
+  ],
+  HA: [
+    { value: 'national_quarterly', label: 'National Quarterly' },
+    { value: 'joint_officers', label: 'Joint Officers' },
+    { value: 'chapter_officers', label: 'Chapter Officers' },
+    { value: 'ha_chapter', label: 'HA Chapter' }
+  ],
+  HS: [
+    { value: 'national_quarterly', label: 'National Quarterly' },
+    { value: 'joint_officers', label: 'Joint Officers' },
+    { value: 'chapter_officers', label: 'Chapter Officers' },
+    { value: 'hs_chapter', label: 'HS Chapter' }
+  ]
+};
 
 // Dues status options with colors
 const DUES_STATUSES = [
