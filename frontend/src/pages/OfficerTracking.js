@@ -66,6 +66,8 @@ function OfficerTracking() {
   // View Member Meetings Dialog
   const [viewMeetingsDialog, setViewMeetingsDialog] = useState(false);
   const [viewMeetingsMember, setViewMeetingsMember] = useState(null);
+  const [viewMeetingsFilter, setViewMeetingsFilter] = useState('all'); // 'all' or 'YYYY-MM'
+  const printRef = useRef(null);
   
   // Attendance Dialog
   const [attendanceDialog, setAttendanceDialog] = useState(false);
