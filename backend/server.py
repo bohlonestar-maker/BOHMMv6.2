@@ -10159,6 +10159,113 @@ async def get_square_webhook_info(current_user: dict = Depends(verify_token)):
         }
     }
 
+# ==================== DUES PAYMENT MANAGEMENT ENDPOINTS ====================
+
+@api_router.get("/dues/unmatched-payments")
+async def get_unmatched_payments(current_user: dict = Depends(verify_token)):
+    """Get unmatched Square payments for manual review (SEC, NVP, NPrez, or admin)"""
+    if not is_secretary(current_user) and current_user.get('role') != 'admin':
+        raise HTTPException(status_code=403, detail="Only Secretaries can view unmatched payments")
+    
+    payments = await db.unmatched_payments.find(
+        {"status": "unmatched"},
+        {"_id": 0}
+    ).sort("created_at", -1).to_list(100)
+    
+    return payments
+
+
+@api_router.get("/dues/matched-payments")
+async def get_matched_payments(current_user: dict = Depends(verify_token)):
+    """Get external payments that were auto-matched to members"""
+    if not is_secretary(current_user) and current_user.get('role') != 'admin':
+        raise HTTPException(status_code=403, detail="Only Secretaries can view matched payments")
+    
+    payments = await db.external_dues_payments.find(
+        {},
+        {"_id": 0}
+    ).sort("created_at", -1).to_list(100)
+    
+    return payments
+
+
+@api_router.post("/dues/match-payment")
+async def match_payment_to_member(
+    payment_id: str,
+    member_id: str,
+    year: int,
+    month: int,
+    current_user: dict = Depends(verify_token)
+):
+    """Manually match an unmatched payment to a member"""
+    if not is_secretary(current_user) and current_user.get('role') != 'admin':
+        raise HTTPException(status_code=403, detail="Only Secretaries can match payments")
+    
+    # Find the unmatched payment
+    payment = await db.unmatched_payments.find_one({"id": payment_id})
+    if not payment:
+        raise HTTPException(status_code=404, detail="Payment not found")
+    
+    # Find the member
+    member = await db.members.find_one({"id": member_id})
+    if not member:
+        raise HTTPException(status_code=404, detail="Member not found")
+    
+    month_names = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+    
+    # Update dues
+    dues_info = {
+        "member_id": member_id,
+        "year": year,
+        "month": month
+    }
+    await update_member_dues_from_webhook(dues_info)
+    
+    # Move payment to matched
+    matched_record = {
+        "id": str(uuid.uuid4()),
+        "square_payment_id": payment.get("square_payment_id"),
+        "customer_name": payment.get("customer_name"),
+        "member_id": member_id,
+        "member_handle": member.get("handle"),
+        "amount": payment.get("amount"),
+        "year": str(year),
+        "month": month,
+        "month_name": month_names[month],
+        "match_score": 100,
+        "matched_by": current_user.get("username"),
+        "created_at": payment.get("created_at"),
+        "matched_at": datetime.now(timezone.utc).isoformat(),
+        "source": "manual_match"
+    }
+    await db.external_dues_payments.insert_one(matched_record)
+    
+    # Mark original as matched
+    await db.unmatched_payments.update_one(
+        {"id": payment_id},
+        {"$set": {"status": "matched", "matched_to": member_id, "matched_at": datetime.now(timezone.utc).isoformat()}}
+    )
+    
+    return {"message": f"Payment matched to {member.get('handle')} for {month_names[month]} {year}"}
+
+
+@api_router.delete("/dues/unmatched-payments/{payment_id}")
+async def dismiss_unmatched_payment(payment_id: str, current_user: dict = Depends(verify_token)):
+    """Dismiss/ignore an unmatched payment (not a dues payment)"""
+    if not is_secretary(current_user) and current_user.get('role') != 'admin':
+        raise HTTPException(status_code=403, detail="Only Secretaries can dismiss payments")
+    
+    result = await db.unmatched_payments.update_one(
+        {"id": payment_id},
+        {"$set": {"status": "dismissed", "dismissed_by": current_user.get("username"), "dismissed_at": datetime.now(timezone.utc).isoformat()}}
+    )
+    
+    if result.modified_count == 0:
+        raise HTTPException(status_code=404, detail="Payment not found")
+    
+    return {"message": "Payment dismissed"}
+
+
 # ==================== STORE ADMIN MANAGEMENT ENDPOINTS ====================
 
 @api_router.get("/store/admins/status")
