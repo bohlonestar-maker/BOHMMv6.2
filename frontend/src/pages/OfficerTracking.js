@@ -311,20 +311,76 @@ function OfficerTracking() {
   const [subscriptions, setSubscriptions] = useState({ matched: [], unmatched: [] });
   const [showSubscriptionsDialog, setShowSubscriptionsDialog] = useState(false);
   const [loadingSubscriptions, setLoadingSubscriptions] = useState(false);
+  
+  // Manual linking state
+  const [allMembersForLinking, setAllMembersForLinking] = useState([]);
+  const [linkingSubscription, setLinkingSubscription] = useState(null);
+  const [selectedMemberForLink, setSelectedMemberForLink] = useState('');
+  const [linkingInProgress, setLinkingInProgress] = useState(false);
 
   const handleViewSubscriptions = async () => {
     setLoadingSubscriptions(true);
     setShowSubscriptionsDialog(true);
     try {
-      const response = await axios.get(`${BACKEND_URL}/api/dues/subscriptions`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setSubscriptions(response.data);
+      const [subsResponse, membersResponse] = await Promise.all([
+        axios.get(`${BACKEND_URL}/api/dues/subscriptions`, {
+          headers: { Authorization: `Bearer ${token}` }
+        }),
+        axios.get(`${BACKEND_URL}/api/dues/all-members-for-linking`, {
+          headers: { Authorization: `Bearer ${token}` }
+        })
+      ]);
+      setSubscriptions(subsResponse.data);
+      setAllMembersForLinking(membersResponse.data);
     } catch (error) {
       toast.error(error.response?.data?.detail || "Failed to fetch subscriptions");
     } finally {
       setLoadingSubscriptions(false);
     }
+  };
+
+  const handleLinkSubscription = async () => {
+    if (!linkingSubscription || !selectedMemberForLink) {
+      toast.error("Please select a member");
+      return;
+    }
+    
+    setLinkingInProgress(true);
+    try {
+      await axios.post(`${BACKEND_URL}/api/dues/link-subscription`, {
+        member_id: selectedMemberForLink,
+        square_customer_id: linkingSubscription.customer_id
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      toast.success("Subscription linked successfully!");
+      setLinkingSubscription(null);
+      setSelectedMemberForLink('');
+      
+      // Refresh subscriptions
+      const response = await axios.get(`${BACKEND_URL}/api/dues/subscriptions`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setSubscriptions(response.data);
+    } catch (error) {
+      toast.error(error.response?.data?.detail || "Failed to link subscription");
+    } finally {
+      setLinkingInProgress(false);
+    }
+  };
+
+  const getMatchTypeLabel = (matchType, score) => {
+    if (!matchType) return null;
+    const labels = {
+      'manual_link': { text: 'Manual', color: 'bg-blue-600' },
+      'exact_name': { text: 'Exact', color: 'bg-green-600' },
+      'exact_handle': { text: 'Exact', color: 'bg-green-600' },
+      'fuzzy_name': { text: `Fuzzy ${score}%`, color: score >= 90 ? 'bg-green-500' : 'bg-yellow-500' },
+      'fuzzy_handle': { text: `Fuzzy ${score}%`, color: score >= 90 ? 'bg-green-500' : 'bg-yellow-500' },
+      'partial_name': { text: 'Partial', color: 'bg-yellow-600' }
+    };
+    return labels[matchType] || { text: matchType, color: 'bg-gray-500' };
   };
 
   const openDuesDialog = (member, preselectedStatus = null) => {
