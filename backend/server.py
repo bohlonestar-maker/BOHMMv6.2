@@ -10282,32 +10282,29 @@ async def sync_subscriptions_to_dues(current_user: dict = Depends(verify_token))
         raise HTTPException(status_code=500, detail="Square client not configured")
     
     try:
-        # Get active subscriptions
+        # Get active subscriptions using new SDK format
         subscriptions = []
         cursor = None
         
         while True:
-            result = square_client.subscriptions.search_subscriptions(
-                body={
-                    "cursor": cursor,
-                    "limit": 100,
-                    "query": {
-                        "filter": {
-                            "status_info": {
-                                "statuses": ["ACTIVE"]
-                            }
-                        }
+            result = square_client.subscriptions.search(
+                cursor=cursor,
+                limit=100,
+                query={
+                    "filter": {
+                        "location_ids": [SQUARE_LOCATION_ID]
                     }
                 }
             )
             
-            if result.is_success():
-                subs = result.body.get('subscriptions', [])
-                subscriptions.extend(subs)
-                cursor = result.body.get('cursor')
-                if not cursor:
-                    break
-            else:
+            # New SDK returns object with .subscriptions attribute
+            subs = result.subscriptions or []
+            # Filter for ACTIVE only
+            active_subs = [s for s in subs if s.status == "ACTIVE"]
+            subscriptions.extend(active_subs)
+            
+            cursor = result.cursor
+            if not cursor:
                 break
         
         # Get all members
@@ -10325,8 +10322,8 @@ async def sync_subscriptions_to_dues(current_user: dict = Depends(verify_token))
         errors = []
         
         for sub in subscriptions:
-            customer_id = sub.get('customer_id')
-            charged_through = sub.get('charged_through_date')  # e.g., "2026-01-31"
+            customer_id = sub.customer_id
+            charged_through = sub.charged_through_date  # e.g., "2026-01-31"
             
             # Check if subscription covers current month
             if charged_through:
@@ -10336,15 +10333,15 @@ async def sync_subscriptions_to_dues(current_user: dict = Depends(verify_token))
                     skipped_count += 1
                     continue
             
-            # Get customer name
+            # Get customer name using new SDK
             customer_name = None
             if customer_id:
                 try:
-                    cust_result = square_client.customers.retrieve_customer(customer_id=customer_id)
-                    if cust_result.is_success():
-                        customer = cust_result.body.get('customer', {})
-                        given_name = customer.get('given_name', '')
-                        family_name = customer.get('family_name', '')
+                    cust_result = square_client.customers.get(customer_id=customer_id)
+                    if cust_result.customer:
+                        customer = cust_result.customer
+                        given_name = customer.given_name or ''
+                        family_name = customer.family_name or ''
                         customer_name = f"{given_name} {family_name}".strip()
                 except:
                     pass
@@ -10392,7 +10389,7 @@ async def sync_subscriptions_to_dues(current_user: dict = Depends(verify_token))
                         "member_id": matched_member["id"],
                         "member_handle": matched_member.get("handle"),
                         "square_customer_id": customer_id,
-                        "square_subscription_id": sub.get("id"),
+                        "square_subscription_id": sub.id,
                         "customer_name": customer_name,
                         "last_synced": datetime.now(timezone.utc).isoformat()
                     }},
