@@ -164,6 +164,7 @@ function OfficerTracking() {
 
   const openViewMeetingsDialog = (member) => {
     setViewMeetingsMember(member);
+    setViewMeetingsFilter('all');
     setViewMeetingsDialog(true);
   };
 
@@ -177,6 +178,99 @@ function OfficerTracking() {
     ];
     const found = allMeetingTypes.find(t => t.value === value);
     return found ? found.label : value;
+  };
+
+  // Get filtered meetings for view dialog
+  const getFilteredMeetings = (memberId) => {
+    const allMeetings = getAttendanceForMember(memberId);
+    if (viewMeetingsFilter === 'all') {
+      return allMeetings.sort((a, b) => new Date(b.meeting_date) - new Date(a.meeting_date));
+    }
+    // Filter by month (YYYY-MM format)
+    return allMeetings
+      .filter(m => m.meeting_date && m.meeting_date.startsWith(viewMeetingsFilter))
+      .sort((a, b) => new Date(b.meeting_date) - new Date(a.meeting_date));
+  };
+
+  // Get unique months from attendance records
+  const getAvailableMonths = (memberId) => {
+    const meetings = getAttendanceForMember(memberId);
+    const months = new Set();
+    meetings.forEach(m => {
+      if (m.meeting_date) {
+        const yearMonth = m.meeting_date.substring(0, 7); // YYYY-MM
+        months.add(yearMonth);
+      }
+    });
+    return Array.from(months).sort().reverse();
+  };
+
+  // Format month for display
+  const formatMonth = (yearMonth) => {
+    const [year, month] = yearMonth.split('-');
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return `${monthNames[parseInt(month) - 1]} ${year}`;
+  };
+
+  // Print meetings
+  const handlePrintMeetings = () => {
+    const content = printRef.current;
+    if (!content) return;
+    
+    const printWindow = window.open('', '_blank');
+    const meetings = getFilteredMeetings(viewMeetingsMember?.id || '');
+    const stats = getAttendanceStats(viewMeetingsMember?.id || '');
+    
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Meeting Attendance - ${viewMeetingsMember?.handle}</title>
+          <style>
+            body { font-family: Arial, sans-serif; padding: 20px; }
+            h1 { font-size: 18px; margin-bottom: 5px; }
+            h2 { font-size: 14px; color: #666; margin-bottom: 20px; }
+            table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+            th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+            th { background-color: #f5f5f5; }
+            .stats { margin-bottom: 15px; padding: 10px; background: #f9f9f9; border-radius: 5px; }
+            .present { color: green; }
+            .absent { color: red; }
+            .excused { color: orange; }
+          </style>
+        </head>
+        <body>
+          <h1>Meeting Attendance Report</h1>
+          <h2>${viewMeetingsMember?.handle} (${viewMeetingsMember?.title || 'Member'}) - ${viewMeetingsFilter === 'all' ? 'All Time' : formatMonth(viewMeetingsFilter)}</h2>
+          <div class="stats">
+            <strong>Attendance Rate:</strong> ${stats.rate}% (${stats.present} present out of ${stats.total} meetings)
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Meeting Type</th>
+                <th>Status</th>
+                <th>Notes</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${meetings.map(m => `
+                <tr>
+                  <td>${m.meeting_date}</td>
+                  <td>${getMeetingTypeLabel(m.meeting_type)}</td>
+                  <td class="${m.status}">${m.status.charAt(0).toUpperCase() + m.status.slice(1)}</td>
+                  <td>${m.notes || '-'}</td>
+                </tr>
+              `).join('')}
+              ${meetings.length === 0 ? '<tr><td colspan="4" style="text-align:center;">No meetings found</td></tr>' : ''}
+            </tbody>
+          </table>
+          <p style="margin-top: 20px; font-size: 12px; color: #999;">Printed on ${new Date().toLocaleDateString()}</p>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+    printWindow.print();
   };
 
   const openDuesDialog = (member, preselectedStatus = null) => {
