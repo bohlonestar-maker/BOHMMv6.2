@@ -9817,55 +9817,179 @@ async def handle_payment_completed(event_data: dict):
         payment_id = payment.get('id')
         order_id = payment.get('order_id')
         status_value = payment.get('status')
+        amount_money = payment.get('amount_money', {})
+        amount_cents = amount_money.get('amount', 0)
+        amount_dollars = amount_cents / 100 if amount_cents else 0
         
-        logger.info(f"Payment completed: payment_id={payment_id}, order_id={order_id}, status={status_value}")
+        logger.info(f"Payment completed: payment_id={payment_id}, order_id={order_id}, status={status_value}, amount=${amount_dollars}")
         
-        if not order_id:
-            logger.warning("Payment completed event missing order_id")
-            return
-        
-        # Find our local order by square_order_id
-        local_order = await db.store_orders.find_one({"square_order_id": order_id})
-        
-        if not local_order:
-            # Try finding by the reference_id we set (our local order ID)
-            reference_id = payment.get('reference_id')
-            if reference_id:
-                local_order = await db.store_orders.find_one({"id": reference_id})
-        
-        if not local_order:
-            logger.warning(f"Local order not found for Square order_id: {order_id}")
-            return
-        
-        # Update order status to paid
-        if local_order.get('status') != 'paid':
-            update_data = {
-                "status": "paid",
-                "square_payment_id": payment_id,
-                "payment_completed_at": datetime.now(timezone.utc).isoformat(),
-                "updated_at": datetime.now(timezone.utc).isoformat()
-            }
+        # Try to find local order first (for in-app store purchases)
+        local_order = None
+        if order_id:
+            local_order = await db.store_orders.find_one({"square_order_id": order_id})
             
-            await db.store_orders.update_one(
-                {"id": local_order["id"]},
-                {"$set": update_data}
-            )
+            if not local_order:
+                reference_id = payment.get('reference_id')
+                if reference_id:
+                    local_order = await db.store_orders.find_one({"id": reference_id})
+        
+        if local_order:
+            # Handle in-app store order
+            if local_order.get('status') != 'paid':
+                update_data = {
+                    "status": "paid",
+                    "square_payment_id": payment_id,
+                    "payment_completed_at": datetime.now(timezone.utc).isoformat(),
+                    "updated_at": datetime.now(timezone.utc).isoformat()
+                }
+                
+                await db.store_orders.update_one(
+                    {"id": local_order["id"]},
+                    {"$set": update_data}
+                )
+                
+                logger.info(f"Order {local_order['id']} updated to 'paid' via webhook")
+                
+                # Update member dues if this is a dues payment
+                dues_info = local_order.get("dues_info")
+                if dues_info and dues_info.get("member_id"):
+                    await update_member_dues_from_webhook(dues_info)
+                
+                await log_activity(
+                    local_order.get("user_id", "webhook"),
+                    "order_paid_webhook",
+                    f"Order {local_order['id']} marked as paid via Square webhook"
+                )
+        else:
+            # No local order - this might be a direct Square payment (payment link, POS, etc.)
+            # Try to match to a member for automatic dues tracking
+            await try_match_external_payment_to_dues(payment, payment_id, amount_dollars)
             
-            logger.info(f"Order {local_order['id']} updated to 'paid' via webhook")
-            
-            # Update member dues if this is a dues payment
-            dues_info = local_order.get("dues_info")
-            if dues_info and dues_info.get("member_id"):
-                await update_member_dues_from_webhook(dues_info)
-            
-            # Log activity
-            await log_activity(
-                local_order.get("user_id", "webhook"),
-                "order_paid_webhook",
-                f"Order {local_order['id']} marked as paid via Square webhook"
-            )
     except Exception as e:
         logger.error(f"Error handling payment.completed: {str(e)}")
+
+
+async def try_match_external_payment_to_dues(payment: dict, payment_id: str, amount: float):
+    """Try to match an external Square payment to a member for dues tracking"""
+    try:
+        # Get customer info from payment
+        customer_id = payment.get('customer_id')
+        buyer_email = payment.get('buyer_email_address')
+        note = payment.get('note', '')
+        
+        customer_name = None
+        
+        # Try to get customer name from Square
+        if customer_id and square_client:
+            try:
+                result = square_client.customers.retrieve_customer(customer_id=customer_id)
+                if result.is_success():
+                    customer = result.body.get('customer', {})
+                    given_name = customer.get('given_name', '')
+                    family_name = customer.get('family_name', '')
+                    customer_name = f"{given_name} {family_name}".strip()
+                    if not customer_name:
+                        customer_name = customer.get('company_name')
+            except Exception as e:
+                logger.warning(f"Failed to get customer from Square: {e}")
+        
+        if not customer_name:
+            logger.info(f"External payment {payment_id}: No customer name found, skipping dues match")
+            return
+        
+        logger.info(f"External payment {payment_id}: Trying to match customer '{customer_name}' to member")
+        
+        # Try to find matching member by name (fuzzy match)
+        members = await db.members.find({}, {"_id": 0}).to_list(1000)
+        
+        matched_member = None
+        best_score = 0
+        
+        customer_name_lower = customer_name.lower().strip()
+        
+        for member in members:
+            member_name = member.get('name', '').lower().strip()
+            member_handle = member.get('handle', '').lower().strip()
+            
+            # Exact match on name
+            if customer_name_lower == member_name:
+                matched_member = member
+                best_score = 100
+                break
+            
+            # Exact match on handle
+            if customer_name_lower == member_handle:
+                matched_member = member
+                best_score = 100
+                break
+            
+            # Partial match (name contains or is contained)
+            if customer_name_lower in member_name or member_name in customer_name_lower:
+                score = 80
+                if score > best_score:
+                    best_score = score
+                    matched_member = member
+            
+            # Check if handle matches part of customer name
+            if member_handle and (member_handle in customer_name_lower or customer_name_lower in member_handle):
+                score = 75
+                if score > best_score:
+                    best_score = score
+                    matched_member = member
+        
+        if matched_member and best_score >= 75:
+            logger.info(f"External payment {payment_id}: Matched to member '{matched_member.get('handle')}' (score: {best_score})")
+            
+            # Mark current month as paid
+            now = datetime.now(timezone.utc)
+            year = str(now.year)
+            month = now.month - 1  # 0-indexed
+            month_names = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+            
+            dues_info = {
+                "member_id": matched_member["id"],
+                "year": int(year),
+                "month": month,
+                "month_name": month_names[month]
+            }
+            
+            await update_member_dues_from_webhook(dues_info)
+            
+            # Log the external payment for tracking
+            external_payment_record = {
+                "id": str(uuid.uuid4()),
+                "square_payment_id": payment_id,
+                "customer_name": customer_name,
+                "member_id": matched_member["id"],
+                "member_handle": matched_member.get("handle"),
+                "amount": amount,
+                "year": year,
+                "month": month,
+                "month_name": month_names[month],
+                "match_score": best_score,
+                "created_at": datetime.now(timezone.utc).isoformat(),
+                "source": "external_square_payment"
+            }
+            await db.external_dues_payments.insert_one(external_payment_record)
+            
+            logger.info(f"External payment {payment_id}: Dues updated for {matched_member.get('handle')} - {month_names[month]} {year}")
+        else:
+            # Log unmatched payment for manual review
+            unmatched_record = {
+                "id": str(uuid.uuid4()),
+                "square_payment_id": payment_id,
+                "customer_name": customer_name,
+                "buyer_email": buyer_email,
+                "amount": amount,
+                "note": note,
+                "status": "unmatched",
+                "created_at": datetime.now(timezone.utc).isoformat()
+            }
+            await db.unmatched_payments.insert_one(unmatched_record)
+            logger.info(f"External payment {payment_id}: No member match found for '{customer_name}', saved for review")
+            
+    except Exception as e:
+        logger.error(f"Error matching external payment to dues: {str(e)}")
 
 async def handle_payment_updated(event_data: dict):
     """Handle payment.updated webhook event"""
