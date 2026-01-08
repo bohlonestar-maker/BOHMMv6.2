@@ -811,10 +811,10 @@ function OfficerTracking() {
                         </TableRow>
                       ))
                     }
-                    {getAttendanceForMember(viewMeetingsMember?.id || '').length === 0 && (
+                    {getFilteredMeetings(viewMeetingsMember?.id || '').length === 0 && (
                       <TableRow>
                         <TableCell colSpan={canEdit ? 5 : 4} className="text-center text-muted-foreground py-8">
-                          No meeting records found
+                          {viewMeetingsFilter === 'all' ? 'No meeting records found' : `No meetings found for ${formatMonth(viewMeetingsFilter)}`}
                         </TableCell>
                       </TableRow>
                     )}
