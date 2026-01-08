@@ -9941,6 +9941,7 @@ async def update_member_dues_from_webhook(dues_info: dict):
         member_id = dues_info.get("member_id")
         year = str(dues_info.get("year"))
         month = dues_info.get("month")
+        month_names = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
         
         if not member_id:
             return
@@ -9957,10 +9958,11 @@ async def update_member_dues_from_webhook(dues_info: dict):
             dues[year] = [{"status": "unpaid", "note": ""} for _ in range(12)]
         
         # Update the specific month to paid
+        payment_note = f"Paid via Square on {datetime.now(timezone.utc).strftime('%Y-%m-%d')}"
         if isinstance(dues[year], list) and len(dues[year]) > month:
             dues[year][month] = {
                 "status": "paid",
-                "note": f"Paid via store (webhook confirmed) on {datetime.now(timezone.utc).strftime('%Y-%m-%d')}"
+                "note": payment_note
             }
         
         # Update member record
@@ -9972,7 +9974,34 @@ async def update_member_dues_from_webhook(dues_info: dict):
             }}
         )
         
-        logger.info(f"Member {member_id} dues updated for {year}-{int(month)+1:02d} via webhook")
+        # Also update officer_dues collection (for A & D page sync)
+        month_str = f"{month_names[month]}_{year}"  # e.g., "Jan_2026"
+        existing = await db.officer_dues.find_one({
+            "member_id": member_id,
+            "month": month_str
+        })
+        
+        dues_record = {
+            "id": existing.get("id") if existing else str(uuid.uuid4()),
+            "member_id": member_id,
+            "month": month_str,
+            "status": "paid",
+            "notes": payment_note,
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+            "updated_by": "square_webhook"
+        }
+        
+        if existing:
+            await db.officer_dues.update_one(
+                {"id": existing.get("id")},
+                {"$set": dues_record}
+            )
+        else:
+            dues_record["created_at"] = datetime.now(timezone.utc).isoformat()
+            dues_record["created_by"] = "square_webhook"
+            await db.officer_dues.insert_one(dues_record)
+        
+        logger.info(f"Member {member_id} dues updated for {year}-{int(month)+1:02d} via webhook (synced to A&D)")
         
     except Exception as e:
         logger.error(f"Error updating member dues from webhook: {str(e)}")
