@@ -79,9 +79,11 @@ Build a member management application with attendance tracking, dues management,
 - `GET /api/dues/all-members-for-linking` - Get members for dropdown
 
 ### Database Collections
-- `member_subscriptions` - Stores manual/automatic subscription-to-member links
-  - `member_id`, `member_handle`, `square_customer_id`, `square_subscription_id`
-  - `customer_name`, `last_synced`, `link_type` (manual/automatic), `linked_by`, `linked_at`
+- `suggestions` (NEW) - Stores suggestion submissions
+  - `id`, `title`, `description`, `submitted_by`, `submitter_id`, `is_anonymous`
+  - `status` (new/reviewed/in_progress/implemented/declined)
+  - `upvotes` [], `downvotes` [] - Arrays of member IDs
+  - `created_at`, `updated_at`, `status_updated_by`, `status_updated_at`
 
 ### Prioritized Backlog
 
