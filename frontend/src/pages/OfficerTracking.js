@@ -491,213 +491,376 @@ function OfficerTracking() {
   }
 
   return (
-    <div className="container mx-auto p-4 max-w-7xl">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => navigate('/')}>
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <div>
-            <h1 className="text-2xl font-bold flex items-center gap-2">
-              <Users className="h-6 w-6" />
-              A & D
-            </h1>
-            <p className="text-muted-foreground text-sm">
-              Attendance & Dues Tracking
-              {!canEdit && <span className="text-yellow-500 ml-2">(View Only)</span>}
-            </p>
+      <div className="bg-slate-800 border-b border-slate-700 sticky top-0 z-10">
+        <div className="container mx-auto px-3 sm:px-4 py-3 sm:py-4 max-w-7xl">
+          <div className="flex justify-between items-center">
+            <div className="flex items-center gap-2 sm:gap-4">
+              <Button variant="ghost" size="icon" onClick={() => navigate('/')} className="h-8 w-8 sm:h-10 sm:w-10">
+                <ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5" />
+              </Button>
+              <div>
+                <h1 className="text-lg sm:text-2xl font-bold flex items-center gap-2 text-white">
+                  <Users className="h-5 w-5 sm:h-6 sm:w-6" />
+                  A & D
+                </h1>
+                <p className="text-muted-foreground text-xs sm:text-sm hidden sm:block">
+                  Attendance & Dues Tracking
+                  {!canEdit && <span className="text-yellow-500 ml-2">(View Only)</span>}
+                </p>
+              </div>
+            </div>
+            {!canEdit && <Badge variant="outline" className="text-yellow-500 border-yellow-500 text-xs sm:hidden">View Only</Badge>}
           </div>
         </div>
       </div>
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-        {CHAPTERS.map(chapter => (
-          <Card key={chapter} 
-            className={`cursor-pointer transition-all ${selectedChapter === chapter ? 'ring-2 ring-primary' : ''}`}
-            onClick={() => setSelectedChapter(chapter)}
-          >
-            <CardHeader className="pb-2">
-              <CardTitle className="text-lg">{chapter}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{members[chapter]?.length || 0}</div>
-              <div className="text-xs text-muted-foreground">Members</div>
-              {summary[chapter] && (
-                <div className="mt-2 text-xs space-y-1">
-                  <div className="flex justify-between">
-                    <span>Attendance:</span>
-                    <span className={summary[chapter].attendance_rate >= 80 ? 'text-green-500' : 'text-yellow-500'}>
-                      {summary[chapter].attendance_rate}%
-                    </span>
+      <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-6 max-w-7xl">
+        {/* Summary Cards - Responsive Grid */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4 mb-4 sm:mb-6">
+          {CHAPTERS.map(chapter => (
+            <Card key={chapter} 
+              className={`cursor-pointer transition-all bg-slate-800 border-slate-700 ${selectedChapter === chapter ? 'ring-2 ring-primary' : ''}`}
+              onClick={() => setSelectedChapter(chapter)}
+            >
+              <CardHeader className="p-3 sm:p-4 pb-1 sm:pb-2">
+                <CardTitle className="text-sm sm:text-lg text-white">{chapter}</CardTitle>
+              </CardHeader>
+              <CardContent className="p-3 sm:p-4 pt-0">
+                <div className="text-xl sm:text-2xl font-bold text-white">{members[chapter]?.length || 0}</div>
+                <div className="text-xs text-muted-foreground">Members</div>
+                {summary[chapter] && (
+                  <div className="mt-1 sm:mt-2 text-xs space-y-0.5 sm:space-y-1">
+                    <div className="flex justify-between">
+                      <span className="text-slate-400">Attend:</span>
+                      <span className={summary[chapter].attendance_rate >= 80 ? 'text-green-500' : 'text-yellow-500'}>
+                        {summary[chapter].attendance_rate}%
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-400">Dues:</span>
+                      <span className="text-white">{summary[chapter].dues_paid}/{summary[chapter].dues_total}</span>
+                    </div>
                   </div>
-                  <div className="flex justify-between">
-                    <span>Dues Paid:</span>
-                    <span>{summary[chapter].dues_paid}/{summary[chapter].dues_total}</span>
-                  </div>
+                )}
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        {/* Main Content Card */}
+        <Card className="bg-slate-800 border-slate-700">
+          <CardHeader className="p-3 sm:p-6">
+            <div className="flex flex-col gap-3 sm:gap-4">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 sm:gap-4">
+                <div>
+                  <CardTitle className="text-base sm:text-xl text-white">{selectedChapter} Chapter</CardTitle>
+                  <CardDescription className="text-xs sm:text-sm hidden sm:block">Track attendance and dues for {selectedChapter} members</CardDescription>
                 </div>
-              )}
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      {/* Main Content */}
-      <Card>
-        <CardHeader>
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <div>
-              <CardTitle>{selectedChapter} Chapter</CardTitle>
-              <CardDescription>Track attendance and dues for all {selectedChapter} members</CardDescription>
+                <div className="relative w-full sm:w-64">
+                  <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-8 h-9 sm:h-10 bg-slate-700 border-slate-600 text-white"
+                  />
+                </div>
+              </div>
+              
+              {/* View Toggle Buttons - Responsive */}
+              <div className="flex gap-2 sm:gap-4">
+                <Button
+                  onClick={() => setActiveTab('attendance')}
+                  className={`flex-1 h-10 sm:h-14 text-sm sm:text-lg font-bold ${
+                    activeTab === 'attendance' 
+                      ? 'bg-blue-600 hover:bg-blue-700 text-white' 
+                      : 'bg-slate-700 hover:bg-slate-600 text-slate-300'
+                  }`}
+                >
+                  <Calendar className="w-4 h-4 sm:w-6 sm:h-6 mr-1 sm:mr-3" />
+                  <span className="hidden xs:inline">Attendance</span>
+                  <span className="xs:hidden">Attend</span>
+                </Button>
+                <Button
+                  onClick={() => setActiveTab('dues')}
+                  className={`flex-1 h-10 sm:h-14 text-sm sm:text-lg font-bold ${
+                    activeTab === 'dues' 
+                      ? 'bg-green-600 hover:bg-green-700 text-white' 
+                      : 'bg-slate-700 hover:bg-slate-600 text-slate-300'
+                  }`}
+                >
+                  <DollarSign className="w-4 h-4 sm:w-6 sm:h-6 mr-1 sm:mr-3" />
+                  Dues
+                </Button>
+              </div>
             </div>
-            <div className="relative w-full sm:w-64">
-              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search members..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-8"
-              />
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          {/* Separate View Buttons */}
-          <div className="flex gap-4 mb-6">
-            <Button
-              onClick={() => setActiveTab('attendance')}
-              className={`flex-1 h-14 text-lg font-bold ${
-                activeTab === 'attendance' 
-                  ? 'bg-blue-600 hover:bg-blue-700 text-white' 
-                  : 'bg-slate-700 hover:bg-slate-600 text-slate-300'
-              }`}
-            >
-              <Calendar className="w-6 h-6 mr-3" />
-              Attendance
-            </Button>
-            <Button
-              onClick={() => setActiveTab('dues')}
-              className={`flex-1 h-14 text-lg font-bold ${
-                activeTab === 'dues' 
-                  ? 'bg-green-600 hover:bg-green-700 text-white' 
-                  : 'bg-slate-700 hover:bg-slate-600 text-slate-300'
-              }`}
-            >
-              <DollarSign className="w-6 h-6 mr-3" />
-              Dues
-            </Button>
-          </div>
-
-          {/* Attendance Content */}
-          {activeTab === 'attendance' && (
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Member</TableHead>
-                      <TableHead>Title</TableHead>
-                      <TableHead>Attendance Rate</TableHead>
-                      <TableHead>Last Meeting</TableHead>
-                      <TableHead>View</TableHead>
-                      {canEdit && <TableHead>Action</TableHead>}
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredMembers.map(member => {
-                      const stats = getAttendanceStats(member.id);
-                      const lastRecord = getAttendanceForMember(member.id).sort((a, b) => 
-                        new Date(b.meeting_date) - new Date(a.meeting_date)
-                      )[0];
-                      
-                      return (
-                        <TableRow key={member.id}>
-                          <TableCell className="font-medium">{member.handle}</TableCell>
-                          <TableCell>{member.title || '-'}</TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-2">
-                              <span className={stats.rate >= 80 ? 'text-green-500' : stats.rate >= 50 ? 'text-yellow-500' : 'text-red-500'}>
-                                {stats.rate}%
-                              </span>
-                              <span className="text-xs text-muted-foreground">
-                                ({stats.present}/{stats.total})
-                              </span>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            {lastRecord ? (
-                              <div className="flex items-center gap-2">
-                                <span className="text-xs">{lastRecord.meeting_date}</span>
-                                {getStatusBadge(lastRecord.status)}
-                              </div>
-                            ) : (
-                              <span className="text-muted-foreground text-xs">No records</span>
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            <Button size="sm" variant="outline" onClick={() => openViewMeetingsDialog(member)}>
-                              View All
-                            </Button>
-                          </TableCell>
-                          {canEdit && (
+          </CardHeader>
+          
+          <CardContent className="p-3 sm:p-6 pt-0">
+            {/* Attendance Content */}
+            {activeTab === 'attendance' && (
+              <div>
+                {/* Desktop Table View */}
+                <div className="hidden md:block overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="border-slate-700">
+                        <TableHead className="text-slate-400">Member</TableHead>
+                        <TableHead className="text-slate-400">Title</TableHead>
+                        <TableHead className="text-slate-400">Attendance Rate</TableHead>
+                        <TableHead className="text-slate-400">Last Meeting</TableHead>
+                        <TableHead className="text-slate-400">View</TableHead>
+                        {canEdit && <TableHead className="text-slate-400">Action</TableHead>}
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredMembers.map(member => {
+                        const stats = getAttendanceStats(member.id);
+                        const lastRecord = getAttendanceForMember(member.id).sort((a, b) => 
+                          new Date(b.meeting_date) - new Date(a.meeting_date)
+                        )[0];
+                        
+                        return (
+                          <TableRow key={member.id} className="border-slate-700">
+                            <TableCell className="font-medium text-white">{member.handle}</TableCell>
+                            <TableCell className="text-slate-300">{member.title || '-'}</TableCell>
                             <TableCell>
-                              <Button size="sm" onClick={() => openAttendanceDialog(member)}>
-                                Record
+                              <div className="flex items-center gap-2">
+                                <span className={stats.rate >= 80 ? 'text-green-500' : stats.rate >= 50 ? 'text-yellow-500' : 'text-red-500'}>
+                                  {stats.rate}%
+                                </span>
+                                <span className="text-xs text-muted-foreground">
+                                  ({stats.present}/{stats.total})
+                                </span>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              {lastRecord ? (
+                                <div className="flex items-center gap-2">
+                                  <span className="text-xs text-slate-300">{lastRecord.meeting_date}</span>
+                                  {getStatusBadge(lastRecord.status)}
+                                </div>
+                              ) : (
+                                <span className="text-muted-foreground text-xs">No records</span>
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              <Button size="sm" variant="outline" onClick={() => openViewMeetingsDialog(member)} className="text-xs">
+                                View All
                               </Button>
                             </TableCell>
-                          )}
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
-              </div>
-          )}
+                            {canEdit && (
+                              <TableCell>
+                                <Button size="sm" onClick={() => openAttendanceDialog(member)} className="text-xs">
+                                  Record
+                                </Button>
+                              </TableCell>
+                            )}
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </div>
 
-          {/* Dues Content */}
-          {activeTab === 'dues' && (
+                {/* Mobile Card View for Attendance */}
+                <div className="md:hidden space-y-3">
+                  {filteredMembers.map(member => {
+                    const stats = getAttendanceStats(member.id);
+                    const lastRecord = getAttendanceForMember(member.id).sort((a, b) => 
+                      new Date(b.meeting_date) - new Date(a.meeting_date)
+                    )[0];
+                    
+                    return (
+                      <div key={member.id} className="bg-slate-700/50 rounded-lg p-3 border border-slate-600">
+                        <div className="flex justify-between items-start mb-2">
+                          <div>
+                            <div className="font-medium text-white">{member.handle}</div>
+                            <div className="text-xs text-slate-400">{member.title || 'Member'}</div>
+                          </div>
+                          <div className="text-right">
+                            <div className={`text-lg font-bold ${stats.rate >= 80 ? 'text-green-500' : stats.rate >= 50 ? 'text-yellow-500' : 'text-red-500'}`}>
+                              {stats.rate}%
+                            </div>
+                            <div className="text-xs text-slate-400">({stats.present}/{stats.total})</div>
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-center justify-between text-xs text-slate-400 mb-2">
+                          <span>Last:</span>
+                          {lastRecord ? (
+                            <div className="flex items-center gap-1">
+                              <span>{lastRecord.meeting_date}</span>
+                              {getStatusBadge(lastRecord.status)}
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground">No records</span>
+                          )}
+                        </div>
+                        
+                        <div className="flex gap-2">
+                          <Button size="sm" variant="outline" onClick={() => openViewMeetingsDialog(member)} className="flex-1 text-xs h-8">
+                            View All
+                          </Button>
+                          {canEdit && (
+                            <Button size="sm" onClick={() => openAttendanceDialog(member)} className="flex-1 text-xs h-8">
+                              Record
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Dues Content */}
+            {activeTab === 'dues' && (
               <div className="space-y-4">
-                {/* Square Sync Button */}
+                {/* Square Sync Buttons - Responsive */}
                 {canEdit && (
-                  <div className="flex gap-2 justify-end">
-                    <Button variant="outline" onClick={handleViewSubscriptions}>
+                  <div className="flex flex-col sm:flex-row gap-2 sm:justify-end">
+                    <Button variant="outline" onClick={handleViewSubscriptions} className="text-xs sm:text-sm h-9 sm:h-10">
                       <CreditCard className="w-4 h-4 mr-2" />
                       View Subscriptions
                     </Button>
-                    <Button onClick={handleSyncSubscriptions} className="bg-purple-600 hover:bg-purple-700">
+                    <Button onClick={handleSyncSubscriptions} className="bg-purple-600 hover:bg-purple-700 text-xs sm:text-sm h-9 sm:h-10">
                       <CreditCard className="w-4 h-4 mr-2" />
                       Sync from Square
                     </Button>
                   </div>
                 )}
                 
-                <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Member</TableHead>
-                      <TableHead>Title</TableHead>
-                      <TableHead>Current Month Status</TableHead>
-                      {canEdit && <TableHead>Quick Update</TableHead>}
-                      {canEdit && <TableHead>Notes</TableHead>}
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredMembers.map(member => {
-                      const currentDues = getCurrentMonthDues(member.id);
-                      
-                      return (
-                        <TableRow key={member.id}>
-                          <TableCell className="font-medium">{member.handle}</TableCell>
-                          <TableCell>{member.title || '-'}</TableCell>
-                          <TableCell>
-                            {currentDues ? getStatusBadge(currentDues.status) : (
-                              <Badge variant="outline">Not Recorded</Badge>
-                            )}
-                          </TableCell>
-                          {canEdit && (
+                {/* Desktop Table View for Dues */}
+                <div className="hidden md:block overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="border-slate-700">
+                        <TableHead className="text-slate-400">Member</TableHead>
+                        <TableHead className="text-slate-400">Title</TableHead>
+                        <TableHead className="text-slate-400">Current Month Status</TableHead>
+                        {canEdit && <TableHead className="text-slate-400">Quick Update</TableHead>}
+                        {canEdit && <TableHead className="text-slate-400">Notes</TableHead>}
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredMembers.map(member => {
+                        const currentDues = getCurrentMonthDues(member.id);
+                        
+                        return (
+                          <TableRow key={member.id} className="border-slate-700">
+                            <TableCell className="font-medium text-white">{member.handle}</TableCell>
+                            <TableCell className="text-slate-300">{member.title || '-'}</TableCell>
                             <TableCell>
-                              <div className="flex gap-1">
+                              {currentDues ? getStatusBadge(currentDues.status) : (
+                                <Badge variant="outline">Not Recorded</Badge>
+                              )}
+                            </TableCell>
+                            {canEdit && (
+                              <TableCell>
+                                <div className="flex gap-1">
+                                  <Button
+                                    size="sm"
+                                    className="bg-green-600 hover:bg-green-700 h-7 px-2 text-xs"
+                                    onClick={() => handleQuickDuesUpdate(member, 'paid')}
+                                  >
+                                    <CheckCircle className="w-3 h-3" />
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    className="bg-orange-500 hover:bg-orange-600 h-7 px-2 text-xs"
+                                    onClick={() => handleQuickDuesUpdate(member, 'late')}
+                                  >
+                                    <Clock className="w-3 h-3" />
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    className="bg-red-600 hover:bg-red-700 h-7 px-2 text-xs"
+                                    onClick={() => handleQuickDuesUpdate(member, 'unpaid')}
+                                  >
+                                    <XCircle className="w-3 h-3" />
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            )}
+                            {canEdit && (
+                              <TableCell>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => openDuesDialog(member)}
+                                  className="text-xs h-7"
+                                >
+                                  Edit
+                                </Button>
+                              </TableCell>
+                            )}
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </div>
+
+                {/* Mobile Card View for Dues */}
+                <div className="md:hidden space-y-3">
+                  {filteredMembers.map(member => {
+                    const currentDues = getCurrentMonthDues(member.id);
+                    
+                    return (
+                      <div key={member.id} className="bg-slate-700/50 rounded-lg p-3 border border-slate-600">
+                        <div className="flex justify-between items-start mb-3">
+                          <div>
+                            <div className="font-medium text-white">{member.handle}</div>
+                            <div className="text-xs text-slate-400">{member.title || 'Member'}</div>
+                          </div>
+                          <div>
+                            {currentDues ? getStatusBadge(currentDues.status) : (
+                              <Badge variant="outline" className="text-xs">Not Recorded</Badge>
+                            )}
+                          </div>
+                        </div>
+                        
+                        {canEdit && (
+                          <div className="flex gap-2">
+                            <Button
+                              size="sm"
+                              className="flex-1 bg-green-600 hover:bg-green-700 h-9 text-xs"
+                              onClick={() => handleQuickDuesUpdate(member, 'paid')}
+                            >
+                              <CheckCircle className="w-4 h-4 mr-1" />
+                              Paid
+                            </Button>
+                            <Button
+                              size="sm"
+                              className="flex-1 bg-orange-500 hover:bg-orange-600 h-9 text-xs"
+                              onClick={() => handleQuickDuesUpdate(member, 'late')}
+                            >
+                              <Clock className="w-4 h-4 mr-1" />
+                              Late
+                            </Button>
+                            <Button
+                              size="sm"
+                              className="flex-1 bg-red-600 hover:bg-red-700 h-9 text-xs"
+                              onClick={() => handleQuickDuesUpdate(member, 'unpaid')}
+                            >
+                              <XCircle className="w-4 h-4 mr-1" />
+                              Unpaid
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
                                 <Button 
                                   size="sm" 
                                   className="bg-green-600 hover:bg-green-700 h-8 px-2"
