@@ -154,7 +154,7 @@ export default function SuggestionBox() {
                   Suggestion Box
                 </h1>
                 <p className="text-muted-foreground text-xs sm:text-sm hidden sm:block">
-                  Share your ideas to improve the club
+                  Share your ideas to improve the BOH Hub app
                 </p>
               </div>
             </div>
@@ -168,27 +168,37 @@ export default function SuggestionBox() {
       </div>
 
       <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-6 max-w-5xl">
-        {/* Filter Buttons */}
+        {/* Info Banner */}
+        <div className="bg-yellow-900/30 border border-yellow-700/50 rounded-lg p-3 mb-4 text-sm text-yellow-200">
+          <span className="font-semibold">💡 App Suggestions Only:</span> Share ideas to improve the BOH Hub app features and functionality.
+        </div>
+
+        {/* Filter Buttons - More Visible */}
         <div className="flex flex-wrap gap-2 mb-4">
           {[
-            { value: 'all', label: 'All' },
-            { value: 'new', label: 'New' },
-            { value: 'reviewed', label: 'Reviewed' },
-            { value: 'in_progress', label: 'In Progress' },
-            { value: 'implemented', label: 'Implemented' },
-            { value: 'declined', label: 'Declined' },
+            { value: 'all', label: 'All', color: 'bg-slate-600 hover:bg-slate-500 border-slate-500' },
+            { value: 'new', label: 'New', color: 'bg-blue-600 hover:bg-blue-500 border-blue-500' },
+            { value: 'reviewed', label: 'Reviewed', color: 'bg-yellow-600 hover:bg-yellow-500 border-yellow-500' },
+            { value: 'in_progress', label: 'In Progress', color: 'bg-purple-600 hover:bg-purple-500 border-purple-500' },
+            { value: 'implemented', label: 'Done', color: 'bg-green-600 hover:bg-green-500 border-green-500' },
+            { value: 'declined', label: 'Declined', color: 'bg-red-600 hover:bg-red-500 border-red-500' },
           ].map(filter => (
             <Button
               key={filter.value}
               size="sm"
-              variant={statusFilter === filter.value ? "default" : "outline"}
               onClick={() => setStatusFilter(filter.value)}
-              className={`text-xs ${statusFilter === filter.value ? getStatusBadgeColor(filter.value) : ''}`}
+              className={`text-xs font-medium px-3 py-2 h-9 ${
+                statusFilter === filter.value 
+                  ? `${filter.color} text-white ring-2 ring-white/30` 
+                  : 'bg-slate-700 hover:bg-slate-600 text-slate-300 border border-slate-600'
+              }`}
             >
               {filter.label}
-              <Badge variant="secondary" className="ml-1 text-xs px-1.5">
+              <span className={`ml-1.5 px-1.5 py-0.5 rounded text-xs ${
+                statusFilter === filter.value ? 'bg-white/20' : 'bg-slate-600'
+              }`}>
                 {statusCounts[filter.value]}
-              </Badge>
+              </span>
             </Button>
           ))}
         </div>
