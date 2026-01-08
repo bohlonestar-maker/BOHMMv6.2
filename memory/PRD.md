@@ -3,7 +3,7 @@
 ## Product Requirements Document
 
 ### Original Problem Statement
-Build a member management application with attendance tracking, dues management, and automated Square payment integration for a motorcycle club (Brothers of the Highway TC).
+Build a member management application with attendance tracking, dues management, automated Square payment integration, and community features for a motorcycle club (Brothers of the Highway TC).
 
 ### Core Requirements
 
@@ -20,6 +20,13 @@ Build a member management application with attendance tracking, dues management,
 - **View Subscriptions:** Display matched/unmatched subscriptions for review
 - **Sync Feature:** "Sync from Square" button to update dues for current month
 - **Manual Linking:** UI for manually linking unmatched subscriptions to members
+
+#### 3. Suggestion Box (NEW)
+- **Submit:** All logged-in members can submit suggestions
+- **Display:** Show submitter's handle, with option for anonymous submissions
+- **Voting:** Upvote and downvote system
+- **Status Management:** National Officers (except Honorary) can mark as: New, Reviewed, In Progress, Implemented, Declined
+- **Location:** Section on the Dashboard
 
 ### What's Been Implemented
 
