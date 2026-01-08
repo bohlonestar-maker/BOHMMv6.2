@@ -10422,6 +10422,7 @@ cors_origins = [origin.strip() for origin in cors_origins_str.split(',') if orig
 if not cors_origins or cors_origins == ['*']:
     cors_origins = [
         "https://boh-tracker.preview.emergentagent.com",
+        "https://boh-tracker.emergent.host",
         "https://www.bohhub.com",
         "https://bohhub.com"
     ]
