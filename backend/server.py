@@ -10506,33 +10506,65 @@ async def sync_subscriptions_to_dues(current_user: dict = Depends(verify_token))
         raise HTTPException(status_code=500, detail=f"Failed to sync subscriptions: {str(e)}")
 
 
+class LinkSubscriptionRequest(BaseModel):
+    member_id: str
+    square_customer_id: str
+
+
 @api_router.post("/dues/link-subscription")
 async def link_member_to_subscription(
-    member_id: str,
-    square_customer_id: str,
+    request: LinkSubscriptionRequest,
     current_user: dict = Depends(verify_token)
 ):
     """Manually link a member to a Square customer for subscription tracking"""
     if not is_secretary(current_user) and current_user.get('role') != 'admin':
         raise HTTPException(status_code=403, detail="Only Secretaries can link subscriptions")
     
-    member = await db.members.find_one({"id": member_id})
+    member = await db.members.find_one({"id": request.member_id})
     if not member:
         raise HTTPException(status_code=404, detail="Member not found")
     
     await db.member_subscriptions.update_one(
-        {"member_id": member_id},
+        {"square_customer_id": request.square_customer_id},
         {"$set": {
-            "member_id": member_id,
+            "member_id": request.member_id,
             "member_handle": member.get("handle"),
-            "square_customer_id": square_customer_id,
+            "square_customer_id": request.square_customer_id,
             "linked_by": current_user.get("username"),
-            "linked_at": datetime.now(timezone.utc).isoformat()
+            "linked_at": datetime.now(timezone.utc).isoformat(),
+            "link_type": "manual"
         }},
         upsert=True
     )
     
-    return {"message": f"Member {member.get('handle')} linked to Square customer {square_customer_id}"}
+    return {"message": f"Member {member.get('handle')} linked to Square customer", "success": True}
+
+
+@api_router.delete("/dues/link-subscription/{customer_id}")
+async def unlink_subscription(
+    customer_id: str,
+    current_user: dict = Depends(verify_token)
+):
+    """Remove a manual subscription link"""
+    if not is_secretary(current_user) and current_user.get('role') != 'admin':
+        raise HTTPException(status_code=403, detail="Only Secretaries can unlink subscriptions")
+    
+    result = await db.member_subscriptions.delete_one({"square_customer_id": customer_id})
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Link not found")
+    
+    return {"message": "Subscription link removed", "success": True}
+
+
+@api_router.get("/dues/all-members-for-linking")
+async def get_members_for_linking(current_user: dict = Depends(verify_token)):
+    """Get all members for the subscription linking dropdown"""
+    if not is_secretary(current_user) and current_user.get('role') != 'admin':
+        raise HTTPException(status_code=403, detail="Only Secretaries can access this")
+    
+    members = await db.members.find({}, {"_id": 0, "id": 1, "name": 1, "handle": 1, "chapter": 1}).to_list(1000)
+    return members
 
 
 # ==================== DUES PAYMENT MANAGEMENT ENDPOINTS ====================
