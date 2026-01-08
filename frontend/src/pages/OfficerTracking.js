@@ -160,6 +160,23 @@ function OfficerTracking() {
     setAttendanceDialog(true);
   };
 
+  const openViewMeetingsDialog = (member) => {
+    setViewMeetingsMember(member);
+    setViewMeetingsDialog(true);
+  };
+
+  // Get meeting type label from value
+  const getMeetingTypeLabel = (value) => {
+    const allMeetingTypes = [
+      ...MEETING_TYPES_BY_CHAPTER.National,
+      ...MEETING_TYPES_BY_CHAPTER.AD,
+      ...MEETING_TYPES_BY_CHAPTER.HA,
+      ...MEETING_TYPES_BY_CHAPTER.HS
+    ];
+    const found = allMeetingTypes.find(t => t.value === value);
+    return found ? found.label : value;
+  };
+
   const openDuesDialog = (member, preselectedStatus = null) => {
     setSelectedMember(member);
     const existing = getCurrentMonthDues(member.id);
