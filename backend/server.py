@@ -10161,9 +10161,62 @@ async def get_square_webhook_info(current_user: dict = Depends(verify_token)):
 
 # ==================== SQUARE SUBSCRIPTION SYNC ENDPOINTS ====================
 
+# Fuzzy matching helper for Square subscription matching
+def fuzzy_match_member(customer_name: str, members: list, threshold: int = 75) -> tuple:
+    """
+    Match customer name to member using fuzzy string matching.
+    Returns (matched_member, match_score, match_type) or (None, 0, None)
+    """
+    from rapidfuzz import fuzz, process
+    
+    if not customer_name:
+        return None, 0, None
+    
+    customer_name_lower = customer_name.lower().strip()
+    best_match = None
+    best_score = 0
+    match_type = None
+    
+    for member in members:
+        member_name = member.get('name', '').lower().strip()
+        member_handle = member.get('handle', '').lower().strip()
+        
+        # Exact match - highest priority
+        if customer_name_lower == member_name:
+            return member, 100, "exact_name"
+        if customer_name_lower == member_handle:
+            return member, 100, "exact_handle"
+        
+        # Fuzzy match on name
+        if member_name:
+            name_score = fuzz.token_sort_ratio(customer_name_lower, member_name)
+            if name_score > best_score and name_score >= threshold:
+                best_score = name_score
+                best_match = member
+                match_type = "fuzzy_name"
+        
+        # Fuzzy match on handle
+        if member_handle:
+            handle_score = fuzz.token_sort_ratio(customer_name_lower, member_handle)
+            if handle_score > best_score and handle_score >= threshold:
+                best_score = handle_score
+                best_match = member
+                match_type = "fuzzy_handle"
+        
+        # Partial match - check if one contains the other
+        if member_name and (customer_name_lower in member_name or member_name in customer_name_lower):
+            partial_score = 85  # Give partial matches a good score
+            if partial_score > best_score:
+                best_score = partial_score
+                best_match = member
+                match_type = "partial_name"
+    
+    return best_match, best_score, match_type
+
+
 @api_router.get("/dues/subscriptions")
 async def get_square_subscriptions(current_user: dict = Depends(verify_token)):
-    """Get active Square subscriptions and match to members"""
+    """Get active Square subscriptions and match to members using batch API calls and fuzzy matching"""
     if not is_secretary(current_user) and current_user.get('role') != 'admin':
         raise HTTPException(status_code=403, detail="Only Secretaries can view subscriptions")
     
@@ -10176,7 +10229,6 @@ async def get_square_subscriptions(current_user: dict = Depends(verify_token)):
         cursor = None
         
         while True:
-            # New Square SDK uses .search() method with keyword arguments
             result = square_client.subscriptions.search(
                 cursor=cursor,
                 limit=100,
@@ -10187,9 +10239,7 @@ async def get_square_subscriptions(current_user: dict = Depends(verify_token)):
                 }
             )
             
-            # New SDK returns object with .subscriptions attribute
             subs = result.subscriptions or []
-            # Filter for ACTIVE only
             active_subs = [s for s in subs if s.status == "ACTIVE"]
             subscriptions.extend(active_subs)
             
@@ -10197,8 +10247,50 @@ async def get_square_subscriptions(current_user: dict = Depends(verify_token)):
             if not cursor:
                 break
         
+        # Collect all customer IDs for batch retrieval
+        customer_ids = list(set(sub.customer_id for sub in subscriptions if sub.customer_id))
+        
+        # Batch retrieve customers (up to 100 per call)
+        customer_map = {}
+        for i in range(0, len(customer_ids), 100):
+            batch_ids = customer_ids[i:i+100]
+            try:
+                batch_result = square_client.customers.bulk_retrieve_customers(
+                    customer_ids=batch_ids
+                )
+                if batch_result.responses:
+                    for cust_id, response in batch_result.responses.items():
+                        if response.customer:
+                            cust = response.customer
+                            given_name = cust.given_name or ''
+                            family_name = cust.family_name or ''
+                            customer_map[cust_id] = {
+                                "name": f"{given_name} {family_name}".strip(),
+                                "email": cust.email_address
+                            }
+            except Exception as e:
+                logger.warning(f"Batch customer fetch failed: {e}")
+                # Fallback to individual fetches for this batch
+                for cust_id in batch_ids:
+                    try:
+                        cust_result = square_client.customers.get(customer_id=cust_id)
+                        if cust_result.customer:
+                            cust = cust_result.customer
+                            given_name = cust.given_name or ''
+                            family_name = cust.family_name or ''
+                            customer_map[cust_id] = {
+                                "name": f"{given_name} {family_name}".strip(),
+                                "email": cust.email_address
+                            }
+                    except:
+                        pass
+        
         # Get all members for matching
         members = await db.members.find({}, {"_id": 0, "id": 1, "name": 1, "handle": 1}).to_list(1000)
+        
+        # Get manual subscription links
+        manual_links = await db.member_subscriptions.find({}, {"_id": 0}).to_list(1000)
+        manual_link_map = {link.get("square_customer_id"): link for link in manual_links if link.get("square_customer_id")}
         
         # Process and match subscriptions
         matched_subs = []
@@ -10210,40 +10302,26 @@ async def get_square_subscriptions(current_user: dict = Depends(verify_token)):
             status = sub.status
             charged_through_date = sub.charged_through_date
             
-            # Get customer name from Square
-            customer_name = None
-            customer_email = None
+            customer_info = customer_map.get(customer_id, {})
+            customer_name = customer_info.get("name")
+            customer_email = customer_info.get("email")
             
-            if customer_id:
-                try:
-                    # New SDK uses .get() method
-                    cust_result = square_client.customers.get(customer_id=customer_id)
-                    if cust_result.customer:
-                        customer = cust_result.customer
-                        given_name = customer.given_name or ''
-                        family_name = customer.family_name or ''
-                        customer_name = f"{given_name} {family_name}".strip()
-                        customer_email = customer.email_address
-                except Exception as e:
-                    logger.warning(f"Failed to get customer {customer_id}: {e}")
-            
-            # Try to match to member
             matched_member = None
-            if customer_name:
-                customer_name_lower = customer_name.lower().strip()
-                for member in members:
-                    member_name = member.get('name', '').lower().strip()
-                    member_handle = member.get('handle', '').lower().strip()
-                    
-                    if customer_name_lower == member_name or customer_name_lower == member_handle:
-                        matched_member = member
-                        break
-                    if customer_name_lower in member_name or member_name in customer_name_lower:
-                        matched_member = member
-                        break
-                    if member_handle and (member_handle in customer_name_lower or customer_name_lower in member_handle):
-                        matched_member = member
-                        break
+            match_score = 0
+            match_type = None
+            
+            # First check for manual link
+            if customer_id in manual_link_map:
+                link = manual_link_map[customer_id]
+                member_id = link.get("member_id")
+                matched_member = next((m for m in members if m.get("id") == member_id), None)
+                if matched_member:
+                    match_score = 100
+                    match_type = "manual_link"
+            
+            # If no manual link, use fuzzy matching
+            if not matched_member and customer_name:
+                matched_member, match_score, match_type = fuzzy_match_member(customer_name, members)
             
             sub_data = {
                 "subscription_id": sub_id,
@@ -10253,7 +10331,9 @@ async def get_square_subscriptions(current_user: dict = Depends(verify_token)):
                 "status": status,
                 "charged_through_date": charged_through_date,
                 "matched_member_id": matched_member.get("id") if matched_member else None,
-                "matched_member_handle": matched_member.get("handle") if matched_member else None
+                "matched_member_handle": matched_member.get("handle") if matched_member else None,
+                "match_score": match_score,
+                "match_type": match_type
             }
             
             if matched_member:
@@ -10264,7 +10344,8 @@ async def get_square_subscriptions(current_user: dict = Depends(verify_token)):
         return {
             "total": len(subscriptions),
             "matched": matched_subs,
-            "unmatched": unmatched_subs
+            "unmatched": unmatched_subs,
+            "customer_fetch_method": "batch"
         }
         
     except Exception as e:
