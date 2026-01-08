@@ -145,9 +145,11 @@ function OfficerTracking() {
 
   const openAttendanceDialog = (member) => {
     setSelectedMember(member);
+    // Get the first meeting type for the selected chapter as default
+    const defaultMeetingType = MEETING_TYPES_BY_CHAPTER[selectedChapter]?.[0]?.value || 'national_board';
     setAttendanceForm({
       meeting_date: new Date().toISOString().split('T')[0],
-      meeting_type: selectedChapter === 'National' ? 'national_officer' : 'chapter_officer',
+      meeting_type: defaultMeetingType,
       status: 'present',
       notes: ''
     });
