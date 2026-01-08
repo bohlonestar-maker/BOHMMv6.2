@@ -56,13 +56,11 @@ Build a member management application with attendance tracking, dues management,
 ```
 /app/
 ├── backend/
-│   ├── server.py          # FastAPI backend with Square integration
-│   ├── requirements.txt   # Python dependencies (includes RapidFuzz)
-│   └── .env              # Environment variables (Square credentials)
+│   └── server.py          # Contains suggestion box endpoints (lines ~7380-7540)
 └── frontend/
     └── src/
         └── pages/
-            └── OfficerTracking.js  # A&D feature React component
+            └── Dashboard.js  # Contains Suggestion Box UI section
 ```
 
 ### API Endpoints
