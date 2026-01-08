@@ -10159,6 +10159,293 @@ async def get_square_webhook_info(current_user: dict = Depends(verify_token)):
         }
     }
 
+# ==================== SQUARE SUBSCRIPTION SYNC ENDPOINTS ====================
+
+@api_router.get("/dues/subscriptions")
+async def get_square_subscriptions(current_user: dict = Depends(verify_token)):
+    """Get active Square subscriptions and match to members"""
+    if not is_secretary(current_user) and current_user.get('role') != 'admin':
+        raise HTTPException(status_code=403, detail="Only Secretaries can view subscriptions")
+    
+    if not square_client:
+        raise HTTPException(status_code=500, detail="Square client not configured")
+    
+    try:
+        # Get all subscriptions from Square
+        subscriptions = []
+        cursor = None
+        
+        while True:
+            result = square_client.subscriptions.search_subscriptions(
+                body={
+                    "cursor": cursor,
+                    "limit": 100,
+                    "query": {
+                        "filter": {
+                            "status_info": {
+                                "statuses": ["ACTIVE"]
+                            }
+                        }
+                    }
+                }
+            )
+            
+            if result.is_success():
+                subs = result.body.get('subscriptions', [])
+                subscriptions.extend(subs)
+                cursor = result.body.get('cursor')
+                if not cursor:
+                    break
+            else:
+                logger.error(f"Square subscription search failed: {result.errors}")
+                break
+        
+        # Get all members for matching
+        members = await db.members.find({}, {"_id": 0, "id": 1, "name": 1, "handle": 1}).to_list(1000)
+        
+        # Process and match subscriptions
+        matched_subs = []
+        unmatched_subs = []
+        
+        for sub in subscriptions:
+            customer_id = sub.get('customer_id')
+            sub_id = sub.get('id')
+            status = sub.get('status')
+            charged_through_date = sub.get('charged_through_date')
+            
+            # Get customer name from Square
+            customer_name = None
+            customer_email = None
+            
+            if customer_id:
+                try:
+                    cust_result = square_client.customers.retrieve_customer(customer_id=customer_id)
+                    if cust_result.is_success():
+                        customer = cust_result.body.get('customer', {})
+                        given_name = customer.get('given_name', '')
+                        family_name = customer.get('family_name', '')
+                        customer_name = f"{given_name} {family_name}".strip()
+                        customer_email = customer.get('email_address')
+                except Exception as e:
+                    logger.warning(f"Failed to get customer {customer_id}: {e}")
+            
+            # Try to match to member
+            matched_member = None
+            if customer_name:
+                customer_name_lower = customer_name.lower().strip()
+                for member in members:
+                    member_name = member.get('name', '').lower().strip()
+                    member_handle = member.get('handle', '').lower().strip()
+                    
+                    if customer_name_lower == member_name or customer_name_lower == member_handle:
+                        matched_member = member
+                        break
+                    if customer_name_lower in member_name or member_name in customer_name_lower:
+                        matched_member = member
+                        break
+                    if member_handle and (member_handle in customer_name_lower or customer_name_lower in member_handle):
+                        matched_member = member
+                        break
+            
+            sub_data = {
+                "subscription_id": sub_id,
+                "customer_id": customer_id,
+                "customer_name": customer_name,
+                "customer_email": customer_email,
+                "status": status,
+                "charged_through_date": charged_through_date,
+                "matched_member_id": matched_member.get("id") if matched_member else None,
+                "matched_member_handle": matched_member.get("handle") if matched_member else None
+            }
+            
+            if matched_member:
+                matched_subs.append(sub_data)
+            else:
+                unmatched_subs.append(sub_data)
+        
+        return {
+            "total": len(subscriptions),
+            "matched": matched_subs,
+            "unmatched": unmatched_subs
+        }
+        
+    except Exception as e:
+        logger.error(f"Error fetching Square subscriptions: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to fetch subscriptions: {str(e)}")
+
+
+@api_router.post("/dues/sync-subscriptions")
+async def sync_subscriptions_to_dues(current_user: dict = Depends(verify_token)):
+    """Sync active Square subscriptions to member dues (marks current month as paid)"""
+    if not is_secretary(current_user) and current_user.get('role') != 'admin':
+        raise HTTPException(status_code=403, detail="Only Secretaries can sync subscriptions")
+    
+    if not square_client:
+        raise HTTPException(status_code=500, detail="Square client not configured")
+    
+    try:
+        # Get active subscriptions
+        subscriptions = []
+        cursor = None
+        
+        while True:
+            result = square_client.subscriptions.search_subscriptions(
+                body={
+                    "cursor": cursor,
+                    "limit": 100,
+                    "query": {
+                        "filter": {
+                            "status_info": {
+                                "statuses": ["ACTIVE"]
+                            }
+                        }
+                    }
+                }
+            )
+            
+            if result.is_success():
+                subs = result.body.get('subscriptions', [])
+                subscriptions.extend(subs)
+                cursor = result.body.get('cursor')
+                if not cursor:
+                    break
+            else:
+                break
+        
+        # Get all members
+        members = await db.members.find({}, {"_id": 0}).to_list(1000)
+        
+        # Current month info
+        now = datetime.now(timezone.utc)
+        year = str(now.year)
+        month = now.month - 1  # 0-indexed
+        month_names = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+        month_str = f"{month_names[month]}_{year}"
+        
+        synced_count = 0
+        skipped_count = 0
+        errors = []
+        
+        for sub in subscriptions:
+            customer_id = sub.get('customer_id')
+            charged_through = sub.get('charged_through_date')  # e.g., "2026-01-31"
+            
+            # Check if subscription covers current month
+            if charged_through:
+                charged_year, charged_month, _ = charged_through.split('-')
+                if int(charged_year) < now.year or (int(charged_year) == now.year and int(charged_month) < now.month):
+                    # Subscription hasn't been charged for this month yet
+                    skipped_count += 1
+                    continue
+            
+            # Get customer name
+            customer_name = None
+            if customer_id:
+                try:
+                    cust_result = square_client.customers.retrieve_customer(customer_id=customer_id)
+                    if cust_result.is_success():
+                        customer = cust_result.body.get('customer', {})
+                        given_name = customer.get('given_name', '')
+                        family_name = customer.get('family_name', '')
+                        customer_name = f"{given_name} {family_name}".strip()
+                except:
+                    pass
+            
+            if not customer_name:
+                skipped_count += 1
+                continue
+            
+            # Match to member
+            matched_member = None
+            customer_name_lower = customer_name.lower().strip()
+            
+            for member in members:
+                member_name = member.get('name', '').lower().strip()
+                member_handle = member.get('handle', '').lower().strip()
+                
+                if customer_name_lower == member_name or customer_name_lower == member_handle:
+                    matched_member = member
+                    break
+                if customer_name_lower in member_name or member_name in customer_name_lower:
+                    matched_member = member
+                    break
+                if member_handle and (member_handle in customer_name_lower or customer_name_lower in member_handle):
+                    matched_member = member
+                    break
+            
+            if not matched_member:
+                skipped_count += 1
+                continue
+            
+            # Update dues for matched member
+            try:
+                dues_info = {
+                    "member_id": matched_member["id"],
+                    "year": int(year),
+                    "month": month
+                }
+                await update_member_dues_from_webhook(dues_info)
+                synced_count += 1
+                
+                # Save subscription link for future reference
+                await db.member_subscriptions.update_one(
+                    {"member_id": matched_member["id"]},
+                    {"$set": {
+                        "member_id": matched_member["id"],
+                        "member_handle": matched_member.get("handle"),
+                        "square_customer_id": customer_id,
+                        "square_subscription_id": sub.get("id"),
+                        "customer_name": customer_name,
+                        "last_synced": datetime.now(timezone.utc).isoformat()
+                    }},
+                    upsert=True
+                )
+                
+            except Exception as e:
+                errors.append(f"Failed to update {matched_member.get('handle')}: {str(e)}")
+        
+        return {
+            "message": f"Subscription sync complete",
+            "synced": synced_count,
+            "skipped": skipped_count,
+            "month": f"{month_names[month]} {year}",
+            "errors": errors if errors else None
+        }
+        
+    except Exception as e:
+        logger.error(f"Error syncing subscriptions: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to sync subscriptions: {str(e)}")
+
+
+@api_router.post("/dues/link-subscription")
+async def link_member_to_subscription(
+    member_id: str,
+    square_customer_id: str,
+    current_user: dict = Depends(verify_token)
+):
+    """Manually link a member to a Square customer for subscription tracking"""
+    if not is_secretary(current_user) and current_user.get('role') != 'admin':
+        raise HTTPException(status_code=403, detail="Only Secretaries can link subscriptions")
+    
+    member = await db.members.find_one({"id": member_id})
+    if not member:
+        raise HTTPException(status_code=404, detail="Member not found")
+    
+    await db.member_subscriptions.update_one(
+        {"member_id": member_id},
+        {"$set": {
+            "member_id": member_id,
+            "member_handle": member.get("handle"),
+            "square_customer_id": square_customer_id,
+            "linked_by": current_user.get("username"),
+            "linked_at": datetime.now(timezone.utc).isoformat()
+        }},
+        upsert=True
+    )
+    
+    return {"message": f"Member {member.get('handle')} linked to Square customer {square_customer_id}"}
+
+
 # ==================== DUES PAYMENT MANAGEMENT ENDPOINTS ====================
 
 @api_router.get("/dues/unmatched-payments")
