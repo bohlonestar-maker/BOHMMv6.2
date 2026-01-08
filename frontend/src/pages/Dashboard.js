@@ -1027,6 +1027,13 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
                     <Star className="w-4 h-4 mr-2" />
                     Wall of Honor
                   </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    onSelect={(e) => { e.preventDefault(); navigate("/suggestions"); }} 
+                    className="text-yellow-400 focus:bg-yellow-900/30 focus:text-yellow-300 cursor-pointer"
+                  >
+                    <Lightbulb className="w-4 h-4 mr-2" />
+                    Suggestion Box
+                  </DropdownMenuItem>
                   
                   {/* Reports - Officers only (not PM, Member, CC, CCLC, MD) */}
                   {userTitle && !['PM', 'Member', 'CC', 'CCLC', 'MD'].includes(userTitle) && (
