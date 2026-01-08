@@ -63,6 +63,14 @@ function OfficerTracking() {
   const [canEdit, setCanEdit] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   
+  // Square Payments State
+  const [unmatchedPayments, setUnmatchedPayments] = useState([]);
+  const [showPaymentsDialog, setShowPaymentsDialog] = useState(false);
+  const [matchingPayment, setMatchingPayment] = useState(null);
+  const [matchMemberId, setMatchMemberId] = useState('');
+  const [matchYear, setMatchYear] = useState(new Date().getFullYear());
+  const [matchMonth, setMatchMonth] = useState(new Date().getMonth());
+  
   // View Member Meetings Dialog
   const [viewMeetingsDialog, setViewMeetingsDialog] = useState(false);
   const [viewMeetingsMember, setViewMeetingsMember] = useState(null);
