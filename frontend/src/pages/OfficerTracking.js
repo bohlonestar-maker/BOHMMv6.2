@@ -686,9 +686,95 @@ function OfficerTracking() {
                   </TableBody>
                 </Table>
               </div>
+              </div>
           )}
         </CardContent>
       </Card>
+
+      {/* Subscriptions Dialog */}
+      <Dialog open={showSubscriptionsDialog} onOpenChange={setShowSubscriptionsDialog}>
+        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Square Subscriptions</DialogTitle>
+            <DialogDescription>
+              Active dues subscriptions from Square
+            </DialogDescription>
+          </DialogHeader>
+          {loadingSubscriptions ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {/* Matched Subscriptions */}
+              <div>
+                <h3 className="font-semibold text-green-500 mb-2">
+                  ✓ Matched Subscriptions ({subscriptions.matched?.length || 0})
+                </h3>
+                {subscriptions.matched?.length > 0 ? (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Customer Name</TableHead>
+                        <TableHead>Matched Member</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Paid Through</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {subscriptions.matched.map((sub, idx) => (
+                        <TableRow key={idx}>
+                          <TableCell>{sub.customer_name}</TableCell>
+                          <TableCell className="text-green-500 font-medium">{sub.matched_member_handle}</TableCell>
+                          <TableCell><Badge className="bg-green-600">{sub.status}</Badge></TableCell>
+                          <TableCell>{sub.charged_through_date}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                ) : (
+                  <p className="text-muted-foreground text-sm">No matched subscriptions</p>
+                )}
+              </div>
+
+              {/* Unmatched Subscriptions */}
+              <div>
+                <h3 className="font-semibold text-yellow-500 mb-2">
+                  ⚠ Unmatched Subscriptions ({subscriptions.unmatched?.length || 0})
+                </h3>
+                {subscriptions.unmatched?.length > 0 ? (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Customer Name</TableHead>
+                        <TableHead>Email</TableHead>
+                        <TableHead>Status</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {subscriptions.unmatched.map((sub, idx) => (
+                        <TableRow key={idx}>
+                          <TableCell>{sub.customer_name || 'Unknown'}</TableCell>
+                          <TableCell>{sub.customer_email || '-'}</TableCell>
+                          <TableCell><Badge variant="outline">{sub.status}</Badge></TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                ) : (
+                  <p className="text-muted-foreground text-sm">All subscriptions matched!</p>
+                )}
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowSubscriptionsDialog(false)}>Close</Button>
+            <Button onClick={handleSyncSubscriptions} className="bg-purple-600 hover:bg-purple-700">
+              Sync Now
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Attendance Dialog */}
       <Dialog open={attendanceDialog} onOpenChange={setAttendanceDialog}>
