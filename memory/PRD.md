@@ -28,6 +28,11 @@ Build a member management application with attendance tracking, dues management,
 - **Status Management:** National Officers (except Honorary) can mark as: New, Reviewed, In Progress, Implemented, Declined
 - **Location:** Section on the Dashboard
 
+#### 4. Responsive Design (A&D Page)
+- **Mobile (390px):** Card-based layout, 2x2 chapter grid, stacked action buttons
+- **Tablet (768px):** Full table layout, 2x2 chapter grid
+- **Laptop (1440px+):** Full table layout, 4-column chapter grid, inline controls
+
 ### What's Been Implemented
 
 #### January 8, 2026 - Suggestion Box Feature
