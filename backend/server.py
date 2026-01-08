@@ -7379,6 +7379,199 @@ async def get_tracking_summary(current_user: dict = Depends(verify_token)):
     return summary
 
 
+# ==================== SUGGESTION BOX ENDPOINTS ====================
+
+class SuggestionCreate(BaseModel):
+    title: str
+    description: str
+    is_anonymous: bool = False
+
+class SuggestionStatusUpdate(BaseModel):
+    status: str  # "new", "reviewed", "in_progress", "implemented", "declined"
+
+class SuggestionVote(BaseModel):
+    vote_type: str  # "upvote" or "downvote"
+
+def can_manage_suggestions(user: dict) -> bool:
+    """Check if user is a National Officer (except Honorary) who can manage suggestion statuses"""
+    NATIONAL_OFFICER_TITLES = ['Prez', 'VP', 'S@A', 'ENF', 'CD', 'T', 'SEC', 'NPrez', 'NVP']
+    user_chapter = user.get('chapter', '')
+    user_title = user.get('title', '')
+    return user_chapter == "National" and user_title in NATIONAL_OFFICER_TITLES
+
+@api_router.get("/suggestions")
+async def get_suggestions(current_user: dict = Depends(verify_token)):
+    """Get all suggestions - all logged-in members can view"""
+    suggestions = await db.suggestions.find({}, {"_id": 0}).to_list(1000)
+    
+    # Sort by created_at descending (newest first)
+    suggestions.sort(key=lambda x: x.get("created_at", ""), reverse=True)
+    
+    # Calculate net votes for each suggestion
+    for s in suggestions:
+        upvotes = len(s.get("upvotes", []))
+        downvotes = len(s.get("downvotes", []))
+        s["vote_count"] = upvotes - downvotes
+        s["upvote_count"] = upvotes
+        s["downvote_count"] = downvotes
+        # Check if current user has voted
+        user_id = current_user.get("member_id") or current_user.get("id")
+        s["user_vote"] = None
+        if user_id in s.get("upvotes", []):
+            s["user_vote"] = "upvote"
+        elif user_id in s.get("downvotes", []):
+            s["user_vote"] = "downvote"
+        # Remove vote arrays from response (privacy)
+        s.pop("upvotes", None)
+        s.pop("downvotes", None)
+    
+    return suggestions
+
+@api_router.post("/suggestions")
+async def create_suggestion(
+    suggestion: SuggestionCreate,
+    current_user: dict = Depends(verify_token)
+):
+    """Create a new suggestion - all logged-in members can submit"""
+    user_handle = current_user.get("handle") or current_user.get("username")
+    user_id = current_user.get("member_id") or current_user.get("id")
+    
+    new_suggestion = {
+        "id": str(uuid.uuid4()),
+        "title": suggestion.title,
+        "description": suggestion.description,
+        "submitted_by": "Anonymous" if suggestion.is_anonymous else user_handle,
+        "submitter_id": user_id,  # Track even if anonymous (for voting)
+        "is_anonymous": suggestion.is_anonymous,
+        "status": "new",
+        "upvotes": [],
+        "downvotes": [],
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.suggestions.insert_one(new_suggestion)
+    
+    # Return without internal fields
+    response = {k: v for k, v in new_suggestion.items() if k not in ["_id", "upvotes", "downvotes", "submitter_id"]}
+    response["vote_count"] = 0
+    response["upvote_count"] = 0
+    response["downvote_count"] = 0
+    response["user_vote"] = None
+    
+    return response
+
+@api_router.post("/suggestions/{suggestion_id}/vote")
+async def vote_suggestion(
+    suggestion_id: str,
+    vote: SuggestionVote,
+    current_user: dict = Depends(verify_token)
+):
+    """Vote on a suggestion - upvote or downvote"""
+    user_id = current_user.get("member_id") or current_user.get("id")
+    
+    suggestion = await db.suggestions.find_one({"id": suggestion_id})
+    if not suggestion:
+        raise HTTPException(status_code=404, detail="Suggestion not found")
+    
+    upvotes = suggestion.get("upvotes", [])
+    downvotes = suggestion.get("downvotes", [])
+    
+    if vote.vote_type == "upvote":
+        # Remove from downvotes if present
+        if user_id in downvotes:
+            downvotes.remove(user_id)
+        # Toggle upvote
+        if user_id in upvotes:
+            upvotes.remove(user_id)
+            new_vote = None
+        else:
+            upvotes.append(user_id)
+            new_vote = "upvote"
+    elif vote.vote_type == "downvote":
+        # Remove from upvotes if present
+        if user_id in upvotes:
+            upvotes.remove(user_id)
+        # Toggle downvote
+        if user_id in downvotes:
+            downvotes.remove(user_id)
+            new_vote = None
+        else:
+            downvotes.append(user_id)
+            new_vote = "downvote"
+    else:
+        raise HTTPException(status_code=400, detail="Invalid vote type")
+    
+    await db.suggestions.update_one(
+        {"id": suggestion_id},
+        {"$set": {
+            "upvotes": upvotes,
+            "downvotes": downvotes,
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }}
+    )
+    
+    return {
+        "vote_count": len(upvotes) - len(downvotes),
+        "upvote_count": len(upvotes),
+        "downvote_count": len(downvotes),
+        "user_vote": new_vote
+    }
+
+@api_router.patch("/suggestions/{suggestion_id}/status")
+async def update_suggestion_status(
+    suggestion_id: str,
+    status_update: SuggestionStatusUpdate,
+    current_user: dict = Depends(verify_token)
+):
+    """Update suggestion status - National Officers only (except Honorary)"""
+    if not can_manage_suggestions(current_user) and current_user.get('role') != 'admin':
+        raise HTTPException(status_code=403, detail="Only National Officers can update suggestion status")
+    
+    valid_statuses = ["new", "reviewed", "in_progress", "implemented", "declined"]
+    if status_update.status not in valid_statuses:
+        raise HTTPException(status_code=400, detail=f"Invalid status. Must be one of: {valid_statuses}")
+    
+    suggestion = await db.suggestions.find_one({"id": suggestion_id})
+    if not suggestion:
+        raise HTTPException(status_code=404, detail="Suggestion not found")
+    
+    user_handle = current_user.get("handle") or current_user.get("username")
+    
+    await db.suggestions.update_one(
+        {"id": suggestion_id},
+        {"$set": {
+            "status": status_update.status,
+            "status_updated_by": user_handle,
+            "status_updated_at": datetime.now(timezone.utc).isoformat(),
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }}
+    )
+    
+    return {"message": f"Status updated to {status_update.status}", "status": status_update.status}
+
+@api_router.delete("/suggestions/{suggestion_id}")
+async def delete_suggestion(
+    suggestion_id: str,
+    current_user: dict = Depends(verify_token)
+):
+    """Delete a suggestion - National Officers or the original submitter can delete"""
+    suggestion = await db.suggestions.find_one({"id": suggestion_id})
+    if not suggestion:
+        raise HTTPException(status_code=404, detail="Suggestion not found")
+    
+    user_id = current_user.get("member_id") or current_user.get("id")
+    is_submitter = suggestion.get("submitter_id") == user_id
+    is_officer = can_manage_suggestions(current_user) or current_user.get('role') == 'admin'
+    
+    if not is_submitter and not is_officer:
+        raise HTTPException(status_code=403, detail="You can only delete your own suggestions")
+    
+    await db.suggestions.delete_one({"id": suggestion_id})
+    
+    return {"message": "Suggestion deleted"}
+
+
 # ==================== EVENT ENDPOINTS ====================
 
 @api_router.get("/events")
