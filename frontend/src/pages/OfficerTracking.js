@@ -222,6 +222,21 @@ function OfficerTracking() {
     }
   };
 
+  // Delete attendance record (syncs to member's meeting_attendance)
+  const handleDeleteAttendance = async (recordId) => {
+    if (!confirm("Are you sure you want to delete this attendance record?")) return;
+    
+    try {
+      await axios.delete(`${BACKEND_URL}/api/officer-tracking/attendance/${recordId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      toast.success("Attendance record deleted");
+      fetchData();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || "Failed to delete attendance");
+    }
+  };
+
   // Quick dues update without dialog
   const handleQuickDuesUpdate = async (member, status) => {
     try {
