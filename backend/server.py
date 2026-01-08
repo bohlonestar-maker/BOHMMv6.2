@@ -8624,6 +8624,12 @@ async def check_and_send_birthday_notifications():
         client = AsyncIOMotorClient(mongo_url)
         thread_db = client[db_name]
         
+        # Ensure unique index exists to prevent duplicates
+        await thread_db.birthday_notifications.create_index(
+            [("member_id", 1), ("notification_date", 1)],
+            unique=True
+        )
+        
         # Fetch all members with DOB set
         members = await thread_db.members.find(
             {"dob": {"$exists": True, "$ne": None, "$ne": ""}},
@@ -8648,29 +8654,38 @@ async def check_and_send_birthday_notifications():
                 if dob_mm_dd == today_mm_dd:
                     member_id = member.get('id', member.get('handle', ''))
                     
-                    # Check if we already sent notification today
-                    existing = await thread_db.birthday_notifications.find_one({
-                        "member_id": member_id,
-                        "notification_date": today_key
-                    })
-                    
-                    if existing:
-                        print(f"   ⏭️ Already notified for {member.get('name', member.get('handle'))}", file=sys.stderr, flush=True)
-                        continue
-                    
-                    # Send birthday notification
-                    print(f"   🎉 Birthday found: {member.get('name', member.get('handle'))} - {dob}", file=sys.stderr, flush=True)
-                    success = await send_birthday_notification(member)
-                    
-                    if success:
-                        # Record that we sent the notification
-                        await thread_db.birthday_notifications.insert_one({
+                    # Use upsert to atomically check and insert - prevents race condition
+                    result = await thread_db.birthday_notifications.update_one(
+                        {
                             "member_id": member_id,
-                            "member_name": member.get('name', member.get('handle', '')),
-                            "notification_date": today_key,
-                            "sent_at": datetime.now()
-                        })
-                        birthday_count += 1
+                            "notification_date": today_key
+                        },
+                        {
+                            "$setOnInsert": {
+                                "member_id": member_id,
+                                "member_name": member.get('name', member.get('handle', '')),
+                                "notification_date": today_key,
+                                "sent_at": datetime.now()
+                            }
+                        },
+                        upsert=True
+                    )
+                    
+                    # Only send notification if this was a new insert (not already exists)
+                    if result.upserted_id:
+                        print(f"   🎉 Birthday found: {member.get('name', member.get('handle'))} - {dob}", file=sys.stderr, flush=True)
+                        success = await send_birthday_notification(member)
+                        
+                        if not success:
+                            # If notification failed, remove the record so it can retry
+                            await thread_db.birthday_notifications.delete_one({
+                                "member_id": member_id,
+                                "notification_date": today_key
+                            })
+                        else:
+                            birthday_count += 1
+                    else:
+                        print(f"   ⏭️ Already notified for {member.get('name', member.get('handle'))}", file=sys.stderr, flush=True)
                         
             except Exception as e:
                 print(f"   ❌ Error processing DOB for {member.get('handle', 'unknown')}: {str(e)}", file=sys.stderr, flush=True)
