@@ -88,24 +88,20 @@ Build a member management application with attendance tracking, dues management,
 ### Prioritized Backlog
 
 #### P0 - Critical
-- [x] ~~DigitalOcean deployment routing fix~~ (User applied fix)
 - [x] ~~Square subscription sync feature~~ (Completed)
 - [x] ~~Batch API performance~~ (Completed)
 - [x] ~~Fuzzy matching~~ (Completed)
 - [x] ~~Manual linking UI~~ (Completed)
+- [x] ~~A&D dues sync fix~~ (Completed)
+- [x] ~~Suggestion Box~~ (Completed)
 
 #### P1 - High Priority
-- [ ] Wall of Honor photos disappearing for older entries (needs user verification)
+- [x] ~~Wall of Honor photos~~ (User confirmed fixed)
 - [ ] Add quarterly/bi-yearly/yearly dues subscription options
 
 #### P2 - Medium Priority
-- [ ] Automated monthly sync (run sync automatically on 1st of each month)
+- [ ] Automated monthly sync (run on 1st of each month)
 - [ ] Email notifications for unmatched subscriptions
-
-### Test Results (Latest)
-- **Backend:** 12/12 tests passed (100%)
-- **Frontend:** All features working
-- **Test file:** `/app/tests/test_subscription_endpoints.py`
 
 ### Test Credentials
 - **Admin:** `admin` / `admin123`
