@@ -740,10 +740,25 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
     toast.success("Meeting added");
   };
 
-  // Delete a meeting from the member's attendance
-  const handleDeleteMeeting = (meetingIndex) => {
+  // Delete a meeting from the member's attendance (syncs to A & D)
+  const handleDeleteMeeting = async (meetingIndex) => {
     const currentYear = selectedYear;
     const yearMeetings = formData.meeting_attendance[currentYear] || [];
+    const meetingToDelete = yearMeetings[meetingIndex];
+    
+    // Delete from server (syncs to officer_attendance collection)
+    if (meetingToDelete && meetingToDelete.date && formData.id) {
+      try {
+        const token = localStorage.getItem("token");
+        await axios.delete(`${API}/members/${formData.id}/attendance?meeting_date=${meetingToDelete.date}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+      } catch (error) {
+        console.error("Failed to sync attendance deletion:", error);
+        // Continue with local update even if server sync fails
+      }
+    }
+    
     const newMeetings = yearMeetings.filter((_, idx) => idx !== meetingIndex);
     
     setFormData({
