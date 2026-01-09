@@ -177,6 +177,21 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
     return userPermissions?.[permission] === true;
   };
 
+  // Check if a member is an officer (has a title that's not Member or Honorary)
+  const isOfficer = (member) => {
+    const officerTitles = ['Prez', 'VP', 'S@A', 'ENF', 'CD', 'T', 'SEC', 'NPrez', 'NVP', 'CC', 'CCLC', 'MD', 'PM'];
+    return officerTitles.includes(member?.title);
+  };
+
+  // Check if user can see email for a specific member
+  // Regular members can see email of officers in their own chapter
+  const canSeeEmail = (member) => {
+    if (hasPermission('email')) return true;
+    // Members can see their chapter officers' emails
+    if (member?.chapter === userChapter && isOfficer(member)) return true;
+    return false;
+  };
+
   // Fetch available years (admin only)
   useEffect(() => {
     if (userRole === 'admin') {
