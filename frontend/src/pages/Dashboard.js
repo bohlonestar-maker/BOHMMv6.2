@@ -177,17 +177,44 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
     return userPermissions?.[permission] === true;
   };
 
-  // Check if a member is an officer (has a title that's not Member or Honorary)
+  // Check if a member is an officer (has a title that's not Brother or Honorary)
   const isOfficer = (member) => {
     const officerTitles = ['Prez', 'VP', 'S@A', 'ENF', 'CD', 'T', 'SEC', 'NPrez', 'NVP', 'CC', 'CCLC', 'MD', 'PM'];
     return officerTitles.includes(member?.title);
   };
 
+  // Check if current user is a chapter officer (AD, HA, HS, or National)
+  const isCurrentUserOfficer = () => {
+    const officerTitles = ['Prez', 'VP', 'S@A', 'ENF', 'CD', 'T', 'SEC', 'NPrez', 'NVP', 'CC', 'CCLC', 'MD', 'PM'];
+    return officerTitles.includes(userTitle);
+  };
+
   // Check if user can see email for a specific member
-  // Regular members can see email of officers in their own chapter
+  // - Admins and users with email permission can see all
+  // - Chapter officers (AD, HA, HS, National) can see all officers' emails
+  // - Regular members can see email of officers in their own chapter
   const canSeeEmail = (member) => {
     if (hasPermission('email')) return true;
-    // Members can see their chapter officers' emails
+    // Chapter officers can see all officers' emails
+    if (isCurrentUserOfficer() && isOfficer(member)) return true;
+    // Regular members can see their chapter officers' emails
+    if (member?.chapter === userChapter && isOfficer(member)) return true;
+    return false;
+  };
+
+  // Check if user can see phone for a specific member
+  // - Admins and users with phone permission can see all (respecting private)
+  // - Chapter officers can see all officers' phones (unless private)
+  // - Regular members can see their chapter officers' phones (unless private)
+  const canSeePhone = (member) => {
+    // If phone is marked private, only admins can see
+    if (member?.phone_private) {
+      return hasPermission('phone');
+    }
+    if (hasPermission('phone')) return true;
+    // Chapter officers can see all officers' phones
+    if (isCurrentUserOfficer() && isOfficer(member)) return true;
+    // Regular members can see their chapter officers' phones
     if (member?.chapter === userChapter && isOfficer(member)) return true;
     return false;
   };
