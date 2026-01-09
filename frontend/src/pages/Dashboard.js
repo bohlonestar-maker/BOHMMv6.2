@@ -1756,16 +1756,20 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
                       <TableCell className="text-white">{member.title}</TableCell>
                       <TableCell className="text-white">{member.handle}</TableCell>
                       <TableCell className="text-white">{member.name}</TableCell>
-                      {hasPermission('email') && (
+                      {(hasPermission('email') || true) && (
                         <TableCell>
-                          <a
-                            href={`mailto:${member.email}`}
-                            className="flex items-center gap-1 text-blue-400 hover:text-blue-300 hover:underline text-sm"
-                            data-testid={`email-link-${member.id}`}
-                          >
-                            <Mail className="w-3 h-3" />
-                            <span className="text-white">{member.email}</span>
-                          </a>
+                          {canSeeEmail(member) ? (
+                            <a
+                              href={`mailto:${member.email}`}
+                              className="flex items-center gap-1 text-blue-400 hover:text-blue-300 hover:underline text-sm"
+                              data-testid={`email-link-${member.id}`}
+                            >
+                              <Mail className="w-3 h-3" />
+                              <span className="text-white">{member.email}</span>
+                            </a>
+                          ) : (
+                            <span className="text-slate-500 text-sm">—</span>
+                          )}
                         </TableCell>
                       )}
                       {hasPermission('phone') && (
