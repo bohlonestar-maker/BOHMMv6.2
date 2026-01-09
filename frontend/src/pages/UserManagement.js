@@ -835,7 +835,7 @@ export default function UserManagement({ onLogout }) {
                           <SelectItem value="CCLC">CCLC - Club Counselor & Life Coach</SelectItem>
                           <SelectItem value="MD">MD - Media Director</SelectItem>
                           <SelectItem value="PM">PM - Prospect Manager</SelectItem>
-                          <SelectItem value="(pm)">(pm) - Patch Master</SelectItem>
+                          <SelectItem value="(pm)">(pm) - Privileged Member</SelectItem>
                           <SelectItem value="Member">Member</SelectItem>
                           <SelectItem value="Honorary">Honorary</SelectItem>
                           <SelectItem value="Prospect">Prospect</SelectItem>
