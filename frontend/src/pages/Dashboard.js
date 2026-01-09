@@ -43,7 +43,7 @@ const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
 const CHAPTERS = ["National", "AD", "HA", "HS"];
-const TITLES = ["Prez", "VP", "S@A", "ENF", "SEC", "T", "CD", "CC", "CCLC", "MD", "PM", "Member", "Honorary"];
+const TITLES = ["Prez", "VP", "S@A", "ENF", "SEC", "T", "CD", "CC", "CCLC", "MD", "PM", "(pm)", "Member", "Honorary"];
 
 // Helper function to get the Nth occurrence of a weekday in a month
 const getNthWeekdayOfMonth = (year, month, weekday, n) => {
