@@ -1741,7 +1741,7 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
                     <TableHead className="text-white">Title</TableHead>
                     <TableHead className="text-white">Handle</TableHead>
                     <TableHead className="text-white">Name</TableHead>
-                    {hasPermission('email') && <TableHead className="text-white">Email</TableHead>}
+                    {(hasPermission('email') || true) && <TableHead className="text-white">Email</TableHead>}
                     {hasPermission('phone') && <TableHead className="text-white">Phone</TableHead>}
                     {hasPermission('address') && <TableHead className="text-white">Address</TableHead>}
                     {hasPermission('dues_tracking') && <TableHead className="text-white">Dues</TableHead>}
