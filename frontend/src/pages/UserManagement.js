@@ -571,6 +571,7 @@ export default function UserManagement({ onLogout }) {
                             <SelectItem value="CCLC">CCLC</SelectItem>
                             <SelectItem value="PM">PM</SelectItem>
                             <SelectItem value="Member">Member</SelectItem>
+                            <SelectItem value="Honorary">Honorary</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
