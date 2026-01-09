@@ -8,6 +8,12 @@
   - Email column always visible in member table
   - Non-officer emails show "—" for regular members without full email permission
 
+### Updates
+- **Title Options Updated**
+  - Added "Honorary" to User Management title dropdowns
+  - Updated PM description to "Patch Master" (was "Prospect Manager")
+  - All title options now consistent across System Users and Members
+
 ### Bug Fixes
 - **Birthday Notification Duplicates Fixed**
   - Fixed race condition that was sending 2-3 duplicate birthday notifications to Discord
