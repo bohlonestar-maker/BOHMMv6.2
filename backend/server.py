@@ -7330,6 +7330,8 @@ async def get_member_dues_history(member_id: str, current_user: dict = Depends(v
                                 invoice = inv_result.invoice
                                 # Get invoice payment info
                                 status = getattr(invoice, 'status', 'UNKNOWN')
+                                order_id = getattr(invoice, 'order_id', None)
+                                
                                 payment_info = {
                                     "invoice_id": invoice.id,
                                     "subscription_id": subscription_id,
@@ -7340,33 +7342,35 @@ async def get_member_dues_history(member_id: str, current_user: dict = Depends(v
                                     "status": status,
                                     "payment_id": None,
                                     "paid_at": None,
-                                    "receipt_url": None
+                                    "receipt_url": None,
+                                    "order_id": order_id
                                 }
                                 
-                                # Get payment amount from primary recipient amount
-                                primary_recipient = getattr(invoice, 'primary_recipient', None)
+                                # Get payment amount from payment_requests
                                 if hasattr(invoice, 'payment_requests') and invoice.payment_requests:
                                     req = invoice.payment_requests[0]
                                     if hasattr(req, 'computed_amount_money') and req.computed_amount_money:
                                         payment_info["amount"] = req.computed_amount_money.amount / 100
                                         payment_info["currency"] = req.computed_amount_money.currency or "USD"
                                 
-                                # If invoice is paid, get actual payment details
-                                if status == "PAID":
-                                    # Check for payment_request with tenders
-                                    if hasattr(invoice, 'payment_requests') and invoice.payment_requests:
-                                        for pr in invoice.payment_requests:
-                                            if hasattr(pr, 'tenders') and pr.tenders:
-                                                for tender in pr.tenders:
-                                                    payment_info["payment_id"] = tender.id if hasattr(tender, 'id') else None
-                                                    payment_info["paid_at"] = tender.created_at if hasattr(tender, 'created_at') else None
+                                # If invoice is paid and has an order_id, get the payment_id from the order
+                                if status == "PAID" and order_id:
+                                    try:
+                                        # Get the order to find the tender and payment_id
+                                        order_result = square_client.orders.get(order_id=order_id)
+                                        if order_result and order_result.order:
+                                            order = order_result.order
+                                            # Get payment info from tenders
+                                            tenders = getattr(order, 'tenders', None) or []
+                                            for tender in tenders:
+                                                if hasattr(tender, 'payment_id') and tender.payment_id:
+                                                    payment_info["payment_id"] = tender.payment_id
+                                                    payment_info["paid_at"] = getattr(tender, 'created_at', None) or getattr(invoice, 'updated_at', None)
                                                     break
-                                            # Also check for payment card details
-                                            if hasattr(pr, 'card_details') and pr.card_details:
-                                                if hasattr(pr.card_details, 'payment_id'):
-                                                    payment_info["payment_id"] = pr.card_details.payment_id
+                                    except Exception as order_err:
+                                        logger.warning(f"Failed to fetch order {order_id}: {order_err}")
                                     
-                                    # Get paid_at from invoice if not found in tenders
+                                    # Fallback: use invoice updated_at as paid_at if we still don't have it
                                     if not payment_info["paid_at"]:
                                         payment_info["paid_at"] = getattr(invoice, 'updated_at', None)
                                 
@@ -7399,7 +7403,8 @@ async def get_member_dues_history(member_id: str, current_user: dict = Depends(v
                                     "due_date": None,
                                     "paid_at": payment.created_at,
                                     "status": payment.status,
-                                    "receipt_url": payment.receipt_url
+                                    "receipt_url": payment.receipt_url,
+                                    "order_id": None
                                 })
             except Exception as pay_err:
                 logger.warning(f"Failed to fetch payments for member {member_id}: {pay_err}")
