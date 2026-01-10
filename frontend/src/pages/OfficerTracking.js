@@ -182,6 +182,25 @@ function OfficerTracking() {
     setViewMeetingsDialog(true);
   };
 
+  // Open dues history dialog for a member
+  const openDuesHistoryDialog = async (member) => {
+    setDuesHistoryMember(member);
+    setDuesHistoryDialog(true);
+    setLoadingDuesHistory(true);
+    setDuesHistoryData(null);
+    
+    try {
+      const response = await axios.get(`${BACKEND_URL}/api/officer-tracking/dues/history/${member.id}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setDuesHistoryData(response.data);
+    } catch (error) {
+      toast.error(error.response?.data?.detail || "Failed to load dues history");
+    } finally {
+      setLoadingDuesHistory(false);
+    }
+  };
+
   // Get meeting type label from value
   const getMeetingTypeLabel = (value) => {
     const allMeetingTypes = [
