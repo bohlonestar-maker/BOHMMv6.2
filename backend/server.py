@@ -7479,16 +7479,53 @@ async def debug_payment_orders(current_user: dict = Depends(verify_token)):
     if not square_client:
         raise HTTPException(status_code=500, detail="Square client not configured")
     
-    # Search for ALL orders (not just dues-filtered) to see what's there
+    # Search payments directly (not orders) around July 5, 2025
     start_date = "2025-07-01T00:00:00Z"
     end_date = "2025-07-10T00:00:00Z"
     
-    result = square_client.orders.search(
+    # Get payments
+    payments_result = square_client.payments.list(
+        begin_time=start_date,
+        end_time=end_date,
+        limit=100
+    )
+    
+    payments_list = []
+    for payment in (payments_result.payments or []):
+        payment_info = {
+            "payment_id": payment.id,
+            "created_at": payment.created_at,
+            "amount": payment.amount_money.amount/100 if payment.amount_money else 0,
+            "status": payment.status,
+            "order_id": getattr(payment, 'order_id', None),
+            "customer_id": getattr(payment, 'customer_id', None),
+            "note": getattr(payment, 'note', None),
+            "receipt_url": getattr(payment, 'receipt_url', None),
+            "buyer_email": getattr(payment, 'buyer_email_address', None)
+        }
+        
+        # Get customer details if available
+        cust_id = getattr(payment, 'customer_id', None)
+        if cust_id:
+            try:
+                cust_result = square_client.customers.get(customer_id=cust_id)
+                if cust_result and cust_result.customer:
+                    c = cust_result.customer
+                    payment_info["customer_name"] = f"{getattr(c, 'given_name', '') or ''} {getattr(c, 'family_name', '') or ''}".strip()
+                    payment_info["customer_email"] = getattr(c, 'email_address', None)
+                    payment_info["customer_nickname"] = getattr(c, 'nickname', None)
+                    payment_info["customer_note"] = getattr(c, 'note', None)
+            except:
+                pass
+        
+        payments_list.append(payment_info)
+    
+    # Also search orders
+    orders_result = square_client.orders.search(
         location_ids=[SQUARE_LOCATION_ID],
         limit=100,
         query={
             "filter": {
-                "state_filter": {"states": ["COMPLETED"]},
                 "date_time_filter": {
                     "created_at": {
                         "start_at": start_date,
@@ -7500,54 +7537,28 @@ async def debug_payment_orders(current_user: dict = Depends(verify_token)):
         }
     )
     
-    all_orders = []
-    for order in (result.orders or []):
+    orders_list = []
+    for order in (orders_result.orders or []):
         line_items = getattr(order, 'line_items', None) or []
-        items_info = []
-        
-        for item in line_items:
-            item_name = (getattr(item, 'name', '') or '')
-            items_info.append({
-                "name": item_name,
-                "note": getattr(item, 'note', None),
-                "variation": getattr(item, 'variation_name', None),
-                "amount": getattr(item, 'total_money', None).amount/100 if getattr(item, 'total_money', None) else 0
-            })
+        items_info = [{"name": getattr(item, 'name', ''), "amount": getattr(item, 'total_money', None).amount/100 if getattr(item, 'total_money', None) else 0} for item in line_items]
         
         order_info = {
             "order_id": order.id,
             "created_at": order.created_at,
-            "note": getattr(order, 'note', None),
+            "state": getattr(order, 'state', None),
+            "total_amount": getattr(order, 'total_money', None).amount/100 if getattr(order, 'total_money', None) else 0,
             "customer_id": getattr(order, 'customer_id', None),
-            "items": items_info,
-            "total_amount": getattr(order, 'total_money', None).amount/100 if getattr(order, 'total_money', None) else 0
+            "items": items_info
         }
-        
-        # Get fulfillment info
-        fulfillments = getattr(order, 'fulfillments', None) or []
-        for f in fulfillments:
-            recipient = getattr(f, 'recipient', None)
-            if recipient:
-                order_info["recipient_name"] = getattr(recipient, 'display_name', None)
-                order_info["recipient_email"] = getattr(recipient, 'email_address', None)
-        
-        # Get customer details
-        cust_id = getattr(order, 'customer_id', None)
-        if cust_id:
-            try:
-                cust_result = square_client.customers.get(customer_id=cust_id)
-                if cust_result and cust_result.customer:
-                    c = cust_result.customer
-                    order_info["customer_name"] = f"{getattr(c, 'given_name', '') or ''} {getattr(c, 'family_name', '') or ''}".strip()
-                    order_info["customer_email"] = getattr(c, 'email_address', None)
-                    order_info["customer_nickname"] = getattr(c, 'nickname', None)
-                    order_info["customer_note"] = getattr(c, 'note', None)
-            except:
-                pass
-        
-        all_orders.append(order_info)
+        orders_list.append(order_info)
     
-    return {"orders": all_orders, "total": len(all_orders), "date_range": f"{start_date} to {end_date}"}
+    return {
+        "payments": payments_list, 
+        "payments_count": len(payments_list),
+        "orders": orders_list,
+        "orders_count": len(orders_list),
+        "date_range": f"{start_date} to {end_date}"
+    }
 
 
 @api_router.get("/officer-tracking/summary")
