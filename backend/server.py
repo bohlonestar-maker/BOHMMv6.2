@@ -6976,8 +6976,15 @@ async def get_members_by_chapter(current_user: dict = Depends(verify_token)):
         logger.warning(f"A&D access denied - User: {current_user.get('username')}, Title: {user_title}")
         raise HTTPException(status_code=403, detail="Only officers can access this page")
     
+    # Check if user can view National chapter A&D
+    can_view_national = can_view_national_ad(current_user)
+    
     result = {}
     for chapter in CHAPTERS:
+        # Skip National chapter if user can't view it
+        if chapter == "National" and not can_view_national:
+            continue
+            
         # Get ALL members in this chapter (not just officers)
         query = {"chapter": chapter}
         members = await db.members.find(query, {"_id": 0}).to_list(length=None)
