@@ -729,6 +729,26 @@ def is_national_admin(user: dict) -> bool:
     """Check if user is a National chapter admin"""
     return user.get("role") == "admin" and user.get("chapter") == "National"
 
+def can_view_national_ad(user: dict) -> bool:
+    """Check if user can view National chapter's Attendance & Dues.
+    Only National Prez, VP, SEC, and T can see National A&D data.
+    """
+    user_chapter = user.get("chapter", "")
+    user_title = user.get("title", "")
+    user_role = user.get("role", "")
+    
+    # Must be in National chapter
+    if user_chapter != "National":
+        return False
+    
+    # Admins with National chapter can view
+    if user_role == "admin":
+        return True
+    
+    # Only specific National titles can view National A&D
+    national_ad_titles = ["NPrez", "NVP", "SEC", "T"]
+    return user_title in national_ad_titles
+
 def can_view_prospects(user: dict) -> bool:
     """Check if user can view prospects list"""
     role = user.get("role", "")
