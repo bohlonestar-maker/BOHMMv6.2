@@ -853,10 +853,13 @@ function OfficerTracking() {
                     
                     return (
                       <div key={member.id} className="bg-slate-700/50 rounded-lg p-3 border border-slate-600">
-                        <div className="flex justify-between items-start mb-3">
+                        <div 
+                          className="flex justify-between items-start mb-3 cursor-pointer"
+                          onClick={() => openDuesHistoryDialog(member)}
+                        >
                           <div>
-                            <div className="font-medium text-white">{member.handle}</div>
-                            <div className="text-xs text-slate-400">{member.title || 'Member'}</div>
+                            <div className="font-medium text-blue-400 underline">{member.handle}</div>
+                            <div className="text-xs text-slate-400">{member.title || 'Brother'}</div>
                           </div>
                           <div>
                             {currentDues ? getStatusBadge(currentDues.status) : (
