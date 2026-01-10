@@ -7291,6 +7291,89 @@ async def record_dues(record: DuesRecord, current_user: dict = Depends(verify_to
     
     return {"message": "Dues recorded and member updated", "id": record_data["id"]}
 
+
+@api_router.get("/officer-tracking/dues/history/{member_id}")
+async def get_member_dues_history(member_id: str, current_user: dict = Depends(verify_token)):
+    """Get dues payment history for a member including Square transaction info"""
+    if not is_any_officer(current_user) and current_user.get('role') != 'admin':
+        raise HTTPException(status_code=403, detail="Only officers can view dues history")
+    
+    # Get member info
+    member = await db.members.find_one({"id": member_id}, {"_id": 0})
+    if not member:
+        raise HTTPException(status_code=404, detail="Member not found")
+    
+    # Get subscription link info (for Square customer ID)
+    subscription_link = await db.member_subscriptions.find_one(
+        {"member_id": member_id}, {"_id": 0}
+    )
+    
+    # Get Square payment history if we have subscription info
+    square_payments = []
+    if subscription_link and square_client:
+        try:
+            customer_id = subscription_link.get("square_customer_id")
+            if customer_id:
+                # Get recent payments for this customer
+                result = square_client.payments.list(
+                    customer_id=customer_id,
+                    limit=20
+                )
+                if result.payments:
+                    for payment in result.payments:
+                        if payment.status == "COMPLETED":
+                            square_payments.append({
+                                "payment_id": payment.id,
+                                "amount": payment.amount_money.amount / 100 if payment.amount_money else 0,
+                                "currency": payment.amount_money.currency if payment.amount_money else "USD",
+                                "created_at": payment.created_at,
+                                "status": payment.status,
+                                "source_type": payment.source_type,
+                                "receipt_url": payment.receipt_url
+                            })
+        except Exception as e:
+            logger.warning(f"Failed to fetch Square payments for {member_id}: {e}")
+    
+    # Get dues records from officer_dues collection
+    dues_records = await db.officer_dues.find(
+        {"member_id": member_id},
+        {"_id": 0}
+    ).sort("created_at", -1).to_list(100)
+    
+    # Get dues from member record
+    member_dues = member.get("dues", {})
+    
+    # Find last paid date
+    last_paid = None
+    last_paid_note = None
+    
+    # Check member dues array for most recent paid status
+    for year in sorted(member_dues.keys(), reverse=True):
+        year_dues = member_dues[year]
+        if isinstance(year_dues, list):
+            for month_idx in range(len(year_dues) - 1, -1, -1):
+                month_data = year_dues[month_idx]
+                if isinstance(month_data, dict) and month_data.get("status") == "paid":
+                    month_names = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+                    last_paid = f"{month_names[month_idx]} {year}"
+                    last_paid_note = month_data.get("note", "")
+                    break
+        if last_paid:
+            break
+    
+    return {
+        "member_id": member_id,
+        "member_handle": member.get("handle"),
+        "member_name": member.get("name"),
+        "last_paid": last_paid,
+        "last_paid_note": last_paid_note,
+        "subscription_info": subscription_link,
+        "square_payments": square_payments,
+        "dues_records": dues_records,
+        "member_dues": member_dues
+    }
+
+
 @api_router.delete("/officer-tracking/dues/{record_id}")
 async def delete_dues(record_id: str, current_user: dict = Depends(verify_token)):
     """Delete dues record - only Secretaries can edit"""
