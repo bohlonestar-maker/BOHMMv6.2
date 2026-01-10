@@ -11076,14 +11076,9 @@ async def sync_subscriptions_to_dues(current_user: dict = Depends(verify_token))
 
 @api_router.post("/dues/sync-payment-links")
 async def sync_payment_links_to_dues(current_user: dict = Depends(verify_token)):
-    """Sync dues from Square payment links (one-time payments).
-    Looks for orders with dues-related items and matches to members by handle.
-    Item names tracked:
-    - Member - Dues Annual
-    - Member Dues - Member Dues (One Time Payment)
-    - Lump Sum Dues Payment
-    - Member Dues - Past Due & Late fee
-    - Member Dues (One Time Payment)
+    """Sync dues from Square payments (one-time dues payments via payment links).
+    Uses the Payments API and matches customers to members by name using fuzzy matching.
+    Looks for orders with dues-related items.
     """
     if not is_secretary(current_user) and current_user.get('role') != 'admin':
         raise HTTPException(status_code=403, detail="Only Secretaries can sync payment links")
@@ -11095,6 +11090,7 @@ async def sync_payment_links_to_dues(current_user: dict = Depends(verify_token))
     DUES_ITEM_KEYWORDS = [
         "dues annual",
         "member dues",
+        "monthly member dues",
         "lump sum dues",
         "past due",
         "late fee",
@@ -11102,46 +11098,21 @@ async def sync_payment_links_to_dues(current_user: dict = Depends(verify_token))
     ]
     
     try:
-        # Search for completed orders
-        orders = []
-        cursor = None
-        
-        # Search orders from the last 12 months
+        # Get all completed payments from last 12 months
         start_date = (datetime.now(timezone.utc) - timedelta(days=365)).isoformat()
         
-        while True:
-            result = square_client.orders.search(
-                location_ids=[SQUARE_LOCATION_ID],
-                cursor=cursor,
-                limit=100,
-                query={
-                    "filter": {
-                        "state_filter": {
-                            "states": ["COMPLETED"]
-                        },
-                        "date_time_filter": {
-                            "created_at": {
-                                "start_at": start_date
-                            }
-                        }
-                    },
-                    "sort": {
-                        "sort_field": "CREATED_AT",
-                        "sort_order": "DESC"
-                    }
-                }
-            )
-            
-            if result and result.orders:
-                orders.extend(result.orders)
-            
-            cursor = result.cursor if result else None
-            if not cursor:
-                break
+        payments_result = square_client.payments.list(
+            begin_time=start_date,
+            limit=200
+        )
+        
+        all_payments = list(payments_result) if payments_result else []
+        
+        # Filter to completed payments only
+        completed_payments = [p for p in all_payments if p.status == "COMPLETED"]
         
         # Get all members for matching
         members = await db.members.find({}, {"_id": 0}).to_list(1000)
-        member_by_handle = {m.get("handle", "").lower(): m for m in members if m.get("handle")}
         
         # Track processed payments to avoid duplicates
         processed_payments = set()
@@ -11150,13 +11121,38 @@ async def sync_payment_links_to_dues(current_user: dict = Depends(verify_token))
             if doc.get("payment_id"):
                 processed_payments.add(doc["payment_id"])
         
+        # Also exclude payments that are from subscriptions (already synced via subscription sync)
+        subscription_payment_ids = set()
+        sub_links = await db.member_subscriptions.find({}, {"_id": 0}).to_list(1000)
+        # We'll check order_ids instead since subscription payments are tied to subscription orders
+        
         synced_count = 0
         months_marked_paid = 0
-        skipped_count = 0
+        skipped_no_match = 0
+        skipped_not_dues = 0
         errors = []
         
-        for order in orders:
+        for payment in completed_payments:
             try:
+                payment_id = payment.id
+                
+                # Skip if already processed
+                if payment_id in processed_payments:
+                    continue
+                
+                order_id = getattr(payment, 'order_id', None)
+                if not order_id:
+                    continue
+                
+                # Get the order to check if it's a dues payment
+                try:
+                    order_result = square_client.orders.get(order_id=order_id)
+                    if not order_result or not order_result.order:
+                        continue
+                    order = order_result.order
+                except Exception:
+                    continue
+                
                 # Check if this order has dues-related items
                 line_items = getattr(order, 'line_items', None) or []
                 is_dues_order = False
@@ -11166,88 +11162,121 @@ async def sync_payment_links_to_dues(current_user: dict = Depends(verify_token))
                     item_name = (getattr(item, 'name', '') or '').lower()
                     if any(keyword in item_name for keyword in DUES_ITEM_KEYWORDS):
                         is_dues_order = True
-                        # Get item amount
                         if hasattr(item, 'total_money') and item.total_money:
                             total_amount += item.total_money.amount / 100
                 
                 if not is_dues_order:
+                    skipped_not_dues += 1
                     continue
                 
-                # Get payment info from tenders
-                tenders = getattr(order, 'tenders', None) or []
-                payment_id = None
-                payment_date = None
+                # Use payment amount if we couldn't get it from items
+                if total_amount == 0 and payment.amount_money:
+                    total_amount = payment.amount_money.amount / 100
                 
-                for tender in tenders:
-                    if hasattr(tender, 'payment_id') and tender.payment_id:
-                        payment_id = tender.payment_id
-                        payment_date = getattr(tender, 'created_at', None)
-                        break
+                # Get customer name from payment
+                customer_name = None
+                customer_id = getattr(payment, 'customer_id', None)
                 
-                if not payment_id:
-                    payment_id = order.id
-                    payment_date = getattr(order, 'created_at', None)
+                if customer_id:
+                    try:
+                        cust_result = square_client.customers.get(customer_id=customer_id)
+                        if cust_result and cust_result.customer:
+                            c = cust_result.customer
+                            given_name = getattr(c, 'given_name', '') or ''
+                            family_name = getattr(c, 'family_name', '') or ''
+                            customer_name = f"{given_name} {family_name}".strip()
+                    except Exception:
+                        pass
                 
-                # Skip if already processed
-                if payment_id in processed_payments:
+                if not customer_name:
+                    skipped_no_match += 1
                     continue
                 
-                # Try to find member handle in order note or customer info
-                member_handle = None
-                order_note = getattr(order, 'note', '') or ''
+                # Use fuzzy matching to find member
+                matched_member, score, match_type = fuzzy_match_member(customer_name, members)
                 
-                # Check order note for handle
-                if order_note:
-                    # Try to extract handle from note (might be in format "Handle: XYZ" or just the handle)
-                    note_lower = order_note.lower()
-                    for handle in member_by_handle.keys():
-                        if handle in note_lower:
-                            member_handle = handle
-                            break
-                
-                # Also check fulfillments for recipient name
-                if not member_handle:
-                    fulfillments = getattr(order, 'fulfillments', None) or []
-                    for fulfillment in fulfillments:
-                        recipient = getattr(fulfillment, 'recipient', None)
-                        if recipient:
-                            display_name = getattr(recipient, 'display_name', '') or ''
-                            if display_name.lower() in member_by_handle:
-                                member_handle = display_name.lower()
-                                break
-                
-                # Check customer_id to get customer name
-                if not member_handle:
-                    customer_id = getattr(order, 'customer_id', None)
-                    if customer_id:
-                        try:
-                            cust_result = square_client.customers.get(customer_id=customer_id)
-                            if cust_result and cust_result.customer:
-                                cust = cust_result.customer
-                                # Check nickname (often used for handle)
-                                nickname = getattr(cust, 'nickname', '') or ''
-                                if nickname.lower() in member_by_handle:
-                                    member_handle = nickname.lower()
-                                # Check note field
-                                if not member_handle:
-                                    cust_note = getattr(cust, 'note', '') or ''
-                                    for handle in member_by_handle.keys():
-                                        if handle in cust_note.lower():
-                                            member_handle = handle
-                                            break
-                        except Exception:
-                            pass
-                
-                if not member_handle or member_handle not in member_by_handle:
-                    skipped_count += 1
+                if not matched_member:
+                    skipped_no_match += 1
                     continue
-                
-                matched_member = member_by_handle[member_handle]
                 
                 # Parse payment date
+                payment_date = getattr(payment, 'created_at', None)
                 if payment_date:
                     try:
                         if isinstance(payment_date, str):
+                            payment_dt = datetime.fromisoformat(payment_date.replace('Z', '+00:00'))
+                        else:
+                            payment_dt = payment_date
+                    except Exception:
+                        payment_dt = datetime.now(timezone.utc)
+                else:
+                    payment_dt = datetime.now(timezone.utc)
+                
+                # Calculate months covered
+                if total_amount >= 300 and total_amount <= 330:
+                    num_months = 12
+                else:
+                    num_months = max(1, int(total_amount / MONTHLY_DUES_AMOUNT))
+                
+                # Mark dues as paid
+                for month_offset in range(num_months):
+                    target_month = payment_dt.month - 1 + month_offset
+                    target_year = payment_dt.year
+                    
+                    while target_month >= 12:
+                        target_month -= 12
+                        target_year += 1
+                    
+                    payment_note = f"Paid via Square on {payment_dt.strftime('%Y-%m-%d')}"
+                    if payment_id:
+                        payment_note += f" (Trans: {payment_id[:12]}...)"
+                    
+                    await update_member_dues_with_payment_info(
+                        member_id=matched_member["id"],
+                        year=target_year,
+                        month=target_month,
+                        payment_note=payment_note,
+                        payment_id=payment_id
+                    )
+                    months_marked_paid += 1
+                
+                # Mark as processed
+                await db.synced_payment_links.update_one(
+                    {"payment_id": payment_id},
+                    {"$set": {
+                        "payment_id": payment_id,
+                        "order_id": order_id,
+                        "member_id": matched_member["id"],
+                        "member_handle": matched_member.get("handle"),
+                        "customer_name": customer_name,
+                        "amount": total_amount,
+                        "months_covered": num_months,
+                        "payment_date": payment_dt.isoformat(),
+                        "synced_at": datetime.now(timezone.utc).isoformat(),
+                        "match_score": score,
+                        "match_type": match_type
+                    }},
+                    upsert=True
+                )
+                
+                synced_count += 1
+                
+            except Exception as e:
+                errors.append(f"Failed to process payment {payment.id}: {str(e)}")
+        
+        return {
+            "message": "Payment link sync complete",
+            "payments_synced": synced_count,
+            "months_marked_paid": months_marked_paid,
+            "skipped_no_member_match": skipped_no_match,
+            "skipped_not_dues": skipped_not_dues,
+            "total_payments_checked": len(completed_payments),
+            "errors": errors if errors else None
+        }
+        
+    except Exception as e:
+        logger.error(f"Error syncing payment links: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to sync payment links: {str(e)}")
                             payment_dt = datetime.fromisoformat(payment_date.replace('Z', '+00:00'))
                         else:
                             payment_dt = payment_date
