@@ -321,11 +321,12 @@ function OfficerTracking() {
   // Sync subscriptions from Square
   const handleSyncSubscriptions = async () => {
     try {
-      toast.info("Syncing subscriptions from Square...");
+      toast.info("Syncing subscriptions from Square payment history...");
       const response = await axios.post(`${BACKEND_URL}/api/dues/sync-subscriptions`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      toast.success(`Synced ${response.data.synced} subscriptions for ${response.data.month}`);
+      const data = response.data;
+      toast.success(`Synced ${data.members_synced} members, marked ${data.months_marked_paid} months as paid`);
       fetchData(); // Refresh dues data
     } catch (error) {
       toast.error(error.response?.data?.detail || "Failed to sync subscriptions");
