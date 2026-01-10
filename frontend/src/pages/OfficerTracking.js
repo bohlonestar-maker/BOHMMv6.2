@@ -767,6 +767,7 @@ function OfficerTracking() {
                         <TableHead className="text-slate-400">Member</TableHead>
                         <TableHead className="text-slate-400">Title</TableHead>
                         <TableHead className="text-slate-400">Current Month Status</TableHead>
+                        <TableHead className="text-slate-400">History</TableHead>
                         {canEdit && <TableHead className="text-slate-400">Quick Update</TableHead>}
                         {canEdit && <TableHead className="text-slate-400">Notes</TableHead>}
                       </TableRow>
@@ -777,12 +778,27 @@ function OfficerTracking() {
                         
                         return (
                           <TableRow key={member.id} className="border-slate-700">
-                            <TableCell className="font-medium text-white">{member.handle}</TableCell>
+                            <TableCell 
+                              className="font-medium text-blue-400 hover:text-blue-300 cursor-pointer underline"
+                              onClick={() => openDuesHistoryDialog(member)}
+                            >
+                              {member.handle}
+                            </TableCell>
                             <TableCell className="text-slate-300">{member.title || '-'}</TableCell>
                             <TableCell>
                               {currentDues ? getStatusBadge(currentDues.status) : (
                                 <Badge variant="outline">Not Recorded</Badge>
                               )}
+                            </TableCell>
+                            <TableCell>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => openDuesHistoryDialog(member)}
+                                className="text-xs h-7"
+                              >
+                                View
+                              </Button>
                             </TableCell>
                             {canEdit && (
                               <TableCell>
