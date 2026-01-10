@@ -7469,6 +7469,85 @@ async def delete_dues(record_id: str, current_user: dict = Depends(verify_token)
     result = await db.officer_dues.delete_one({"id": record_id})
     return {"message": "Dues record deleted"}
 
+
+@api_router.get("/dues/debug-payment-orders")
+async def debug_payment_orders(current_user: dict = Depends(verify_token)):
+    """Debug endpoint to see dues-related orders and their data"""
+    if current_user.get('role') != 'admin':
+        raise HTTPException(status_code=403, detail="Admin only")
+    
+    if not square_client:
+        raise HTTPException(status_code=500, detail="Square client not configured")
+    
+    DUES_ITEM_KEYWORDS = ["dues annual", "member dues", "lump sum dues", "past due", "late fee", "one time payment"]
+    
+    start_date = (datetime.now(timezone.utc) - timedelta(days=365)).isoformat()
+    
+    result = square_client.orders.search(
+        location_ids=[SQUARE_LOCATION_ID],
+        limit=50,
+        query={
+            "filter": {
+                "state_filter": {"states": ["COMPLETED"]},
+                "date_time_filter": {"created_at": {"start_at": start_date}}
+            },
+            "sort": {"sort_field": "CREATED_AT", "sort_order": "DESC"}
+        }
+    )
+    
+    dues_orders = []
+    for order in (result.orders or []):
+        line_items = getattr(order, 'line_items', None) or []
+        is_dues = False
+        items_info = []
+        
+        for item in line_items:
+            item_name = (getattr(item, 'name', '') or '')
+            if any(kw in item_name.lower() for kw in DUES_ITEM_KEYWORDS):
+                is_dues = True
+            items_info.append({
+                "name": item_name,
+                "note": getattr(item, 'note', None),
+                "variation": getattr(item, 'variation_name', None),
+                "amount": getattr(item, 'total_money', None).amount/100 if getattr(item, 'total_money', None) else 0
+            })
+        
+        if is_dues:
+            order_info = {
+                "order_id": order.id,
+                "created_at": order.created_at,
+                "note": getattr(order, 'note', None),
+                "customer_id": getattr(order, 'customer_id', None),
+                "items": items_info
+            }
+            
+            # Get fulfillment info
+            fulfillments = getattr(order, 'fulfillments', None) or []
+            for f in fulfillments:
+                recipient = getattr(f, 'recipient', None)
+                if recipient:
+                    order_info["recipient_name"] = getattr(recipient, 'display_name', None)
+                    order_info["recipient_email"] = getattr(recipient, 'email_address', None)
+            
+            # Get customer details
+            cust_id = getattr(order, 'customer_id', None)
+            if cust_id:
+                try:
+                    cust_result = square_client.customers.get(customer_id=cust_id)
+                    if cust_result and cust_result.customer:
+                        c = cust_result.customer
+                        order_info["customer_name"] = f"{getattr(c, 'given_name', '') or ''} {getattr(c, 'family_name', '') or ''}".strip()
+                        order_info["customer_email"] = getattr(c, 'email_address', None)
+                        order_info["customer_nickname"] = getattr(c, 'nickname', None)
+                        order_info["customer_note"] = getattr(c, 'note', None)
+                except:
+                    pass
+            
+            dues_orders.append(order_info)
+    
+    return {"dues_orders": dues_orders, "total": len(dues_orders)}
+
+
 @api_router.get("/officer-tracking/summary")
 async def get_tracking_summary(current_user: dict = Depends(verify_token)):
     """Get summary of attendance and dues by chapter - all officers can view"""
