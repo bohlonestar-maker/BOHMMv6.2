@@ -793,7 +793,7 @@ function OfficerTracking() {
                       <CreditCard className="w-4 h-4 mr-2" />
                       View Subscriptions
                     </Button>
-                    <Button onClick={handleSyncSubscriptions} className="bg-purple-600 hover:bg-purple-700 text-xs sm:text-sm h-9 sm:h-10">
+                    <Button onClick={handleSyncAllDues} className="bg-purple-600 hover:bg-purple-700 text-xs sm:text-sm h-9 sm:h-10">
                       <CreditCard className="w-4 h-4 mr-2" />
                       Sync from Square
                     </Button>
