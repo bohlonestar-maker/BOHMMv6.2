@@ -11277,34 +11277,6 @@ async def sync_payment_links_to_dues(current_user: dict = Depends(verify_token))
     except Exception as e:
         logger.error(f"Error syncing payment links: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to sync payment links: {str(e)}")
-                        "order_id": order.id,
-                        "member_id": matched_member["id"],
-                        "member_handle": matched_member.get("handle"),
-                        "amount": total_amount,
-                        "months_covered": num_months,
-                        "payment_date": payment_dt.isoformat(),
-                        "synced_at": datetime.now(timezone.utc).isoformat()
-                    }},
-                    upsert=True
-                )
-                
-                synced_count += 1
-                
-            except Exception as e:
-                errors.append(f"Failed to process order {order.id}: {str(e)}")
-        
-        return {
-            "message": "Payment link sync complete",
-            "orders_synced": synced_count,
-            "months_marked_paid": months_marked_paid,
-            "skipped_no_member_match": skipped_count,
-            "total_orders_checked": len(orders),
-            "errors": errors if errors else None
-        }
-        
-    except Exception as e:
-        logger.error(f"Error syncing payment links: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Failed to sync payment links: {str(e)}")
 
 
 async def update_member_dues_with_payment_info(member_id: str, year: int, month: int, payment_note: str, payment_id: str = None):
