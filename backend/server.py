@@ -10739,12 +10739,17 @@ async def get_square_subscriptions(current_user: dict = Depends(verify_token)):
 
 @api_router.post("/dues/sync-subscriptions")
 async def sync_subscriptions_to_dues(current_user: dict = Depends(verify_token)):
-    """Sync active Square subscriptions to member dues using batch API calls and fuzzy matching"""
+    """Sync active Square subscriptions to member dues using actual payment history.
+    Payment amount determines months covered: $30=1mo, $60=2mo, $300=12mo
+    Payment date determines which month(s) get marked as paid.
+    """
     if not is_secretary(current_user) and current_user.get('role') != 'admin':
         raise HTTPException(status_code=403, detail="Only Secretaries can sync subscriptions")
     
     if not square_client:
         raise HTTPException(status_code=500, detail="Square client not configured")
+    
+    MONTHLY_DUES_AMOUNT = 30  # $30 per month
     
     try:
         # Get active subscriptions
@@ -10770,23 +10775,10 @@ async def sync_subscriptions_to_dues(current_user: dict = Depends(verify_token))
             if not cursor:
                 break
         
-        # Current month info
-        now = datetime.now(timezone.utc)
-        year = str(now.year)
-        month = now.month - 1  # 0-indexed
         month_names = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
         
-        # Filter subscriptions that cover current month
-        valid_subscriptions = []
-        for sub in subscriptions:
-            charged_through = sub.charged_through_date
-            if charged_through:
-                charged_year, charged_month, _ = charged_through.split('-')
-                if int(charged_year) >= now.year and (int(charged_year) > now.year or int(charged_month) >= now.month):
-                    valid_subscriptions.append(sub)
-        
-        # Batch retrieve customers for valid subscriptions
-        customer_ids = list(set(sub.customer_id for sub in valid_subscriptions if sub.customer_id))
+        # Batch retrieve customers for subscriptions
+        customer_ids = list(set(sub.customer_id for sub in subscriptions if sub.customer_id))
         customer_map = {}
         
         for i in range(0, len(customer_ids), 100):
@@ -10804,7 +10796,6 @@ async def sync_subscriptions_to_dues(current_user: dict = Depends(verify_token))
                             customer_map[cust_id] = f"{given_name} {family_name}".strip()
             except Exception as e:
                 logger.warning(f"Batch customer fetch failed: {e}")
-                # Fallback to individual fetches
                 for cust_id in batch_ids:
                     try:
                         cust_result = square_client.customers.get(customer_id=cust_id)
@@ -10822,10 +10813,11 @@ async def sync_subscriptions_to_dues(current_user: dict = Depends(verify_token))
         manual_link_map = {link.get("square_customer_id"): link.get("member_id") for link in manual_links if link.get("square_customer_id")}
         
         synced_count = 0
+        months_marked_paid = 0
         skipped_count = 0
         errors = []
         
-        for sub in valid_subscriptions:
+        for sub in subscriptions:
             customer_id = sub.customer_id
             customer_name = customer_map.get(customer_id)
             
@@ -10848,14 +10840,104 @@ async def sync_subscriptions_to_dues(current_user: dict = Depends(verify_token))
                 skipped_count += 1
                 continue
             
-            # Update dues for matched member
+            # Get actual payment history from subscription invoices
             try:
-                dues_info = {
-                    "member_id": matched_member["id"],
-                    "year": int(year),
-                    "month": month
-                }
-                await update_member_dues_from_webhook(dues_info)
+                invoice_ids = getattr(sub, 'invoice_ids', None) or []
+                payments_processed = set()  # Track processed payments to avoid duplicates
+                
+                for invoice_id in invoice_ids:
+                    try:
+                        inv_result = square_client.invoices.get(invoice_id=invoice_id)
+                        if not inv_result or not inv_result.invoice:
+                            continue
+                        
+                        invoice = inv_result.invoice
+                        status = getattr(invoice, 'status', 'UNKNOWN')
+                        
+                        if status != "PAID":
+                            continue
+                        
+                        # Get payment amount
+                        amount = 0
+                        if hasattr(invoice, 'payment_requests') and invoice.payment_requests:
+                            req = invoice.payment_requests[0]
+                            if hasattr(req, 'computed_amount_money') and req.computed_amount_money:
+                                amount = req.computed_amount_money.amount / 100  # Convert cents to dollars
+                        
+                        if amount <= 0:
+                            continue
+                        
+                        # Get payment date from order
+                        order_id = getattr(invoice, 'order_id', None)
+                        payment_date = None
+                        payment_id = None
+                        
+                        if order_id:
+                            try:
+                                order_result = square_client.orders.get(order_id=order_id)
+                                if order_result and order_result.order:
+                                    tenders = getattr(order_result.order, 'tenders', None) or []
+                                    for tender in tenders:
+                                        if hasattr(tender, 'payment_id') and tender.payment_id:
+                                            payment_id = tender.payment_id
+                                            # Skip if we've already processed this payment
+                                            if payment_id in payments_processed:
+                                                break
+                                            payments_processed.add(payment_id)
+                                            payment_date = getattr(tender, 'created_at', None)
+                                            break
+                            except Exception as order_err:
+                                logger.warning(f"Failed to fetch order {order_id}: {order_err}")
+                        
+                        # Fallback to invoice date
+                        if not payment_date:
+                            payment_date = getattr(invoice, 'updated_at', None) or getattr(invoice, 'created_at', None)
+                        
+                        if not payment_date:
+                            continue
+                        
+                        # Parse payment date
+                        try:
+                            if isinstance(payment_date, str):
+                                # Parse ISO format date
+                                payment_dt = datetime.fromisoformat(payment_date.replace('Z', '+00:00'))
+                            else:
+                                payment_dt = payment_date
+                        except Exception:
+                            continue
+                        
+                        # Calculate number of months covered by this payment
+                        num_months = max(1, int(amount / MONTHLY_DUES_AMOUNT))
+                        
+                        # Mark dues as paid for each month covered
+                        for month_offset in range(num_months):
+                            # Calculate target month/year
+                            target_month = payment_dt.month - 1 + month_offset  # 0-indexed
+                            target_year = payment_dt.year
+                            
+                            # Handle year rollover
+                            while target_month >= 12:
+                                target_month -= 12
+                                target_year += 1
+                            
+                            # Update dues for this month
+                            payment_note = f"Paid via Square on {payment_dt.strftime('%Y-%m-%d')}"
+                            if payment_id:
+                                payment_note += f" (Trans: {payment_id[:12]}...)"
+                            
+                            await update_member_dues_with_payment_info(
+                                member_id=matched_member["id"],
+                                year=target_year,
+                                month=target_month,
+                                payment_note=payment_note,
+                                payment_id=payment_id
+                            )
+                            months_marked_paid += 1
+                        
+                    except Exception as inv_err:
+                        logger.warning(f"Failed to process invoice {invoice_id}: {inv_err}")
+                        continue
+                
                 synced_count += 1
                 
                 # Save/update subscription link
@@ -10876,18 +10958,96 @@ async def sync_subscriptions_to_dues(current_user: dict = Depends(verify_token))
                 errors.append(f"Failed to update {matched_member.get('handle')}: {str(e)}")
         
         return {
-            "message": "Subscription sync complete",
-            "synced": synced_count,
+            "message": "Subscription sync complete - based on actual payment history",
+            "members_synced": synced_count,
+            "months_marked_paid": months_marked_paid,
             "skipped": skipped_count,
             "total_subscriptions": len(subscriptions),
-            "valid_for_month": len(valid_subscriptions),
-            "month": f"{month_names[month]} {year}",
             "errors": errors if errors else None
         }
         
     except Exception as e:
         logger.error(f"Error syncing subscriptions: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to sync subscriptions: {str(e)}")
+
+
+async def update_member_dues_with_payment_info(member_id: str, year: int, month: int, payment_note: str, payment_id: str = None):
+    """Update member dues status for a specific month based on actual payment"""
+    month_names = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+    year_str = str(year)
+    
+    try:
+        member = await db.members.find_one({"id": member_id})
+        if not member:
+            return
+        
+        dues = member.get("dues", {})
+        
+        # Initialize year if not exists
+        if year_str not in dues:
+            dues[year_str] = [{"status": "unpaid", "note": ""} for _ in range(12)]
+        
+        # Only update if not already paid (don't overwrite existing paid status)
+        current_status = None
+        if isinstance(dues[year_str], list) and len(dues[year_str]) > month:
+            if isinstance(dues[year_str][month], dict):
+                current_status = dues[year_str][month].get("status")
+            elif dues[year_str][month] == True:
+                current_status = "paid"
+        
+        # Skip if already paid
+        if current_status == "paid":
+            return
+        
+        # Update to paid
+        dues[year_str][month] = {
+            "status": "paid",
+            "note": payment_note
+        }
+        
+        # Update member record
+        await db.members.update_one(
+            {"id": member_id},
+            {"$set": {
+                "dues": dues,
+                "updated_at": datetime.now(timezone.utc).isoformat()
+            }}
+        )
+        
+        # Also update officer_dues collection (for A & D page sync)
+        month_str = f"{month_names[month]}_{year_str}"
+        existing = await db.officer_dues.find_one({
+            "member_id": member_id,
+            "month": month_str
+        })
+        
+        dues_record = {
+            "id": existing.get("id") if existing else str(uuid.uuid4()),
+            "member_id": member_id,
+            "month": month_str,
+            "status": "paid",
+            "notes": payment_note,
+            "square_payment_id": payment_id,
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+            "updated_by": "square_sync"
+        }
+        
+        if existing:
+            # Only update if not already paid
+            if existing.get("status") != "paid":
+                await db.officer_dues.update_one(
+                    {"id": existing.get("id")},
+                    {"$set": dues_record}
+                )
+        else:
+            dues_record["created_at"] = datetime.now(timezone.utc).isoformat()
+            dues_record["created_by"] = "square_sync"
+            await db.officer_dues.insert_one(dues_record)
+        
+        logger.info(f"Member {member_id} dues updated for {month_names[month]} {year_str} via sync")
+        
+    except Exception as e:
+        logger.error(f"Error updating member dues: {str(e)}")
 
 
 class LinkSubscriptionRequest(BaseModel):
