@@ -746,7 +746,8 @@ def can_view_national_ad(user: dict) -> bool:
         return True
     
     # Only specific National titles can view National A&D
-    national_ad_titles = ["NPrez", "NVP", "SEC", "T"]
+    # Prez, VP, SEC, T (these are the executive officers)
+    national_ad_titles = ["Prez", "VP", "SEC", "T"]
     return user_title in national_ad_titles
 
 def can_view_prospects(user: dict) -> bool:
