@@ -10740,7 +10740,9 @@ async def get_square_subscriptions(current_user: dict = Depends(verify_token)):
 @api_router.post("/dues/sync-subscriptions")
 async def sync_subscriptions_to_dues(current_user: dict = Depends(verify_token)):
     """Sync active Square subscriptions to member dues using actual payment history.
-    Payment amount determines months covered: $30=1mo, $60=2mo, $300=12mo
+    Payment amount determines months covered:
+    - $30 = 1 month
+    - $300-$330 = 12 months (yearly - $300 if annual sub on Jan 1, $330 otherwise)
     Payment date determines which month(s) get marked as paid.
     """
     if not is_secretary(current_user) and current_user.get('role') != 'admin':
