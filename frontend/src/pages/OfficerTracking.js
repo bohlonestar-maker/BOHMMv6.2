@@ -333,6 +333,46 @@ function OfficerTracking() {
     }
   };
 
+  // Sync payment links from Square (one-time dues payments)
+  const handleSyncPaymentLinks = async () => {
+    try {
+      toast.info("Syncing payment links from Square...");
+      const response = await axios.post(`${BACKEND_URL}/api/dues/sync-payment-links`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = response.data;
+      toast.success(`Synced ${data.orders_synced} payments, marked ${data.months_marked_paid} months as paid`);
+      fetchData(); // Refresh dues data
+    } catch (error) {
+      toast.error(error.response?.data?.detail || "Failed to sync payment links");
+    }
+  };
+
+  // Sync all dues (subscriptions + payment links)
+  const handleSyncAllDues = async () => {
+    try {
+      toast.info("Syncing all dues from Square...");
+      
+      // Run both syncs
+      const [subsResponse, linksResponse] = await Promise.all([
+        axios.post(`${BACKEND_URL}/api/dues/sync-subscriptions`, {}, {
+          headers: { Authorization: `Bearer ${token}` }
+        }),
+        axios.post(`${BACKEND_URL}/api/dues/sync-payment-links`, {}, {
+          headers: { Authorization: `Bearer ${token}` }
+        })
+      ]);
+      
+      const totalMembers = (subsResponse.data.members_synced || 0) + (linksResponse.data.orders_synced || 0);
+      const totalMonths = (subsResponse.data.months_marked_paid || 0) + (linksResponse.data.months_marked_paid || 0);
+      
+      toast.success(`Synced ${totalMembers} payments, marked ${totalMonths} months as paid`);
+      fetchData(); // Refresh dues data
+    } catch (error) {
+      toast.error(error.response?.data?.detail || "Failed to sync dues");
+    }
+  };
+
   // View subscriptions
   const [subscriptions, setSubscriptions] = useState({ matched: [], unmatched: [] });
   const [showSubscriptionsDialog, setShowSubscriptionsDialog] = useState(false);
