@@ -285,6 +285,7 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
     fetchUnreadPrivateCount();
     fetchUpcomingEventsCount();
     fetchTotalExperience();
+    fetchMyDues();
     // Auto-refresh counts every 30 seconds
     const interval = setInterval(() => {
       fetchUnreadPrivateCount();
@@ -292,6 +293,21 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
     }, 30000);
     return () => clearInterval(interval);
   }, [userRole]);
+
+  const fetchMyDues = async () => {
+    try {
+      setMyDuesLoading(true);
+      const token = localStorage.getItem("token");
+      const response = await axios.get(`${API}/my-dues`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setMyDues(response.data);
+    } catch (error) {
+      console.error("Failed to fetch my dues:", error);
+    } finally {
+      setMyDuesLoading(false);
+    }
+  };
 
   const fetchTotalExperience = async () => {
     try {
