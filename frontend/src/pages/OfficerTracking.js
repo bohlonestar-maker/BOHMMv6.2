@@ -77,6 +77,12 @@ function OfficerTracking() {
   const [viewMeetingsFilter, setViewMeetingsFilter] = useState('all'); // 'all' or 'YYYY-MM'
   const printRef = useRef(null);
   
+  // Dues History Dialog
+  const [duesHistoryDialog, setDuesHistoryDialog] = useState(false);
+  const [duesHistoryMember, setDuesHistoryMember] = useState(null);
+  const [duesHistoryData, setDuesHistoryData] = useState(null);
+  const [loadingDuesHistory, setLoadingDuesHistory] = useState(false);
+  
   // Attendance Dialog
   const [attendanceDialog, setAttendanceDialog] = useState(false);
   const [selectedMember, setSelectedMember] = useState(null);
