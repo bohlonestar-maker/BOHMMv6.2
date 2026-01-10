@@ -1097,6 +1097,132 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
         </div>
       </nav>
 
+      {/* My Dues Section */}
+      {myDues?.linked && (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4">
+          <div className="bg-slate-800 rounded-xl shadow-sm border border-slate-700 p-4 sm:p-6">
+            <div 
+              className="flex items-center justify-between cursor-pointer"
+              onClick={() => setMyDuesExpanded(!myDuesExpanded)}
+            >
+              <div className="flex items-center gap-3">
+                <DollarSign className="w-5 h-5 text-green-400" />
+                <h2 className="text-lg font-semibold text-white">My Dues</h2>
+                <Badge className={myDues.current_month_status === 'paid' ? 'bg-green-600' : 'bg-red-600'}>
+                  {myDues.current_month}: {myDues.current_month_status === 'paid' ? 'Paid' : 'Unpaid'}
+                </Badge>
+              </div>
+              <Button variant="ghost" size="sm" className="text-slate-400">
+                {myDuesExpanded ? '▲' : '▼'}
+              </Button>
+            </div>
+            
+            {myDuesExpanded && (
+              <div className="mt-4 space-y-4">
+                {/* Current Year Status */}
+                <div>
+                  <h3 className="text-sm font-medium text-slate-400 mb-2">2025 Dues Status</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].map((month, idx) => {
+                      const yearDues = myDues.dues_by_year?.['2025'] || [];
+                      const monthData = yearDues[idx];
+                      const isPaid = monthData === true || (typeof monthData === 'object' && monthData?.status === 'paid');
+                      return (
+                        <div 
+                          key={month}
+                          className={`px-3 py-1 rounded text-xs font-medium ${
+                            isPaid ? 'bg-green-600/30 text-green-400 border border-green-600' : 'bg-slate-700 text-slate-400 border border-slate-600'
+                          }`}
+                        >
+                          {month}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* 2026 Status */}
+                {myDues.dues_by_year?.['2026'] && (
+                  <div>
+                    <h3 className="text-sm font-medium text-slate-400 mb-2">2026 Dues Status</h3>
+                    <div className="flex flex-wrap gap-2">
+                      {['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].map((month, idx) => {
+                        const yearDues = myDues.dues_by_year?.['2026'] || [];
+                        const monthData = yearDues[idx];
+                        const isPaid = monthData === true || (typeof monthData === 'object' && monthData?.status === 'paid');
+                        return (
+                          <div 
+                            key={month}
+                            className={`px-3 py-1 rounded text-xs font-medium ${
+                              isPaid ? 'bg-green-600/30 text-green-400 border border-green-600' : 'bg-slate-700 text-slate-400 border border-slate-600'
+                            }`}
+                          >
+                            {month}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Subscription Info */}
+                {myDues.has_subscription && myDues.subscription_info && (
+                  <div className="bg-slate-700/50 rounded-lg p-3">
+                    <h3 className="text-sm font-medium text-slate-300 mb-1">Active Subscription</h3>
+                    <p className="text-xs text-slate-400">
+                      Square Customer: {myDues.subscription_info.customer_name || 'Linked'}
+                    </p>
+                  </div>
+                )}
+
+                {/* Recent Payments */}
+                {(myDues.square_payments?.length > 0 || myDues.one_time_payments?.length > 0) && (
+                  <div>
+                    <h3 className="text-sm font-medium text-slate-400 mb-2">Recent Payments</h3>
+                    <div className="space-y-2 max-h-48 overflow-y-auto">
+                      {/* Square subscription payments */}
+                      {myDues.square_payments?.slice(0, 5).map((payment, idx) => (
+                        <div key={`sub-${idx}`} className="flex justify-between items-center bg-slate-700/50 rounded p-2 text-sm">
+                          <div>
+                            <span className="text-green-400 font-medium">${payment.amount?.toFixed(2)}</span>
+                            <span className="text-slate-400 ml-2">
+                              {payment.paid_at ? new Date(payment.paid_at).toLocaleDateString() : 'Pending'}
+                            </span>
+                          </div>
+                          <Badge className={payment.status === 'PAID' ? 'bg-green-600' : 'bg-yellow-600'}>
+                            {payment.status}
+                          </Badge>
+                        </div>
+                      ))}
+                      {/* One-time payments */}
+                      {myDues.one_time_payments?.slice(0, 5).map((payment, idx) => (
+                        <div key={`otp-${idx}`} className="flex justify-between items-center bg-slate-700/50 rounded p-2 text-sm">
+                          <div>
+                            <span className="text-green-400 font-medium">${payment.amount?.toFixed(2)}</span>
+                            <span className="text-slate-400 ml-2">
+                              {payment.payment_date ? new Date(payment.payment_date).toLocaleDateString() : ''}
+                            </span>
+                            <span className="text-slate-500 ml-2 text-xs">
+                              ({payment.months_covered} month{payment.months_covered > 1 ? 's' : ''})
+                            </span>
+                          </div>
+                          <Badge className="bg-green-600">Paid</Badge>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* No payments message */}
+                {!myDues.square_payments?.length && !myDues.one_time_payments?.length && (
+                  <p className="text-sm text-slate-400">No payment history found. Contact your chapter SEC for assistance.</p>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Members Table Section */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-8">
         <div className="bg-slate-800 rounded-xl shadow-sm border border-slate-700 p-4 sm:p-6">
