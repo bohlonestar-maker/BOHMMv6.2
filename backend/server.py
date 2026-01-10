@@ -7491,7 +7491,9 @@ async def debug_payment_orders(current_user: dict = Depends(verify_token)):
     )
     
     payments_list = []
-    for payment in (payments_result.payments or []):
+    # Handle pager response
+    payments_data = list(payments_result) if payments_result else []
+    for payment in payments_data:
         payment_info = {
             "payment_id": payment.id,
             "created_at": payment.created_at,
