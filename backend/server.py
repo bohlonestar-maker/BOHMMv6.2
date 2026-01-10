@@ -7308,31 +7308,101 @@ async def get_member_dues_history(member_id: str, current_user: dict = Depends(v
         {"member_id": member_id}, {"_id": 0}
     )
     
-    # Get Square payment history if we have subscription info
+    # Get Square payment history via invoices for subscription
     square_payments = []
     if subscription_link and square_client:
-        try:
-            customer_id = subscription_link.get("square_customer_id")
-            if customer_id:
-                # Get recent payments for this customer
-                result = square_client.payments.list(
-                    customer_id=customer_id,
-                    limit=20
-                )
-                if result.payments:
-                    for payment in result.payments:
-                        if payment.status == "COMPLETED":
-                            square_payments.append({
-                                "payment_id": payment.id,
-                                "amount": payment.amount_money.amount / 100 if payment.amount_money else 0,
-                                "currency": payment.amount_money.currency if payment.amount_money else "USD",
-                                "created_at": payment.created_at,
-                                "status": payment.status,
-                                "source_type": payment.source_type,
-                                "receipt_url": payment.receipt_url
-                            })
-        except Exception as e:
-            logger.warning(f"Failed to fetch Square payments for {member_id}: {e}")
+        subscription_id = subscription_link.get("square_subscription_id")
+        
+        # First try to get invoices from the subscription directly
+        if subscription_id:
+            try:
+                # Get subscription details to find invoice_ids
+                sub_result = square_client.subscriptions.retrieve_subscription(subscription_id=subscription_id)
+                if sub_result and sub_result.subscription:
+                    subscription = sub_result.subscription
+                    invoice_ids = getattr(subscription, 'invoice_ids', None) or []
+                    
+                    # Fetch invoice details for each invoice_id
+                    for invoice_id in invoice_ids:
+                        try:
+                            inv_result = square_client.invoices.get_invoice(invoice_id=invoice_id)
+                            if inv_result and inv_result.invoice:
+                                invoice = inv_result.invoice
+                                # Get invoice payment info
+                                status = getattr(invoice, 'status', 'UNKNOWN')
+                                payment_info = {
+                                    "invoice_id": invoice.id,
+                                    "subscription_id": subscription_id,
+                                    "amount": 0,
+                                    "currency": "USD",
+                                    "invoice_date": getattr(invoice, 'created_at', None),
+                                    "due_date": getattr(invoice, 'due_date', None),
+                                    "status": status,
+                                    "payment_id": None,
+                                    "paid_at": None,
+                                    "receipt_url": None
+                                }
+                                
+                                # Get payment amount from primary recipient amount
+                                primary_recipient = getattr(invoice, 'primary_recipient', None)
+                                if hasattr(invoice, 'payment_requests') and invoice.payment_requests:
+                                    req = invoice.payment_requests[0]
+                                    if hasattr(req, 'computed_amount_money') and req.computed_amount_money:
+                                        payment_info["amount"] = req.computed_amount_money.amount / 100
+                                        payment_info["currency"] = req.computed_amount_money.currency or "USD"
+                                
+                                # If invoice is paid, get actual payment details
+                                if status == "PAID":
+                                    # Check for payment_request with tenders
+                                    if hasattr(invoice, 'payment_requests') and invoice.payment_requests:
+                                        for pr in invoice.payment_requests:
+                                            if hasattr(pr, 'tenders') and pr.tenders:
+                                                for tender in pr.tenders:
+                                                    payment_info["payment_id"] = tender.id if hasattr(tender, 'id') else None
+                                                    payment_info["paid_at"] = tender.created_at if hasattr(tender, 'created_at') else None
+                                                    break
+                                            # Also check for payment card details
+                                            if hasattr(pr, 'card_details') and pr.card_details:
+                                                if hasattr(pr.card_details, 'payment_id'):
+                                                    payment_info["payment_id"] = pr.card_details.payment_id
+                                    
+                                    # Get paid_at from invoice if not found in tenders
+                                    if not payment_info["paid_at"]:
+                                        payment_info["paid_at"] = getattr(invoice, 'updated_at', None)
+                                
+                                square_payments.append(payment_info)
+                        except Exception as inv_err:
+                            logger.warning(f"Failed to fetch invoice {invoice_id}: {inv_err}")
+                            continue
+            except Exception as sub_err:
+                logger.warning(f"Failed to fetch subscription {subscription_id}: {sub_err}")
+        
+        # Fallback: Try to get payments directly by customer_id
+        if not square_payments:
+            try:
+                customer_id = subscription_link.get("square_customer_id")
+                if customer_id:
+                    result = square_client.payments.list_payments(
+                        customer_id=customer_id,
+                        limit=20
+                    )
+                    if result and result.payments:
+                        for payment in result.payments:
+                            if payment.status == "COMPLETED":
+                                square_payments.append({
+                                    "invoice_id": None,
+                                    "subscription_id": subscription_id,
+                                    "payment_id": payment.id,
+                                    "amount": payment.amount_money.amount / 100 if payment.amount_money else 0,
+                                    "currency": payment.amount_money.currency if payment.amount_money else "USD",
+                                    "invoice_date": None,
+                                    "due_date": None,
+                                    "paid_at": payment.created_at,
+                                    "status": payment.status,
+                                    "receipt_url": payment.receipt_url
+                                })
+            except Exception as pay_err:
+                logger.warning(f"Failed to fetch payments for member {member_id}: {pay_err}")
     
     # Get dues records from officer_dues collection
     dues_records = await db.officer_dues.find(
