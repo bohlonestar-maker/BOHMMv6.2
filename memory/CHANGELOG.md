@@ -21,7 +21,7 @@
   - Changed from check-then-insert to atomic upsert using `$setOnInsert`
 
 - **Square Webhook URL Updated**
-  - Webhook URL updated from old preview URL to current: `https://dues-tracker-15.preview.emergentagent.com/api/webhooks/square`
+  - Webhook URL updated from old preview URL to current: `https://bohtrack-app.preview.emergentagent.com/api/webhooks/square`
 
 ---
 

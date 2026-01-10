@@ -31,7 +31,7 @@ from dotenv import load_dotenv
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 class DiscordAnalyticsInvestigator:
-    def __init__(self, base_url="https://dues-tracker-15.preview.emergentagent.com/api"):
+    def __init__(self, base_url="https://bohtrack-app.preview.emergentagent.com/api"):
         self.base_url = base_url
         self.token = None
         self.tests_run = 0
