@@ -134,6 +134,9 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
   const [passwordForm, setPasswordForm] = useState({ currentPassword: "", newPassword: "", confirmPassword: "" });
   const [passwordError, setPasswordError] = useState("");
   const [passwordSuccess, setPasswordSuccess] = useState("");
+  const [myDues, setMyDues] = useState(null);
+  const [myDuesLoading, setMyDuesLoading] = useState(true);
+  const [myDuesExpanded, setMyDuesExpanded] = useState(false);
   
   const navigate = useNavigate();
 
