@@ -50,6 +50,12 @@ Build a member management application with attendance tracking, dues management,
   - Status dropdown for National Officers to manage
   - Delete functionality
 
+#### January 10, 2026 - Dues Payment History Fix
+- [x] **Actual Payment Dates** - Fetches real transaction dates from Square invoices (not sync dates)
+- [x] **Transaction IDs** - Displays actual Square payment/transaction IDs via order tenders
+- [x] **Invoice IDs** - Shows invoice IDs for each subscription payment
+- [x] **Enhanced UI** - Improved payment history dialog with clear date/amount/ID display
+
 #### January 8, 2026 - Square Sync Enhancements
 - [x] **Batch API Performance** - Using `bulk_retrieve_customers`
 - [x] **Fuzzy Name Matching** - RapidFuzz with 75% threshold
