@@ -11277,47 +11277,6 @@ async def sync_payment_links_to_dues(current_user: dict = Depends(verify_token))
     except Exception as e:
         logger.error(f"Error syncing payment links: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to sync payment links: {str(e)}")
-                            payment_dt = datetime.fromisoformat(payment_date.replace('Z', '+00:00'))
-                        else:
-                            payment_dt = payment_date
-                    except Exception:
-                        payment_dt = datetime.now(timezone.utc)
-                else:
-                    payment_dt = datetime.now(timezone.utc)
-                
-                # Calculate months covered
-                if total_amount >= 300 and total_amount <= 330:
-                    num_months = 12
-                else:
-                    num_months = max(1, int(total_amount / MONTHLY_DUES_AMOUNT))
-                
-                # Mark dues as paid
-                for month_offset in range(num_months):
-                    target_month = payment_dt.month - 1 + month_offset
-                    target_year = payment_dt.year
-                    
-                    while target_month >= 12:
-                        target_month -= 12
-                        target_year += 1
-                    
-                    payment_note = f"Paid via Square Payment Link on {payment_dt.strftime('%Y-%m-%d')}"
-                    if payment_id:
-                        payment_note += f" (Trans: {payment_id[:12]}...)"
-                    
-                    await update_member_dues_with_payment_info(
-                        member_id=matched_member["id"],
-                        year=target_year,
-                        month=target_month,
-                        payment_note=payment_note,
-                        payment_id=payment_id
-                    )
-                    months_marked_paid += 1
-                
-                # Mark as processed
-                await db.synced_payment_links.update_one(
-                    {"payment_id": payment_id},
-                    {"$set": {
-                        "payment_id": payment_id,
                         "order_id": order.id,
                         "member_id": matched_member["id"],
                         "member_handle": matched_member.get("handle"),
