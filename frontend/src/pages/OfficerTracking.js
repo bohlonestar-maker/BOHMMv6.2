@@ -1271,6 +1271,122 @@ function OfficerTracking() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Dues History Dialog */}
+      <Dialog open={duesHistoryDialog} onOpenChange={setDuesHistoryDialog}>
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto bg-slate-800 border-slate-700 mx-2 sm:mx-auto">
+          <DialogHeader>
+            <DialogTitle className="text-white">Dues Payment History</DialogTitle>
+            <DialogDescription>
+              Payment history for {duesHistoryMember?.handle}
+            </DialogDescription>
+          </DialogHeader>
+          
+          {loadingDuesHistory ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+              <span className="ml-3 text-muted-foreground">Loading history...</span>
+            </div>
+          ) : duesHistoryData ? (
+            <div className="space-y-6">
+              {/* Last Paid Summary */}
+              <div className="bg-slate-700/50 rounded-lg p-4 border border-slate-600">
+                <h3 className="font-semibold text-white mb-2">Last Payment</h3>
+                {duesHistoryData.last_paid ? (
+                  <div className="text-lg">
+                    <span className="text-green-400 font-bold">{duesHistoryData.last_paid}</span>
+                    {duesHistoryData.last_paid_note && (
+                      <span className="text-sm text-slate-400 ml-2">- {duesHistoryData.last_paid_note}</span>
+                    )}
+                  </div>
+                ) : (
+                  <span className="text-slate-400">No payment records found</span>
+                )}
+              </div>
+
+              {/* Subscription Info */}
+              {duesHistoryData.subscription_info && (
+                <div className="bg-purple-900/30 rounded-lg p-4 border border-purple-700/50">
+                  <h3 className="font-semibold text-purple-300 mb-2">Square Subscription</h3>
+                  <div className="text-sm space-y-1">
+                    <div><span className="text-slate-400">Customer:</span> <span className="text-white">{duesHistoryData.subscription_info.customer_name}</span></div>
+                    <div><span className="text-slate-400">Last Synced:</span> <span className="text-white">{duesHistoryData.subscription_info.last_synced ? new Date(duesHistoryData.subscription_info.last_synced).toLocaleString() : 'Never'}</span></div>
+                    <div><span className="text-slate-400">Subscription ID:</span> <span className="text-xs text-slate-300 font-mono">{duesHistoryData.subscription_info.square_subscription_id}</span></div>
+                  </div>
+                </div>
+              )}
+
+              {/* Square Payments */}
+              {duesHistoryData.square_payments?.length > 0 && (
+                <div>
+                  <h3 className="font-semibold text-white mb-3">Square Transactions</h3>
+                  <div className="space-y-2">
+                    {duesHistoryData.square_payments.map((payment, idx) => (
+                      <div key={idx} className="bg-slate-700/50 rounded-lg p-3 border border-slate-600">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <div className="text-green-400 font-bold">${payment.amount.toFixed(2)} {payment.currency}</div>
+                            <div className="text-xs text-slate-400">{new Date(payment.created_at).toLocaleString()}</div>
+                          </div>
+                          <Badge className="bg-green-600">{payment.status}</Badge>
+                        </div>
+                        <div className="mt-2 text-xs">
+                          <span className="text-slate-400">Transaction ID:</span>
+                          <span className="text-slate-300 font-mono ml-1 break-all">{payment.payment_id}</span>
+                        </div>
+                        {payment.receipt_url && (
+                          <a 
+                            href={payment.receipt_url} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="text-xs text-blue-400 hover:underline mt-1 inline-block"
+                          >
+                            View Receipt →
+                          </a>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Dues Records */}
+              {duesHistoryData.dues_records?.length > 0 && (
+                <div>
+                  <h3 className="font-semibold text-white mb-3">Manual Dues Records</h3>
+                  <div className="space-y-2 max-h-48 overflow-y-auto">
+                    {duesHistoryData.dues_records.map((record, idx) => (
+                      <div key={idx} className="bg-slate-700/50 rounded-lg p-3 border border-slate-600 flex justify-between items-center">
+                        <div>
+                          <span className="text-white">{record.month}</span>
+                          {record.notes && <span className="text-xs text-slate-400 ml-2">- {record.notes}</span>}
+                        </div>
+                        {getStatusBadge(record.status)}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* No Data Message */}
+              {!duesHistoryData.square_payments?.length && !duesHistoryData.dues_records?.length && !duesHistoryData.last_paid && (
+                <div className="text-center py-8 text-slate-400">
+                  <DollarSign className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                  <p>No payment history found for this member.</p>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="text-center py-8 text-slate-400">
+              <p>Failed to load dues history.</p>
+            </div>
+          )}
+          
+          <DialogFooter>
+            <Button onClick={() => setDuesHistoryDialog(false)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
