@@ -10907,7 +10907,14 @@ async def sync_subscriptions_to_dues(current_user: dict = Depends(verify_token))
                             continue
                         
                         # Calculate number of months covered by this payment
-                        num_months = max(1, int(amount / MONTHLY_DUES_AMOUNT))
+                        # Special handling for yearly payments:
+                        # - $300 = 12 months (annual subscription discount)
+                        # - $330 = 12 months (standard yearly)
+                        # - Otherwise: $30 per month
+                        if amount >= 300 and amount <= 330:
+                            num_months = 12  # Yearly payment
+                        else:
+                            num_months = max(1, int(amount / MONTHLY_DUES_AMOUNT))
                         
                         # Mark dues as paid for each month covered
                         for month_offset in range(num_months):
