@@ -1319,20 +1319,50 @@ function OfficerTracking() {
               {/* Square Payments */}
               {duesHistoryData.square_payments?.length > 0 && (
                 <div>
-                  <h3 className="font-semibold text-white mb-3">Square Transactions</h3>
+                  <h3 className="font-semibold text-white mb-3">Square Payment History</h3>
                   <div className="space-y-2">
                     {duesHistoryData.square_payments.map((payment, idx) => (
                       <div key={idx} className="bg-slate-700/50 rounded-lg p-3 border border-slate-600">
                         <div className="flex justify-between items-start">
                           <div>
-                            <div className="text-green-400 font-bold">${payment.amount.toFixed(2)} {payment.currency}</div>
-                            <div className="text-xs text-slate-400">{new Date(payment.created_at).toLocaleString()}</div>
+                            <div className="text-green-400 font-bold">${payment.amount?.toFixed(2) || '0.00'} {payment.currency || 'USD'}</div>
+                            {payment.paid_at ? (
+                              <div className="text-xs text-slate-400">
+                                <span className="text-slate-500">Paid:</span> {new Date(payment.paid_at).toLocaleDateString('en-US', { 
+                                  year: 'numeric', 
+                                  month: 'long', 
+                                  day: 'numeric',
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                })}
+                              </div>
+                            ) : payment.invoice_date && (
+                              <div className="text-xs text-slate-400">
+                                <span className="text-slate-500">Invoice Date:</span> {new Date(payment.invoice_date).toLocaleDateString('en-US', { 
+                                  year: 'numeric', 
+                                  month: 'long', 
+                                  day: 'numeric'
+                                })}
+                              </div>
+                            )}
                           </div>
-                          <Badge className="bg-green-600">{payment.status}</Badge>
+                          <Badge className={payment.status === 'PAID' || payment.status === 'COMPLETED' ? 'bg-green-600' : 'bg-yellow-600'}>
+                            {payment.status}
+                          </Badge>
                         </div>
-                        <div className="mt-2 text-xs">
-                          <span className="text-slate-400">Transaction ID:</span>
-                          <span className="text-slate-300 font-mono ml-1 break-all">{payment.payment_id}</span>
+                        <div className="mt-2 text-xs space-y-1">
+                          {payment.payment_id && (
+                            <div>
+                              <span className="text-slate-400">Transaction ID:</span>
+                              <span className="text-slate-300 font-mono ml-1 break-all">{payment.payment_id}</span>
+                            </div>
+                          )}
+                          {payment.invoice_id && (
+                            <div>
+                              <span className="text-slate-400">Invoice ID:</span>
+                              <span className="text-slate-300 font-mono ml-1 break-all">{payment.invoice_id}</span>
+                            </div>
+                          )}
                         </div>
                         {payment.receipt_url && (
                           <a 
