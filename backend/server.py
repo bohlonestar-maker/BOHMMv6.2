@@ -7673,6 +7673,150 @@ async def get_tracking_summary(current_user: dict = Depends(verify_token)):
     return summary
 
 
+# ==================== MY DUES ENDPOINT ====================
+
+@api_router.get("/my-dues")
+async def get_my_dues(current_user: dict = Depends(verify_token)):
+    """Get dues payment history for the logged-in user's linked member profile"""
+    
+    # Get user's linked member_id
+    user = await db.users.find_one({"username": current_user.get("username")}, {"_id": 0})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    member_id = user.get("member_id")
+    
+    # If no member_id linked, try to find by matching username to handle
+    if not member_id:
+        member = await db.members.find_one({"handle": current_user.get("username")}, {"_id": 0})
+        if member:
+            member_id = member.get("id")
+            # Link for future use
+            await db.users.update_one(
+                {"username": current_user.get("username")},
+                {"$set": {"member_id": member_id}}
+            )
+    
+    if not member_id:
+        return {
+            "linked": False,
+            "message": "Your account is not linked to a member profile. Please contact an administrator.",
+            "dues": None
+        }
+    
+    # Get member info
+    member = await db.members.find_one({"id": member_id}, {"_id": 0})
+    if not member:
+        return {
+            "linked": False,
+            "message": "Linked member profile not found. Please contact an administrator.",
+            "dues": None
+        }
+    
+    # Get subscription info if available
+    subscription_link = await db.member_subscriptions.find_one(
+        {"member_id": member_id}, {"_id": 0}
+    )
+    
+    # Get Square payment history if we have subscription info
+    square_payments = []
+    if subscription_link and square_client:
+        subscription_id = subscription_link.get("square_subscription_id")
+        
+        if subscription_id:
+            try:
+                sub_result = square_client.subscriptions.get(subscription_id=subscription_id)
+                if sub_result and sub_result.subscription:
+                    subscription = sub_result.subscription
+                    invoice_ids = getattr(subscription, 'invoice_ids', None) or []
+                    
+                    for invoice_id in invoice_ids[:12]:  # Limit to last 12 invoices
+                        try:
+                            inv_result = square_client.invoices.get(invoice_id=invoice_id)
+                            if inv_result and inv_result.invoice:
+                                invoice = inv_result.invoice
+                                status = getattr(invoice, 'status', 'UNKNOWN')
+                                order_id = getattr(invoice, 'order_id', None)
+                                
+                                payment_info = {
+                                    "invoice_id": invoice.id,
+                                    "amount": 0,
+                                    "currency": "USD",
+                                    "invoice_date": getattr(invoice, 'created_at', None),
+                                    "status": status,
+                                    "payment_id": None,
+                                    "paid_at": None
+                                }
+                                
+                                if hasattr(invoice, 'payment_requests') and invoice.payment_requests:
+                                    req = invoice.payment_requests[0]
+                                    if hasattr(req, 'computed_amount_money') and req.computed_amount_money:
+                                        payment_info["amount"] = req.computed_amount_money.amount / 100
+                                        payment_info["currency"] = req.computed_amount_money.currency or "USD"
+                                
+                                if status == "PAID" and order_id:
+                                    try:
+                                        order_result = square_client.orders.get(order_id=order_id)
+                                        if order_result and order_result.order:
+                                            tenders = getattr(order_result.order, 'tenders', None) or []
+                                            for tender in tenders:
+                                                if hasattr(tender, 'payment_id') and tender.payment_id:
+                                                    payment_info["payment_id"] = tender.payment_id
+                                                    payment_info["paid_at"] = getattr(tender, 'created_at', None)
+                                                    break
+                                    except:
+                                        pass
+                                    
+                                    if not payment_info["paid_at"]:
+                                        payment_info["paid_at"] = getattr(invoice, 'updated_at', None)
+                                
+                                square_payments.append(payment_info)
+                        except:
+                            continue
+            except Exception as e:
+                logger.warning(f"Failed to fetch subscription for my-dues: {e}")
+    
+    # Also get one-time payment links for this member
+    synced_payments = await db.synced_payment_links.find(
+        {"member_id": member_id},
+        {"_id": 0}
+    ).sort("payment_date", -1).limit(20).to_list(20)
+    
+    # Get dues status from member record
+    member_dues = member.get("dues", {})
+    
+    # Calculate current status
+    now = datetime.now(timezone.utc)
+    month_names = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+    year_str = str(now.year)
+    month_idx = now.month - 1
+    
+    current_month_status = "unpaid"
+    if year_str in member_dues and isinstance(member_dues[year_str], list) and len(member_dues[year_str]) > month_idx:
+        month_data = member_dues[year_str][month_idx]
+        if isinstance(month_data, dict):
+            current_month_status = month_data.get("status", "unpaid")
+        elif month_data is True or month_data == "paid":
+            current_month_status = "paid"
+    
+    return {
+        "linked": True,
+        "member_id": member_id,
+        "member_handle": member.get("handle"),
+        "member_name": member.get("name"),
+        "current_month": f"{month_names[month_idx]} {now.year}",
+        "current_month_status": current_month_status,
+        "has_subscription": subscription_link is not None,
+        "subscription_info": {
+            "customer_name": subscription_link.get("customer_name") if subscription_link else None,
+            "last_synced": subscription_link.get("last_synced") if subscription_link else None
+        } if subscription_link else None,
+        "square_payments": square_payments,
+        "one_time_payments": synced_payments,
+        "dues_by_year": member_dues
+    }
+
+
 # ==================== SUGGESTION BOX ENDPOINTS ====================
 
 class SuggestionCreate(BaseModel):
