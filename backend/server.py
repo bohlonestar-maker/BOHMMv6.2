@@ -7317,7 +7317,7 @@ async def get_member_dues_history(member_id: str, current_user: dict = Depends(v
         if subscription_id:
             try:
                 # Get subscription details to find invoice_ids
-                sub_result = square_client.subscriptions.retrieve_subscription(subscription_id=subscription_id)
+                sub_result = square_client.subscriptions.get(subscription_id=subscription_id)
                 if sub_result and sub_result.subscription:
                     subscription = sub_result.subscription
                     invoice_ids = getattr(subscription, 'invoice_ids', None) or []
@@ -7325,7 +7325,7 @@ async def get_member_dues_history(member_id: str, current_user: dict = Depends(v
                     # Fetch invoice details for each invoice_id
                     for invoice_id in invoice_ids:
                         try:
-                            inv_result = square_client.invoices.get_invoice(invoice_id=invoice_id)
+                            inv_result = square_client.invoices.get(invoice_id=invoice_id)
                             if inv_result and inv_result.invoice:
                                 invoice = inv_result.invoice
                                 # Get invoice payment info
@@ -7382,7 +7382,7 @@ async def get_member_dues_history(member_id: str, current_user: dict = Depends(v
             try:
                 customer_id = subscription_link.get("square_customer_id")
                 if customer_id:
-                    result = square_client.payments.list_payments(
+                    result = square_client.payments.list(
                         customer_id=customer_id,
                         limit=20
                     )
