@@ -347,6 +347,238 @@ async def start_discord_bot():
         sys.stderr.write(f"❌ [DISCORD] Error starting bot: {str(e)}\n")
         sys.stderr.flush()
 
+
+async def suspend_discord_member(member_handle: str, member_id: str, reason: str = "Dues suspension") -> dict:
+    """
+    Suspend a member's Discord permissions by removing their roles.
+    
+    Args:
+        member_handle: The member's handle/nickname in the system
+        member_id: The member's ID in our system
+        reason: Reason for the suspension
+        
+    Returns:
+        dict with success status and message
+    """
+    global discord_bot
+    
+    if not discord_bot:
+        return {"success": False, "message": "Discord bot not running"}
+    
+    if not DISCORD_GUILD_ID:
+        return {"success": False, "message": "Discord guild ID not configured"}
+    
+    try:
+        # First, try to find the Discord member by their linked discord_id
+        linked_member = await db.discord_members.find_one({
+            "$or": [
+                {"linked_member_id": member_id},
+                {"linked_handle": member_handle}
+            ]
+        })
+        
+        discord_user_id = None
+        if linked_member:
+            discord_user_id = linked_member.get("discord_id")
+        
+        if not discord_user_id:
+            # Try to find by matching display name to handle
+            sys.stderr.write(f"🔍 [DISCORD] Searching for member {member_handle} by name match...\n")
+            sys.stderr.flush()
+            
+            guild = discord_bot.get_guild(int(DISCORD_GUILD_ID))
+            if not guild:
+                return {"success": False, "message": f"Could not find guild {DISCORD_GUILD_ID}"}
+            
+            # Search for member by nickname or username
+            for discord_member in guild.members:
+                display_name = discord_member.nick or discord_member.display_name or discord_member.name
+                if display_name.lower() == member_handle.lower():
+                    discord_user_id = str(discord_member.id)
+                    break
+        
+        if not discord_user_id:
+            return {"success": False, "message": f"Could not find Discord user for member {member_handle}"}
+        
+        # Get the guild and member
+        guild = discord_bot.get_guild(int(DISCORD_GUILD_ID))
+        if not guild:
+            return {"success": False, "message": f"Could not find guild {DISCORD_GUILD_ID}"}
+        
+        discord_member = guild.get_member(int(discord_user_id))
+        if not discord_member:
+            # Try to fetch the member
+            try:
+                discord_member = await guild.fetch_member(int(discord_user_id))
+            except:
+                return {"success": False, "message": f"Could not find Discord member {discord_user_id} in guild"}
+        
+        # Store the member's current roles before removing them
+        current_roles = [{"id": str(role.id), "name": role.name} for role in discord_member.roles if role.name != "@everyone"]
+        
+        # Save the roles to the database so we can restore them later
+        await db.discord_suspensions.update_one(
+            {"member_id": member_id},
+            {
+                "$set": {
+                    "member_id": member_id,
+                    "member_handle": member_handle,
+                    "discord_user_id": discord_user_id,
+                    "previous_roles": current_roles,
+                    "suspended_at": datetime.now(timezone.utc).isoformat(),
+                    "reason": reason
+                }
+            },
+            upsert=True
+        )
+        
+        # Remove all roles from the member (except @everyone which can't be removed)
+        roles_to_remove = [role for role in discord_member.roles if role.name != "@everyone" and not role.is_bot_managed()]
+        
+        if roles_to_remove:
+            try:
+                await discord_member.remove_roles(*roles_to_remove, reason=reason)
+                sys.stderr.write(f"🚫 [DISCORD] Suspended {member_handle}: removed {len(roles_to_remove)} roles\n")
+                sys.stderr.flush()
+            except Exception as e:
+                sys.stderr.write(f"❌ [DISCORD] Failed to remove roles from {member_handle}: {str(e)}\n")
+                sys.stderr.flush()
+                return {"success": False, "message": f"Failed to remove roles: {str(e)}"}
+        
+        # Optionally add a "Suspended" role if configured
+        if DISCORD_SUSPENDED_ROLE_ID:
+            try:
+                suspended_role = guild.get_role(int(DISCORD_SUSPENDED_ROLE_ID))
+                if suspended_role:
+                    await discord_member.add_roles(suspended_role, reason=reason)
+                    sys.stderr.write(f"🏷️ [DISCORD] Added 'Suspended' role to {member_handle}\n")
+                    sys.stderr.flush()
+            except Exception as e:
+                sys.stderr.write(f"⚠️ [DISCORD] Failed to add suspended role: {str(e)}\n")
+                sys.stderr.flush()
+        
+        # Send notification to Discord about the suspension
+        try:
+            webhook_url = os.environ.get('DISCORD_WEBHOOK_OFFICERS')
+            if webhook_url:
+                import aiohttp
+                async with aiohttp.ClientSession() as session:
+                    embed = {
+                        "title": "⚠️ Member Suspended - Unpaid Dues",
+                        "description": f"**{member_handle}** has been suspended from Discord due to unpaid dues (Day 10+ overdue).",
+                        "color": 15158332,  # Red color
+                        "fields": [
+                            {"name": "Reason", "value": reason, "inline": True},
+                            {"name": "Roles Removed", "value": str(len(roles_to_remove)), "inline": True}
+                        ],
+                        "timestamp": datetime.now(timezone.utc).isoformat()
+                    }
+                    await session.post(webhook_url, json={"embeds": [embed]})
+        except Exception as e:
+            sys.stderr.write(f"⚠️ [DISCORD] Failed to send suspension notification: {str(e)}\n")
+            sys.stderr.flush()
+        
+        return {
+            "success": True, 
+            "message": f"Suspended {member_handle} - removed {len(roles_to_remove)} roles",
+            "roles_removed": len(roles_to_remove)
+        }
+        
+    except Exception as e:
+        sys.stderr.write(f"❌ [DISCORD] Error suspending member {member_handle}: {str(e)}\n")
+        sys.stderr.flush()
+        return {"success": False, "message": str(e)}
+
+
+async def restore_discord_member(member_id: str) -> dict:
+    """
+    Restore a suspended member's Discord roles.
+    
+    Args:
+        member_id: The member's ID in our system
+        
+    Returns:
+        dict with success status and message
+    """
+    global discord_bot
+    
+    if not discord_bot:
+        return {"success": False, "message": "Discord bot not running"}
+    
+    try:
+        # Find the suspension record
+        suspension = await db.discord_suspensions.find_one({"member_id": member_id})
+        if not suspension:
+            return {"success": False, "message": "No suspension record found"}
+        
+        discord_user_id = suspension.get("discord_user_id")
+        previous_roles = suspension.get("previous_roles", [])
+        member_handle = suspension.get("member_handle", "Unknown")
+        
+        # Get the guild and member
+        guild = discord_bot.get_guild(int(DISCORD_GUILD_ID))
+        if not guild:
+            return {"success": False, "message": f"Could not find guild {DISCORD_GUILD_ID}"}
+        
+        discord_member = guild.get_member(int(discord_user_id))
+        if not discord_member:
+            try:
+                discord_member = await guild.fetch_member(int(discord_user_id))
+            except:
+                return {"success": False, "message": f"Could not find Discord member {discord_user_id}"}
+        
+        # Remove suspended role if configured
+        if DISCORD_SUSPENDED_ROLE_ID:
+            try:
+                suspended_role = guild.get_role(int(DISCORD_SUSPENDED_ROLE_ID))
+                if suspended_role and suspended_role in discord_member.roles:
+                    await discord_member.remove_roles(suspended_role, reason="Dues paid - suspension lifted")
+            except Exception as e:
+                sys.stderr.write(f"⚠️ [DISCORD] Failed to remove suspended role: {str(e)}\n")
+        
+        # Restore previous roles
+        roles_restored = 0
+        for role_data in previous_roles:
+            try:
+                role = guild.get_role(int(role_data["id"]))
+                if role and role not in discord_member.roles:
+                    await discord_member.add_roles(role, reason="Dues paid - roles restored")
+                    roles_restored += 1
+            except Exception as e:
+                sys.stderr.write(f"⚠️ [DISCORD] Failed to restore role {role_data['name']}: {str(e)}\n")
+        
+        # Delete the suspension record
+        await db.discord_suspensions.delete_one({"member_id": member_id})
+        
+        sys.stderr.write(f"✅ [DISCORD] Restored {member_handle}: {roles_restored} roles restored\n")
+        sys.stderr.flush()
+        
+        # Send notification about restoration
+        try:
+            webhook_url = os.environ.get('DISCORD_WEBHOOK_OFFICERS')
+            if webhook_url:
+                import aiohttp
+                async with aiohttp.ClientSession() as session:
+                    embed = {
+                        "title": "✅ Member Restored - Dues Paid",
+                        "description": f"**{member_handle}**'s Discord permissions have been restored after paying dues.",
+                        "color": 5763719,  # Green color
+                        "fields": [
+                            {"name": "Roles Restored", "value": str(roles_restored), "inline": True}
+                        ],
+                        "timestamp": datetime.now(timezone.utc).isoformat()
+                    }
+                    await session.post(webhook_url, json={"embeds": [embed]})
+        except Exception as e:
+            pass
+        
+        return {"success": True, "message": f"Restored {roles_restored} roles to {member_handle}"}
+        
+    except Exception as e:
+        sys.stderr.write(f"❌ [DISCORD] Error restoring member: {str(e)}\n")
+        return {"success": False, "message": str(e)}
+
+
 sys.stderr.write("✅ [INIT] Discord configuration loaded\n")
 sys.stderr.flush()
 
