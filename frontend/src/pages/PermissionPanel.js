@@ -14,6 +14,7 @@ import { Switch } from "@/components/ui/switch";
 import { ArrowLeft, Shield, Save, RefreshCw } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -24,6 +25,8 @@ export default function PermissionPanel() {
   const [permissions, setPermissions] = useState({});
   const [availablePermissions, setAvailablePermissions] = useState([]);
   const [titles, setTitles] = useState([]);
+  const [chapters, setChapters] = useState([]);
+  const [selectedChapter, setSelectedChapter] = useState("National");
   const [hasChanges, setHasChanges] = useState(false);
   const [originalPermissions, setOriginalPermissions] = useState({});
   
@@ -41,10 +44,11 @@ export default function PermissionPanel() {
         headers: { Authorization: `Bearer ${token}` },
       });
       
-      setPermissions(response.data.permissions_by_title || {});
-      setOriginalPermissions(JSON.parse(JSON.stringify(response.data.permissions_by_title || {})));
+      setPermissions(response.data.permissions_by_chapter || {});
+      setOriginalPermissions(JSON.parse(JSON.stringify(response.data.permissions_by_chapter || {})));
       setAvailablePermissions(response.data.available_permissions || []);
       setTitles(response.data.titles || []);
+      setChapters(response.data.chapters || ["National", "AD", "HA", "HS"]);
       setHasChanges(false);
     } catch (error) {
       console.error("Failed to fetch permissions:", error);
@@ -59,16 +63,16 @@ export default function PermissionPanel() {
     }
   };
 
-  const handleToggle = (title, permKey) => {
+  const handleToggle = (chapter, title, permKey) => {
     setPermissions(prev => {
-      const newPerms = { ...prev };
-      if (!newPerms[title]) {
-        newPerms[title] = {};
+      const newPerms = JSON.parse(JSON.stringify(prev));
+      if (!newPerms[chapter]) {
+        newPerms[chapter] = {};
       }
-      newPerms[title] = {
-        ...newPerms[title],
-        [permKey]: !newPerms[title]?.[permKey]
-      };
+      if (!newPerms[chapter][title]) {
+        newPerms[chapter][title] = {};
+      }
+      newPerms[chapter][title][permKey] = !newPerms[chapter][title]?.[permKey];
       return newPerms;
     });
     setHasChanges(true);
@@ -78,27 +82,30 @@ export default function PermissionPanel() {
     try {
       setSaving(true);
       
-      // Find which titles have changed
-      for (const title of titles) {
-        const current = permissions[title] || {};
-        const original = originalPermissions[title] || {};
-        
-        // Check if this title's permissions changed
-        let changed = false;
-        for (const perm of availablePermissions) {
-          if (current[perm.key] !== original[perm.key]) {
-            changed = true;
-            break;
+      // Find which chapter/titles have changed
+      for (const chapter of chapters) {
+        for (const title of titles) {
+          const current = permissions[chapter]?.[title] || {};
+          const original = originalPermissions[chapter]?.[title] || {};
+          
+          // Check if this title's permissions changed
+          let changed = false;
+          for (const perm of availablePermissions) {
+            if (current[perm.key] !== original[perm.key]) {
+              changed = true;
+              break;
+            }
           }
-        }
-        
-        if (changed) {
-          await axios.put(`${API}/permissions/bulk-update`, {
-            title: title,
-            permissions: current
-          }, {
-            headers: { Authorization: `Bearer ${token}` },
-          });
+          
+          if (changed) {
+            await axios.put(`${API}/permissions/bulk-update`, {
+              chapter: chapter,
+              title: title,
+              permissions: current
+            }, {
+              headers: { Authorization: `Bearer ${token}` },
+            });
+          }
         }
       }
       
@@ -117,6 +124,18 @@ export default function PermissionPanel() {
     setPermissions(JSON.parse(JSON.stringify(originalPermissions)));
     setHasChanges(false);
     toast.info("Changes reset");
+  };
+
+  const copyFromChapter = async (sourceChapter) => {
+    if (sourceChapter === selectedChapter) return;
+    
+    setPermissions(prev => {
+      const newPerms = JSON.parse(JSON.stringify(prev));
+      newPerms[selectedChapter] = JSON.parse(JSON.stringify(prev[sourceChapter] || {}));
+      return newPerms;
+    });
+    setHasChanges(true);
+    toast.info(`Copied permissions from ${sourceChapter} to ${selectedChapter}`);
   };
 
   if (loading) {
@@ -181,58 +200,95 @@ export default function PermissionPanel() {
         <div className="bg-slate-800 rounded-xl shadow-sm border border-slate-700 overflow-hidden">
           <div className="p-4 border-b border-slate-700">
             <p className="text-slate-400 text-sm">
-              Configure permissions for each title. Changes are saved when you click "Save Changes".
+              Configure permissions for each title within each chapter. Changes are saved when you click "Save Changes".
             </p>
             {hasChanges && (
               <Badge className="mt-2 bg-yellow-600">Unsaved changes</Badge>
             )}
           </div>
           
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow className="border-slate-700 hover:bg-slate-700/50">
-                  <TableHead className="text-slate-300 font-semibold sticky left-0 bg-slate-800 z-10 min-w-[120px]">
-                    Title
-                  </TableHead>
-                  {availablePermissions.map((perm) => (
-                    <TableHead 
-                      key={perm.key} 
-                      className="text-slate-300 text-center min-w-[100px]"
-                      title={perm.description}
-                    >
-                      <div className="flex flex-col items-center gap-1">
-                        <span className="text-xs">{perm.label}</span>
-                      </div>
-                    </TableHead>
-                  ))}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {titles.map((title) => (
-                  <TableRow 
-                    key={title} 
-                    className="border-slate-700 hover:bg-slate-700/30"
+          {/* Chapter Tabs */}
+          <Tabs value={selectedChapter} onValueChange={setSelectedChapter} className="w-full">
+            <div className="px-4 pt-4 border-b border-slate-700 flex justify-between items-center">
+              <TabsList className="bg-slate-700">
+                {chapters.map((chapter) => (
+                  <TabsTrigger 
+                    key={chapter} 
+                    value={chapter}
+                    className="data-[state=active]:bg-purple-600 data-[state=active]:text-white"
                   >
-                    <TableCell className="font-medium text-white sticky left-0 bg-slate-800 z-10">
-                      <Badge variant="outline" className="border-slate-600 text-slate-200">
-                        {title}
-                      </Badge>
-                    </TableCell>
-                    {availablePermissions.map((perm) => (
-                      <TableCell key={perm.key} className="text-center">
-                        <Switch
-                          checked={permissions[title]?.[perm.key] || false}
-                          onCheckedChange={() => handleToggle(title, perm.key)}
-                          className="data-[state=checked]:bg-green-600"
-                        />
-                      </TableCell>
-                    ))}
-                  </TableRow>
+                    {chapter}
+                  </TabsTrigger>
                 ))}
-              </TableBody>
-            </Table>
-          </div>
+              </TabsList>
+              
+              {/* Copy from another chapter */}
+              <div className="flex items-center gap-2 pb-2">
+                <span className="text-xs text-slate-400">Copy from:</span>
+                {chapters.filter(c => c !== selectedChapter).map((chapter) => (
+                  <Button
+                    key={chapter}
+                    variant="outline"
+                    size="sm"
+                    onClick={() => copyFromChapter(chapter)}
+                    className="text-xs h-7 px-2 border-slate-600 text-slate-300 hover:bg-slate-700"
+                  >
+                    {chapter}
+                  </Button>
+                ))}
+              </div>
+            </div>
+            
+            {chapters.map((chapter) => (
+              <TabsContent key={chapter} value={chapter} className="m-0">
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="border-slate-700 hover:bg-slate-700/50">
+                        <TableHead className="text-slate-300 font-semibold sticky left-0 bg-slate-800 z-10 min-w-[120px]">
+                          Title
+                        </TableHead>
+                        {availablePermissions.map((perm) => (
+                          <TableHead 
+                            key={perm.key} 
+                            className="text-slate-300 text-center min-w-[100px]"
+                            title={perm.description}
+                          >
+                            <div className="flex flex-col items-center gap-1">
+                              <span className="text-xs">{perm.label}</span>
+                            </div>
+                          </TableHead>
+                        ))}
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {titles.map((title) => (
+                        <TableRow 
+                          key={title} 
+                          className="border-slate-700 hover:bg-slate-700/30"
+                        >
+                          <TableCell className="font-medium text-white sticky left-0 bg-slate-800 z-10">
+                            <Badge variant="outline" className="border-slate-600 text-slate-200">
+                              {title}
+                            </Badge>
+                          </TableCell>
+                          {availablePermissions.map((perm) => (
+                            <TableCell key={perm.key} className="text-center">
+                              <Switch
+                                checked={permissions[chapter]?.[title]?.[perm.key] || false}
+                                onCheckedChange={() => handleToggle(chapter, title, perm.key)}
+                                className="data-[state=checked]:bg-green-600"
+                              />
+                            </TableCell>
+                          ))}
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </TabsContent>
+            ))}
+          </Tabs>
         </div>
 
         {/* Legend */}
