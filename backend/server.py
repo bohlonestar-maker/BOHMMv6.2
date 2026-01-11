@@ -8009,6 +8009,7 @@ AVAILABLE_PERMISSIONS = [
     {"key": "view_reports", "label": "View Reports", "description": "Can access Reports page"},
     {"key": "manage_events", "label": "Manage Events", "description": "Can add/edit events"},
     {"key": "manage_system_users", "label": "Manage System Users", "description": "Can add/edit system user accounts"},
+    {"key": "manage_dues_reminders", "label": "Manage Dues Reminders", "description": "Can view/edit dues reminder emails and run checks"},
 ]
 
 # All manageable titles
