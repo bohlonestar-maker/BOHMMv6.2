@@ -1769,11 +1769,14 @@ async def login(login_data: LoginRequest):
     if not verify_password(login_data.password, user["password_hash"]):
         raise HTTPException(status_code=401, detail="Invalid username or password")
     
+    user_chapter = user.get("chapter")
+    user_title = user.get("title")
+    
     token = create_access_token({
         "sub": user["username"], 
         "role": user["role"],
-        "chapter": user.get("chapter"),  # Include chapter for privacy/access control
-        "title": user.get("title")  # Include title for email privacy access control
+        "chapter": user_chapter,  # Include chapter for privacy/access control
+        "title": user_title  # Include title for email privacy access control
     })
     
     # Log login activity
@@ -1783,6 +1786,22 @@ async def login(login_data: LoginRequest):
         details="User logged in successfully"
     )
     
+    # Get dynamic permissions from role_permissions collection
+    dynamic_permissions = await get_title_permissions(user_title or "", user_chapter or "")
+    
+    # Merge with static user permissions
+    static_permissions = user.get("permissions", {
+        "basic_info": True,
+        "email": False,
+        "phone": False,
+        "address": False,
+        "dues_tracking": False,
+        "admin_actions": False
+    })
+    
+    # Combine both permission sets
+    all_permissions = {**static_permissions, **dynamic_permissions}
+    
     # Trigger Square catalog sync in background (non-blocking)
     # Only runs if user is a store admin (doesn't matter, sync is idempotent)
     try:
@@ -1791,7 +1810,14 @@ async def login(login_data: LoginRequest):
     except Exception as e:
         logger.warning(f"Failed to trigger auto-sync: {str(e)}")
     
-    return LoginResponse(token=token, username=user["username"], role=user["role"])
+    return LoginResponse(
+        token=token, 
+        username=user["username"], 
+        role=user["role"],
+        chapter=user_chapter,
+        title=user_title,
+        permissions=all_permissions
+    )
 
 @api_router.get("/auth/verify")
 async def verify(current_user: dict = Depends(verify_token)):
