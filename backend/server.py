@@ -1849,6 +1849,11 @@ async def verify(current_user: dict = Depends(verify_token)):
     # Combine both permission sets
     all_permissions = {**static_permissions, **dynamic_permissions}
     
+    # Admins get all available permissions set to true
+    if user["role"] == "admin":
+        for perm in AVAILABLE_PERMISSIONS:
+            all_permissions[perm["key"]] = True
+    
     return {
         "username": user["username"],
         "role": user["role"],
