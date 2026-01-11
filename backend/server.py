@@ -8846,6 +8846,45 @@ async def revoke_dues_extension(
     return {"success": True, "message": "Extension revoked"}
 
 
+@api_router.post("/dues-reminders/reinstate/{member_id}")
+async def reinstate_member(
+    member_id: str,
+    current_user: dict = Depends(verify_token)
+):
+    """Manually reinstate a suspended member - restore Discord permissions and clear suspension"""
+    has_access = await check_permission(current_user, "manage_dues_reminders")
+    if not has_access:
+        raise HTTPException(status_code=403, detail="You don't have permission to reinstate members")
+    
+    # Get member info
+    member = await db.members.find_one({"id": member_id}, {"_id": 0, "handle": 1, "dues_suspended": 1})
+    if not member:
+        raise HTTPException(status_code=404, detail="Member not found")
+    
+    # Clear the dues_suspended flag
+    await db.members.update_one(
+        {"id": member_id},
+        {"$set": {
+            "dues_suspended": False,
+            "dues_suspended_at": None,
+            "reinstated_by": current_user.get("username"),
+            "reinstated_at": datetime.now(timezone.utc).isoformat()
+        }}
+    )
+    
+    # Restore Discord permissions
+    discord_result = await restore_discord_member(member_id)
+    
+    logger.info(f"Member {member.get('handle')} reinstated by {current_user.get('username')}")
+    
+    return {
+        "success": True,
+        "message": f"Member {member.get('handle')} has been reinstated",
+        "discord_restored": discord_result.get("success", False),
+        "discord_message": discord_result.get("message", "")
+    }
+
+
 async def has_active_extension(member_id: str) -> bool:
     """Check if a member has an active dues extension"""
     extension = await db.dues_extensions.find_one({"member_id": member_id})
