@@ -684,8 +684,6 @@ export default function DuesReminders() {
                                 Reinstate
                               </Button>
                             )}
-                              </Button>
-                            )}
                           </div>
                         </td>
                       </tr>
