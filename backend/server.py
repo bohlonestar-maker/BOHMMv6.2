@@ -7318,8 +7318,8 @@ async def get_dues_records(
     quarter: Optional[str] = None,
     current_user: dict = Depends(verify_token)
 ):
-    """Get dues records - officers can view (except CC/CCLC)"""
-    if not can_access_ad(current_user):
+    """Get dues records - based on permissions"""
+    if not await check_ad_access(current_user):
         raise HTTPException(status_code=403, detail="You don't have permission to access this page")
     
     query = {}
