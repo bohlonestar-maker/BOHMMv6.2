@@ -7864,6 +7864,167 @@ async def get_my_dues(current_user: dict = Depends(verify_token)):
     }
 
 
+# ==================== ROLE PERMISSIONS ENDPOINTS ====================
+
+# Permission definitions
+AVAILABLE_PERMISSIONS = [
+    {"key": "ad_page_access", "label": "A&D Page Access", "description": "Can view Attendance & Dues page"},
+    {"key": "view_full_member_info", "label": "View Full Member Info", "description": "Can see all member details (address, DOB, etc.)"},
+    {"key": "edit_members", "label": "Edit Members", "description": "Can add/edit/delete members"},
+    {"key": "view_prospects", "label": "View Prospects", "description": "Can access Prospects page"},
+    {"key": "manage_store", "label": "Manage Store", "description": "Can add/edit store products"},
+    {"key": "view_reports", "label": "View Reports", "description": "Can access Reports page"},
+    {"key": "manage_events", "label": "Manage Events", "description": "Can add/edit events"},
+    {"key": "manage_system_users", "label": "Manage System Users", "description": "Can add/edit system user accounts"},
+]
+
+# All manageable titles
+MANAGEABLE_TITLES = ["Prez", "VP", "S@A", "ENF", "SEC", "T", "CD", "CC", "CCLC", "MD", "PM", "(pm)", "Brother", "Honorary"]
+
+def can_manage_permissions(user: dict) -> bool:
+    """Check if user can manage role permissions - National Prez, VP, SEC, T only"""
+    user_chapter = user.get("chapter", "")
+    user_title = user.get("title", "")
+    user_role = user.get("role", "")
+    
+    if user_chapter != "National":
+        return False
+    
+    if user_role == "admin":
+        return True
+    
+    return user_title in ["Prez", "VP", "SEC", "T"]
+
+
+async def get_title_permissions(title: str) -> dict:
+    """Get permissions for a specific title from database"""
+    record = await db.role_permissions.find_one({"title": title}, {"_id": 0})
+    if record:
+        return record.get("permissions", {})
+    return {}
+
+
+async def check_permission(user: dict, permission_key: str) -> bool:
+    """Check if user has a specific permission based on their title"""
+    user_title = user.get("title", "")
+    user_role = user.get("role", "")
+    
+    # Admins always have all permissions
+    if user_role == "admin":
+        return True
+    
+    # Get permissions from database
+    perms = await get_title_permissions(user_title)
+    return perms.get(permission_key, False)
+
+
+@api_router.get("/permissions/definitions")
+async def get_permission_definitions(current_user: dict = Depends(verify_token)):
+    """Get list of available permissions and titles"""
+    if not can_manage_permissions(current_user):
+        raise HTTPException(status_code=403, detail="Only National Prez, VP, SEC, and T can manage permissions")
+    
+    return {
+        "permissions": AVAILABLE_PERMISSIONS,
+        "titles": MANAGEABLE_TITLES
+    }
+
+
+@api_router.get("/permissions/all")
+async def get_all_permissions(current_user: dict = Depends(verify_token)):
+    """Get all role permissions"""
+    if not can_manage_permissions(current_user):
+        raise HTTPException(status_code=403, detail="Only National Prez, VP, SEC, and T can manage permissions")
+    
+    records = await db.role_permissions.find({}, {"_id": 0}).to_list(100)
+    
+    # Convert to dict keyed by title
+    result = {}
+    for record in records:
+        result[record.get("title")] = record.get("permissions", {})
+    
+    return {
+        "permissions_by_title": result,
+        "available_permissions": AVAILABLE_PERMISSIONS,
+        "titles": MANAGEABLE_TITLES
+    }
+
+
+class PermissionUpdate(BaseModel):
+    title: str
+    permission_key: str
+    value: bool
+
+
+@api_router.put("/permissions/update")
+async def update_permission(update: PermissionUpdate, current_user: dict = Depends(verify_token)):
+    """Update a single permission for a title"""
+    if not can_manage_permissions(current_user):
+        raise HTTPException(status_code=403, detail="Only National Prez, VP, SEC, and T can manage permissions")
+    
+    if update.title not in MANAGEABLE_TITLES:
+        raise HTTPException(status_code=400, detail=f"Invalid title: {update.title}")
+    
+    valid_keys = [p["key"] for p in AVAILABLE_PERMISSIONS]
+    if update.permission_key not in valid_keys:
+        raise HTTPException(status_code=400, detail=f"Invalid permission key: {update.permission_key}")
+    
+    # Update the permission
+    result = await db.role_permissions.update_one(
+        {"title": update.title},
+        {
+            "$set": {
+                f"permissions.{update.permission_key}": update.value,
+                "updated_at": datetime.now(timezone.utc).isoformat(),
+                "updated_by": current_user.get("username")
+            }
+        },
+        upsert=True
+    )
+    
+    logger.info(f"Permission updated: {update.title}.{update.permission_key} = {update.value} by {current_user.get('username')}")
+    
+    return {"success": True, "message": f"Updated {update.title}.{update.permission_key} to {update.value}"}
+
+
+class BulkPermissionUpdate(BaseModel):
+    title: str
+    permissions: dict
+
+
+@api_router.put("/permissions/bulk-update")
+async def bulk_update_permissions(update: BulkPermissionUpdate, current_user: dict = Depends(verify_token)):
+    """Update all permissions for a title at once"""
+    if not can_manage_permissions(current_user):
+        raise HTTPException(status_code=403, detail="Only National Prez, VP, SEC, and T can manage permissions")
+    
+    if update.title not in MANAGEABLE_TITLES:
+        raise HTTPException(status_code=400, detail=f"Invalid title: {update.title}")
+    
+    # Validate permission keys
+    valid_keys = [p["key"] for p in AVAILABLE_PERMISSIONS]
+    for key in update.permissions.keys():
+        if key not in valid_keys:
+            raise HTTPException(status_code=400, detail=f"Invalid permission key: {key}")
+    
+    # Update all permissions
+    await db.role_permissions.update_one(
+        {"title": update.title},
+        {
+            "$set": {
+                "permissions": update.permissions,
+                "updated_at": datetime.now(timezone.utc).isoformat(),
+                "updated_by": current_user.get("username")
+            }
+        },
+        upsert=True
+    )
+    
+    logger.info(f"Bulk permissions updated for {update.title} by {current_user.get('username')}")
+    
+    return {"success": True, "message": f"Updated all permissions for {update.title}"}
+
+
 # ==================== SUGGESTION BOX ENDPOINTS ====================
 
 class SuggestionCreate(BaseModel):
