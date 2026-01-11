@@ -649,6 +649,7 @@ export default function DuesReminders() {
                               Forgive
                             </Button>
                             
+                            {/* Extension buttons */}
                             {member.has_extension ? (
                               <Button
                                 size="sm"
@@ -659,16 +660,6 @@ export default function DuesReminders() {
                                 <X className="w-4 h-4 mr-1" />
                                 Revoke
                               </Button>
-                            ) : member.reminders_sent?.includes("dues_reminder_day10") ? (
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => handleReinstate(member.id, member.handle)}
-                                className="text-blue-400 hover:text-blue-300 hover:bg-blue-900/30"
-                              >
-                                <RotateCcw className="w-4 h-4 mr-1" />
-                                Reinstate
-                              </Button>
                             ) : (
                               <Button
                                 size="sm"
@@ -678,6 +669,21 @@ export default function DuesReminders() {
                               >
                                 <Plus className="w-4 h-4 mr-1" />
                                 Extend
+                              </Button>
+                            )}
+                            
+                            {/* Reinstate button - only for suspended members */}
+                            {member.reminders_sent?.includes("dues_reminder_day10") && !member.has_extension && (
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => handleReinstate(member.id, member.handle)}
+                                className="text-blue-400 hover:text-blue-300 hover:bg-blue-900/30"
+                              >
+                                <RotateCcw className="w-4 h-4 mr-1" />
+                                Reinstate
+                              </Button>
+                            )}
                               </Button>
                             )}
                           </div>
