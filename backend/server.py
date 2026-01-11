@@ -7043,15 +7043,15 @@ class DuesRecord(BaseModel):
 
 @api_router.get("/officer-tracking/members")
 async def get_members_by_chapter(current_user: dict = Depends(verify_token)):
-    """Get all members organized by chapter - officers can view (except CC/CCLC)"""
+    """Get all members organized by chapter - officers can view based on permissions"""
     user_title = current_user.get('title', '')
     user_role = current_user.get('role', '')
     
     # Log for debugging
     logger.info(f"A&D access attempt - User: {current_user.get('username')}, Title: {user_title}, Role: {user_role}")
     
-    # CC and CCLC cannot access A&D
-    if not can_access_ad(current_user):
+    # Check permission from database
+    if not await check_ad_access(current_user):
         logger.warning(f"A&D access denied - User: {current_user.get('username')}, Title: {user_title}")
         raise HTTPException(status_code=403, detail="You don't have permission to access this page")
     
