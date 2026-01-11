@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, Component } from "react";
 import "@/App.css";
 import { BrowserRouter, Routes, Route, Navigate, useNavigate } from "react-router-dom";
 import axios from "axios";
@@ -27,6 +27,52 @@ import PermissionPanel from "@/pages/PermissionPanel";
 import DuesReminders from "@/pages/DuesReminders";
 import ChatBot from "@/components/ChatBot";
 import { Toaster } from "@/components/ui/sonner";
+
+// Error Boundary to prevent white screen crashes
+class ErrorBoundary extends Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    console.error("React Error Boundary caught an error:", error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
+          <div className="bg-slate-800 border border-slate-700 rounded-lg p-6 max-w-md w-full text-center">
+            <h2 className="text-xl font-bold text-red-400 mb-4">Something went wrong</h2>
+            <p className="text-slate-300 mb-4">The application encountered an error. Please try refreshing the page.</p>
+            <button
+              onClick={() => {
+                localStorage.clear();
+                window.location.href = '/login';
+              }}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg mr-2"
+            >
+              Clear & Login
+            </button>
+            <button
+              onClick={() => window.location.reload()}
+              className="bg-slate-600 hover:bg-slate-700 text-white px-4 py-2 rounded-lg"
+            >
+              Refresh Page
+            </button>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
