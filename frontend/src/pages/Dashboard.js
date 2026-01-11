@@ -1049,6 +1049,17 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
                     </>
                   )}
                   
+                  {/* Permission Panel - National Prez, VP, SEC, T only */}
+                  {userChapter === 'National' && ['Prez', 'VP', 'SEC', 'T'].includes(userTitle) && (
+                    <DropdownMenuItem 
+                      onSelect={(e) => { e.preventDefault(); navigate("/permissions"); }} 
+                      className="text-purple-400 focus:bg-purple-900/30 focus:text-purple-300 cursor-pointer"
+                    >
+                      <Shield className="w-4 h-4 mr-2" />
+                      Permissions
+                    </DropdownMenuItem>
+                  )}
+                  
                   {/* Message Monitor - Lonestar only */}
                   {localStorage.getItem("username") === "Lonestar" && (
                     <>
