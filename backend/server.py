@@ -8788,6 +8788,36 @@ def run_dues_reminder_job():
         traceback.print_exc(file=sys.stderr)
 
 
+@api_router.post("/dues-reminders/test-discord-suspension")
+async def test_discord_suspension(
+    member_id: str,
+    action: str = "suspend",  # "suspend" or "restore"
+    current_user: dict = Depends(verify_token)
+):
+    """Test Discord suspension/restoration for a member (admin only)"""
+    has_access = await check_permission(current_user, "manage_dues_reminders")
+    if not has_access:
+        raise HTTPException(status_code=403, detail="You don't have permission to manage dues reminders")
+    
+    # Get member info
+    member = await db.members.find_one({"id": member_id}, {"_id": 0, "handle": 1, "id": 1})
+    if not member:
+        raise HTTPException(status_code=404, detail="Member not found")
+    
+    if action == "suspend":
+        result = await suspend_discord_member(
+            member_handle=member.get("handle", "Unknown"),
+            member_id=member_id,
+            reason="Manual test suspension"
+        )
+    elif action == "restore":
+        result = await restore_discord_member(member_id)
+    else:
+        raise HTTPException(status_code=400, detail="Invalid action. Use 'suspend' or 'restore'")
+    
+    return result
+
+
 # ==================== SUGGESTION BOX ENDPOINTS ====================
 
 class SuggestionCreate(BaseModel):
