@@ -21,108 +21,128 @@ Build a member management application with attendance tracking, dues management,
 - **Sync Feature:** "Sync from Square" button to update dues for current month
 - **Manual Linking:** UI for manually linking unmatched subscriptions to members
 
-#### 3. Suggestion Box (NEW)
+#### 3. Suggestion Box
 - **Submit:** All logged-in members can submit suggestions
 - **Display:** Show submitter's handle, with option for anonymous submissions
 - **Voting:** Upvote and downvote system
 - **Status Management:** National Officers (except Honorary) can mark as: New, Reviewed, In Progress, Implemented, Declined
 - **Location:** Section on the Dashboard
 
-#### 4. Responsive Design (A&D Page)
-- **Mobile (390px):** Card-based layout, 2x2 chapter grid, stacked action buttons
-- **Tablet (768px):** Full table layout, 2x2 chapter grid
-- **Laptop (1440px+):** Full table layout, 4-column chapter grid, inline controls
+#### 4. Dynamic Permission Panel
+- **UI:** National Officers (Prez, VP, SEC, T) can manage permissions for every title within every chapter
+- **Chapter-Specific:** Each chapter has its own permission settings
+- **Permissions:** ad_page_access, view_full_member_info, edit_members, admin_actions, view_suggestions, submit_suggestions, manage_suggestions, view_reports
+- **Responsive:** Mobile, tablet, and desktop optimized
+
+#### 5. Dues Reminders System (NEW)
+- **Automated Emails:** System sends reminder emails on days 3, 8, and 10 of each month for unpaid dues
+- **Configurable Templates:** Admins can edit email subject and body for each reminder day
+- **Permission Suspension:** On day 10, members with unpaid dues are automatically suspended
+- **Status Dashboard:** Shows unpaid members count, suspended count, reminders sent
+- **Manual Trigger:** "Run Check Now" button to manually trigger reminder check
+- **Scheduled Job:** Runs daily at 9:30 AM CST via APScheduler
 
 ### What's Been Implemented
 
-#### January 8, 2026 - Suggestion Box Feature
+#### January 11, 2026 - Dues Reminders System
 - [x] **Backend API Endpoints:**
-  - `GET /api/suggestions` - Get all suggestions with vote counts
-  - `POST /api/suggestions` - Submit new suggestion (with anonymous option)
-  - `POST /api/suggestions/{id}/vote` - Upvote or downvote
-  - `PATCH /api/suggestions/{id}/status` - Update status (National Officers only)
-  - `DELETE /api/suggestions/{id}` - Delete suggestion
-- [x] **Frontend UI on Dashboard:**
-  - Suggestion Box section with collapsible view
-  - "New Suggestion" dialog with title, description, anonymous checkbox
-  - Vote buttons (thumbs up/down) with vote count display
-  - Status badges (color-coded)
-  - Status dropdown for National Officers to manage
-  - Delete functionality
+  - `GET /api/dues-reminders/templates` - Get all 3 email templates
+  - `PUT /api/dues-reminders/templates/{id}` - Update template subject/body/active
+  - `GET /api/dues-reminders/status` - Get unpaid members count, suspended count, list
+  - `POST /api/dues-reminders/run-check` - Manual trigger for reminder check
+  - `POST /api/dues-reminders/send-test` - Generate email preview
+- [x] **Frontend UI (DuesReminders.js):**
+  - Status cards (Current Month, Unpaid Members, Suspended, Day of Month)
+  - Template list with Day 3, Day 8, Day 10 badges
+  - Template editor with subject, body, active toggle
+  - Save Template and Send Test buttons
+  - Unpaid Members table with decrypted emails
+- [x] **Automation:**
+  - APScheduler job runs daily at 9:30 AM CST
+  - `dues_suspended` field set on members after Day 10
+  - Suspension cleared when dues marked paid (manual or Square sync)
+- [x] **Navigation:**
+  - Menu link added for National Prez, VP, SEC, T
+  - Route added in App.js
 
 #### January 10, 2026 - Dues Payment History & Auto-Sync Fix
-- [x] **Actual Payment Dates** - Fetches real transaction dates from Square invoices (not sync dates)
-- [x] **Transaction IDs** - Displays actual Square payment/transaction IDs via order tenders
-- [x] **Invoice IDs** - Shows invoice IDs for each subscription payment
-- [x] **Enhanced UI** - Improved payment history dialog with clear date/amount/ID display
-- [x] **Auto-Update Dues from Payment History** - Sync now uses actual payment transactions:
-  - Payment date determines which month gets marked paid
-  - Payment amount determines months covered ($30=1mo, $60=2mo, $300=12mo)
-  - Transaction ID saved to dues record for traceability
+- [x] **Actual Payment Dates** - Fetches real transaction dates from Square invoices
+- [x] **Transaction IDs** - Displays actual Square payment/transaction IDs
+- [x] **Auto-Update Dues from Payment History** - Payment date/amount determines months paid
 
 #### January 8, 2026 - Square Sync Enhancements
 - [x] **Batch API Performance** - Using `bulk_retrieve_customers`
 - [x] **Fuzzy Name Matching** - RapidFuzz with 75% threshold
 - [x] **Manual Linking UI** - Link buttons for unmatched subscriptions
-- [x] **A&D Dues Sync Fix** - Summary now correctly counts monthly dues
+
+#### January 8, 2026 - Suggestion Box Feature
+- [x] Backend API endpoints for suggestions
+- [x] Frontend UI on Dashboard with voting and status management
 
 ### Technical Architecture
 
 ```
 /app/
 ├── backend/
-│   └── server.py          # Contains suggestion box endpoints (lines ~7380-7540)
+│   └── server.py          # All backend logic (11K+ lines)
+│       ├── Lines 8163-8470 - Dues Reminder endpoints
+│       └── Lines 7380-7540 - Suggestion Box endpoints
 └── frontend/
     └── src/
+        ├── App.js             # Routes (DuesReminders at /dues-reminders)
         └── pages/
-            └── Dashboard.js  # Contains Suggestion Box UI section
+            ├── Dashboard.js       # Main dashboard with My Dues, Suggestion Box
+            ├── DuesReminders.js   # Email template management
+            ├── PermissionPanel.js # Dynamic permission management
+            └── OfficerTracking.js # A&D page
 ```
 
 ### API Endpoints
 
-#### Suggestion Box Endpoints (NEW)
-- `GET /api/suggestions` - Get all suggestions
-- `POST /api/suggestions` - Create suggestion
-- `POST /api/suggestions/{id}/vote` - Vote (upvote/downvote)
-- `PATCH /api/suggestions/{id}/status` - Update status
-- `DELETE /api/suggestions/{id}` - Delete suggestion
+#### Dues Reminders (NEW)
+- `GET /api/dues-reminders/templates` - Get all email templates
+- `PUT /api/dues-reminders/templates/{id}` - Update template
+- `GET /api/dues-reminders/status` - Get unpaid/suspended status
+- `POST /api/dues-reminders/run-check` - Trigger reminder check
+- `POST /api/dues-reminders/send-test` - Generate email preview
 
-#### Subscription Endpoints
-- `GET /api/dues/subscriptions` - Get Square subscriptions with matching
-- `POST /api/dues/sync-subscriptions` - Sync subscriptions to dues
-- `POST /api/dues/link-subscription` - Manual linking
-- `GET /api/dues/all-members-for-linking` - Get members for dropdown
+#### Permissions
+- `GET /api/permissions/all` - Get all permissions by chapter
+- `PUT /api/permissions/bulk-update` - Update permissions for a title
 
 ### Database Collections
-- `suggestions` (NEW) - Stores suggestion submissions
-  - `id`, `title`, `description`, `submitted_by`, `submitter_id`, `is_anonymous`
-  - `status` (new/reviewed/in_progress/implemented/declined)
-  - `upvotes` [], `downvotes` [] - Arrays of member IDs
-  - `created_at`, `updated_at`, `status_updated_by`, `status_updated_at`
+- `dues_email_templates` - Email templates for reminders (Day 3, 8, 10)
+- `dues_reminder_sent` - Log of reminders sent to prevent duplicates
+- `role_permissions` - Chapter-specific permissions for each title
+- `suggestions` - User suggestions with votes and status
 
 ### Prioritized Backlog
 
 #### P0 - Critical
+- [x] ~~Dues Reminders System~~ (Completed Jan 11)
+- [x] ~~Permission Suspension~~ (Completed Jan 11)
 - [x] ~~Square subscription sync feature~~ (Completed)
-- [x] ~~Batch API performance~~ (Completed)
-- [x] ~~Fuzzy matching~~ (Completed)
-- [x] ~~Manual linking UI~~ (Completed)
-- [x] ~~A&D dues sync fix~~ (Completed)
 - [x] ~~Suggestion Box~~ (Completed)
 
 #### P1 - High Priority
-- [x] ~~Wall of Honor photos~~ (User confirmed fixed)
 - [ ] Add quarterly/bi-yearly/yearly dues subscription options
+- [ ] Actual email sending (currently MOCKED - logged only)
 
 #### P2 - Medium Priority
 - [ ] Automated monthly sync (run on 1st of each month)
-- [ ] Email notifications for unmatched subscriptions
+- [ ] Suggestion Box replies/comments
+- [ ] Refactor server.py into modules (routes, models, services)
 
 ### Test Credentials
-- **Admin:** `admin` / `admin123`
-- **National Officer:** `Lonestar` / `boh2158tc`
+- **Admin/National SEC:** `Lonestar` / `boh2158tc`
+- **Super Admin:** `admin` / `2X13y75Z`
 
 ### Third-Party Integrations
 - **Square:** Payment processing and subscription management
 - **Discord:** Automated notifications
 - **OpenAI:** AI chatbot feature
+- **Email:** MOCKED (logged to console, not actually sent)
+
+### Important Notes
+- **Email sending is MOCKED** - Emails are logged to console and recorded in `dues_reminder_sent` collection, but not actually sent via SMTP. Actual email integration would require a service like SendGrid or SES.
+- **Suspension clears on payment** - When dues are marked paid (manual or Square sync), the `dues_suspended` flag is automatically cleared.
