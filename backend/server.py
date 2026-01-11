@@ -9198,9 +9198,12 @@ async def check_and_send_dues_reminders():
             template_to_send = template
             break
     
-    # Also check if we're past day 10 and haven't sent day 10 notice
-    if day >= 10 and not template_to_send:
-        template_to_send = next((t for t in templates if t.get("day_trigger") == 10), None)
+    # Also check if we're past certain days and haven't sent those notices
+    if not template_to_send:
+        if day >= 30:
+            template_to_send = next((t for t in templates if t.get("day_trigger") == 30), None)
+        elif day >= 10:
+            template_to_send = next((t for t in templates if t.get("day_trigger") == 10), None)
     
     if not template_to_send:
         return {"message": f"No reminder scheduled for day {day}", "emails_sent": 0}
