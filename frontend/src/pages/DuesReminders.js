@@ -50,6 +50,9 @@ export default function DuesReminders() {
   const [extensionDate, setExtensionDate] = useState("");
   const [extensionReason, setExtensionReason] = useState("");
   const [activeTab, setActiveTab] = useState("templates"); // "templates" | "extensions"
+  const [forgiveDialog, setForgiveDialog] = useState(false);
+  const [selectedMemberForForgive, setSelectedMemberForForgive] = useState(null);
+  const [forgiveReason, setForgiveReason] = useState("");
   
   const navigate = useNavigate();
   const token = localStorage.getItem("token");
