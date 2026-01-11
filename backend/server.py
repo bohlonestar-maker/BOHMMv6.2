@@ -8753,7 +8753,7 @@ async def send_test_dues_reminder(
     
     # Send actual test email if SendGrid is configured
     if sendgrid_client:
-        email_result = await send_email_sendgrid(email, subject, html_body, body)
+        email_result = await send_email_smtp(email, subject, html_body, body)
         if email_result.get("success"):
             return {
                 "success": True,
@@ -9102,7 +9102,7 @@ async def check_and_send_dues_reminders():
         """
         
         # Send email via SendGrid
-        email_result = await send_email_sendgrid(email_addr, subject, html_body, body)
+        email_result = await send_email_smtp(email_addr, subject, html_body, body)
         
         if email_result.get("success"):
             logger.info(f"DUES REMINDER sent to {email_addr} ({member.get('handle')}): {subject}")
