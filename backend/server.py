@@ -8039,10 +8039,21 @@ async def check_permission(user: dict, permission_key: str) -> bool:
     user_title = user.get("title", "")
     user_chapter = user.get("chapter", "")
     user_role = user.get("role", "")
+    username = user.get("username", "")
     
     # Admins always have all permissions
     if user_role == "admin":
         return True
+    
+    # Check if user/member is suspended for unpaid dues
+    # First try to get the user's linked member_id
+    user_record = await db.users.find_one({"username": username}, {"member_id": 1})
+    if user_record and user_record.get("member_id"):
+        member = await db.members.find_one({"id": user_record.get("member_id")}, {"dues_suspended": 1})
+        if member and member.get("dues_suspended"):
+            # User is suspended - deny all permissions except basic viewing
+            if permission_key not in ["view_suggestions", "submit_suggestions"]:
+                return False
     
     # Get permissions from database (chapter-specific)
     perms = await get_title_permissions(user_title, user_chapter)
