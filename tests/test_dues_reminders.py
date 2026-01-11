@@ -16,8 +16,12 @@ import os
 BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://fraternity-manager.preview.emergentagent.com').rstrip('/')
 
 # Test credentials
+# Lonestar is National Prez - has full access to dues reminders
 ADMIN_CREDENTIALS = {"username": "Lonestar", "password": "boh2158tc"}
-NON_AUTHORIZED_CREDENTIALS = {"username": "admin", "password": "2X13y75Z"}
+# Note: The "admin" user is actually National SEC, so they ALSO have access
+# For non-authorized testing, we need a user from a different chapter or without Prez/VP/SEC/T title
+# ADVPRookie is AD chapter VP - should NOT have access to dues reminders
+NON_AUTHORIZED_CREDENTIALS = {"username": "ADVPRookie", "password": "boh2158tc"}
 
 
 class TestDuesRemindersAuth:
