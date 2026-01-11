@@ -12481,6 +12481,9 @@ async def update_member_dues_with_payment_info(member_id: str, year: int, month:
             }}
         )
         
+        # Restore Discord permissions if they were suspended
+        await restore_discord_member(member_id)
+        
         # Also update officer_dues collection (for A & D page sync)
         month_str = f"{month_names[month]}_{year_str}"
         existing = await db.officer_dues.find_one({
