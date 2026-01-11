@@ -223,6 +223,7 @@ export default function DuesReminders() {
     if (day === 3) return "bg-yellow-600";
     if (day === 8) return "bg-orange-600";
     if (day === 10) return "bg-red-600";
+    if (day === 30) return "bg-red-900";
     return "bg-slate-600";
   };
 
