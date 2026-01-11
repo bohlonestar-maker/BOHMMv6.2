@@ -7487,10 +7487,18 @@ async def record_dues(record: DuesRecord, current_user: dict = Depends(verify_to
                 "note": record.notes or ""
             }
             
+            # Build update document
+            update_doc = {"dues": dues}
+            
+            # If marking as paid, clear any dues suspension
+            if record.status == "paid":
+                update_doc["dues_suspended"] = False
+                update_doc["dues_suspended_at"] = None
+            
             # Save back to member document
             await db.members.update_one(
                 {"id": record.member_id},
-                {"$set": {"dues": dues}}
+                {"$set": update_doc}
             )
             logger.info(f"Updated member {record.member_id} dues for {record.month}: {record.status}")
     except Exception as e:
