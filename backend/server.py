@@ -1994,23 +1994,23 @@ async def get_members(current_user: dict = Depends(verify_token)):
     # Officer titles that can see their chapter's private info (PM is excluded)
     officer_titles = ['Prez', 'VP', 'S@A', 'Enf', 'SEC', 'CD', 'T', 'ENF']
     
-    # CC and CCLC have limited view - only Chapter, Title, Name, Email, Phone
-    is_limited_view = user_title in ['CC', 'CCLC']
+    # Check permission from database for full member info view
+    has_full_view_permission = await check_permission(current_user, "view_full_member_info")
     
     # Check user permissions
     is_national_member = user_chapter == 'National'
     is_officer = user_title in officer_titles and user_title != 'PM'
     
     # Debug logging
-    print(f"[PRIVACY DEBUG] User: chapter={user_chapter}, title={user_title}, is_national={is_national_member}, is_officer={is_officer}, is_limited_view={is_limited_view}")
+    print(f"[PRIVACY DEBUG] User: chapter={user_chapter}, title={user_title}, is_national={is_national_member}, is_officer={is_officer}, has_full_view={has_full_view_permission}")
     
     for i, member in enumerate(members):
         # Decrypt sensitive data
         members[i] = decrypt_member_sensitive_data(member)
         member_chapter = members[i].get('chapter', '')
         
-        # CC and CCLC: limited view - only Chapter, Title, Name, Email, Phone
-        if is_limited_view:
+        # Users without view_full_member_info: limited view - only Chapter, Title, Name, Email, Phone
+        if not has_full_view_permission and user_role != 'admin':
             limited_member = {
                 "id": members[i].get("id"),
                 "chapter": members[i].get("chapter"),
