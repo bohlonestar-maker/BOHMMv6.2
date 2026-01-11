@@ -1662,6 +1662,91 @@ async def start_discord_activity_bot():
     if DISCORD_BOT_TOKEN:
         asyncio.create_task(start_discord_bot())
 
+@app.on_event("startup")
+async def seed_dues_email_templates():
+    """Initialize default dues reminder email templates if they don't exist"""
+    try:
+        existing = await db.dues_email_templates.count_documents({})
+        if existing == 0:
+            default_templates = [
+                {
+                    "id": "dues_reminder_day3",
+                    "name": "Day 3 - Courtesy Reminder",
+                    "day_trigger": 3,
+                    "subject": "Friendly Reminder: Monthly Dues Payment",
+                    "body": """Hello {{member_name}},
+
+This is a friendly reminder that your monthly dues payment for {{month}} {{year}} has not yet been received.
+
+As a courtesy, we wanted to reach out early to ensure you have time to make your payment. If you've already sent your payment, please disregard this message.
+
+You can make your payment through the Member Store or contact your chapter Secretary for assistance.
+
+Thank you for being a valued member of Brothers of the Highway.
+
+Ride Safe,
+Brothers of the Highway""",
+                    "is_active": True,
+                    "created_at": datetime.now(timezone.utc).isoformat()
+                },
+                {
+                    "id": "dues_reminder_day8",
+                    "name": "Day 8 - Second Reminder",
+                    "day_trigger": 8,
+                    "subject": "Second Notice: Dues Payment Overdue",
+                    "body": """Hello {{member_name}},
+
+This is a second reminder that your dues payment for {{month}} {{year}} is now 8 days overdue.
+
+Please submit your payment as soon as possible to avoid any interruption to your membership privileges.
+
+If you're experiencing financial difficulties or have questions about your payment, please reach out to your chapter Secretary immediately.
+
+Payment options:
+- Member Store (Square payment)
+- Contact your chapter SEC
+
+Thank you for your prompt attention to this matter.
+
+Ride Safe,
+Brothers of the Highway""",
+                    "is_active": True,
+                    "created_at": datetime.now(timezone.utc).isoformat()
+                },
+                {
+                    "id": "dues_reminder_day10",
+                    "name": "Day 10 - Final Notice & Suspension",
+                    "day_trigger": 10,
+                    "subject": "URGENT: Dues Overdue - Membership Privileges Suspended",
+                    "body": """Hello {{member_name}},
+
+IMPORTANT NOTICE
+
+Your dues payment for {{month}} {{year}} is now 10 days overdue. As per our bylaws, your membership privileges have been temporarily suspended.
+
+This means you will not be able to:
+- Access member-only features
+- Attend chapter meetings with voting rights
+- Participate in official club activities
+
+To restore your membership privileges, please submit your payment immediately through the Member Store or contact your chapter Secretary.
+
+If you have any questions or concerns, please reach out to National leadership.
+
+Ride Safe,
+Brothers of the Highway""",
+                    "is_active": True,
+                    "created_at": datetime.now(timezone.utc).isoformat()
+                }
+            ]
+            
+            await db.dues_email_templates.insert_many(default_templates)
+            print("✅ [STARTUP] Dues email templates seeded successfully", file=sys.stderr, flush=True)
+        else:
+            print(f"✅ [STARTUP] Dues email templates already exist ({existing} templates)", file=sys.stderr, flush=True)
+    except Exception as e:
+        print(f"⚠️ [STARTUP] Failed to seed dues email templates: {str(e)}", file=sys.stderr, flush=True)
+
 # Auth endpoints
 @api_router.post("/auth/login", response_model=LoginResponse)
 async def login(login_data: LoginRequest):
