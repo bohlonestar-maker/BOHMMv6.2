@@ -361,6 +361,16 @@ function App() {
               )
             }
           />
+          <Route
+            path="/permissions"
+            element={
+              isAuthenticated ? (
+                <PermissionPanel />
+              ) : (
+                <Navigate to="/" replace />
+              )
+            }
+          />
         </Routes>
         <KeepAlive />
         {isAuthenticated && <MessageNotifier />}
