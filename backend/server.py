@@ -8439,6 +8439,27 @@ async def check_and_send_dues_reminders():
     }
 
 
+def run_dues_reminder_job():
+    """Wrapper to run async dues reminder check in sync context (called by scheduler in thread)"""
+    import asyncio
+    import sys
+    try:
+        print(f"💰 [SCHEDULER] Starting dues reminder check job...", file=sys.stderr, flush=True)
+        
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        try:
+            result = loop.run_until_complete(check_and_send_dues_reminders())
+            print(f"✅ [SCHEDULER] Dues reminder check completed: {result}", file=sys.stderr, flush=True)
+        finally:
+            loop.close()
+            
+    except Exception as e:
+        print(f"❌ [SCHEDULER] Error running dues reminder check: {str(e)}", file=sys.stderr, flush=True)
+        import traceback
+        traceback.print_exc(file=sys.stderr)
+
+
 # ==================== SUGGESTION BOX ENDPOINTS ====================
 
 class SuggestionCreate(BaseModel):
