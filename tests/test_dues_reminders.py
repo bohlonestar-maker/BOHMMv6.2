@@ -13,7 +13,7 @@ import pytest
 import requests
 import os
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://fraternity-manager.preview.emergentagent.com').rstrip('/')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://memberwatch.preview.emergentagent.com').rstrip('/')
 
 # Test credentials
 # Lonestar is National Prez - has full access to dues reminders
