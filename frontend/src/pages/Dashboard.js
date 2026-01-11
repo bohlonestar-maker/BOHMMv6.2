@@ -1060,8 +1060,8 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
                     </DropdownMenuItem>
                   )}
                   
-                  {/* Dues Reminders - National Prez, VP, SEC, T only */}
-                  {userChapter === 'National' && ['Prez', 'VP', 'SEC', 'T'].includes(userTitle) && (
+                  {/* Dues Reminders - users with manage_dues_reminders permission */}
+                  {(userRole === 'admin' || userPermissions?.manage_dues_reminders) && (
                     <DropdownMenuItem 
                       onSelect={(e) => { e.preventDefault(); navigate("/dues-reminders"); }} 
                       className="text-amber-400 focus:bg-amber-900/30 focus:text-amber-300 cursor-pointer"
