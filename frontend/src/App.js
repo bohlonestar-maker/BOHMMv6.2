@@ -372,6 +372,16 @@ function App() {
               )
             }
           />
+          <Route
+            path="/dues-reminders"
+            element={
+              isAuthenticated ? (
+                <DuesReminders />
+              ) : (
+                <Navigate to="/" replace />
+              )
+            }
+          />
         </Routes>
         <KeepAlive />
         {isAuthenticated && <MessageNotifier />}
