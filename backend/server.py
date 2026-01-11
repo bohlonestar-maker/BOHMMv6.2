@@ -623,6 +623,154 @@ async def restore_discord_member(member_id: str) -> dict:
         return {"success": False, "message": str(e)}
 
 
+async def kick_discord_member(member_handle: str, member_id: str, reason: str = "Dues non-payment - 30 days overdue") -> dict:
+    """
+    Kick/remove a member from the Discord server for non-payment.
+    
+    Args:
+        member_handle: The member's handle/nickname in the system
+        member_id: The member's ID in our system
+        reason: Reason for the kick
+        
+    Returns:
+        dict with success status and message
+    """
+    global discord_bot
+    
+    if not discord_bot:
+        return {"success": False, "message": "Discord bot not running"}
+    
+    if not DISCORD_GUILD_ID:
+        return {"success": False, "message": "Discord guild ID not configured"}
+    
+    try:
+        # First, try to find the Discord member by their linked discord_id
+        linked_member = await db.discord_members.find_one({
+            "$or": [
+                {"linked_member_id": member_id},
+                {"linked_handle": member_handle}
+            ]
+        })
+        
+        discord_user_id = None
+        if linked_member:
+            discord_user_id = linked_member.get("discord_id")
+        
+        if not discord_user_id:
+            # Try to find by matching display name to handle
+            sys.stderr.write(f"🔍 [DISCORD] Searching for member {member_handle} to kick...\n")
+            sys.stderr.flush()
+            
+            guild = discord_bot.get_guild(int(DISCORD_GUILD_ID))
+            if not guild:
+                return {"success": False, "message": f"Could not find guild {DISCORD_GUILD_ID}"}
+            
+            # Search for member by nickname or username
+            for discord_member in guild.members:
+                display_name = discord_member.nick or discord_member.display_name or discord_member.name
+                if display_name.lower() == member_handle.lower() or member_handle.lower() in display_name.lower():
+                    discord_user_id = str(discord_member.id)
+                    sys.stderr.write(f"✅ [DISCORD] Matched {member_handle} to Discord user {display_name}\n")
+                    sys.stderr.flush()
+                    break
+        
+        if not discord_user_id:
+            return {"success": False, "message": f"Could not find Discord user for member {member_handle}"}
+        
+        # Get the guild and member
+        guild = discord_bot.get_guild(int(DISCORD_GUILD_ID))
+        if not guild:
+            return {"success": False, "message": f"Could not find guild {DISCORD_GUILD_ID}"}
+        
+        discord_member = guild.get_member(int(discord_user_id))
+        if not discord_member:
+            try:
+                discord_member = await guild.fetch_member(int(discord_user_id))
+            except:
+                return {"success": False, "message": f"Could not find Discord member {discord_user_id} in guild"}
+        
+        # Record the removal in database before kicking
+        await db.discord_removals.insert_one({
+            "member_id": member_id,
+            "member_handle": member_handle,
+            "discord_user_id": discord_user_id,
+            "discord_display_name": discord_member.display_name,
+            "removed_at": datetime.now(timezone.utc).isoformat(),
+            "reason": reason
+        })
+        
+        # Kick the member from the server
+        try:
+            await discord_member.kick(reason=reason)
+            sys.stderr.write(f"🚫 [DISCORD] Kicked {member_handle} from server: {reason}\n")
+            sys.stderr.flush()
+        except Exception as e:
+            error_msg = str(e)
+            sys.stderr.write(f"❌ [DISCORD] Failed to kick {member_handle}: {error_msg}\n")
+            sys.stderr.flush()
+            
+            # Send notification to officers for manual action
+            try:
+                webhook_url = os.environ.get('DISCORD_WEBHOOK_OFFICERS')
+                if webhook_url:
+                    import aiohttp
+                    async with aiohttp.ClientSession() as session:
+                        embed = {
+                            "title": "⚠️ Manual Action Required - Member Removal",
+                            "description": f"**{member_handle}** needs to be removed from the server for 30-day dues non-payment, but the bot couldn't kick them automatically.\n\n**Please manually remove this member.**",
+                            "color": 15105570,  # Orange
+                            "fields": [
+                                {"name": "Reason", "value": reason, "inline": True},
+                                {"name": "Error", "value": error_msg[:200], "inline": False}
+                            ],
+                            "timestamp": datetime.now(timezone.utc).isoformat()
+                        }
+                        await session.post(webhook_url, json={"embeds": [embed]})
+            except:
+                pass
+            
+            return {"success": False, "message": f"Failed to kick member: {error_msg}"}
+        
+        # Send notification to Discord about the removal
+        try:
+            webhook_url = os.environ.get('DISCORD_WEBHOOK_OFFICERS')
+            if webhook_url:
+                import aiohttp
+                async with aiohttp.ClientSession() as session:
+                    embed = {
+                        "title": "🚫 Member Removed - 30 Day Non-Payment",
+                        "description": f"**{member_handle}** has been kicked from the Discord server due to 30+ days of unpaid dues.",
+                        "color": 10038562,  # Dark red
+                        "fields": [
+                            {"name": "Reason", "value": reason, "inline": True}
+                        ],
+                        "timestamp": datetime.now(timezone.utc).isoformat()
+                    }
+                    await session.post(webhook_url, json={"embeds": [embed]})
+        except Exception as e:
+            sys.stderr.write(f"⚠️ [DISCORD] Failed to send removal notification: {str(e)}\n")
+        
+        # Also mark member as removed in the members collection
+        await db.members.update_one(
+            {"id": member_id},
+            {"$set": {
+                "dues_removed": True,
+                "dues_removed_at": datetime.now(timezone.utc).isoformat(),
+                "dues_removed_reason": reason
+            }}
+        )
+        
+        return {
+            "success": True, 
+            "message": f"Kicked {member_handle} from Discord server",
+        }
+        
+    except Exception as e:
+        sys.stderr.write(f"❌ [DISCORD] Error kicking member {member_handle}: {str(e)}\n")
+        sys.stderr.flush()
+        return {"success": False, "message": str(e)}
+
+
 sys.stderr.write("✅ [INIT] Discord configuration loaded\n")
 sys.stderr.flush()
 
