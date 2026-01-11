@@ -10,7 +10,7 @@ import urllib3
 # Suppress SSL warnings
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-BASE_URL = "https://bohtrack-app.preview.emergentagent.com/api"
+BASE_URL = "https://fraternity-manager.preview.emergentagent.com/api"
 
 def login():
     """Login and get token"""
