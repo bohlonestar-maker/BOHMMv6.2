@@ -9302,8 +9302,10 @@ async def check_and_send_dues_reminders():
             })
             emails_sent += 1
             
+            day_trigger = template_to_send.get("day_trigger")
+            
             # If day 10 notice, mark member as suspended and suspend Discord permissions
-            if template_to_send.get("day_trigger") == 10:
+            if day_trigger == 10:
                 await db.members.update_one(
                     {"id": member_id},
                     {"$set": {"dues_suspended": True, "dues_suspended_at": now.isoformat()}}
@@ -9320,6 +9322,21 @@ async def check_and_send_dues_reminders():
                     sys.stderr.flush()
                 else:
                     sys.stderr.write(f"⚠️ [DUES] Discord suspension failed for {member.get('handle')}: {discord_result.get('message')}\n")
+                    sys.stderr.flush()
+            
+            # If day 30 notice, kick member from Discord server
+            elif day_trigger == 30:
+                # Kick from Discord
+                discord_result = await kick_discord_member(
+                    member_handle=member.get("handle", "Unknown"),
+                    member_id=member_id,
+                    reason=f"Dues removal - 30+ days overdue for {current_month}"
+                )
+                if discord_result.get("success"):
+                    sys.stderr.write(f"🚫 [DUES] Discord REMOVED for {member.get('handle')}\n")
+                    sys.stderr.flush()
+                else:
+                    sys.stderr.write(f"⚠️ [DUES] Discord removal failed for {member.get('handle')}: {discord_result.get('message')}\n")
                     sys.stderr.flush()
                     
         except Exception as e:
