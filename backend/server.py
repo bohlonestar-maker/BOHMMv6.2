@@ -8752,7 +8752,7 @@ async def send_test_dues_reminder(
     """
     
     # Send actual test email if SendGrid is configured
-    if sendgrid_client:
+    if smtp_configured:
         email_result = await send_email_smtp(email, subject, html_body, body)
         if email_result.get("success"):
             return {
