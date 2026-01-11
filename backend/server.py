@@ -104,6 +104,25 @@ cipher_suite = Fernet(ENCRYPTION_KEY.encode())
 sys.stderr.write("✅ [INIT] Encryption configured\n")
 sys.stderr.flush()
 
+# SendGrid Email Configuration
+sys.stderr.write("🔧 [INIT] Setting up SendGrid email...\n")
+sys.stderr.flush()
+SENDGRID_API_KEY = os.environ.get('SENDGRID_API_KEY')
+SENDGRID_FROM_EMAIL = os.environ.get('SENDGRID_FROM_EMAIL')
+
+sendgrid_client = None
+if SENDGRID_API_KEY and SENDGRID_FROM_EMAIL:
+    try:
+        from sendgrid import SendGridAPIClient
+        from sendgrid.helpers.mail import Mail, Email, To, Content
+        sendgrid_client = SendGridAPIClient(SENDGRID_API_KEY)
+        sys.stderr.write(f"✅ [INIT] SendGrid configured with sender: {SENDGRID_FROM_EMAIL}\n")
+    except Exception as e:
+        sys.stderr.write(f"⚠️ [INIT] SendGrid setup failed: {str(e)}\n")
+else:
+    sys.stderr.write("⚠️ [INIT] SendGrid not configured (SENDGRID_API_KEY or SENDGRID_FROM_EMAIL missing)\n")
+sys.stderr.flush()
+
 # Discord configuration
 sys.stderr.write("🔧 [INIT] Setting up Discord...\n")
 sys.stderr.flush()
