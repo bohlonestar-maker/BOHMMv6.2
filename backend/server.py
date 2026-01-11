@@ -111,6 +111,8 @@ DISCORD_BOT_TOKEN = os.environ.get('DISCORD_BOT_TOKEN')
 DISCORD_CLIENT_ID = os.environ.get('DISCORD_CLIENT_ID')
 DISCORD_CLIENT_SECRET = os.environ.get('DISCORD_CLIENT_SECRET')
 DISCORD_PUBLIC_KEY = os.environ.get('DISCORD_PUBLIC_KEY')
+DISCORD_GUILD_ID = os.environ.get('DISCORD_GUILD_ID')
+DISCORD_SUSPENDED_ROLE_ID = os.environ.get('DISCORD_SUSPENDED_ROLE_ID')
 
 # Discord bot for activity tracking
 discord_bot = None
