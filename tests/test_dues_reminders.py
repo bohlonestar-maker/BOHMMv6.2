@@ -52,6 +52,8 @@ class TestDuesRemindersAuth:
     
     def test_non_authorized_login_success(self):
         """Test that non-authorized credentials work"""
+        if NON_AUTHORIZED_CREDENTIALS is None:
+            pytest.skip("No non-authorized credentials available for testing")
         response = requests.post(f"{BASE_URL}/api/auth/login", json=NON_AUTHORIZED_CREDENTIALS)
         # If this user doesn't exist or password is wrong, skip the unauthorized tests
         if response.status_code != 200:
