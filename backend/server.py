@@ -8200,8 +8200,9 @@ class DuesEmailTemplateUpdate(BaseModel):
 @api_router.get("/dues-reminders/templates")
 async def get_dues_email_templates(current_user: dict = Depends(verify_token)):
     """Get all dues reminder email templates"""
-    if not can_manage_permissions(current_user):
-        raise HTTPException(status_code=403, detail="Only National Prez, VP, SEC, and T can manage dues reminders")
+    has_access = await check_permission(current_user, "manage_dues_reminders")
+    if not has_access:
+        raise HTTPException(status_code=403, detail="You don't have permission to manage dues reminders")
     
     templates = await db.dues_email_templates.find({}, {"_id": 0}).sort("day_trigger", 1).to_list(10)
     return {"templates": templates}
@@ -8214,8 +8215,9 @@ async def update_dues_email_template(
     current_user: dict = Depends(verify_token)
 ):
     """Update a dues reminder email template"""
-    if not can_manage_permissions(current_user):
-        raise HTTPException(status_code=403, detail="Only National Prez, VP, SEC, and T can manage dues reminders")
+    has_access = await check_permission(current_user, "manage_dues_reminders")
+    if not has_access:
+        raise HTTPException(status_code=403, detail="You don't have permission to manage dues reminders")
     
     result = await db.dues_email_templates.update_one(
         {"id": template_id},
@@ -8239,8 +8241,9 @@ async def update_dues_email_template(
 @api_router.get("/dues-reminders/status")
 async def get_dues_reminder_status(current_user: dict = Depends(verify_token)):
     """Get current dues reminder status - who has been sent what"""
-    if not can_manage_permissions(current_user):
-        raise HTTPException(status_code=403, detail="Only National Prez, VP, SEC, and T can view dues reminder status")
+    has_access = await check_permission(current_user, "manage_dues_reminders")
+    if not has_access:
+        raise HTTPException(status_code=403, detail="You don't have permission to view dues reminder status")
     
     now = datetime.now(timezone.utc)
     month = now.month
@@ -8311,8 +8314,9 @@ async def send_test_dues_reminder(
     current_user: dict = Depends(verify_token)
 ):
     """Send a test dues reminder email"""
-    if not can_manage_permissions(current_user):
-        raise HTTPException(status_code=403, detail="Only National Prez, VP, SEC, and T can send test emails")
+    has_access = await check_permission(current_user, "manage_dues_reminders")
+    if not has_access:
+        raise HTTPException(status_code=403, detail="You don't have permission to send test emails")
     
     # Get template
     template = await db.dues_email_templates.find_one({"id": template_id}, {"_id": 0})
@@ -8347,8 +8351,9 @@ async def send_test_dues_reminder(
 @api_router.post("/dues-reminders/run-check")
 async def run_dues_reminder_check(current_user: dict = Depends(verify_token)):
     """Manually trigger dues reminder check and send emails"""
-    if not can_manage_permissions(current_user):
-        raise HTTPException(status_code=403, detail="Only National Prez, VP, SEC, and T can run dues checks")
+    has_access = await check_permission(current_user, "manage_dues_reminders")
+    if not has_access:
+        raise HTTPException(status_code=403, detail="You don't have permission to run dues checks")
     
     result = await check_and_send_dues_reminders()
     return result
