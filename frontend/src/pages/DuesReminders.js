@@ -607,27 +607,39 @@ export default function DuesReminders() {
                           </div>
                         </td>
                         <td className="p-2 text-right">
-                          {member.has_extension ? (
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => handleRevokeExtension(member.id, member.handle)}
-                              className="text-red-400 hover:text-red-300 hover:bg-red-900/30"
-                            >
-                              <X className="w-4 h-4 mr-1" />
-                              Revoke
-                            </Button>
-                          ) : (
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => openExtensionDialog(member)}
-                              className="text-green-400 hover:text-green-300 hover:bg-green-900/30"
-                            >
-                              <Plus className="w-4 h-4 mr-1" />
-                              Extend
-                            </Button>
-                          )}
+                          <div className="flex gap-1 justify-end">
+                            {member.has_extension ? (
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => handleRevokeExtension(member.id, member.handle)}
+                                className="text-red-400 hover:text-red-300 hover:bg-red-900/30"
+                              >
+                                <X className="w-4 h-4 mr-1" />
+                                Revoke
+                              </Button>
+                            ) : member.reminders_sent?.includes("dues_reminder_day10") ? (
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => handleReinstate(member.id, member.handle)}
+                                className="text-blue-400 hover:text-blue-300 hover:bg-blue-900/30"
+                              >
+                                <RotateCcw className="w-4 h-4 mr-1" />
+                                Reinstate
+                              </Button>
+                            ) : (
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => openExtensionDialog(member)}
+                                className="text-green-400 hover:text-green-300 hover:bg-green-900/30"
+                              >
+                                <Plus className="w-4 h-4 mr-1" />
+                                Extend
+                              </Button>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     ))}
