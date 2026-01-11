@@ -12161,11 +12161,13 @@ async def update_member_dues_with_payment_info(member_id: str, year: int, month:
             "note": payment_note
         }
         
-        # Update member record
+        # Update member record - also clear any dues suspension
         await db.members.update_one(
             {"id": member_id},
             {"$set": {
                 "dues": dues,
+                "dues_suspended": False,
+                "dues_suspended_at": None,
                 "updated_at": datetime.now(timezone.utc).isoformat()
             }}
         )
