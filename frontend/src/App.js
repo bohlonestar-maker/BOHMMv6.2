@@ -127,7 +127,12 @@ function App() {
     if (token && role) {
       setIsAuthenticated(true);
       setUserRole(role);
-      setUserPermissions(permissions ? JSON.parse(permissions) : null);
+      try {
+        setUserPermissions(permissions ? JSON.parse(permissions) : null);
+      } catch (e) {
+        console.error("Failed to parse permissions:", e);
+        setUserPermissions(null);
+      }
       setUserChapter(chapter || null);
       setUserTitle(title || null);
     }
