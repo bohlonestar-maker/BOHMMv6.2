@@ -8731,12 +8731,26 @@ async def check_and_send_dues_reminders():
             })
             emails_sent += 1
             
-            # If day 10 notice, mark member as suspended
+            # If day 10 notice, mark member as suspended and suspend Discord permissions
             if template_to_send.get("day_trigger") == 10:
                 await db.members.update_one(
                     {"id": member_id},
                     {"$set": {"dues_suspended": True, "dues_suspended_at": now.isoformat()}}
                 )
+                
+                # Also suspend their Discord permissions
+                discord_result = await suspend_discord_member(
+                    member_handle=member.get("handle", "Unknown"),
+                    member_id=member_id,
+                    reason=f"Dues suspension - Day 10+ overdue for {current_month}"
+                )
+                if discord_result.get("success"):
+                    sys.stderr.write(f"🚫 [DUES] Discord suspended for {member.get('handle')}\n")
+                    sys.stderr.flush()
+                else:
+                    sys.stderr.write(f"⚠️ [DUES] Discord suspension failed for {member.get('handle')}: {discord_result.get('message')}\n")
+                    sys.stderr.flush()
+                    
         except Exception as e:
             errors.append(f"Failed for {member.get('handle')}: {str(e)}")
     
