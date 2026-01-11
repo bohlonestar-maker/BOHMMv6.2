@@ -2031,10 +2031,10 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
                               
                               // Handle both old boolean format and new object format
                               const paidCount = months.filter(m => 
-                                typeof m === 'object' ? m.status === 'paid' : m === true
+                                m && (typeof m === 'object' ? m.status === 'paid' : m === true)
                               ).length;
                               const lateCount = months.filter(m => 
-                                typeof m === 'object' && m.status === 'late'
+                                m && typeof m === 'object' && m.status === 'late'
                               ).length;
                               
                               return (
