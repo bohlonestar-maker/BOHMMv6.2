@@ -1641,12 +1641,21 @@ async def start_scheduler():
             replace_existing=True
         )
         
+        # Dues reminder check - run daily at 9:30 AM CST (15:30 UTC)
+        scheduler.add_job(
+            run_dues_reminder_job,
+            CronTrigger(hour=15, minute=30),  # 9:30 AM CST = 15:30 UTC
+            id='dues_reminder_check',
+            replace_existing=True
+        )
+        
         scheduler.start()
         sys.stderr.write("✅ [SCHEDULER] Discord notification system started:\n")
         sys.stderr.write("   📅 Event notifications: every 30 minutes\n")
         sys.stderr.write("   🎂 Birthday notifications: daily at 9:00 AM CST\n")
         sys.stderr.write("   🎉 Anniversary notifications: 1st of month at 9:00 AM CST\n")
         sys.stderr.write("   🎆 New Year initialization: Jan 1st at 12:01 AM CST\n")
+        sys.stderr.write("   💰 Dues reminder check: daily at 9:30 AM CST\n")
         sys.stderr.flush()
     except Exception as e:
         sys.stderr.write(f"⚠️ [SCHEDULER] Failed to start scheduler (app will continue without it): {str(e)}\n")
