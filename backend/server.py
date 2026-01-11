@@ -7774,10 +7774,15 @@ async def record_dues(record: DuesRecord, current_user: dict = Depends(verify_to
             # Build update document
             update_doc = {"dues": dues}
             
-            # If marking as paid, clear any dues suspension
+            # If marking as paid, clear any dues suspension and restore Discord permissions
             if record.status == "paid":
                 update_doc["dues_suspended"] = False
                 update_doc["dues_suspended_at"] = None
+                
+                # Restore Discord permissions if they were suspended
+                discord_result = await restore_discord_member(record.member_id)
+                if discord_result.get("success"):
+                    logger.info(f"Discord permissions restored for {record.member_id}")
             
             # Save back to member document
             await db.members.update_one(
