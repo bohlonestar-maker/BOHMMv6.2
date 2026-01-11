@@ -1060,6 +1060,17 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
                     </DropdownMenuItem>
                   )}
                   
+                  {/* Dues Reminders - National Prez, VP, SEC, T only */}
+                  {userChapter === 'National' && ['Prez', 'VP', 'SEC', 'T'].includes(userTitle) && (
+                    <DropdownMenuItem 
+                      onSelect={(e) => { e.preventDefault(); navigate("/dues-reminders"); }} 
+                      className="text-amber-400 focus:bg-amber-900/30 focus:text-amber-300 cursor-pointer"
+                    >
+                      <Mail className="w-4 h-4 mr-2" />
+                      Dues Reminders
+                    </DropdownMenuItem>
+                  )}
+                  
                   {/* Message Monitor - Lonestar only */}
                   {localStorage.getItem("username") === "Lonestar" && (
                     <>
