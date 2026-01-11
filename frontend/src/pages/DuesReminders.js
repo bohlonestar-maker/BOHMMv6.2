@@ -200,6 +200,25 @@ export default function DuesReminders() {
     }
   };
 
+  const handleReinstate = async (memberId, handle) => {
+    if (!confirm(`Reinstate ${handle}? This will restore their Discord permissions.`)) return;
+    
+    try {
+      const response = await axios.post(`${API}/dues-reminders/reinstate/${memberId}`, {}, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      
+      if (response.data.discord_restored) {
+        toast.success(`${handle} reinstated and Discord permissions restored`);
+      } else {
+        toast.success(`${handle} reinstated. Discord: ${response.data.discord_message}`);
+      }
+      fetchData();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || "Failed to reinstate member");
+    }
+  };
+
   const getDayBadgeColor = (day) => {
     if (day === 3) return "bg-yellow-600";
     if (day === 8) return "bg-orange-600";
