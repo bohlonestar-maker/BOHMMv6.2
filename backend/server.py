@@ -8733,19 +8733,52 @@ async def send_test_dues_reminder(
     body = body.replace("{{month}}", month_names[now.month - 1])
     body = body.replace("{{year}}", str(now.year))
     
-    # Try to send email using Discord webhook or log it
-    logger.info(f"TEST EMAIL to {email}:\nSubject: {subject}\nBody: {body}")
+    # Convert plain text body to HTML
+    html_body = f"""
+    <html>
+    <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+        <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+            {body.replace(chr(10), '<br>')}
+        </div>
+    </body>
+    </html>
+    """
     
-    # For now, just log - actual email sending would need an email service integration
-    return {
-        "success": True,
-        "message": f"Test email logged (actual sending requires email service integration)",
-        "preview": {
-            "to": email,
-            "subject": subject,
-            "body": body
+    # Send actual test email if SendGrid is configured
+    if sendgrid_client:
+        email_result = await send_email_sendgrid(email, subject, html_body, body)
+        if email_result.get("success"):
+            return {
+                "success": True,
+                "message": f"Test email sent to {email}",
+                "preview": {
+                    "to": email,
+                    "subject": subject,
+                    "body": body
+                }
+            }
+        else:
+            return {
+                "success": False,
+                "message": f"Failed to send: {email_result.get('message')}",
+                "preview": {
+                    "to": email,
+                    "subject": subject,
+                    "body": body
+                }
+            }
+    else:
+        # Fallback to preview only if SendGrid not configured
+        logger.info(f"TEST EMAIL preview for {email}:\nSubject: {subject}")
+        return {
+            "success": True,
+            "message": "SendGrid not configured - showing preview only",
+            "preview": {
+                "to": email,
+                "subject": subject,
+                "body": body
+            }
         }
-    }
 
 
 @api_router.post("/dues-reminders/run-check")
