@@ -8251,11 +8251,13 @@ async def get_dues_reminder_status(current_user: dict = Depends(verify_token)):
         
         if not is_paid:
             member_sent = sent_by_member.get(member.get("id"), [])
+            # Decrypt email for display
+            decrypted_email = decrypt_data(member.get("email", "")) if member.get("email") else "No email"
             unpaid_members.append({
                 "id": member.get("id"),
                 "handle": member.get("handle"),
                 "name": member.get("name"),
-                "email": member.get("email"),
+                "email": decrypted_email,
                 "chapter": member.get("chapter"),
                 "reminders_sent": [s.get("template_id") for s in member_sent],
                 "last_reminder_date": max([s.get("sent_at") for s in member_sent]) if member_sent else None
