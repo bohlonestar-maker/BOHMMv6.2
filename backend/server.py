@@ -7986,7 +7986,89 @@ async def get_dues_records(
         query["quarter"] = quarter
     
     records = await db.officer_dues.find(query, {"_id": 0}).to_list(length=None)
-    return records
+    
+    # Enrich with forgiven and extension status from members collection
+    now = datetime.now(timezone.utc)
+    current_month = now.strftime("%b %Y")
+    
+    # Get all active extensions
+    extensions = await db.dues_extensions.find({}).to_list(100)
+    active_extensions = {}
+    for ext in extensions:
+        try:
+            ext_date = datetime.fromisoformat(ext.get("extension_until", "").replace("Z", "+00:00"))
+            if ext_date > now:
+                active_extensions[ext.get("member_id")] = ext.get("extension_until")
+        except:
+            pass
+    
+    # Get all members to check for forgiven dues
+    all_members = await db.members.find({}, {"_id": 0, "id": 1, "dues": 1}).to_list(500)
+    year_str = str(now.year)
+    month_idx = now.month - 1
+    
+    forgiven_members = {}
+    for member in all_members:
+        member_id = member.get("id")
+        dues = member.get("dues", {})
+        if year_str in dues:
+            year_dues = dues[year_str]
+            if isinstance(year_dues, list) and len(year_dues) > month_idx:
+                month_data = year_dues[month_idx]
+                if isinstance(month_data, dict) and month_data.get("forgiven"):
+                    forgiven_members[member_id] = {
+                        "forgiven_by": month_data.get("forgiven_by"),
+                        "note": month_data.get("note", "")
+                    }
+    
+    # Add extension and forgiven status to records for current month
+    enriched_records = []
+    for record in records:
+        record_copy = dict(record)
+        member_id = record.get("member_id")
+        
+        # Check if member has active extension
+        if member_id in active_extensions:
+            record_copy["has_extension"] = True
+            record_copy["extension_until"] = active_extensions[member_id]
+        
+        # Check if dues were forgiven for current month
+        if record.get("month") == current_month and member_id in forgiven_members:
+            record_copy["status"] = "forgiven"
+            record_copy["forgiven"] = True
+            record_copy["forgiven_by"] = forgiven_members[member_id].get("forgiven_by")
+            record_copy["notes"] = forgiven_members[member_id].get("note", record.get("notes", ""))
+        
+        enriched_records.append(record_copy)
+    
+    # Also add records for members with extensions or forgiven dues who don't have records yet
+    existing_member_months = {(r.get("member_id"), r.get("month")) for r in records}
+    
+    for member_id, ext_until in active_extensions.items():
+        if (member_id, current_month) not in existing_member_months:
+            enriched_records.append({
+                "id": str(uuid.uuid4()),
+                "member_id": member_id,
+                "month": current_month,
+                "status": "extended",
+                "has_extension": True,
+                "extension_until": ext_until,
+                "notes": f"Extended until {ext_until[:10]}"
+            })
+    
+    for member_id, forgive_info in forgiven_members.items():
+        if (member_id, current_month) not in existing_member_months and member_id not in active_extensions:
+            enriched_records.append({
+                "id": str(uuid.uuid4()),
+                "member_id": member_id,
+                "month": current_month,
+                "status": "forgiven",
+                "forgiven": True,
+                "forgiven_by": forgive_info.get("forgiven_by"),
+                "notes": forgive_info.get("note", "")
+            })
+    
+    return enriched_records
 
 @api_router.post("/officer-tracking/dues")
 async def record_dues(record: DuesRecord, current_user: dict = Depends(verify_token)):
