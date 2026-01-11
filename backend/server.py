@@ -7131,8 +7131,8 @@ async def get_attendance_records(
     end_date: Optional[str] = None,
     current_user: dict = Depends(verify_token)
 ):
-    """Get attendance records - officers can view (except CC/CCLC)"""
-    if not can_access_ad(current_user):
+    """Get attendance records - based on permissions"""
+    if not await check_ad_access(current_user):
         raise HTTPException(status_code=403, detail="You don't have permission to access this page")
     
     query = {}
