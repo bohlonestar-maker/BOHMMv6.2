@@ -7989,7 +7989,7 @@ async def get_dues_records(
     
     # Enrich with forgiven and extension status from members collection
     now = datetime.now(timezone.utc)
-    current_month = now.strftime("%b %Y")
+    current_month = f"{now.strftime('%b')}_{now.year}"  # Format: "Jan_2026"
     
     # Get all active extensions
     extensions = await db.dues_extensions.find({}).to_list(100)
