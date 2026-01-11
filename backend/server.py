@@ -9167,6 +9167,76 @@ async def reinstate_member(
     }
 
 
+class ForgiveDuesRequest(BaseModel):
+    member_id: str
+    reason: str = ""
+
+
+@api_router.post("/dues-reminders/forgive")
+async def forgive_dues(
+    request: ForgiveDuesRequest,
+    current_user: dict = Depends(verify_token)
+):
+    """Forgive/waive dues for a member for the current month"""
+    has_access = await check_permission(current_user, "manage_dues_reminders")
+    if not has_access:
+        raise HTTPException(status_code=403, detail="You don't have permission to forgive dues")
+    
+    # Get member info
+    member = await db.members.find_one({"id": request.member_id}, {"_id": 0})
+    if not member:
+        raise HTTPException(status_code=404, detail="Member not found")
+    
+    now = datetime.now(timezone.utc)
+    year = now.year
+    month = now.month
+    year_str = str(year)
+    month_idx = month - 1
+    month_names = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+    
+    # Get current dues structure
+    dues = member.get("dues", {})
+    
+    # Initialize year if needed
+    if year_str not in dues:
+        dues[year_str] = [None] * 12
+    
+    # Ensure it's a list
+    if not isinstance(dues[year_str], list):
+        dues[year_str] = [None] * 12
+    
+    # Mark as forgiven with note
+    dues[year_str][month_idx] = {
+        "status": "paid",
+        "note": f"Forgiven by {current_user.get('username')}" + (f": {request.reason}" if request.reason else ""),
+        "forgiven": True,
+        "forgiven_by": current_user.get("username"),
+        "forgiven_at": now.isoformat()
+    }
+    
+    # Update member record - also clear any suspension
+    await db.members.update_one(
+        {"id": request.member_id},
+        {"$set": {
+            "dues": dues,
+            "dues_suspended": False,
+            "dues_suspended_at": None,
+            "updated_at": now.isoformat()
+        }}
+    )
+    
+    # Restore Discord permissions if they were suspended
+    discord_result = await restore_discord_member(request.member_id)
+    
+    logger.info(f"Dues forgiven for {member.get('handle')} ({month_names[month_idx]} {year}) by {current_user.get('username')}")
+    
+    return {
+        "success": True,
+        "message": f"Dues forgiven for {member.get('handle')} for {month_names[month_idx]} {year}",
+        "discord_restored": discord_result.get("success", False)
+    }
+
+
 async def has_active_extension(member_id: str) -> bool:
     """Check if a member has an active dues extension"""
     extension = await db.dues_extensions.find_one({"member_id": member_id})
