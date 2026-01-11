@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { ArrowLeft, Mail, Save, Send, RefreshCw, AlertTriangle, CheckCircle, Clock, Users, Shield, Calendar, X, Plus, RotateCcw } from "lucide-react";
+import { ArrowLeft, Mail, Save, Send, RefreshCw, AlertTriangle, CheckCircle, Clock, Users, Shield, Calendar, X, Plus, RotateCcw, Gift } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
