@@ -770,6 +770,38 @@ export default function DuesReminders() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Forgive Dialog */}
+      <Dialog open={forgiveDialog} onOpenChange={setForgiveDialog}>
+        <DialogContent className="bg-slate-800 border-slate-700">
+          <DialogHeader>
+            <DialogTitle className="text-white">Forgive Dues</DialogTitle>
+            <DialogDescription className="text-slate-400">
+              Waive dues for <span className="text-white font-medium">{selectedMemberForForgive?.handle}</span> for {status?.current_month}. 
+              This will mark their dues as paid and restore any suspended permissions.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <label className="text-sm text-slate-300 mb-2 block">Reason (optional)</label>
+            <Textarea
+              value={forgiveReason}
+              onChange={(e) => setForgiveReason(e.target.value)}
+              className="bg-slate-700 border-slate-600 text-white"
+              placeholder="e.g., Hardship waiver, First month free, etc..."
+              rows={3}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setForgiveDialog(false)} className="border-slate-600 text-slate-300">
+              Cancel
+            </Button>
+            <Button onClick={handleForgive} className="bg-purple-600 hover:bg-purple-700">
+              <Gift className="w-4 h-4 mr-2" />
+              Forgive Dues
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
