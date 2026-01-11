@@ -635,6 +635,54 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+
+async def send_email_sendgrid(to_email: str, subject: str, html_body: str, plain_body: str = None) -> dict:
+    """
+    Send email via SendGrid
+    
+    Args:
+        to_email: Recipient email address
+        subject: Email subject line
+        html_body: HTML content of the email
+        plain_body: Plain text fallback (optional)
+        
+    Returns:
+        dict with success status and message
+    """
+    if not sendgrid_client:
+        logger.warning(f"SendGrid not configured - email to {to_email} not sent")
+        return {"success": False, "message": "SendGrid not configured"}
+    
+    try:
+        from sendgrid.helpers.mail import Mail, Email, To, Content, HtmlContent
+        
+        message = Mail(
+            from_email=Email(SENDGRID_FROM_EMAIL),
+            to_emails=To(to_email),
+            subject=subject
+        )
+        
+        # Add HTML content
+        message.add_content(Content("text/html", html_body))
+        
+        # Add plain text fallback if provided
+        if plain_body:
+            message.add_content(Content("text/plain", plain_body))
+        
+        response = sendgrid_client.send(message)
+        
+        if response.status_code in [200, 201, 202]:
+            logger.info(f"Email sent successfully to {to_email}: {subject}")
+            return {"success": True, "message": f"Email sent to {to_email}"}
+        else:
+            logger.error(f"SendGrid returned status {response.status_code} for {to_email}")
+            return {"success": False, "message": f"SendGrid error: status {response.status_code}"}
+            
+    except Exception as e:
+        logger.error(f"Failed to send email to {to_email}: {str(e)}")
+        return {"success": False, "message": str(e)}
+
+
 def encrypt_data(data: str) -> str:
     """Encrypt data using AES-256 encryption"""
     if not data:
