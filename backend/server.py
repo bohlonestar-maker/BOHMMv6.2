@@ -673,9 +673,11 @@ async def send_email_smtp(to_email: str, subject: str, html_body: str, plain_bod
         
         # Send email
         if SMTP_USE_TLS:
+            # Port 587 with STARTTLS
             server = smtplib.SMTP(SMTP_HOST, SMTP_PORT)
             server.starttls()
         else:
+            # Port 465 with SSL
             server = smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT)
         
         server.login(SMTP_USERNAME, SMTP_PASSWORD)
