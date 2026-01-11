@@ -538,7 +538,9 @@ function OfficerTracking() {
       excused: <Badge className="bg-yellow-600"><Clock className="w-3 h-3 mr-1" />Excused</Badge>,
       paid: <Badge className="bg-green-600"><CheckCircle className="w-3 h-3 mr-1" />Paid</Badge>,
       unpaid: <Badge className="bg-red-600"><XCircle className="w-3 h-3 mr-1" />Not Paid</Badge>,
-      late: <Badge className="bg-orange-500"><Clock className="w-3 h-3 mr-1" />Late</Badge>
+      late: <Badge className="bg-orange-500"><Clock className="w-3 h-3 mr-1" />Late</Badge>,
+      forgiven: <Badge className="bg-purple-600"><Gift className="w-3 h-3 mr-1" />Forgiven</Badge>,
+      extended: <Badge className="bg-blue-600"><Shield className="w-3 h-3 mr-1" />Extended</Badge>
     };
     return badges[status] || <Badge>{status}</Badge>;
   };
