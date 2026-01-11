@@ -38,9 +38,12 @@ Build a member management application with attendance tracking, dues management,
 - **Automated Emails:** System sends reminder emails on days 3, 8, and 10 of each month for unpaid dues
 - **Configurable Templates:** Admins can edit email subject and body for each reminder day
 - **Permission Suspension:** On day 10, members with unpaid dues are automatically suspended
-- **Status Dashboard:** Shows unpaid members count, suspended count, reminders sent
+- **Discord Integration:** When suspended, member's Discord roles are removed and saved for later restoration
+- **Auto-Restoration:** When dues are paid (manual or Square sync), Discord roles are automatically restored
+- **Custom Extensions:** Admins can grant payment extensions to specific members, preventing reminders and suspension until the extension expires
+- **Status Dashboard:** Shows unpaid members count, suspended count, active extensions
 - **Manual Trigger:** "Run Check Now" button to manually trigger reminder check
-- **Scheduled Job:** Runs daily at 9:30 AM CST via APScheduler
+- **Scheduled Job:** Runs daily at 12:30 AM CST via APScheduler
 
 ### What's Been Implemented
 
