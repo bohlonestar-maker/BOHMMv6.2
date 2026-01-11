@@ -222,6 +222,31 @@ export default function DuesReminders() {
     }
   };
 
+  const openForgiveDialog = (member) => {
+    setSelectedMemberForForgive(member);
+    setForgiveReason("");
+    setForgiveDialog(true);
+  };
+
+  const handleForgive = async () => {
+    if (!selectedMemberForForgive) return;
+    
+    try {
+      await axios.post(`${API}/dues-reminders/forgive`, {
+        member_id: selectedMemberForForgive.id,
+        reason: forgiveReason
+      }, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      
+      toast.success(`Dues forgiven for ${selectedMemberForForgive.handle}`);
+      setForgiveDialog(false);
+      fetchData();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || "Failed to forgive dues");
+    }
+  };
+
   const getDayBadgeColor = (day) => {
     if (day === 3) return "bg-yellow-600";
     if (day === 8) return "bg-orange-600";
