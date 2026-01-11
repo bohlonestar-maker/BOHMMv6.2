@@ -7612,9 +7612,9 @@ async def debug_payment_orders(current_user: dict = Depends(verify_token)):
 
 @api_router.get("/officer-tracking/summary")
 async def get_tracking_summary(current_user: dict = Depends(verify_token)):
-    """Get summary of attendance and dues by chapter - all officers can view"""
-    if not is_any_officer(current_user) and current_user.get('role') != 'admin':
-        raise HTTPException(status_code=403, detail="Only officers can access this page")
+    """Get summary of attendance and dues by chapter - officers can view (except CC/CCLC)"""
+    if not can_access_ad(current_user):
+        raise HTTPException(status_code=403, detail="You don't have permission to access this page")
     
     # Check if user can view National chapter A&D
     can_view_national = can_view_national_ad(current_user)
