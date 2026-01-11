@@ -872,6 +872,7 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
 
   // Filter by chapter first, then by search term
   const filteredMembers = members.filter((member) => {
+    if (!member) return false;
     // Chapter filter
     if (selectedChapter !== "All" && member.chapter !== selectedChapter) {
       return false;
@@ -879,10 +880,10 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
     // Search filter
     const search = searchTerm.toLowerCase();
     return (
-      member.name.toLowerCase().includes(search) ||
-      member.handle.toLowerCase().includes(search) ||
-      member.email.toLowerCase().includes(search) ||
-      member.chapter.toLowerCase().includes(search)
+      (member.name || '').toLowerCase().includes(search) ||
+      (member.handle || '').toLowerCase().includes(search) ||
+      (member.email || '').toLowerCase().includes(search) ||
+      (member.chapter || '').toLowerCase().includes(search)
     );
   });
 
