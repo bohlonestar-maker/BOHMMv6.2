@@ -7065,9 +7065,9 @@ async def get_attendance_records(
     end_date: Optional[str] = None,
     current_user: dict = Depends(verify_token)
 ):
-    """Get attendance records - all officers can view"""
-    if not is_any_officer(current_user) and current_user.get('role') != 'admin':
-        raise HTTPException(status_code=403, detail="Only officers can access this page")
+    """Get attendance records - officers can view (except CC/CCLC)"""
+    if not can_access_ad(current_user):
+        raise HTTPException(status_code=403, detail="You don't have permission to access this page")
     
     query = {}
     if chapter:
