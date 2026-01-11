@@ -7927,61 +7927,73 @@ def can_manage_permissions(user: dict) -> bool:
     return user_title in ["Prez", "VP", "SEC", "T"]
 
 
-async def get_title_permissions(title: str) -> dict:
-    """Get permissions for a specific title from database"""
-    record = await db.role_permissions.find_one({"title": title}, {"_id": 0})
+async def get_title_permissions(title: str, chapter: str = None) -> dict:
+    """Get permissions for a specific title and chapter from database"""
+    if chapter:
+        record = await db.role_permissions.find_one({"title": title, "chapter": chapter}, {"_id": 0})
+    else:
+        # Fallback: try to find any matching title (for backwards compatibility)
+        record = await db.role_permissions.find_one({"title": title}, {"_id": 0})
+    
     if record:
         return record.get("permissions", {})
     return {}
 
 
 async def check_permission(user: dict, permission_key: str) -> bool:
-    """Check if user has a specific permission based on their title"""
+    """Check if user has a specific permission based on their title and chapter"""
     user_title = user.get("title", "")
+    user_chapter = user.get("chapter", "")
     user_role = user.get("role", "")
     
     # Admins always have all permissions
     if user_role == "admin":
         return True
     
-    # Get permissions from database
-    perms = await get_title_permissions(user_title)
+    # Get permissions from database (chapter-specific)
+    perms = await get_title_permissions(user_title, user_chapter)
     return perms.get(permission_key, False)
 
 
 @api_router.get("/permissions/definitions")
 async def get_permission_definitions(current_user: dict = Depends(verify_token)):
-    """Get list of available permissions and titles"""
+    """Get list of available permissions, titles, and chapters"""
     if not can_manage_permissions(current_user):
         raise HTTPException(status_code=403, detail="Only National Prez, VP, SEC, and T can manage permissions")
     
     return {
         "permissions": AVAILABLE_PERMISSIONS,
-        "titles": MANAGEABLE_TITLES
+        "titles": MANAGEABLE_TITLES,
+        "chapters": CHAPTERS
     }
 
 
 @api_router.get("/permissions/all")
 async def get_all_permissions(current_user: dict = Depends(verify_token)):
-    """Get all role permissions"""
+    """Get all role permissions organized by chapter"""
     if not can_manage_permissions(current_user):
         raise HTTPException(status_code=403, detail="Only National Prez, VP, SEC, and T can manage permissions")
     
-    records = await db.role_permissions.find({}, {"_id": 0}).to_list(100)
+    records = await db.role_permissions.find({}, {"_id": 0}).to_list(500)
     
-    # Convert to dict keyed by title
+    # Organize by chapter -> title -> permissions
     result = {}
-    for record in records:
-        result[record.get("title")] = record.get("permissions", {})
+    for chapter in CHAPTERS:
+        result[chapter] = {}
+        for record in records:
+            if record.get("chapter") == chapter:
+                result[chapter][record.get("title")] = record.get("permissions", {})
     
     return {
-        "permissions_by_title": result,
+        "permissions_by_chapter": result,
         "available_permissions": AVAILABLE_PERMISSIONS,
-        "titles": MANAGEABLE_TITLES
+        "titles": MANAGEABLE_TITLES,
+        "chapters": CHAPTERS
     }
 
 
 class PermissionUpdate(BaseModel):
+    chapter: str
     title: str
     permission_key: str
     value: bool
@@ -7989,9 +8001,12 @@ class PermissionUpdate(BaseModel):
 
 @api_router.put("/permissions/update")
 async def update_permission(update: PermissionUpdate, current_user: dict = Depends(verify_token)):
-    """Update a single permission for a title"""
+    """Update a single permission for a chapter + title"""
     if not can_manage_permissions(current_user):
         raise HTTPException(status_code=403, detail="Only National Prez, VP, SEC, and T can manage permissions")
+    
+    if update.chapter not in CHAPTERS:
+        raise HTTPException(status_code=400, detail=f"Invalid chapter: {update.chapter}")
     
     if update.title not in MANAGEABLE_TITLES:
         raise HTTPException(status_code=400, detail=f"Invalid title: {update.title}")
@@ -8002,7 +8017,7 @@ async def update_permission(update: PermissionUpdate, current_user: dict = Depen
     
     # Update the permission
     result = await db.role_permissions.update_one(
-        {"title": update.title},
+        {"chapter": update.chapter, "title": update.title},
         {
             "$set": {
                 f"permissions.{update.permission_key}": update.value,
@@ -8013,21 +8028,25 @@ async def update_permission(update: PermissionUpdate, current_user: dict = Depen
         upsert=True
     )
     
-    logger.info(f"Permission updated: {update.title}.{update.permission_key} = {update.value} by {current_user.get('username')}")
+    logger.info(f"Permission updated: {update.chapter}/{update.title}.{update.permission_key} = {update.value} by {current_user.get('username')}")
     
-    return {"success": True, "message": f"Updated {update.title}.{update.permission_key} to {update.value}"}
+    return {"success": True, "message": f"Updated {update.chapter}/{update.title}.{update.permission_key} to {update.value}"}
 
 
 class BulkPermissionUpdate(BaseModel):
+    chapter: str
     title: str
     permissions: dict
 
 
 @api_router.put("/permissions/bulk-update")
 async def bulk_update_permissions(update: BulkPermissionUpdate, current_user: dict = Depends(verify_token)):
-    """Update all permissions for a title at once"""
+    """Update all permissions for a chapter + title at once"""
     if not can_manage_permissions(current_user):
         raise HTTPException(status_code=403, detail="Only National Prez, VP, SEC, and T can manage permissions")
+    
+    if update.chapter not in CHAPTERS:
+        raise HTTPException(status_code=400, detail=f"Invalid chapter: {update.chapter}")
     
     if update.title not in MANAGEABLE_TITLES:
         raise HTTPException(status_code=400, detail=f"Invalid title: {update.title}")
@@ -8040,7 +8059,7 @@ async def bulk_update_permissions(update: BulkPermissionUpdate, current_user: di
     
     # Update all permissions
     await db.role_permissions.update_one(
-        {"title": update.title},
+        {"chapter": update.chapter, "title": update.title},
         {
             "$set": {
                 "permissions": update.permissions,
@@ -8051,9 +8070,9 @@ async def bulk_update_permissions(update: BulkPermissionUpdate, current_user: di
         upsert=True
     )
     
-    logger.info(f"Bulk permissions updated for {update.title} by {current_user.get('username')}")
+    logger.info(f"Bulk permissions updated for {update.chapter}/{update.title} by {current_user.get('username')}")
     
-    return {"success": True, "message": f"Updated all permissions for {update.title}"}
+    return {"success": True, "message": f"Updated all permissions for {update.chapter}/{update.title}"}
 
 
 # ==================== SUGGESTION BOX ENDPOINTS ====================
