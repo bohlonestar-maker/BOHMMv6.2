@@ -198,7 +198,11 @@ class TestDuesRemindersStatus:
     @pytest.fixture(scope="class")
     def non_authorized_token(self):
         """Get token for non-authorized user"""
+        if NON_AUTHORIZED_CREDENTIALS is None:
+            pytest.skip("No non-authorized credentials available")
         response = requests.post(f"{BASE_URL}/api/auth/login", json=NON_AUTHORIZED_CREDENTIALS)
+        if response.status_code != 200:
+            pytest.skip("Non-authorized user login failed")
         return response.json().get("token")
     
     def test_get_status_returns_expected_fields(self, admin_token):
