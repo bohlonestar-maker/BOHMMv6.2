@@ -7342,8 +7342,8 @@ async def record_dues(record: DuesRecord, current_user: dict = Depends(verify_to
 @api_router.get("/officer-tracking/dues/history/{member_id}")
 async def get_member_dues_history(member_id: str, current_user: dict = Depends(verify_token)):
     """Get dues payment history for a member including Square transaction info"""
-    if not is_any_officer(current_user) and current_user.get('role') != 'admin':
-        raise HTTPException(status_code=403, detail="Only officers can view dues history")
+    if not can_access_ad(current_user):
+        raise HTTPException(status_code=403, detail="You don't have permission to view dues history")
     
     # Get member info
     member = await db.members.find_one({"id": member_id}, {"_id": 0})
