@@ -8675,6 +8675,173 @@ async def run_dues_reminder_check(current_user: dict = Depends(verify_token)):
     return result
 
 
+# ==================== DUES EXTENSION ENDPOINTS ====================
+
+class DuesExtensionCreate(BaseModel):
+    member_id: str
+    extension_until: str  # ISO date string (YYYY-MM-DD)
+    reason: str = ""
+
+class DuesExtensionUpdate(BaseModel):
+    extension_until: str
+    reason: str = ""
+
+
+@api_router.get("/dues-reminders/extensions")
+async def get_dues_extensions(current_user: dict = Depends(verify_token)):
+    """Get all active dues extensions"""
+    has_access = await check_permission(current_user, "manage_dues_reminders")
+    if not has_access:
+        raise HTTPException(status_code=403, detail="You don't have permission to view dues extensions")
+    
+    now = datetime.now(timezone.utc)
+    
+    # Get all extensions (including expired for history)
+    extensions = await db.dues_extensions.find({}, {"_id": 0}).sort("extension_until", -1).to_list(100)
+    
+    # Enrich with member info
+    enriched = []
+    for ext in extensions:
+        member = await db.members.find_one({"id": ext.get("member_id")}, {"_id": 0, "handle": 1, "name": 1, "chapter": 1})
+        if member:
+            ext["member_handle"] = member.get("handle")
+            ext["member_name"] = member.get("name")
+            ext["member_chapter"] = member.get("chapter")
+        
+        # Check if still active
+        try:
+            ext_date = datetime.fromisoformat(ext.get("extension_until", "").replace("Z", "+00:00"))
+            ext["is_active"] = ext_date > now
+        except:
+            ext["is_active"] = False
+        
+        enriched.append(ext)
+    
+    return {"extensions": enriched}
+
+
+@api_router.post("/dues-reminders/extensions")
+async def create_dues_extension(
+    extension: DuesExtensionCreate,
+    current_user: dict = Depends(verify_token)
+):
+    """Grant a dues payment extension to a member"""
+    has_access = await check_permission(current_user, "manage_dues_reminders")
+    if not has_access:
+        raise HTTPException(status_code=403, detail="You don't have permission to grant extensions")
+    
+    # Verify member exists
+    member = await db.members.find_one({"id": extension.member_id}, {"_id": 0, "handle": 1})
+    if not member:
+        raise HTTPException(status_code=404, detail="Member not found")
+    
+    # Parse and validate the extension date
+    try:
+        ext_date = datetime.fromisoformat(extension.extension_until)
+        if ext_date.tzinfo is None:
+            ext_date = ext_date.replace(tzinfo=timezone.utc)
+    except:
+        raise HTTPException(status_code=400, detail="Invalid date format. Use YYYY-MM-DD")
+    
+    now = datetime.now(timezone.utc)
+    if ext_date <= now:
+        raise HTTPException(status_code=400, detail="Extension date must be in the future")
+    
+    # Create or update the extension
+    extension_data = {
+        "member_id": extension.member_id,
+        "extension_until": ext_date.isoformat(),
+        "reason": extension.reason,
+        "granted_by": current_user.get("username"),
+        "granted_at": now.isoformat(),
+        "updated_at": now.isoformat()
+    }
+    
+    await db.dues_extensions.update_one(
+        {"member_id": extension.member_id},
+        {"$set": extension_data},
+        upsert=True
+    )
+    
+    logger.info(f"Dues extension granted to {member.get('handle')} until {ext_date.date()} by {current_user.get('username')}")
+    
+    return {
+        "success": True,
+        "message": f"Extension granted to {member.get('handle')} until {ext_date.strftime('%B %d, %Y')}",
+        "extension": extension_data
+    }
+
+
+@api_router.put("/dues-reminders/extensions/{member_id}")
+async def update_dues_extension(
+    member_id: str,
+    update: DuesExtensionUpdate,
+    current_user: dict = Depends(verify_token)
+):
+    """Update an existing dues extension"""
+    has_access = await check_permission(current_user, "manage_dues_reminders")
+    if not has_access:
+        raise HTTPException(status_code=403, detail="You don't have permission to update extensions")
+    
+    # Check if extension exists
+    existing = await db.dues_extensions.find_one({"member_id": member_id})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Extension not found")
+    
+    # Parse the new date
+    try:
+        ext_date = datetime.fromisoformat(update.extension_until)
+        if ext_date.tzinfo is None:
+            ext_date = ext_date.replace(tzinfo=timezone.utc)
+    except:
+        raise HTTPException(status_code=400, detail="Invalid date format")
+    
+    await db.dues_extensions.update_one(
+        {"member_id": member_id},
+        {"$set": {
+            "extension_until": ext_date.isoformat(),
+            "reason": update.reason,
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+            "updated_by": current_user.get("username")
+        }}
+    )
+    
+    return {"success": True, "message": "Extension updated"}
+
+
+@api_router.delete("/dues-reminders/extensions/{member_id}")
+async def revoke_dues_extension(
+    member_id: str,
+    current_user: dict = Depends(verify_token)
+):
+    """Revoke a dues extension"""
+    has_access = await check_permission(current_user, "manage_dues_reminders")
+    if not has_access:
+        raise HTTPException(status_code=403, detail="You don't have permission to revoke extensions")
+    
+    result = await db.dues_extensions.delete_one({"member_id": member_id})
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Extension not found")
+    
+    logger.info(f"Dues extension revoked for member {member_id} by {current_user.get('username')}")
+    
+    return {"success": True, "message": "Extension revoked"}
+
+
+async def has_active_extension(member_id: str) -> bool:
+    """Check if a member has an active dues extension"""
+    extension = await db.dues_extensions.find_one({"member_id": member_id})
+    if not extension:
+        return False
+    
+    try:
+        ext_date = datetime.fromisoformat(extension.get("extension_until", "").replace("Z", "+00:00"))
+        return ext_date > datetime.now(timezone.utc)
+    except:
+        return False
+
+
 async def check_and_send_dues_reminders():
     """Check for unpaid dues and send appropriate reminder emails"""
     now = datetime.now(timezone.utc)
