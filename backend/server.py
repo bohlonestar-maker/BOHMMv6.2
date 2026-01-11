@@ -7087,8 +7087,8 @@ async def get_members_by_chapter(current_user: dict = Depends(verify_token)):
 
 @api_router.get("/officer-tracking/officers")
 async def get_officers_by_chapter(current_user: dict = Depends(verify_token)):
-    """Get all officers organized by chapter - officers can view (except CC/CCLC)"""
-    if not can_access_ad(current_user):
+    """Get all officers organized by chapter - based on permissions"""
+    if not await check_ad_access(current_user):
         raise HTTPException(status_code=403, detail="You don't have permission to access this page")
     
     # Check if user can view National chapter A&D
