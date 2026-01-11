@@ -577,6 +577,8 @@ async def restore_discord_member(member_id: str) -> dict:
                 suspended_role = guild.get_role(int(DISCORD_SUSPENDED_ROLE_ID))
                 if suspended_role and suspended_role in discord_member.roles:
                     await discord_member.remove_roles(suspended_role, reason="Dues paid - suspension lifted")
+                    sys.stderr.write(f"🏷️ [DISCORD] Removed 'Unpaid Dues' role from {member_handle}\n")
+                    sys.stderr.flush()
             except Exception as e:
                 sys.stderr.write(f"⚠️ [DISCORD] Failed to remove suspended role: {str(e)}\n")
         
