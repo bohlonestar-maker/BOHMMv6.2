@@ -2086,6 +2086,31 @@ Ride Safe,
 Brothers of the Highway""",
                     "is_active": True,
                     "created_at": datetime.now(timezone.utc).isoformat()
+                },
+                {
+                    "id": "dues_reminder_day30",
+                    "name": "Day 30 - Removal Notice",
+                    "day_trigger": 30,
+                    "subject": "FINAL NOTICE: Membership Terminated Due to Non-Payment",
+                    "body": """Hello {{member_name}},
+
+FINAL NOTICE - MEMBERSHIP TERMINATED
+
+Your dues payment for {{month}} {{year}} is now 30 days overdue. As per our bylaws, your membership has been terminated and you have been removed from the Brothers of the Highway Discord server.
+
+This action was taken after multiple payment reminders were sent without response.
+
+If you wish to rejoin the organization in the future, you will need to:
+1. Contact National leadership to discuss reinstatement
+2. Pay all outstanding dues
+3. Go through the re-application process
+
+We're sorry to see you go. If there were extenuating circumstances that prevented payment, please reach out to discuss options.
+
+Ride Safe,
+Brothers of the Highway""",
+                    "is_active": True,
+                    "created_at": datetime.now(timezone.utc).isoformat()
                 }
             ]
             
