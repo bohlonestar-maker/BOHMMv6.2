@@ -1994,17 +1994,52 @@ async def get_members(current_user: dict = Depends(verify_token)):
     # Officer titles that can see their chapter's private info (PM is excluded)
     officer_titles = ['Prez', 'VP', 'S@A', 'Enf', 'SEC', 'CD', 'T', 'ENF']
     
+    # CC and CCLC have limited view - only Chapter, Title, Name, Email, Phone
+    is_limited_view = user_title in ['CC', 'CCLC']
+    
     # Check user permissions
     is_national_member = user_chapter == 'National'
     is_officer = user_title in officer_titles and user_title != 'PM'
     
     # Debug logging
-    print(f"[PRIVACY DEBUG] User: chapter={user_chapter}, title={user_title}, is_national={is_national_member}, is_officer={is_officer}")
+    print(f"[PRIVACY DEBUG] User: chapter={user_chapter}, title={user_title}, is_national={is_national_member}, is_officer={is_officer}, is_limited_view={is_limited_view}")
     
     for i, member in enumerate(members):
         # Decrypt sensitive data
         members[i] = decrypt_member_sensitive_data(member)
         member_chapter = members[i].get('chapter', '')
+        
+        # CC and CCLC: limited view - only Chapter, Title, Name, Email, Phone
+        if is_limited_view:
+            limited_member = {
+                "id": members[i].get("id"),
+                "chapter": members[i].get("chapter"),
+                "title": members[i].get("title"),
+                "handle": members[i].get("handle"),
+                "name": members[i].get("name"),
+                "email": members[i].get("email"),
+                "phone": members[i].get("phone"),
+                # Set defaults for required fields
+                "address": "",
+                "dob": "",
+                "join_date": "",
+                "experience_start": "",
+                "phone_private": False,
+                "address_private": False,
+                "email_private": False,
+                "name_private": False,
+                "military_service": False,
+                "military_branch": "",
+                "is_first_responder": False,
+                "dues": {},
+                "meeting_attendance": {},
+                "actions": [],
+                "can_edit": False,
+                "created_at": members[i].get("created_at"),
+                "updated_at": members[i].get("updated_at")
+            }
+            members[i] = limited_member
+            continue
         
         # Prospect users: hide names and emails
         if user_role == 'prospect':
