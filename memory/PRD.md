@@ -108,6 +108,11 @@ Build a member management application with attendance tracking, dues management,
 - `GET /api/dues-reminders/status` - Get unpaid/suspended status
 - `POST /api/dues-reminders/run-check` - Trigger reminder check
 - `POST /api/dues-reminders/send-test` - Generate email preview
+- `GET /api/dues-reminders/extensions` - Get all extensions
+- `POST /api/dues-reminders/extensions` - Grant extension
+- `PUT /api/dues-reminders/extensions/{member_id}` - Update extension
+- `DELETE /api/dues-reminders/extensions/{member_id}` - Revoke extension
+- `POST /api/dues-reminders/test-discord-suspension` - Test Discord suspension
 
 #### Permissions
 - `GET /api/permissions/all` - Get all permissions by chapter
