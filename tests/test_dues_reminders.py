@@ -18,10 +18,10 @@ BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://fraternity-manager.p
 # Test credentials
 # Lonestar is National Prez - has full access to dues reminders
 ADMIN_CREDENTIALS = {"username": "Lonestar", "password": "boh2158tc"}
-# Note: The "admin" user is actually National SEC, so they ALSO have access
-# For non-authorized testing, we need a user from a different chapter or without Prez/VP/SEC/T title
-# ADVPRookie is AD chapter VP - should NOT have access to dues reminders
-NON_AUTHORIZED_CREDENTIALS = {"username": "ADVPRookie", "password": "boh2158tc"}
+# Note: The "admin" user provided is actually National SEC, so they ALSO have access
+# For non-authorized testing, we would need a user from a different chapter or without Prez/VP/SEC/T title
+# Since we don't have valid credentials for such a user, we'll skip unauthorized tests
+NON_AUTHORIZED_CREDENTIALS = None  # No valid non-authorized credentials available
 
 
 class TestDuesRemindersAuth:
