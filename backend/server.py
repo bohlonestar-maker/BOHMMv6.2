@@ -6986,16 +6986,47 @@ def is_any_officer(user: dict) -> bool:
     return user.get('title') in OFFICER_TITLES or user.get('role') == 'admin'
 
 def can_access_ad(user: dict) -> bool:
-    """Check if user can access A&D page - CC and CCLC are excluded"""
+    """Check if user can access A&D page - reads from database permissions"""
     user_title = user.get('title', '')
     user_role = user.get('role', '')
     
-    # CC and CCLC cannot access A&D
+    # Admins always have access
+    if user_role == 'admin':
+        return True
+    
+    # For now, use sync check - will be updated to async in endpoint
+    # This is a fallback for sync contexts
     if user_title in ['CC', 'CCLC']:
         return False
     
-    # Other officers and admins can access
-    return user_title in OFFICER_TITLES or user_role == 'admin'
+    return user_title in OFFICER_TITLES
+
+
+async def check_ad_access(user: dict) -> bool:
+    """Async check if user can access A&D page from database"""
+    user_role = user.get('role', '')
+    if user_role == 'admin':
+        return True
+    
+    return await check_permission(user, "ad_page_access")
+
+
+async def check_view_full_member_info(user: dict) -> bool:
+    """Check if user can view full member info from database"""
+    user_role = user.get('role', '')
+    if user_role == 'admin':
+        return True
+    
+    return await check_permission(user, "view_full_member_info")
+
+
+async def check_manage_system_users(user: dict) -> bool:
+    """Check if user can manage system users from database"""
+    user_role = user.get('role', '')
+    if user_role == 'admin':
+        return True
+    
+    return await check_permission(user, "manage_system_users")
 
 class AttendanceRecord(BaseModel):
     member_id: str
