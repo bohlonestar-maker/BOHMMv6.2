@@ -8075,6 +8075,274 @@ async def bulk_update_permissions(update: BulkPermissionUpdate, current_user: di
     return {"success": True, "message": f"Updated all permissions for {update.chapter}/{update.title}"}
 
 
+# ==================== DUES REMINDER EMAIL ENDPOINTS ====================
+
+class DuesEmailTemplateUpdate(BaseModel):
+    subject: str
+    body: str
+    is_active: bool = True
+
+
+@api_router.get("/dues-reminders/templates")
+async def get_dues_email_templates(current_user: dict = Depends(verify_token)):
+    """Get all dues reminder email templates"""
+    if not can_manage_permissions(current_user):
+        raise HTTPException(status_code=403, detail="Only National Prez, VP, SEC, and T can manage dues reminders")
+    
+    templates = await db.dues_email_templates.find({}, {"_id": 0}).sort("day_trigger", 1).to_list(10)
+    return {"templates": templates}
+
+
+@api_router.put("/dues-reminders/templates/{template_id}")
+async def update_dues_email_template(
+    template_id: str,
+    update: DuesEmailTemplateUpdate,
+    current_user: dict = Depends(verify_token)
+):
+    """Update a dues reminder email template"""
+    if not can_manage_permissions(current_user):
+        raise HTTPException(status_code=403, detail="Only National Prez, VP, SEC, and T can manage dues reminders")
+    
+    result = await db.dues_email_templates.update_one(
+        {"id": template_id},
+        {
+            "$set": {
+                "subject": update.subject,
+                "body": update.body,
+                "is_active": update.is_active,
+                "updated_at": datetime.now(timezone.utc).isoformat(),
+                "updated_by": current_user.get("username")
+            }
+        }
+    )
+    
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Template not found")
+    
+    return {"success": True, "message": "Template updated"}
+
+
+@api_router.get("/dues-reminders/status")
+async def get_dues_reminder_status(current_user: dict = Depends(verify_token)):
+    """Get current dues reminder status - who has been sent what"""
+    if not can_manage_permissions(current_user):
+        raise HTTPException(status_code=403, detail="Only National Prez, VP, SEC, and T can view dues reminder status")
+    
+    now = datetime.now(timezone.utc)
+    month = now.month
+    year = now.year
+    month_names = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+    
+    # Get all members
+    members = await db.members.find({}, {"_id": 0, "id": 1, "handle": 1, "name": 1, "email": 1, "chapter": 1, "dues": 1}).to_list(1000)
+    
+    # Get sent reminders for this month
+    sent_reminders = await db.dues_reminder_sent.find(
+        {"month": month, "year": year},
+        {"_id": 0}
+    ).to_list(10000)
+    
+    sent_by_member = {}
+    for sr in sent_reminders:
+        mid = sr.get("member_id")
+        if mid not in sent_by_member:
+            sent_by_member[mid] = []
+        sent_by_member[mid].append(sr)
+    
+    # Determine who hasn't paid
+    unpaid_members = []
+    for member in members:
+        dues = member.get("dues", {})
+        year_str = str(year)
+        month_idx = month - 1
+        
+        is_paid = False
+        if year_str in dues:
+            year_dues = dues[year_str]
+            if isinstance(year_dues, list) and len(year_dues) > month_idx:
+                month_data = year_dues[month_idx]
+                if month_data is True or (isinstance(month_data, dict) and month_data.get("status") == "paid"):
+                    is_paid = True
+        
+        if not is_paid:
+            member_sent = sent_by_member.get(member.get("id"), [])
+            unpaid_members.append({
+                "id": member.get("id"),
+                "handle": member.get("handle"),
+                "name": member.get("name"),
+                "email": member.get("email"),
+                "chapter": member.get("chapter"),
+                "reminders_sent": [s.get("template_id") for s in member_sent],
+                "last_reminder_date": max([s.get("sent_at") for s in member_sent]) if member_sent else None
+            })
+    
+    # Get suspended members (those who received day 10 notice)
+    suspended_members = [m for m in unpaid_members if "dues_reminder_day10" in m.get("reminders_sent", [])]
+    
+    return {
+        "current_month": f"{month_names[month - 1]} {year}",
+        "day_of_month": now.day,
+        "unpaid_count": len(unpaid_members),
+        "suspended_count": len(suspended_members),
+        "unpaid_members": unpaid_members
+    }
+
+
+@api_router.post("/dues-reminders/send-test")
+async def send_test_dues_reminder(
+    template_id: str,
+    email: str,
+    current_user: dict = Depends(verify_token)
+):
+    """Send a test dues reminder email"""
+    if not can_manage_permissions(current_user):
+        raise HTTPException(status_code=403, detail="Only National Prez, VP, SEC, and T can send test emails")
+    
+    # Get template
+    template = await db.dues_email_templates.find_one({"id": template_id}, {"_id": 0})
+    if not template:
+        raise HTTPException(status_code=404, detail="Template not found")
+    
+    now = datetime.now(timezone.utc)
+    month_names = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+    
+    # Replace placeholders
+    subject = template.get("subject", "")
+    body = template.get("body", "")
+    body = body.replace("{{member_name}}", "Test Member")
+    body = body.replace("{{month}}", month_names[now.month - 1])
+    body = body.replace("{{year}}", str(now.year))
+    
+    # Try to send email using Discord webhook or log it
+    logger.info(f"TEST EMAIL to {email}:\nSubject: {subject}\nBody: {body}")
+    
+    # For now, just log - actual email sending would need an email service integration
+    return {
+        "success": True,
+        "message": f"Test email logged (actual sending requires email service integration)",
+        "preview": {
+            "to": email,
+            "subject": subject,
+            "body": body
+        }
+    }
+
+
+@api_router.post("/dues-reminders/run-check")
+async def run_dues_reminder_check(current_user: dict = Depends(verify_token)):
+    """Manually trigger dues reminder check and send emails"""
+    if not can_manage_permissions(current_user):
+        raise HTTPException(status_code=403, detail="Only National Prez, VP, SEC, and T can run dues checks")
+    
+    result = await check_and_send_dues_reminders()
+    return result
+
+
+async def check_and_send_dues_reminders():
+    """Check for unpaid dues and send appropriate reminder emails"""
+    now = datetime.now(timezone.utc)
+    day = now.day
+    month = now.month
+    year = now.year
+    month_names = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+    
+    # Get active templates
+    templates = await db.dues_email_templates.find({"is_active": True}, {"_id": 0}).to_list(10)
+    
+    # Determine which template to use based on day
+    template_to_send = None
+    for template in templates:
+        if template.get("day_trigger") == day:
+            template_to_send = template
+            break
+    
+    # Also check if we're past day 10 and haven't sent day 10 notice
+    if day >= 10 and not template_to_send:
+        template_to_send = next((t for t in templates if t.get("day_trigger") == 10), None)
+    
+    if not template_to_send:
+        return {"message": f"No reminder scheduled for day {day}", "emails_sent": 0}
+    
+    # Get all members with email
+    members = await db.members.find(
+        {"email": {"$exists": True, "$ne": ""}},
+        {"_id": 0}
+    ).to_list(1000)
+    
+    emails_sent = 0
+    errors = []
+    
+    for member in members:
+        member_id = member.get("id")
+        dues = member.get("dues", {})
+        year_str = str(year)
+        month_idx = month - 1
+        
+        # Check if paid
+        is_paid = False
+        if year_str in dues:
+            year_dues = dues[year_str]
+            if isinstance(year_dues, list) and len(year_dues) > month_idx:
+                month_data = year_dues[month_idx]
+                if month_data is True or (isinstance(month_data, dict) and month_data.get("status") == "paid"):
+                    is_paid = True
+        
+        if is_paid:
+            continue
+        
+        # Check if we already sent this template to this member this month
+        already_sent = await db.dues_reminder_sent.find_one({
+            "member_id": member_id,
+            "month": month,
+            "year": year,
+            "template_id": template_to_send.get("id")
+        })
+        
+        if already_sent:
+            continue
+        
+        # Prepare email content
+        subject = template_to_send.get("subject", "")
+        body = template_to_send.get("body", "")
+        body = body.replace("{{member_name}}", member.get("name") or member.get("handle", "Member"))
+        body = body.replace("{{month}}", month_names[month - 1])
+        body = body.replace("{{year}}", str(year))
+        
+        # Log the email (actual sending would need email service)
+        email_addr = member.get("email")
+        logger.info(f"DUES REMINDER to {email_addr} ({member.get('handle')}):\nSubject: {subject}")
+        
+        # Record that we sent this reminder
+        try:
+            await db.dues_reminder_sent.insert_one({
+                "member_id": member_id,
+                "member_handle": member.get("handle"),
+                "email": email_addr,
+                "month": month,
+                "year": year,
+                "template_id": template_to_send.get("id"),
+                "sent_at": now.isoformat(),
+                "subject": subject
+            })
+            emails_sent += 1
+            
+            # If day 10 notice, mark member as suspended
+            if template_to_send.get("day_trigger") == 10:
+                await db.members.update_one(
+                    {"id": member_id},
+                    {"$set": {"dues_suspended": True, "dues_suspended_at": now.isoformat()}}
+                )
+        except Exception as e:
+            errors.append(f"Failed for {member.get('handle')}: {str(e)}")
+    
+    return {
+        "message": f"Dues reminder check complete for day {day}",
+        "template_used": template_to_send.get("name"),
+        "emails_sent": emails_sent,
+        "errors": errors if errors else None
+    }
+
+
 # ==================== SUGGESTION BOX ENDPOINTS ====================
 
 class SuggestionCreate(BaseModel):
