@@ -121,6 +121,8 @@ Build a member management application with attendance tracking, dues management,
 ### Database Collections
 - `dues_email_templates` - Email templates for reminders (Day 3, 8, 10)
 - `dues_reminder_sent` - Log of reminders sent to prevent duplicates
+- `dues_extensions` - Payment extensions granted to members (member_id, extension_until, reason, granted_by)
+- `discord_suspensions` - Stores member's Discord roles before suspension for later restoration
 - `role_permissions` - Chapter-specific permissions for each title
 - `suggestions` - User suggestions with votes and status
 
