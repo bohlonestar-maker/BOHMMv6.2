@@ -1131,8 +1131,8 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
               <div className="flex items-center gap-3">
                 <DollarSign className="w-5 h-5 text-green-400" />
                 <h2 className="text-lg font-semibold text-white">My Dues</h2>
-                <Badge className={myDues.current_month_status === 'paid' ? 'bg-green-600' : 'bg-red-600'}>
-                  {myDues.current_month}: {myDues.current_month_status === 'paid' ? 'Paid' : 'Unpaid'}
+                <Badge className={myDues?.current_month_status === 'paid' ? 'bg-green-600' : 'bg-red-600'}>
+                  {myDues?.current_month || 'N/A'}: {myDues?.current_month_status === 'paid' ? 'Paid' : 'Unpaid'}
                 </Badge>
               </div>
               <Button variant="ghost" size="sm" className="text-slate-400">
