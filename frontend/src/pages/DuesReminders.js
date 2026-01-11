@@ -637,6 +637,18 @@ export default function DuesReminders() {
                         </td>
                         <td className="p-2 text-right">
                           <div className="flex gap-1 justify-end">
+                            {/* Forgive button - always available */}
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => openForgiveDialog(member)}
+                              className="text-purple-400 hover:text-purple-300 hover:bg-purple-900/30"
+                              title="Forgive dues for this month"
+                            >
+                              <Gift className="w-4 h-4 mr-1" />
+                              Forgive
+                            </Button>
+                            
                             {member.has_extension ? (
                               <Button
                                 size="sm"
