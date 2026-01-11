@@ -393,8 +393,11 @@ async def suspend_discord_member(member_handle: str, member_id: str, reason: str
             # Search for member by nickname or username
             for discord_member in guild.members:
                 display_name = discord_member.nick or discord_member.display_name or discord_member.name
-                if display_name.lower() == member_handle.lower():
+                # Check for exact match or if handle is contained in display name (for prefixed names like "HAB Goat Roper")
+                if display_name.lower() == member_handle.lower() or member_handle.lower() in display_name.lower():
                     discord_user_id = str(discord_member.id)
+                    sys.stderr.write(f"✅ [DISCORD] Matched {member_handle} to Discord user {display_name}\n")
+                    sys.stderr.flush()
                     break
         
         if not discord_user_id:
