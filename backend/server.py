@@ -444,9 +444,33 @@ async def suspend_discord_member(member_handle: str, member_id: str, reason: str
                 sys.stderr.write(f"🚫 [DISCORD] Suspended {member_handle}: removed {len(roles_to_remove)} roles\n")
                 sys.stderr.flush()
             except Exception as e:
-                sys.stderr.write(f"❌ [DISCORD] Failed to remove roles from {member_handle}: {str(e)}\n")
+                error_msg = str(e)
+                sys.stderr.write(f"❌ [DISCORD] Failed to remove roles from {member_handle}: {error_msg}\n")
                 sys.stderr.flush()
-                return {"success": False, "message": f"Failed to remove roles: {str(e)}"}
+                
+                # If we can't remove roles, at least notify officers
+                try:
+                    webhook_url = os.environ.get('DISCORD_WEBHOOK_OFFICERS')
+                    if webhook_url:
+                        import aiohttp
+                        async with aiohttp.ClientSession() as session:
+                            embed = {
+                                "title": "⚠️ Manual Action Required - Dues Suspension",
+                                "description": f"**{member_handle}** needs to be suspended for unpaid dues, but the bot couldn't remove their roles automatically.\n\n**Please manually remove their roles.**",
+                                "color": 15105570,  # Orange color
+                                "fields": [
+                                    {"name": "Reason", "value": reason, "inline": True},
+                                    {"name": "Error", "value": error_msg[:200], "inline": False}
+                                ],
+                                "timestamp": datetime.now(timezone.utc).isoformat()
+                            }
+                            await session.post(webhook_url, json={"embeds": [embed]})
+                            sys.stderr.write(f"📢 [DISCORD] Sent manual suspension alert for {member_handle}\n")
+                            sys.stderr.flush()
+                except Exception as notify_error:
+                    sys.stderr.write(f"⚠️ [DISCORD] Failed to send suspension alert: {str(notify_error)}\n")
+                
+                return {"success": False, "message": f"Failed to remove roles (bot may need higher permissions): {error_msg}"}
         
         # Optionally add a "Suspended" role if configured
         if DISCORD_SUSPENDED_ROLE_ID:
