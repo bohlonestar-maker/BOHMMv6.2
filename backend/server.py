@@ -634,9 +634,9 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-async def send_email_sendgrid(to_email: str, subject: str, html_body: str, plain_body: str = None) -> dict:
+async def send_email_smtp(to_email: str, subject: str, html_body: str, plain_body: str = None) -> dict:
     """
-    Send email via SendGrid
+    Send email via SMTP
     
     Args:
         to_email: Recipient email address
@@ -647,34 +647,43 @@ async def send_email_sendgrid(to_email: str, subject: str, html_body: str, plain
     Returns:
         dict with success status and message
     """
-    if not sendgrid_client:
-        logger.warning(f"SendGrid not configured - email to {to_email} not sent")
-        return {"success": False, "message": "SendGrid not configured"}
+    if not smtp_configured:
+        logger.warning(f"SMTP not configured - email to {to_email} not sent")
+        return {"success": False, "message": "SMTP not configured"}
     
     try:
-        from sendgrid.helpers.mail import Mail, Email, To, Content, HtmlContent
+        import smtplib
+        from email.mime.text import MIMEText
+        from email.mime.multipart import MIMEMultipart
         
-        message = Mail(
-            from_email=Email(SENDGRID_FROM_EMAIL),
-            to_emails=To(to_email),
-            subject=subject
-        )
+        # Create message
+        msg = MIMEMultipart('alternative')
+        msg['Subject'] = subject
+        msg['From'] = SMTP_FROM_EMAIL
+        msg['To'] = to_email
         
-        # Add HTML content
-        message.add_content(Content("text/html", html_body))
-        
-        # Add plain text fallback if provided
+        # Add plain text part
         if plain_body:
-            message.add_content(Content("text/plain", plain_body))
+            part1 = MIMEText(plain_body, 'plain')
+            msg.attach(part1)
         
-        response = sendgrid_client.send(message)
+        # Add HTML part
+        part2 = MIMEText(html_body, 'html')
+        msg.attach(part2)
         
-        if response.status_code in [200, 201, 202]:
-            logger.info(f"Email sent successfully to {to_email}: {subject}")
-            return {"success": True, "message": f"Email sent to {to_email}"}
+        # Send email
+        if SMTP_USE_TLS:
+            server = smtplib.SMTP(SMTP_HOST, SMTP_PORT)
+            server.starttls()
         else:
-            logger.error(f"SendGrid returned status {response.status_code} for {to_email}")
-            return {"success": False, "message": f"SendGrid error: status {response.status_code}"}
+            server = smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT)
+        
+        server.login(SMTP_USERNAME, SMTP_PASSWORD)
+        server.sendmail(SMTP_FROM_EMAIL, to_email, msg.as_string())
+        server.quit()
+        
+        logger.info(f"Email sent successfully to {to_email}: {subject}")
+        return {"success": True, "message": f"Email sent to {to_email}"}
             
     except Exception as e:
         logger.error(f"Failed to send email to {to_email}: {str(e)}")
