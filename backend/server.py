@@ -9037,25 +9037,50 @@ async def check_and_send_dues_reminders():
         # Prepare email content
         subject = template_to_send.get("subject", "")
         body = template_to_send.get("body", "")
-        body = body.replace("{{member_name}}", member.get("name") or member.get("handle", "Member"))
+        member_name = member.get("name") or member.get("handle", "Member")
+        body = body.replace("{{member_name}}", member_name)
         body = body.replace("{{month}}", month_names[month - 1])
         body = body.replace("{{year}}", str(year))
         
-        # Log the email (actual sending would need email service)
-        email_addr = member.get("email")
-        logger.info(f"DUES REMINDER to {email_addr} ({member.get('handle')}):\nSubject: {subject}")
+        # Get decrypted email address
+        encrypted_email = member.get("email")
+        email_addr = decrypt_data(encrypted_email) if encrypted_email else None
         
-        # Record that we sent this reminder
+        if not email_addr:
+            logger.warning(f"No email address for member {member.get('handle')}")
+            continue
+        
+        # Convert plain text body to HTML (preserve line breaks)
+        html_body = f"""
+        <html>
+        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+            <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+                {body.replace(chr(10), '<br>')}
+            </div>
+        </body>
+        </html>
+        """
+        
+        # Send email via SendGrid
+        email_result = await send_email_sendgrid(email_addr, subject, html_body, body)
+        
+        if email_result.get("success"):
+            logger.info(f"DUES REMINDER sent to {email_addr} ({member.get('handle')}): {subject}")
+        else:
+            logger.warning(f"DUES REMINDER failed for {email_addr}: {email_result.get('message')}")
+        
+        # Record that we sent this reminder (even if email failed, to avoid spam)
         try:
             await db.dues_reminder_sent.insert_one({
                 "member_id": member_id,
                 "member_handle": member.get("handle"),
-                "email": email_addr,
+                "email": encrypted_email,  # Store encrypted
                 "month": month,
                 "year": year,
                 "template_id": template_to_send.get("id"),
                 "sent_at": now.isoformat(),
-                "subject": subject
+                "subject": subject,
+                "email_sent": email_result.get("success", False)
             })
             emails_sent += 1
             
