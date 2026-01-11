@@ -6950,6 +6950,18 @@ def is_any_officer(user: dict) -> bool:
     """Check if user is any officer (can view)"""
     return user.get('title') in OFFICER_TITLES or user.get('role') == 'admin'
 
+def can_access_ad(user: dict) -> bool:
+    """Check if user can access A&D page - CC and CCLC are excluded"""
+    user_title = user.get('title', '')
+    user_role = user.get('role', '')
+    
+    # CC and CCLC cannot access A&D
+    if user_title in ['CC', 'CCLC']:
+        return False
+    
+    # Other officers and admins can access
+    return user_title in OFFICER_TITLES or user_role == 'admin'
+
 class AttendanceRecord(BaseModel):
     member_id: str
     meeting_date: str  # YYYY-MM-DD
