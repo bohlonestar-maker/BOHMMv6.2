@@ -7252,9 +7252,9 @@ async def get_dues_records(
     quarter: Optional[str] = None,
     current_user: dict = Depends(verify_token)
 ):
-    """Get dues records - all officers can view"""
-    if not is_any_officer(current_user) and current_user.get('role') != 'admin':
-        raise HTTPException(status_code=403, detail="Only officers can access this page")
+    """Get dues records - officers can view (except CC/CCLC)"""
+    if not can_access_ad(current_user):
+        raise HTTPException(status_code=403, detail="You don't have permission to access this page")
     
     query = {}
     if chapter:
