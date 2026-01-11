@@ -1797,19 +1797,30 @@ async def verify(current_user: dict = Depends(verify_token)):
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     
+    # Get dynamic permissions from role_permissions collection
+    user_title = user.get("title", "")
+    user_chapter = current_user.get("chapter", "")
+    dynamic_permissions = await get_title_permissions(user_title, user_chapter)
+    
+    # Merge with static user permissions
+    static_permissions = user.get("permissions", {
+        "basic_info": True,
+        "email": False,
+        "phone": False,
+        "address": False,
+        "dues_tracking": False,
+        "admin_actions": False
+    })
+    
+    # Combine both permission sets
+    all_permissions = {**static_permissions, **dynamic_permissions}
+    
     return {
         "username": user["username"],
         "role": user["role"],
         "chapter": current_user.get("chapter"),  # Include chapter from JWT token
         "title": user.get("title", ""),  # Include title for permission checks
-        "permissions": user.get("permissions", {
-            "basic_info": True,
-            "email": False,
-            "phone": False,
-            "address": False,
-            "dues_tracking": False,
-            "admin_actions": False
-        })
+        "permissions": all_permissions
     }
 
 # Password Reset - Request reset code
