@@ -1029,6 +1029,9 @@ class LoginResponse(BaseModel):
     token: str
     username: str
     role: str
+    chapter: Optional[str] = None
+    title: Optional[str] = None
+    permissions: Optional[dict] = None
 
 class PasswordResetRequest(BaseModel):
     email: str
