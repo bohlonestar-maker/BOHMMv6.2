@@ -47,6 +47,8 @@ const MEETING_TYPES_BY_CHAPTER = {
 // Dues status options with colors
 const DUES_STATUSES = [
   { value: 'paid', label: 'Paid', color: 'bg-green-600', icon: CheckCircle },
+  { value: 'forgiven', label: 'Forgiven', color: 'bg-purple-600', icon: Gift },
+  { value: 'extended', label: 'Extended', color: 'bg-blue-600', icon: Shield },
   { value: 'late', label: 'Late', color: 'bg-orange-500', icon: Clock },
   { value: 'unpaid', label: 'Not Paid', color: 'bg-red-600', icon: XCircle }
 ];
