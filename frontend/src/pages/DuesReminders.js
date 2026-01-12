@@ -524,7 +524,114 @@ export default function DuesReminders() {
             <Users className="w-4 h-4 mr-1 sm:mr-2" />
             Unpaid ({status?.unpaid_count || 0})
           </Button>
+          <Button
+            variant={activeTab === "settings" ? "default" : "outline"}
+            onClick={() => setActiveTab("settings")}
+            size="sm"
+            className={`whitespace-nowrap ${activeTab === "settings" ? "bg-slate-600" : "border-slate-600 text-slate-300"}`}
+          >
+            <AlertTriangle className="w-4 h-4 mr-1 sm:mr-2" />
+            Settings
+          </Button>
         </div>
+
+        {/* Settings Tab */}
+        {activeTab === "settings" && (
+          <Card className="bg-slate-800 border-slate-700">
+            <CardHeader className="p-3 sm:p-6">
+              <CardTitle className="text-white text-base sm:text-lg">Automation Settings</CardTitle>
+              <CardDescription className="text-slate-400">
+                Control what happens automatically when members don't pay dues
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="p-3 sm:p-6 pt-0 sm:pt-0 space-y-6">
+              {/* Email Reminders Toggle */}
+              <div className="flex items-center justify-between p-4 bg-slate-700/50 rounded-lg">
+                <div className="space-y-1">
+                  <div className="font-medium text-white flex items-center gap-2">
+                    <Mail className="w-4 h-4 text-blue-400" />
+                    Email Reminders
+                  </div>
+                  <p className="text-sm text-slate-400">
+                    Send automatic email reminders on days 3, 8, 10, and 30
+                  </p>
+                </div>
+                <Switch
+                  checked={settings.email_reminders_enabled}
+                  onCheckedChange={(checked) => handleUpdateSettings("email_reminders_enabled", checked)}
+                  disabled={savingSettings}
+                />
+              </div>
+
+              {/* Suspension Toggle */}
+              <div className="flex items-center justify-between p-4 bg-slate-700/50 rounded-lg">
+                <div className="space-y-1">
+                  <div className="font-medium text-white flex items-center gap-2">
+                    <AlertTriangle className="w-4 h-4 text-amber-400" />
+                    Auto Suspension (Day 10)
+                  </div>
+                  <p className="text-sm text-slate-400">
+                    Automatically suspend Discord permissions when dues are 10+ days overdue
+                  </p>
+                </div>
+                <Switch
+                  checked={settings.suspension_enabled}
+                  onCheckedChange={(checked) => handleUpdateSettings("suspension_enabled", checked)}
+                  disabled={savingSettings}
+                />
+              </div>
+
+              {/* Discord Kick Toggle */}
+              <div className="flex items-center justify-between p-4 bg-slate-700/50 rounded-lg">
+                <div className="space-y-1">
+                  <div className="font-medium text-white flex items-center gap-2">
+                    <X className="w-4 h-4 text-red-400" />
+                    Auto Removal (Day 30)
+                  </div>
+                  <p className="text-sm text-slate-400">
+                    Automatically kick member from Discord server after 30 days unpaid
+                  </p>
+                </div>
+                <Switch
+                  checked={settings.discord_kick_enabled}
+                  onCheckedChange={(checked) => handleUpdateSettings("discord_kick_enabled", checked)}
+                  disabled={savingSettings}
+                />
+              </div>
+
+              {/* Status Summary */}
+              <div className="p-4 bg-slate-900/50 rounded-lg border border-slate-600">
+                <h4 className="text-sm font-medium text-slate-300 mb-2">Current Status:</h4>
+                <ul className="text-sm text-slate-400 space-y-1">
+                  <li className="flex items-center gap-2">
+                    {settings.email_reminders_enabled ? (
+                      <CheckCircle className="w-4 h-4 text-green-400" />
+                    ) : (
+                      <X className="w-4 h-4 text-red-400" />
+                    )}
+                    Email reminders are {settings.email_reminders_enabled ? "enabled" : "disabled"}
+                  </li>
+                  <li className="flex items-center gap-2">
+                    {settings.suspension_enabled ? (
+                      <CheckCircle className="w-4 h-4 text-green-400" />
+                    ) : (
+                      <X className="w-4 h-4 text-red-400" />
+                    )}
+                    Auto suspension is {settings.suspension_enabled ? "enabled" : "disabled"}
+                  </li>
+                  <li className="flex items-center gap-2">
+                    {settings.discord_kick_enabled ? (
+                      <CheckCircle className="w-4 h-4 text-green-400" />
+                    ) : (
+                      <X className="w-4 h-4 text-red-400" />
+                    )}
+                    Auto removal is {settings.discord_kick_enabled ? "enabled" : "disabled"}
+                  </li>
+                </ul>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Templates Tab */}
         {activeTab === "templates" && (
