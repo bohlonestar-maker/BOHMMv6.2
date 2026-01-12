@@ -47,6 +47,12 @@ export default function DuesReminders() {
   const [selectedMemberForForgive, setSelectedMemberForForgive] = useState(null);
   const [forgiveReason, setForgiveReason] = useState("");
   const [expandedMember, setExpandedMember] = useState(null);
+  const [settings, setSettings] = useState({
+    suspension_enabled: true,
+    discord_kick_enabled: true,
+    email_reminders_enabled: true
+  });
+  const [savingSettings, setSavingSettings] = useState(false);
   
   const navigate = useNavigate();
   const token = localStorage.getItem("token");
