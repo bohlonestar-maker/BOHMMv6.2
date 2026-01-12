@@ -64,7 +64,7 @@ export default function DuesReminders() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [templatesRes, statusRes, extensionsRes] = await Promise.all([
+      const [templatesRes, statusRes, extensionsRes, settingsRes] = await Promise.all([
         axios.get(`${API}/dues-reminders/templates`, {
           headers: { Authorization: `Bearer ${token}` },
         }),
@@ -73,12 +73,20 @@ export default function DuesReminders() {
         }),
         axios.get(`${API}/dues-reminders/extensions`, {
           headers: { Authorization: `Bearer ${token}` },
+        }),
+        axios.get(`${API}/dues-reminders/settings`, {
+          headers: { Authorization: `Bearer ${token}` },
         })
       ]);
       
       setTemplates(templatesRes.data.templates || []);
       setStatus(statusRes.data);
       setExtensions(extensionsRes.data.extensions || []);
+      setSettings(settingsRes.data || {
+        suspension_enabled: true,
+        discord_kick_enabled: true,
+        email_reminders_enabled: true
+      });
     } catch (error) {
       console.error("Failed to fetch data:", error);
       if (error.response?.status === 403) {
@@ -89,6 +97,23 @@ export default function DuesReminders() {
       }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleUpdateSettings = async (key, value) => {
+    try {
+      setSavingSettings(true);
+      const newSettings = { ...settings, [key]: value };
+      await axios.put(`${API}/dues-reminders/settings`, newSettings, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setSettings(newSettings);
+      toast.success("Settings updated");
+    } catch (error) {
+      console.error("Failed to update settings:", error);
+      toast.error("Failed to update settings");
+    } finally {
+      setSavingSettings(false);
     }
   };
 
