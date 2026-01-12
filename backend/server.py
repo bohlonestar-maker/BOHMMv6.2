@@ -8973,6 +8973,51 @@ async def get_dues_reminder_status(current_user: dict = Depends(verify_token)):
     }
 
 
+@api_router.get("/dues-reminders/settings")
+async def get_dues_reminder_settings(current_user: dict = Depends(verify_token)):
+    """Get dues reminder system settings"""
+    has_access = await check_permission(current_user, "manage_dues_reminders")
+    if not has_access:
+        raise HTTPException(status_code=403, detail="You don't have permission to manage dues reminder settings")
+    
+    settings = await db.dues_reminder_settings.find_one({"id": "main"}, {"_id": 0})
+    if not settings:
+        # Return defaults
+        settings = {
+            "id": "main",
+            "suspension_enabled": True,
+            "discord_kick_enabled": True,
+            "email_reminders_enabled": True
+        }
+    return settings
+
+
+@api_router.put("/dues-reminders/settings")
+async def update_dues_reminder_settings(
+    settings: dict,
+    current_user: dict = Depends(verify_token)
+):
+    """Update dues reminder system settings"""
+    has_access = await check_permission(current_user, "manage_dues_reminders")
+    if not has_access:
+        raise HTTPException(status_code=403, detail="You don't have permission to manage dues reminder settings")
+    
+    # Only allow updating specific fields
+    allowed_fields = ["suspension_enabled", "discord_kick_enabled", "email_reminders_enabled"]
+    update_data = {k: v for k, v in settings.items() if k in allowed_fields}
+    update_data["id"] = "main"
+    update_data["updated_at"] = datetime.now(timezone.utc).isoformat()
+    update_data["updated_by"] = current_user.get("username")
+    
+    await db.dues_reminder_settings.update_one(
+        {"id": "main"},
+        {"$set": update_data},
+        upsert=True
+    )
+    
+    return {"success": True, "message": "Settings updated", "settings": update_data}
+
+
 @api_router.post("/dues-reminders/send-test")
 async def send_test_dues_reminder(
     template_id: str,
