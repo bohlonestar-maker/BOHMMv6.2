@@ -9591,6 +9591,197 @@ def run_dues_reminder_job():
         traceback.print_exc(file=sys.stderr)
 
 
+def run_square_sync_job():
+    """Wrapper to run async Square dues sync in sync context (called by scheduler in thread)"""
+    import asyncio
+    import sys
+    try:
+        print(f"💳 [SCHEDULER] Starting Square dues sync job...", file=sys.stderr, flush=True)
+        
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        try:
+            result = loop.run_until_complete(auto_sync_square_dues())
+            print(f"✅ [SCHEDULER] Square dues sync completed: {result}", file=sys.stderr, flush=True)
+        finally:
+            loop.close()
+            
+    except Exception as e:
+        print(f"❌ [SCHEDULER] Error running Square dues sync: {str(e)}", file=sys.stderr, flush=True)
+        import traceback
+        traceback.print_exc(file=sys.stderr)
+
+
+async def auto_sync_square_dues():
+    """Automated Square subscription sync - runs without user context"""
+    import sys
+    
+    if not square_client:
+        return {"success": False, "message": "Square client not configured"}
+    
+    MONTHLY_DUES_AMOUNT = 30  # $30 per month
+    
+    try:
+        # Get active subscriptions
+        subscriptions = []
+        cursor = None
+        
+        while True:
+            result = square_client.subscriptions.search(
+                cursor=cursor,
+                limit=100,
+                query={
+                    "filter": {
+                        "location_ids": [SQUARE_LOCATION_ID]
+                    }
+                }
+            )
+            
+            subs = result.subscriptions or []
+            active_subs = [s for s in subs if s.status == "ACTIVE"]
+            subscriptions.extend(active_subs)
+            
+            cursor = result.cursor
+            if not cursor:
+                break
+        
+        month_names = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+        
+        # Batch retrieve customers for subscriptions
+        customer_ids = list(set(sub.customer_id for sub in subscriptions if sub.customer_id))
+        customer_map = {}
+        
+        for i in range(0, len(customer_ids), 100):
+            batch_ids = customer_ids[i:i+100]
+            try:
+                batch_result = square_client.customers.bulk_retrieve_customers(
+                    customer_ids=batch_ids
+                )
+                if batch_result.responses:
+                    for cust_id, response in batch_result.responses.items():
+                        if response.customer:
+                            cust = response.customer
+                            given_name = cust.given_name or ''
+                            family_name = cust.family_name or ''
+                            customer_map[cust_id] = f"{given_name} {family_name}".strip()
+            except Exception as e:
+                logger.warning(f"Batch customer fetch failed: {e}")
+        
+        # Get all members and manual links
+        members = await db.members.find({}, {"_id": 0}).to_list(1000)
+        manual_links = await db.member_subscriptions.find({}, {"_id": 0}).to_list(1000)
+        manual_link_map = {link.get("square_customer_id"): link.get("member_id") for link in manual_links if link.get("square_customer_id")}
+        
+        # Create name-to-member map for fuzzy matching
+        name_to_member = {}
+        for member in members:
+            name = member.get("name", "").lower().strip()
+            if name:
+                name_to_member[name] = member
+            handle = member.get("handle", "").lower().strip()
+            if handle:
+                name_to_member[handle] = member
+        
+        synced_count = 0
+        payment_months_updated = 0
+        
+        for sub in subscriptions:
+            customer_id = sub.customer_id
+            customer_name = customer_map.get(customer_id, "Unknown")
+            
+            # Try to find matching member
+            member = None
+            
+            # Check manual link first
+            if customer_id in manual_link_map:
+                member_id = manual_link_map[customer_id]
+                member = next((m for m in members if m.get("id") == member_id), None)
+            
+            # Try fuzzy match by name
+            if not member:
+                customer_name_lower = customer_name.lower().strip()
+                if customer_name_lower in name_to_member:
+                    member = name_to_member[customer_name_lower]
+                else:
+                    for name_key, m in name_to_member.items():
+                        if customer_name_lower in name_key or name_key in customer_name_lower:
+                            member = m
+                            break
+            
+            if not member:
+                continue
+            
+            member_id = member.get("id")
+            
+            # Get payments for this subscription
+            try:
+                payments_result = square_client.payments.list(
+                    location_id=SQUARE_LOCATION_ID,
+                    limit=100
+                )
+                
+                all_payments = payments_result.payments or []
+                
+                # Filter payments for this customer
+                customer_payments = [p for p in all_payments 
+                                   if p.customer_id == customer_id 
+                                   and p.status == "COMPLETED"
+                                   and p.source_type == "CARD"]
+                
+                for payment in customer_payments:
+                    amount_cents = payment.amount_money.amount if payment.amount_money else 0
+                    amount_dollars = amount_cents / 100
+                    
+                    # Parse payment date
+                    payment_date_str = payment.created_at
+                    try:
+                        payment_date = datetime.fromisoformat(payment_date_str.replace('Z', '+00:00'))
+                    except:
+                        continue
+                    
+                    payment_year = payment_date.year
+                    payment_month = payment_date.month - 1  # 0-indexed
+                    
+                    # Determine months covered
+                    if amount_dollars >= 300:
+                        months_to_cover = 12
+                    else:
+                        months_to_cover = max(1, int(amount_dollars / MONTHLY_DUES_AMOUNT))
+                    
+                    # Update member dues for covered months
+                    for i in range(months_to_cover):
+                        target_month = (payment_month + i) % 12
+                        target_year = payment_year + ((payment_month + i) // 12)
+                        
+                        await update_member_dues_from_payment(
+                            member_id=member_id,
+                            year=target_year,
+                            month=target_month,
+                            payment_id=payment.id,
+                            payment_note=f"Square payment ${amount_dollars:.2f} on {payment_date.strftime('%m/%d/%Y')}"
+                        )
+                        payment_months_updated += 1
+                
+                synced_count += 1
+                
+            except Exception as e:
+                logger.warning(f"Failed to get payments for subscription {sub.id}: {e}")
+                continue
+        
+        sys.stderr.write(f"💳 [SQUARE SYNC] Synced {synced_count} subscriptions, updated {payment_months_updated} month records\n")
+        sys.stderr.flush()
+        
+        return {
+            "success": True,
+            "subscriptions_synced": synced_count,
+            "payment_months_updated": payment_months_updated
+        }
+        
+    except Exception as e:
+        logger.error(f"Square auto-sync failed: {str(e)}")
+        return {"success": False, "message": str(e)}
+
+
 @api_router.post("/dues-reminders/test-discord-suspension")
 async def test_discord_suspension(
     member_id: str,
