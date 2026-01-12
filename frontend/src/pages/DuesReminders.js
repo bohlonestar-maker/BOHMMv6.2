@@ -560,6 +560,7 @@ export default function DuesReminders() {
                   checked={settings.email_reminders_enabled}
                   onCheckedChange={(checked) => handleUpdateSettings("email_reminders_enabled", checked)}
                   disabled={savingSettings}
+                  className="data-[state=checked]:bg-green-600 data-[state=unchecked]:bg-slate-600"
                 />
               </div>
 
@@ -578,6 +579,7 @@ export default function DuesReminders() {
                   checked={settings.suspension_enabled}
                   onCheckedChange={(checked) => handleUpdateSettings("suspension_enabled", checked)}
                   disabled={savingSettings}
+                  className="data-[state=checked]:bg-amber-600 data-[state=unchecked]:bg-slate-600"
                 />
               </div>
 
@@ -596,6 +598,7 @@ export default function DuesReminders() {
                   checked={settings.discord_kick_enabled}
                   onCheckedChange={(checked) => handleUpdateSettings("discord_kick_enabled", checked)}
                   disabled={savingSettings}
+                  className="data-[state=checked]:bg-red-600 data-[state=unchecked]:bg-slate-600"
                 />
               </div>
 
