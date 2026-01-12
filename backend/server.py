@@ -9768,12 +9768,12 @@ async def auto_sync_square_dues():
                         target_month = (payment_month + i) % 12
                         target_year = payment_year + ((payment_month + i) // 12)
                         
-                        await update_member_dues_from_payment(
+                        await update_member_dues_with_payment_info(
                             member_id=member_id,
                             year=target_year,
                             month=target_month,
-                            payment_id=payment.id,
-                            payment_note=f"Square payment ${amount_dollars:.2f} on {payment_date.strftime('%m/%d/%Y')}"
+                            payment_note=f"Square payment ${amount_dollars:.2f} on {payment_date.strftime('%m/%d/%Y')}",
+                            payment_id=payment.id
                         )
                         payment_months_updated += 1
                 
