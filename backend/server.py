@@ -9387,6 +9387,19 @@ async def check_and_send_dues_reminders():
     year = now.year
     month_names = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
     
+    # Get settings
+    settings = await db.dues_reminder_settings.find_one({"id": "main"}, {"_id": 0})
+    if not settings:
+        settings = {"suspension_enabled": True, "discord_kick_enabled": True, "email_reminders_enabled": True}
+    
+    suspension_enabled = settings.get("suspension_enabled", True)
+    discord_kick_enabled = settings.get("discord_kick_enabled", True)
+    email_reminders_enabled = settings.get("email_reminders_enabled", True)
+    
+    # If email reminders are disabled, skip everything
+    if not email_reminders_enabled:
+        return {"message": "Email reminders are disabled", "emails_sent": 0}
+    
     # Get active templates
     templates = await db.dues_email_templates.find({"is_active": True}, {"_id": 0}).to_list(10)
     
