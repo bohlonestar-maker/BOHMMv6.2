@@ -9797,6 +9797,16 @@ async def auto_sync_square_dues():
         return {"success": False, "message": str(e)}
 
 
+@api_router.post("/dues/trigger-auto-sync")
+async def trigger_auto_sync(current_user: dict = Depends(verify_token)):
+    """Manually trigger the automatic Square dues sync (admin/secretary only)"""
+    if not is_secretary(current_user) and current_user.get('role') != 'admin':
+        raise HTTPException(status_code=403, detail="Only Secretaries can trigger sync")
+    
+    result = await auto_sync_square_dues()
+    return result
+
+
 @api_router.post("/dues-reminders/test-discord-suspension")
 async def test_discord_suspension(
     member_id: str,
