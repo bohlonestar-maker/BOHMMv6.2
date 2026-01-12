@@ -556,12 +556,19 @@ export default function DuesReminders() {
                     Send automatic email reminders on days 3, 8, 10, and 30
                   </p>
                 </div>
-                <Switch
-                  checked={settings.email_reminders_enabled}
-                  onCheckedChange={(checked) => handleUpdateSettings("email_reminders_enabled", checked)}
+                <button
+                  onClick={() => handleUpdateSettings("email_reminders_enabled", !settings.email_reminders_enabled)}
                   disabled={savingSettings}
-                  className="data-[state=checked]:bg-green-600 data-[state=unchecked]:bg-slate-600"
-                />
+                  className={`relative inline-flex h-7 w-14 items-center rounded-full transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 focus:ring-offset-slate-800 ${
+                    settings.email_reminders_enabled ? 'bg-green-600' : 'bg-slate-600'
+                  } ${savingSettings ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                >
+                  <span
+                    className={`inline-block h-5 w-5 transform rounded-full bg-white shadow-lg transition-transform duration-200 ease-in-out ${
+                      settings.email_reminders_enabled ? 'translate-x-8' : 'translate-x-1'
+                    }`}
+                  />
+                </button>
               </div>
 
               {/* Suspension Toggle */}
@@ -575,12 +582,19 @@ export default function DuesReminders() {
                     Automatically suspend Discord permissions when dues are 10+ days overdue
                   </p>
                 </div>
-                <Switch
-                  checked={settings.suspension_enabled}
-                  onCheckedChange={(checked) => handleUpdateSettings("suspension_enabled", checked)}
+                <button
+                  onClick={() => handleUpdateSettings("suspension_enabled", !settings.suspension_enabled)}
                   disabled={savingSettings}
-                  className="data-[state=checked]:bg-amber-600 data-[state=unchecked]:bg-slate-600"
-                />
+                  className={`relative inline-flex h-7 w-14 items-center rounded-full transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 focus:ring-offset-slate-800 ${
+                    settings.suspension_enabled ? 'bg-amber-600' : 'bg-slate-600'
+                  } ${savingSettings ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                >
+                  <span
+                    className={`inline-block h-5 w-5 transform rounded-full bg-white shadow-lg transition-transform duration-200 ease-in-out ${
+                      settings.suspension_enabled ? 'translate-x-8' : 'translate-x-1'
+                    }`}
+                  />
+                </button>
               </div>
 
               {/* Discord Kick Toggle */}
@@ -594,12 +608,19 @@ export default function DuesReminders() {
                     Automatically kick member from Discord server after 30 days unpaid
                   </p>
                 </div>
-                <Switch
-                  checked={settings.discord_kick_enabled}
-                  onCheckedChange={(checked) => handleUpdateSettings("discord_kick_enabled", checked)}
+                <button
+                  onClick={() => handleUpdateSettings("discord_kick_enabled", !settings.discord_kick_enabled)}
                   disabled={savingSettings}
-                  className="data-[state=checked]:bg-red-600 data-[state=unchecked]:bg-slate-600"
-                />
+                  className={`relative inline-flex h-7 w-14 items-center rounded-full transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:ring-offset-slate-800 ${
+                    settings.discord_kick_enabled ? 'bg-red-600' : 'bg-slate-600'
+                  } ${savingSettings ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                >
+                  <span
+                    className={`inline-block h-5 w-5 transform rounded-full bg-white shadow-lg transition-transform duration-200 ease-in-out ${
+                      settings.discord_kick_enabled ? 'translate-x-8' : 'translate-x-1'
+                    }`}
+                  />
+                </button>
               </div>
 
               {/* Status Summary */}
