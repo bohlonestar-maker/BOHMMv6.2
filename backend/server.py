@@ -9735,13 +9735,18 @@ async def auto_sync_square_dues():
                     limit=100
                 )
                 
-                all_payments = payments_result.payments or []
+                # Handle both pager and direct response
+                all_payments = []
+                if hasattr(payments_result, 'payments') and payments_result.payments:
+                    all_payments = payments_result.payments
+                elif hasattr(payments_result, '__iter__'):
+                    all_payments = list(payments_result)
                 
                 # Filter payments for this customer
                 customer_payments = [p for p in all_payments 
-                                   if p.customer_id == customer_id 
-                                   and p.status == "COMPLETED"
-                                   and p.source_type == "CARD"]
+                                   if hasattr(p, 'customer_id') and p.customer_id == customer_id 
+                                   and hasattr(p, 'status') and p.status == "COMPLETED"
+                                   and hasattr(p, 'source_type') and p.source_type == "CARD"]
                 
                 for payment in customer_payments:
                     amount_cents = payment.amount_money.amount if payment.amount_money else 0
