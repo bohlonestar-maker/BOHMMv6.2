@@ -9516,8 +9516,8 @@ async def check_and_send_dues_reminders():
             
             day_trigger = template_to_send.get("day_trigger")
             
-            # If day 10 notice, mark member as suspended and suspend Discord permissions
-            if day_trigger == 10:
+            # If day 10 notice, mark member as suspended and suspend Discord permissions (if enabled)
+            if day_trigger == 10 and suspension_enabled:
                 await db.members.update_one(
                     {"id": member_id},
                     {"$set": {"dues_suspended": True, "dues_suspended_at": now.isoformat()}}
@@ -9535,9 +9535,12 @@ async def check_and_send_dues_reminders():
                 else:
                     sys.stderr.write(f"⚠️ [DUES] Discord suspension failed for {member.get('handle')}: {discord_result.get('message')}\n")
                     sys.stderr.flush()
+            elif day_trigger == 10 and not suspension_enabled:
+                sys.stderr.write(f"⏭️ [DUES] Suspension disabled - skipping suspension for {member.get('handle')}\n")
+                sys.stderr.flush()
             
-            # If day 30 notice, kick member from Discord server
-            elif day_trigger == 30:
+            # If day 30 notice, kick member from Discord server (if enabled)
+            elif day_trigger == 30 and discord_kick_enabled:
                 # Kick from Discord
                 discord_result = await kick_discord_member(
                     member_handle=member.get("handle", "Unknown"),
@@ -9550,6 +9553,9 @@ async def check_and_send_dues_reminders():
                 else:
                     sys.stderr.write(f"⚠️ [DUES] Discord removal failed for {member.get('handle')}: {discord_result.get('message')}\n")
                     sys.stderr.flush()
+            elif day_trigger == 30 and not discord_kick_enabled:
+                sys.stderr.write(f"⏭️ [DUES] Discord kick disabled - skipping removal for {member.get('handle')}\n")
+                sys.stderr.flush()
                     
         except Exception as e:
             errors.append(f"Failed for {member.get('handle')}: {str(e)}")
@@ -9558,6 +9564,8 @@ async def check_and_send_dues_reminders():
         "message": f"Dues reminder check complete for day {day}",
         "template_used": template_to_send.get("name"),
         "emails_sent": emails_sent,
+        "suspension_enabled": suspension_enabled,
+        "discord_kick_enabled": discord_kick_enabled,
         "errors": errors if errors else None
     }
 
