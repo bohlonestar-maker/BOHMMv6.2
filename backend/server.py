@@ -11209,6 +11209,12 @@ async def check_and_send_birthday_notifications():
             except Exception as e:
                 print(f"   ❌ Error processing DOB for {member.get('handle', 'unknown')}: {str(e)}", file=sys.stderr, flush=True)
         
+        # Mark the job as completed
+        await thread_db.scheduler_locks.update_one(
+            {"job_name": "birthday_check", "lock_date": today_key},
+            {"$set": {"completed": True, "completed_at": datetime.now(), "notifications_sent": birthday_count}}
+        )
+        
         print(f"🎂 [BIRTHDAY] Sent {birthday_count} birthday notification(s) today", file=sys.stderr, flush=True)
         client.close()
         
