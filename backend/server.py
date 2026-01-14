@@ -11079,6 +11079,7 @@ async def check_and_send_birthday_notifications():
         # Get today's date in MM-DD format for comparison
         today = datetime.now()
         today_mm_dd = today.strftime("%m-%d")
+        today_key = today.strftime("%Y-%m-%d")
         
         # Create a new MongoDB connection for this thread
         from motor.motor_asyncio import AsyncIOMotorClient
@@ -11086,6 +11087,44 @@ async def check_and_send_birthday_notifications():
         db_name = os.environ.get('DB_NAME', 'test_database')
         client = AsyncIOMotorClient(mongo_url)
         thread_db = client[db_name]
+        
+        # Try to acquire a distributed lock for this job run
+        # This prevents multiple instances from running the same job simultaneously
+        import uuid
+        lock_id = str(uuid.uuid4())
+        lock_result = await thread_db.scheduler_locks.update_one(
+            {
+                "job_name": "birthday_check",
+                "lock_date": today_key,
+                "completed": False
+            },
+            {
+                "$setOnInsert": {
+                    "job_name": "birthday_check",
+                    "lock_date": today_key,
+                    "lock_id": lock_id,
+                    "locked_at": datetime.now(),
+                    "completed": False
+                }
+            },
+            upsert=True
+        )
+        
+        # If we didn't get the lock (another instance got it), exit early
+        if not lock_result.upserted_id:
+            # Check if already completed
+            existing_lock = await thread_db.scheduler_locks.find_one({
+                "job_name": "birthday_check",
+                "lock_date": today_key
+            })
+            if existing_lock and existing_lock.get("completed"):
+                print(f"🎂 [BIRTHDAY] Already completed by another instance today, skipping.", file=sys.stderr, flush=True)
+            else:
+                print(f"🎂 [BIRTHDAY] Another instance is running this job, skipping.", file=sys.stderr, flush=True)
+            client.close()
+            return
+        
+        print(f"🎂 [BIRTHDAY] Acquired job lock: {lock_id}", file=sys.stderr, flush=True)
         
         # Ensure unique index exists to prevent duplicates
         await thread_db.birthday_notifications.create_index(
