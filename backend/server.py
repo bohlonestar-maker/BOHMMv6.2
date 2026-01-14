@@ -11117,38 +11117,55 @@ async def check_and_send_birthday_notifications():
                 if dob_mm_dd == today_mm_dd:
                     member_id = member.get('id', member.get('handle', ''))
                     
-                    # Use upsert to atomically check and insert - prevents race condition
-                    result = await thread_db.birthday_notifications.update_one(
-                        {
-                            "member_id": member_id,
-                            "notification_date": today_key
-                        },
-                        {
-                            "$setOnInsert": {
-                                "member_id": member_id,
-                                "member_name": member.get('name', member.get('handle', '')),
-                                "notification_date": today_key,
-                                "sent_at": datetime.now()
-                            }
-                        },
-                        upsert=True
-                    )
+                    # First check if already notified (faster than upsert for most cases)
+                    existing = await thread_db.birthday_notifications.find_one({
+                        "member_id": member_id,
+                        "notification_date": today_key
+                    })
                     
-                    # Only send notification if this was a new insert (not already exists)
-                    if result.upserted_id:
-                        print(f"   🎉 Birthday found: {member.get('name', member.get('handle'))} - {dob}", file=sys.stderr, flush=True)
-                        success = await send_birthday_notification(member)
-                        
-                        if not success:
-                            # If notification failed, remove the record so it can retry
-                            await thread_db.birthday_notifications.delete_one({
+                    if existing:
+                        print(f"   ⏭️ Already notified for {member.get('name', member.get('handle'))}", file=sys.stderr, flush=True)
+                        continue
+                    
+                    # Use upsert to atomically check and insert - prevents race condition
+                    try:
+                        result = await thread_db.birthday_notifications.update_one(
+                            {
                                 "member_id": member_id,
                                 "notification_date": today_key
-                            })
+                            },
+                            {
+                                "$setOnInsert": {
+                                    "member_id": member_id,
+                                    "member_name": member.get('name', member.get('handle', '')),
+                                    "notification_date": today_key,
+                                    "sent_at": datetime.now()
+                                }
+                            },
+                            upsert=True
+                        )
+                        
+                        # Only send notification if this was a new insert (not already exists)
+                        if result.upserted_id:
+                            print(f"   🎉 Birthday found: {member.get('name', member.get('handle'))} - {dob}", file=sys.stderr, flush=True)
+                            success = await send_birthday_notification(member)
+                            
+                            if not success:
+                                # If notification failed, remove the record so it can retry
+                                await thread_db.birthday_notifications.delete_one({
+                                    "member_id": member_id,
+                                    "notification_date": today_key
+                                })
+                            else:
+                                birthday_count += 1
                         else:
-                            birthday_count += 1
-                    else:
-                        print(f"   ⏭️ Already notified for {member.get('name', member.get('handle'))}", file=sys.stderr, flush=True)
+                            print(f"   ⏭️ Already notified (race) for {member.get('name', member.get('handle'))}", file=sys.stderr, flush=True)
+                    except Exception as dup_error:
+                        # Duplicate key error means another instance already inserted
+                        if "duplicate key" in str(dup_error).lower() or "E11000" in str(dup_error):
+                            print(f"   ⏭️ Already notified (dup key) for {member.get('name', member.get('handle'))}", file=sys.stderr, flush=True)
+                        else:
+                            raise dup_error
                         
             except Exception as e:
                 print(f"   ❌ Error processing DOB for {member.get('handle', 'unknown')}: {str(e)}", file=sys.stderr, flush=True)
