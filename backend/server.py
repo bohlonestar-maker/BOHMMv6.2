@@ -8909,7 +8909,9 @@ async def get_dues_reminder_status(current_user: dict = Depends(verify_token)):
     if not has_access:
         raise HTTPException(status_code=403, detail="You don't have permission to view dues reminder status")
     
-    now = datetime.now(timezone.utc)
+    from zoneinfo import ZoneInfo
+    cst = ZoneInfo("America/Chicago")
+    now = datetime.now(cst)
     month = now.month
     year = now.year
     month_names = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
