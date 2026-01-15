@@ -9396,7 +9396,11 @@ async def has_active_extension(member_id: str) -> bool:
 
 async def check_and_send_dues_reminders():
     """Check for unpaid dues and send appropriate reminder emails"""
-    now = datetime.now(timezone.utc)
+    from zoneinfo import ZoneInfo
+    
+    # Use Central Standard Time for date calculations
+    cst = ZoneInfo("America/Chicago")
+    now = datetime.now(cst)
     day = now.day
     month = now.month
     year = now.year
