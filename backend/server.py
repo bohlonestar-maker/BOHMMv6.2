@@ -9784,20 +9784,105 @@ async def auto_sync_square_dues():
                         target_month = (payment_month + i) % 12
                         target_year = payment_year + ((payment_month + i) // 12)
                         
-                        await update_member_dues_with_payment_info(
-                            member_id=member_id,
-                            year=target_year,
-                            month=target_month,
-                            payment_note=f"Square payment ${amount_dollars:.2f} on {payment_date.strftime('%m/%d/%Y')}",
-                            payment_id=payment.id
-                        )
+                        # Check if this payment was already synced
+                        existing_sync = await thread_db.synced_payments.find_one({
+                            "payment_id": payment.id,
+                            "member_id": member_id,
+                            "year": target_year,
+                            "month": target_month
+                        })
+                        
+                        if existing_sync:
+                            continue  # Already synced this payment
+                        
+                        # Update dues record
+                        dues_record = await thread_db.member_dues.find_one({
+                            "member_id": member_id,
+                            "year": target_year
+                        })
+                        
+                        month_names = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+                        month_key = month_names[target_month]
+                        
+                        if dues_record:
+                            update_data = {
+                                f"months.{month_key}": "paid",
+                                f"payment_info.{month_key}": f"Square payment ${amount_dollars:.2f} on {payment_date.strftime('%m/%d/%Y')}",
+                                "updated_at": datetime.now(timezone.utc).isoformat()
+                            }
+                            await thread_db.member_dues.update_one(
+                                {"member_id": member_id, "year": target_year},
+                                {"$set": update_data}
+                            )
+                        else:
+                            # Create new dues record
+                            new_record = {
+                                "member_id": member_id,
+                                "year": target_year,
+                                "months": {m: "unpaid" for m in month_names},
+                                "payment_info": {},
+                                "created_at": datetime.now(timezone.utc).isoformat(),
+                                "created_by": "square_sync"
+                            }
+                            new_record["months"][month_key] = "paid"
+                            new_record["payment_info"][month_key] = f"Square payment ${amount_dollars:.2f} on {payment_date.strftime('%m/%d/%Y')}"
+                            await thread_db.member_dues.insert_one(new_record)
+                        
+                        # Record this payment as synced
+                        await thread_db.synced_payments.insert_one({
+                            "payment_id": payment.id,
+                            "member_id": member_id,
+                            "year": target_year,
+                            "month": target_month,
+                            "amount": amount_dollars,
+                            "synced_at": datetime.now(timezone.utc).isoformat()
+                        })
+                        
                         payment_months_updated += 1
+                        sys.stderr.write(f"   ✅ Updated {member.get('handle', 'Unknown')}: {month_key} {target_year} = paid\n")
+                        sys.stderr.flush()
+                    
+                    # Check if this member was suspended and should be restored
+                    member_data = await thread_db.members.find_one({"id": member_id})
+                    if member_data and member_data.get("dues_suspended"):
+                        # Check if current month is now paid
+                        now = datetime.now(timezone.utc)
+                        current_year = now.year
+                        current_month_idx = now.month - 1
+                        current_month_name = month_names[current_month_idx]
+                        
+                        current_dues = await thread_db.member_dues.find_one({
+                            "member_id": member_id,
+                            "year": current_year
+                        })
+                        
+                        if current_dues and current_dues.get("months", {}).get(current_month_name) == "paid":
+                            # Clear suspension
+                            await thread_db.members.update_one(
+                                {"id": member_id},
+                                {"$set": {"dues_suspended": False, "dues_suspended_at": None}}
+                            )
+                            sys.stderr.write(f"   🔓 Cleared suspension for {member.get('handle', 'Unknown')} - dues paid\n")
+                            sys.stderr.flush()
+                            
+                            # Try to restore Discord permissions
+                            try:
+                                discord_result = await restore_discord_member(member_id)
+                                if discord_result.get("success"):
+                                    sys.stderr.write(f"   ✅ Discord permissions restored for {member.get('handle', 'Unknown')}\n")
+                                    sys.stderr.flush()
+                            except Exception as discord_err:
+                                sys.stderr.write(f"   ⚠️ Could not restore Discord: {discord_err}\n")
+                                sys.stderr.flush()
                 
                 synced_count += 1
                 
             except Exception as e:
                 logger.warning(f"Failed to get payments for subscription {sub.id}: {e}")
                 continue
+        
+        # Close the thread-local connection
+        client.close()
         
         sys.stderr.write(f"💳 [SQUARE SYNC] Synced {synced_count} subscriptions, updated {payment_months_updated} month records\n")
         sys.stderr.flush()
