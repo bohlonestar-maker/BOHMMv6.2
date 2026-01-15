@@ -9630,6 +9630,7 @@ def run_square_sync_job():
 async def auto_sync_square_dues():
     """Automated Square subscription sync - runs without user context"""
     import sys
+    from motor.motor_asyncio import AsyncIOMotorClient
     
     if not square_client:
         return {"success": False, "message": "Square client not configured"}
@@ -9637,6 +9638,15 @@ async def auto_sync_square_dues():
     MONTHLY_DUES_AMOUNT = 30  # $30 per month
     
     try:
+        # Create a new MongoDB connection for this thread
+        mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
+        db_name = os.environ.get('DB_NAME', 'test_database')
+        client = AsyncIOMotorClient(mongo_url)
+        thread_db = client[db_name]
+        
+        sys.stderr.write("💳 [SQUARE SYNC] Starting auto-sync...\n")
+        sys.stderr.flush()
+        
         # Get active subscriptions
         subscriptions = []
         cursor = None
@@ -9660,7 +9670,8 @@ async def auto_sync_square_dues():
             if not cursor:
                 break
         
-        month_names = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+        sys.stderr.write(f"💳 [SQUARE SYNC] Found {len(subscriptions)} active subscriptions\n")
+        sys.stderr.flush()
         
         # Batch retrieve customers for subscriptions
         customer_ids = list(set(sub.customer_id for sub in subscriptions if sub.customer_id))
@@ -9682,9 +9693,9 @@ async def auto_sync_square_dues():
             except Exception as e:
                 logger.warning(f"Batch customer fetch failed: {e}")
         
-        # Get all members and manual links
-        members = await db.members.find({}, {"_id": 0}).to_list(1000)
-        manual_links = await db.member_subscriptions.find({}, {"_id": 0}).to_list(1000)
+        # Get all members and manual links using thread-local db
+        members = await thread_db.members.find({}, {"_id": 0}).to_list(1000)
+        manual_links = await thread_db.member_subscriptions.find({}, {"_id": 0}).to_list(1000)
         manual_link_map = {link.get("square_customer_id"): link.get("member_id") for link in manual_links if link.get("square_customer_id")}
         
         # Create name-to-member map for fuzzy matching
