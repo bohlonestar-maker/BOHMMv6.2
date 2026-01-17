@@ -13531,13 +13531,21 @@ async def sync_payment_links_to_dues(current_user: dict = Depends(verify_token))
     
     MONTHLY_DUES_AMOUNT = 30
     DUES_ITEM_KEYWORDS = [
+        "dues",
         "dues annual",
+        "annual dues",
         "member dues",
         "monthly member dues",
+        "monthly dues",
         "lump sum dues",
+        "lump sum",
         "past due",
         "late fee",
-        "one time payment"
+        "one time payment",
+        "one-time",
+        "membership",
+        "national dues",
+        "chapter dues"
     ]
     
     try:
