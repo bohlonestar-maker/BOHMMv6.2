@@ -142,6 +142,7 @@ Build a member management application with attendance tracking, dues management,
 - [x] ~~Square one-time payment sync not updating member dues note~~ (Fixed Jan 17, 2026)
 
 #### P1 - High Priority
+- [x] ~~Duplicate Discord birthday notifications~~ (Fixed Jan 17, 2026 - improved distributed lock with unique index + stagger delay)
 - [ ] Add quarterly/bi-yearly/yearly dues subscription options
 - [ ] Actual email sending (currently MOCKED - logged only)
 
