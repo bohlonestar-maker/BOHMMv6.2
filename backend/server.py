@@ -8649,8 +8649,37 @@ async def get_my_dues(current_user: dict = Depends(verify_token)):
         {"_id": 0}
     ).sort("payment_date", -1).limit(20).to_list(20)
     
-    # Get dues status from member record
+    # Get dues status from member record (legacy format)
     member_dues = member.get("dues", {})
+    
+    # Also get dues from member_dues collection (new format with payment_info)
+    dues_records = await db.member_dues.find(
+        {"member_id": member_id},
+        {"_id": 0}
+    ).to_list(10)
+    
+    # Build payment_info map from dues records
+    payment_info_by_year = {}
+    for record in dues_records:
+        year = str(record.get("year"))
+        payment_info_by_year[year] = record.get("payment_info", {})
+        # Also merge the months data if available
+        if record.get("months"):
+            if year not in member_dues:
+                member_dues[year] = []
+            months_data = record.get("months", {})
+            month_names_list = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+            for idx, month_name in enumerate(month_names_list):
+                status = months_data.get(month_name, "unpaid")
+                if isinstance(member_dues[year], list) and len(member_dues[year]) > idx:
+                    # Update existing entry if the new data shows paid
+                    if status == "paid":
+                        member_dues[year][idx] = True
+                elif isinstance(member_dues[year], list):
+                    # Extend list if needed
+                    while len(member_dues[year]) <= idx:
+                        member_dues[year].append(False)
+                    member_dues[year][idx] = status == "paid"
     
     # Calculate current status
     now = datetime.now(timezone.utc)
