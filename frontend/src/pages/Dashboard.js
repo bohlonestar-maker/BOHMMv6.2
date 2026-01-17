@@ -992,6 +992,13 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
                     <Lightbulb className="w-4 h-4 mr-2" />
                     Suggestion Box
                   </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    onSelect={(e) => { e.preventDefault(); navigate("/forms"); }} 
+                    className="text-blue-400 focus:bg-blue-900/30 focus:text-blue-300 cursor-pointer"
+                  >
+                    <FileText className="w-4 h-4 mr-2" />
+                    Forms
+                  </DropdownMenuItem>
                   
                   {/* Reports - Officers only (not PM, Member, CC, CCLC, MD) */}
                   {userTitle && !['PM', 'Member', 'CC', 'CCLC', 'MD'].includes(userTitle) && (
