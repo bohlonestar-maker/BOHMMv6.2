@@ -1166,46 +1166,47 @@ function OfficerTracking() {
 
       {/* Dues Dialog - Simplified */}
       <Dialog open={duesDialog} onOpenChange={setDuesDialog}>
-        <DialogContent className="bg-slate-800 border-slate-700 max-w-md mx-4 sm:mx-auto">
-          <DialogHeader>
-            <DialogTitle className="text-white">Update Dues</DialogTitle>
-            <DialogDescription>
+        <DialogContent className="bg-slate-800 border-slate-700 max-w-[95vw] sm:max-w-md mx-2 sm:mx-auto p-4 sm:p-6">
+          <DialogHeader className="pb-2">
+            <DialogTitle className="text-white text-lg">Update Dues</DialogTitle>
+            <DialogDescription className="text-sm">
               Update dues status for {selectedMember?.handle}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label className="text-slate-300">Status</Label>
-              <div className="flex flex-col sm:flex-row gap-2">
+              <Label className="text-slate-300 text-sm">Status</Label>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
                 {DUES_STATUSES.map(status => {
                   const Icon = status.icon;
                   return (
                     <Button
                       key={status.value}
                       type="button"
-                      className={`flex-1 ${duesForm.status === status.value ? status.color : 'bg-gray-600'}`}
+                      size="sm"
+                      className={`${duesForm.status === status.value ? status.color : 'bg-gray-600'} text-xs sm:text-sm px-2 py-2`}
                       onClick={() => setDuesForm({...duesForm, status: status.value})}
                     >
-                      <Icon className="w-4 h-4 mr-1" />
-                      {status.label}
+                      <Icon className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+                      <span className="truncate">{status.label}</span>
                     </Button>
                   );
                 })}
               </div>
             </div>
             <div className="space-y-2">
-              <Label className="text-slate-300">Notes (Optional)</Label>
+              <Label className="text-slate-300 text-sm">Notes (Optional)</Label>
               <Textarea 
                 value={duesForm.notes}
                 onChange={(e) => setDuesForm({...duesForm, notes: e.target.value})}
-                placeholder="Any additional notes about this dues status..."
-                className="bg-slate-700 border-slate-600 text-white"
+                placeholder="Any additional notes..."
+                className="bg-slate-700 border-slate-600 text-white text-sm min-h-[80px]"
               />
             </div>
           </div>
-          <DialogFooter className="flex-col sm:flex-row gap-2">
-            <Button variant="outline" onClick={() => setDuesDialog(false)} className="w-full sm:w-auto">Cancel</Button>
-            <Button onClick={handleDuesSubmit} className="w-full sm:w-auto">Save</Button>
+          <DialogFooter className="flex-col-reverse sm:flex-row gap-2 pt-4">
+            <Button variant="outline" onClick={() => setDuesDialog(false)} className="w-full sm:w-auto border-slate-600 text-slate-300">Cancel</Button>
+            <Button onClick={handleDuesSubmit} className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700">Save</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
