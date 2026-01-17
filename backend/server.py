@@ -11262,39 +11262,47 @@ async def check_and_send_birthday_notifications():
         # This prevents multiple instances from running the same job simultaneously
         import uuid
         lock_id = str(uuid.uuid4())
-        lock_result = await thread_db.scheduler_locks.update_one(
-            {
-                "job_name": "birthday_check",
-                "lock_date": today_key,
-                "completed": False
-            },
-            {
-                "$setOnInsert": {
-                    "job_name": "birthday_check",
-                    "lock_date": today_key,
-                    "lock_id": lock_id,
-                    "locked_at": datetime.now(),
-                    "completed": False
-                }
-            },
-            upsert=True
-        )
         
-        # If we didn't get the lock (another instance got it), exit early
-        if not lock_result.upserted_id:
-            # Check if already completed
-            existing_lock = await thread_db.scheduler_locks.find_one({
-                "job_name": "birthday_check",
-                "lock_date": today_key
-            })
-            if existing_lock and existing_lock.get("completed"):
+        # CRITICAL: Create unique index to prevent duplicate locks (race condition fix)
+        try:
+            await thread_db.scheduler_locks.create_index(
+                [("job_name", 1), ("lock_date", 1)],
+                unique=True
+            )
+        except Exception as idx_err:
+            print(f"🎂 [BIRTHDAY] Index already exists or error: {idx_err}", file=sys.stderr, flush=True)
+        
+        # First check if lock already exists (completed or not)
+        existing_lock = await thread_db.scheduler_locks.find_one({
+            "job_name": "birthday_check",
+            "lock_date": today_key
+        })
+        
+        if existing_lock:
+            if existing_lock.get("completed"):
                 print(f"🎂 [BIRTHDAY] Already completed by another instance today, skipping.", file=sys.stderr, flush=True)
             else:
-                print(f"🎂 [BIRTHDAY] Another instance is running this job, skipping.", file=sys.stderr, flush=True)
+                print(f"🎂 [BIRTHDAY] Another instance is running this job (lock: {existing_lock.get('lock_id', '?')[:8]}...), skipping.", file=sys.stderr, flush=True)
             client.close()
             return
         
-        print(f"🎂 [BIRTHDAY] Acquired job lock: {lock_id}", file=sys.stderr, flush=True)
+        # Try to insert lock - will fail with duplicate key if another instance beat us
+        try:
+            await thread_db.scheduler_locks.insert_one({
+                "job_name": "birthday_check",
+                "lock_date": today_key,
+                "lock_id": lock_id,
+                "locked_at": datetime.now(),
+                "completed": False
+            })
+            print(f"🎂 [BIRTHDAY] Acquired job lock: {lock_id[:8]}...", file=sys.stderr, flush=True)
+        except Exception as lock_err:
+            if "duplicate key" in str(lock_err).lower() or "E11000" in str(lock_err):
+                print(f"🎂 [BIRTHDAY] Lock race - another instance got the lock first, skipping.", file=sys.stderr, flush=True)
+            else:
+                print(f"🎂 [BIRTHDAY] Lock error: {lock_err}, skipping.", file=sys.stderr, flush=True)
+            client.close()
+            return
         
         # Ensure unique index exists to prevent duplicates
         await thread_db.birthday_notifications.create_index(
