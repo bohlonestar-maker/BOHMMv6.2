@@ -13749,6 +13749,72 @@ async def sync_payment_links_to_dues(current_user: dict = Depends(verify_token))
         raise HTTPException(status_code=500, detail=f"Failed to sync payment links: {str(e)}")
 
 
+@api_router.get("/dues/debug-recent-payments")
+async def debug_recent_payments(current_user: dict = Depends(verify_token)):
+    """Debug endpoint to see recent Square payments and their item names"""
+    if current_user.get('role') != 'admin':
+        raise HTTPException(status_code=403, detail="Admin only")
+    
+    if not square_client:
+        raise HTTPException(status_code=500, detail="Square client not configured")
+    
+    try:
+        # Get recent payments
+        start_date = (datetime.now(timezone.utc) - timedelta(days=30)).isoformat()
+        
+        payments_result = square_client.payments.list(
+            begin_time=start_date,
+            limit=50
+        )
+        
+        all_payments = list(payments_result) if payments_result else []
+        completed_payments = [p for p in all_payments if p.status == "COMPLETED"]
+        
+        debug_info = []
+        
+        for payment in completed_payments[:20]:  # Limit to 20 for debug
+            payment_info = {
+                "payment_id": payment.id,
+                "amount": payment.amount_money.amount / 100 if payment.amount_money else 0,
+                "created_at": str(payment.created_at),
+                "customer_id": getattr(payment, 'customer_id', None),
+                "order_id": getattr(payment, 'order_id', None),
+                "items": []
+            }
+            
+            # Get customer name
+            if payment_info["customer_id"]:
+                try:
+                    cust_result = square_client.customers.get(customer_id=payment_info["customer_id"])
+                    if cust_result and cust_result.customer:
+                        c = cust_result.customer
+                        payment_info["customer_name"] = f"{c.given_name or ''} {c.family_name or ''}".strip()
+                except:
+                    pass
+            
+            # Get order items
+            if payment_info["order_id"]:
+                try:
+                    order_result = square_client.orders.get(order_id=payment_info["order_id"])
+                    if order_result and order_result.order:
+                        order = order_result.order
+                        line_items = getattr(order, 'line_items', None) or []
+                        for item in line_items:
+                            payment_info["items"].append({
+                                "name": getattr(item, 'name', 'Unknown'),
+                                "amount": item.total_money.amount / 100 if item.total_money else 0
+                            })
+                except:
+                    pass
+            
+            debug_info.append(payment_info)
+        
+        return {"payments": debug_info, "total_recent": len(completed_payments)}
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 async def update_member_dues_with_payment_info(member_id: str, year: int, month: int, payment_note: str, payment_id: str = None):
     """Update member dues status for a specific month based on actual payment"""
     month_names = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
