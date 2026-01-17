@@ -133,6 +133,7 @@ Build a member management application with attendance tracking, dues management,
 - [x] ~~Permission Suspension~~ (Completed Jan 11)
 - [x] ~~Square subscription sync feature~~ (Completed)
 - [x] ~~Suggestion Box~~ (Completed)
+- [x] ~~Square one-time payment sync not updating member dues note~~ (Fixed Jan 17, 2026)
 
 #### P1 - High Priority
 - [ ] Add quarterly/bi-yearly/yearly dues subscription options
