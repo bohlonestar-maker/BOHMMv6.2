@@ -14368,6 +14368,133 @@ async def trigger_catalog_sync_background():
 
 # ==================== END STORE API ENDPOINTS ====================
 
+
+# ==================== FORMS MANAGEMENT ENDPOINTS ====================
+
+FORMS_UPLOAD_DIR = Path("/app/uploads/forms")
+FORMS_UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+
+@api_router.get("/forms")
+async def get_forms(current_user: dict = Depends(verify_token)):
+    """Get all available forms"""
+    forms = await db.forms.find({}, {"_id": 0}).sort("uploaded_at", -1).to_list(100)
+    return {"forms": forms}
+
+
+@api_router.post("/forms/upload")
+async def upload_form(
+    file: UploadFile = File(...),
+    name: str = None,
+    description: str = None,
+    current_user: dict = Depends(verify_token)
+):
+    """Upload a new form (admin or users with manage_forms permission)"""
+    has_access = await check_permission(current_user, "manage_forms")
+    if not has_access and current_user.get('role') != 'admin':
+        raise HTTPException(status_code=403, detail="You don't have permission to upload forms")
+    
+    # Validate file
+    if not file.filename:
+        raise HTTPException(status_code=400, detail="No file provided")
+    
+    # Check file size (10MB max)
+    file_content = await file.read()
+    if len(file_content) > 10 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="File too large. Maximum size is 10MB")
+    
+    # Generate unique filename
+    import uuid
+    file_ext = Path(file.filename).suffix.lower()
+    allowed_extensions = ['.pdf', '.doc', '.docx', '.xls', '.xlsx', '.csv', '.png', '.jpg', '.jpeg', '.gif', '.webp']
+    if file_ext not in allowed_extensions:
+        raise HTTPException(status_code=400, detail=f"File type not allowed. Allowed: {', '.join(allowed_extensions)}")
+    
+    unique_filename = f"{uuid.uuid4()}{file_ext}"
+    file_path = FORMS_UPLOAD_DIR / unique_filename
+    
+    # Save file
+    with open(file_path, "wb") as f:
+        f.write(file_content)
+    
+    # Create form record
+    form_id = str(uuid.uuid4())
+    form_record = {
+        "id": form_id,
+        "name": name or file.filename,
+        "description": description or "",
+        "filename": file.filename,
+        "stored_filename": unique_filename,
+        "file_size": len(file_content),
+        "file_type": file_ext,
+        "uploaded_by": current_user.get("username"),
+        "uploaded_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.forms.insert_one(form_record)
+    
+    return {"success": True, "message": "Form uploaded successfully", "form_id": form_id}
+
+
+@api_router.get("/forms/{form_id}/download")
+async def download_form(form_id: str, current_user: dict = Depends(verify_token)):
+    """Download a form"""
+    form = await db.forms.find_one({"id": form_id}, {"_id": 0})
+    if not form:
+        raise HTTPException(status_code=404, detail="Form not found")
+    
+    file_path = FORMS_UPLOAD_DIR / form.get("stored_filename", "")
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="Form file not found")
+    
+    # Determine content type
+    content_types = {
+        '.pdf': 'application/pdf',
+        '.doc': 'application/msword',
+        '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        '.xls': 'application/vnd.ms-excel',
+        '.xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        '.csv': 'text/csv',
+        '.png': 'image/png',
+        '.jpg': 'image/jpeg',
+        '.jpeg': 'image/jpeg',
+        '.gif': 'image/gif',
+        '.webp': 'image/webp'
+    }
+    file_ext = form.get("file_type", "").lower()
+    content_type = content_types.get(file_ext, 'application/octet-stream')
+    
+    from fastapi.responses import FileResponse
+    return FileResponse(
+        path=str(file_path),
+        filename=form.get("filename", "download"),
+        media_type=content_type
+    )
+
+
+@api_router.delete("/forms/{form_id}")
+async def delete_form(form_id: str, current_user: dict = Depends(verify_token)):
+    """Delete a form (admin or users with manage_forms permission)"""
+    has_access = await check_permission(current_user, "manage_forms")
+    if not has_access and current_user.get('role') != 'admin':
+        raise HTTPException(status_code=403, detail="You don't have permission to delete forms")
+    
+    form = await db.forms.find_one({"id": form_id}, {"_id": 0})
+    if not form:
+        raise HTTPException(status_code=404, detail="Form not found")
+    
+    # Delete file
+    file_path = FORMS_UPLOAD_DIR / form.get("stored_filename", "")
+    if file_path.exists():
+        file_path.unlink()
+    
+    # Delete record
+    await db.forms.delete_one({"id": form_id})
+    
+    return {"success": True, "message": "Form deleted successfully"}
+
+# ==================== END FORMS ENDPOINTS ====================
+
+
 # Include the router in the main app
 app.include_router(api_router)
 
