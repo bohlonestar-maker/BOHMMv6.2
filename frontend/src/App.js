@@ -25,6 +25,7 @@ import OfficerTracking from "@/pages/OfficerTracking";
 import SuggestionBox from "@/pages/SuggestionBox";
 import PermissionPanel from "@/pages/PermissionPanel";
 import DuesReminders from "@/pages/DuesReminders";
+import Forms from "@/pages/Forms";
 import ChatBot from "@/components/ChatBot";
 import { Toaster } from "@/components/ui/sonner";
 
