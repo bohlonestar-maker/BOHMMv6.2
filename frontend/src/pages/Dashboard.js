@@ -452,14 +452,25 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
 
     const token = localStorage.getItem("token");
     try {
-      await axios.delete(`${API}/members/${memberToDelete.id}`, {
-        params: { reason: deleteReason },
+      const response = await axios.delete(`${API}/members/${memberToDelete.id}`, {
+        params: { reason: deleteReason, kick_from_discord: kickFromDiscord },
         headers: { Authorization: `Bearer ${token}` },
       });
-      toast.success("Member archived successfully");
+      
+      if (kickFromDiscord && response.data.discord_result) {
+        if (response.data.discord_result.success) {
+          toast.success("Member archived and kicked from Discord");
+        } else {
+          toast.success("Member archived (Discord kick failed: " + response.data.discord_result.message + ")");
+        }
+      } else {
+        toast.success("Member archived successfully");
+      }
+      
       setDeleteDialogOpen(false);
       setMemberToDelete(null);
       setDeleteReason("");
+      setKickFromDiscord(false);
       fetchMembers();
     } catch (error) {
       toast.error("Failed to archive member");
