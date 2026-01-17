@@ -13549,12 +13549,12 @@ async def sync_payment_links_to_dues(current_user: dict = Depends(verify_token))
     ]
     
     try:
-        # Get all completed payments from last 12 months
-        start_date = (datetime.now(timezone.utc) - timedelta(days=365)).isoformat()
+        # Get all completed payments from last 2 years (to capture annual dues from 2025)
+        start_date = (datetime.now(timezone.utc) - timedelta(days=730)).isoformat()
         
         payments_result = square_client.payments.list(
             begin_time=start_date,
-            limit=200
+            limit=500
         )
         
         all_payments = list(payments_result) if payments_result else []
