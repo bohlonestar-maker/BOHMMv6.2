@@ -71,7 +71,12 @@ export default function Forms() {
 
   useEffect(() => {
     fetchForms();
-    checkPermissions();
+    // Admin always has access
+    if (userRole === 'admin') {
+      setCanManage(true);
+    } else {
+      checkPermissions();
+    }
   }, []);
 
   const checkPermissions = async () => {
@@ -80,9 +85,10 @@ export default function Forms() {
         headers: { Authorization: `Bearer ${token}` },
       });
       const permissions = response.data.permissions || {};
-      setCanManage(userRole === 'admin' || permissions.manage_forms);
+      setCanManage(permissions.manage_forms === true);
     } catch (error) {
       console.error("Failed to check permissions:", error);
+      setCanManage(false);
     }
   };
 
