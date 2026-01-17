@@ -101,7 +101,10 @@ export default function Forms() {
       setForms(response.data.forms || []);
     } catch (error) {
       console.error("Failed to fetch forms:", error);
-      toast.error("Failed to load forms");
+      // Only show error if it's not a 404 (which means endpoint doesn't exist yet)
+      if (error.response?.status !== 404) {
+        toast.error("Failed to load forms");
+      }
     } finally {
       setLoading(false);
     }
