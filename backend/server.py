@@ -8709,7 +8709,8 @@ async def get_my_dues(current_user: dict = Depends(verify_token)):
         } if subscription_link else None,
         "square_payments": square_payments,
         "one_time_payments": synced_payments,
-        "dues_by_year": member_dues
+        "dues_by_year": member_dues,
+        "payment_info_by_year": payment_info_by_year
     }
 
 
