@@ -2345,6 +2345,20 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
                     />
                   </div>
                   
+                  {/* Kick from Discord option */}
+                  <div className="flex items-center gap-3 p-3 bg-slate-700/50 rounded-lg border border-slate-600">
+                    <input
+                      type="checkbox"
+                      id="kickFromDiscord"
+                      checked={kickFromDiscord}
+                      onChange={(e) => setKickFromDiscord(e.target.checked)}
+                      className="w-4 h-4 rounded border-slate-500 bg-slate-600 text-red-600 focus:ring-red-500"
+                    />
+                    <label htmlFor="kickFromDiscord" className="text-sm text-slate-200 cursor-pointer">
+                      Also kick from Discord server
+                    </label>
+                  </div>
+                  
                   {/* Buttons */}
                   <div className="flex gap-3 justify-end pt-4 border-t border-slate-700">
                     <button
@@ -2358,7 +2372,7 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
                       onClick={handleConfirmDelete}
                       className="px-4 py-2 text-sm bg-red-600 hover:bg-red-700 text-white rounded"
                     >
-                      Archive Member
+                      {kickFromDiscord ? "Archive & Kick" : "Archive Member"}
                     </button>
                   </div>
                 </div>
