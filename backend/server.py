@@ -8681,6 +8681,21 @@ async def get_my_dues(current_user: dict = Depends(verify_token)):
                         member_dues[year].append(False)
                     member_dues[year][idx] = status == "paid"
     
+    # Also extract payment notes from member's dues field (legacy format)
+    month_names_list = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+    for year_str, year_data in member_dues.items():
+        if isinstance(year_data, list) and year_str not in payment_info_by_year:
+            payment_info_by_year[year_str] = {}
+        if isinstance(year_data, list):
+            for idx, month_data in enumerate(year_data):
+                if idx < len(month_names_list):
+                    month_name = month_names_list[idx]
+                    # Check if month_data has a note field
+                    if isinstance(month_data, dict) and month_data.get("note"):
+                        if year_str not in payment_info_by_year:
+                            payment_info_by_year[year_str] = {}
+                        payment_info_by_year[year_str][month_name] = month_data.get("note")
+    
     # Calculate current status
     now = datetime.now(timezone.utc)
     month_names = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
