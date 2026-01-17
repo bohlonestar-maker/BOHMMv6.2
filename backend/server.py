@@ -3235,9 +3235,10 @@ async def get_member_attendance_summary(
 async def delete_member(
     member_id: str, 
     reason: str,
+    kick_from_discord: bool = False,
     current_user: dict = Depends(verify_token)
 ):
-    """Archive a member with deletion reason"""
+    """Archive a member with deletion reason and optionally kick from Discord"""
     # Check if user is an admin first
     if current_user.get("role") != "admin":
         raise HTTPException(status_code=403, detail="Admin access required")
@@ -3251,12 +3252,26 @@ async def delete_member(
     if not can_edit_member(current_user, member.get("chapter", "")):
         raise HTTPException(status_code=403, detail="You can only archive members in your own chapter")
     
+    # Kick from Discord if requested
+    discord_result = None
+    if kick_from_discord:
+        try:
+            discord_result = await kick_discord_member(
+                member_handle=member.get("handle", "Unknown"),
+                member_id=member_id,
+                reason=f"Member deleted: {reason}"
+            )
+        except Exception as e:
+            discord_result = {"success": False, "message": str(e)}
+    
     # Create archived record
     archived_member = {
         **member,
         "deletion_reason": reason,
         "deleted_by": current_user["username"],
-        "deleted_at": datetime.now(timezone.utc).isoformat()
+        "deleted_at": datetime.now(timezone.utc).isoformat(),
+        "kicked_from_discord": kick_from_discord,
+        "discord_kick_result": discord_result
     }
     
     # Move to archived collection
@@ -3265,14 +3280,22 @@ async def delete_member(
     # Remove from active members
     await db.members.delete_one({"id": member_id})
     
+    # Clean up any Discord suspension records
+    await db.discord_suspensions.delete_one({"member_id": member_id})
+    
     # Log activity
+    discord_note = " (kicked from Discord)" if kick_from_discord and discord_result and discord_result.get("success") else ""
     await log_activity(
         username=current_user["username"],
         action="member_archive",
-        details=f"Archived member: {member.get('name', 'Unknown')} ({member.get('handle', 'Unknown')}) - Reason: {reason}"
+        details=f"Archived member: {member.get('name', 'Unknown')} ({member.get('handle', 'Unknown')}) - Reason: {reason}{discord_note}"
     )
     
-    return {"message": "Member archived successfully"}
+    return {
+        "message": "Member archived successfully",
+        "discord_kicked": kick_from_discord,
+        "discord_result": discord_result
+    }
 
 # Dues tracking endpoint
 @api_router.put("/members/{member_id}/dues")
