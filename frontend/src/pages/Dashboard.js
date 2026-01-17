@@ -440,6 +440,7 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
   const handleDelete = (member) => {
     setMemberToDelete(member);
     setDeleteReason("");
+    setKickFromDiscord(false);
     setDeleteDialogOpen(true);
   };
 
