@@ -13831,23 +13831,28 @@ async def update_member_dues_with_payment_info(member_id: str, year: int, month:
         if year_str not in dues:
             dues[year_str] = [{"status": "unpaid", "note": ""} for _ in range(12)]
         
-        # Only update if not already paid (don't overwrite existing paid status)
+        # Only update if not already paid with a note (don't overwrite existing paid status with payment info)
         current_status = None
+        current_note = ""
         if isinstance(dues[year_str], list) and len(dues[year_str]) > month:
             if isinstance(dues[year_str][month], dict):
                 current_status = dues[year_str][month].get("status")
+                current_note = dues[year_str][month].get("note", "")
             elif dues[year_str][month] == True:
                 current_status = "paid"
         
-        # Skip if already paid
-        if current_status == "paid":
+        # Skip if already paid AND has a payment note (properly synced before)
+        if current_status == "paid" and current_note:
+            logger.info(f"Skipping {member_id} {year_str}-{month}: already paid with note")
             return
         
-        # Update to paid
+        # Update to paid (or update existing paid status with payment note if note was empty)
         dues[year_str][month] = {
             "status": "paid",
             "note": payment_note
         }
+        
+        logger.info(f"Updating {member_id} dues for {year_str}-{month}: status=paid, note={payment_note}")
         
         # Update member record - also clear any dues suspension
         await db.members.update_one(
