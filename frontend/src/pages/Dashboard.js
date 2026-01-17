@@ -1168,6 +1168,55 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
             
             {myDuesExpanded && (
               <div className="mt-4 space-y-4">
+                {/* Helper function to get payment info for a month */}
+                {(() => {
+                  // Build a map of months to payment info from one_time_payments and square_payments
+                  const getPaymentInfoForMonth = (year, monthIdx) => {
+                    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                    
+                    // Check payment_info_by_year first
+                    const paymentNote = myDues.payment_info_by_year?.[String(year)]?.[monthNames[monthIdx]];
+                    if (paymentNote) return paymentNote;
+                    
+                    // Check one_time_payments
+                    const oneTimePayments = myDues.one_time_payments || [];
+                    for (const payment of oneTimePayments) {
+                      if (payment.payment_date) {
+                        const paymentDate = new Date(payment.payment_date);
+                        const paymentYear = paymentDate.getFullYear();
+                        const paymentMonth = paymentDate.getMonth();
+                        const monthsCovered = payment.months_covered || 1;
+                        
+                        // Check if this payment covers the requested month
+                        for (let i = 0; i < monthsCovered; i++) {
+                          const coveredMonth = (paymentMonth + i) % 12;
+                          const coveredYear = paymentYear + Math.floor((paymentMonth + i) / 12);
+                          if (coveredYear === year && coveredMonth === monthIdx) {
+                            return `$${payment.amount?.toFixed(2) || '0.00'} paid on ${paymentDate.toLocaleDateString()}`;
+                          }
+                        }
+                      }
+                    }
+                    
+                    // Check square_payments
+                    const squarePayments = myDues.square_payments || [];
+                    for (const payment of squarePayments) {
+                      if (payment.paid_at && payment.status === 'PAID') {
+                        const paymentDate = new Date(payment.paid_at);
+                        const paymentYear = paymentDate.getFullYear();
+                        const paymentMonth = paymentDate.getMonth();
+                        if (paymentYear === year && paymentMonth === monthIdx) {
+                          return `$${payment.amount?.toFixed(2) || '30.00'} paid on ${paymentDate.toLocaleDateString()}`;
+                        }
+                      }
+                    }
+                    
+                    return null;
+                  };
+                  
+                  return null;
+                })()}
+                
                 {/* Current Year Status */}
                 <div>
                   <h3 className="text-sm font-medium text-slate-400 mb-2">2025 Dues Status</h3>
@@ -1177,7 +1226,46 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
                         const yearDues = myDues.dues_by_year?.['2025'] || [];
                         const monthData = yearDues[idx];
                         const isPaid = monthData === true || (typeof monthData === 'object' && monthData?.status === 'paid');
-                        const paymentInfo = myDues.payment_info_by_year?.['2025']?.[month];
+                        
+                        // Get payment info from various sources
+                        let paymentInfo = myDues.payment_info_by_year?.['2025']?.[month];
+                        
+                        // Check one_time_payments
+                        if (!paymentInfo && isPaid) {
+                          const oneTimePayments = myDues.one_time_payments || [];
+                          for (const payment of oneTimePayments) {
+                            if (payment.payment_date) {
+                              const paymentDate = new Date(payment.payment_date);
+                              const paymentYear = paymentDate.getFullYear();
+                              const paymentMonth = paymentDate.getMonth();
+                              const monthsCovered = payment.months_covered || 1;
+                              
+                              for (let i = 0; i < monthsCovered; i++) {
+                                const coveredMonth = (paymentMonth + i) % 12;
+                                const coveredYear = paymentYear + Math.floor((paymentMonth + i) / 12);
+                                if (coveredYear === 2025 && coveredMonth === idx) {
+                                  paymentInfo = `$${payment.amount?.toFixed(2) || '0.00'} paid on ${paymentDate.toLocaleDateString()}`;
+                                  break;
+                                }
+                              }
+                              if (paymentInfo) break;
+                            }
+                          }
+                        }
+                        
+                        // Check square_payments
+                        if (!paymentInfo && isPaid) {
+                          const squarePayments = myDues.square_payments || [];
+                          for (const payment of squarePayments) {
+                            if (payment.paid_at && payment.status === 'PAID') {
+                              const paymentDate = new Date(payment.paid_at);
+                              if (paymentDate.getFullYear() === 2025 && paymentDate.getMonth() === idx) {
+                                paymentInfo = `$${payment.amount?.toFixed(2) || '30.00'} paid on ${paymentDate.toLocaleDateString()}`;
+                                break;
+                              }
+                            }
+                          }
+                        }
                         
                         return (
                           <Tooltip key={month}>
@@ -1192,7 +1280,7 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
                                 {month}
                               </div>
                             </TooltipTrigger>
-                            <TooltipContent className="bg-slate-700 border-slate-600 text-white">
+                            <TooltipContent className="bg-slate-700 border-slate-600 text-white max-w-xs">
                               <p className="font-medium">{month} 2025</p>
                               {isPaid ? (
                                 <p className="text-green-400 text-xs">
@@ -1219,7 +1307,46 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
                           const yearDues = myDues.dues_by_year?.['2026'] || [];
                           const monthData = yearDues[idx];
                           const isPaid = monthData === true || (typeof monthData === 'object' && monthData?.status === 'paid');
-                          const paymentInfo = myDues.payment_info_by_year?.['2026']?.[month];
+                          
+                          // Get payment info from various sources
+                          let paymentInfo = myDues.payment_info_by_year?.['2026']?.[month];
+                          
+                          // Check one_time_payments
+                          if (!paymentInfo && isPaid) {
+                            const oneTimePayments = myDues.one_time_payments || [];
+                            for (const payment of oneTimePayments) {
+                              if (payment.payment_date) {
+                                const paymentDate = new Date(payment.payment_date);
+                                const paymentYear = paymentDate.getFullYear();
+                                const paymentMonth = paymentDate.getMonth();
+                                const monthsCovered = payment.months_covered || 1;
+                                
+                                for (let i = 0; i < monthsCovered; i++) {
+                                  const coveredMonth = (paymentMonth + i) % 12;
+                                  const coveredYear = paymentYear + Math.floor((paymentMonth + i) / 12);
+                                  if (coveredYear === 2026 && coveredMonth === idx) {
+                                    paymentInfo = `$${payment.amount?.toFixed(2) || '0.00'} paid on ${paymentDate.toLocaleDateString()}`;
+                                    break;
+                                  }
+                                }
+                                if (paymentInfo) break;
+                              }
+                            }
+                          }
+                          
+                          // Check square_payments
+                          if (!paymentInfo && isPaid) {
+                            const squarePayments = myDues.square_payments || [];
+                            for (const payment of squarePayments) {
+                              if (payment.paid_at && payment.status === 'PAID') {
+                                const paymentDate = new Date(payment.paid_at);
+                                if (paymentDate.getFullYear() === 2026 && paymentDate.getMonth() === idx) {
+                                  paymentInfo = `$${payment.amount?.toFixed(2) || '30.00'} paid on ${paymentDate.toLocaleDateString()}`;
+                                  break;
+                                }
+                              }
+                            }
+                          }
                           
                           return (
                             <Tooltip key={month}>
@@ -1234,7 +1361,7 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
                                   {month}
                                 </div>
                               </TooltipTrigger>
-                              <TooltipContent className="bg-slate-700 border-slate-600 text-white">
+                              <TooltipContent className="bg-slate-700 border-slate-600 text-white max-w-xs">
                                 <p className="font-medium">{month} 2026</p>
                                 {isPaid ? (
                                   <p className="text-green-400 text-xs">
