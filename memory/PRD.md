@@ -47,6 +47,12 @@ Build a member management application with attendance tracking, dues management,
 
 ### What's Been Implemented
 
+#### January 17, 2026 - Square Sync Bug Fix
+- [x] **Fixed one-time payment sync not updating member dues notes**
+  - Root cause: Logic was skipping update for months already marked "paid" even if they had no payment note
+  - Fix: Now updates payment note for months that are "paid" but have empty notes
+  - Verified: Lonestar's January 2026 dues now shows "Paid via Square on 2026-01-17"
+
 #### January 11, 2026 - Dues Reminders System
 - [x] **Backend API Endpoints:**
   - `GET /api/dues-reminders/templates` - Get all 3 email templates
