@@ -1172,21 +1172,40 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
                 <div>
                   <h3 className="text-sm font-medium text-slate-400 mb-2">2025 Dues Status</h3>
                   <div className="flex flex-wrap gap-2">
-                    {['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].map((month, idx) => {
-                      const yearDues = myDues.dues_by_year?.['2025'] || [];
-                      const monthData = yearDues[idx];
-                      const isPaid = monthData === true || (typeof monthData === 'object' && monthData?.status === 'paid');
-                      return (
-                        <div 
-                          key={month}
-                          className={`px-3 py-1 rounded text-xs font-medium ${
-                            isPaid ? 'bg-green-600/30 text-green-400 border border-green-600' : 'bg-slate-700 text-slate-400 border border-slate-600'
-                          }`}
-                        >
-                          {month}
-                        </div>
-                      );
-                    })}
+                    <TooltipProvider>
+                      {['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].map((month, idx) => {
+                        const yearDues = myDues.dues_by_year?.['2025'] || [];
+                        const monthData = yearDues[idx];
+                        const isPaid = monthData === true || (typeof monthData === 'object' && monthData?.status === 'paid');
+                        const paymentInfo = myDues.payment_info_by_year?.['2025']?.[month];
+                        
+                        return (
+                          <Tooltip key={month}>
+                            <TooltipTrigger asChild>
+                              <div 
+                                className={`px-3 py-1 rounded text-xs font-medium cursor-pointer transition-colors ${
+                                  isPaid 
+                                    ? 'bg-green-600/30 text-green-400 border border-green-600 hover:bg-green-600/50' 
+                                    : 'bg-slate-700 text-slate-400 border border-slate-600 hover:bg-slate-600'
+                                }`}
+                              >
+                                {month}
+                              </div>
+                            </TooltipTrigger>
+                            <TooltipContent className="bg-slate-700 border-slate-600 text-white">
+                              <p className="font-medium">{month} 2025</p>
+                              {isPaid ? (
+                                <p className="text-green-400 text-xs">
+                                  {paymentInfo || 'Paid'}
+                                </p>
+                              ) : (
+                                <p className="text-slate-400 text-xs">Unpaid</p>
+                              )}
+                            </TooltipContent>
+                          </Tooltip>
+                        );
+                      })}
+                    </TooltipProvider>
                   </div>
                 </div>
 
@@ -1195,21 +1214,40 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
                   <div>
                     <h3 className="text-sm font-medium text-slate-400 mb-2">2026 Dues Status</h3>
                     <div className="flex flex-wrap gap-2">
-                      {['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].map((month, idx) => {
-                        const yearDues = myDues.dues_by_year?.['2026'] || [];
-                        const monthData = yearDues[idx];
-                        const isPaid = monthData === true || (typeof monthData === 'object' && monthData?.status === 'paid');
-                        return (
-                          <div 
-                            key={month}
-                            className={`px-3 py-1 rounded text-xs font-medium ${
-                              isPaid ? 'bg-green-600/30 text-green-400 border border-green-600' : 'bg-slate-700 text-slate-400 border border-slate-600'
-                            }`}
-                          >
-                            {month}
-                          </div>
-                        );
-                      })}
+                      <TooltipProvider>
+                        {['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].map((month, idx) => {
+                          const yearDues = myDues.dues_by_year?.['2026'] || [];
+                          const monthData = yearDues[idx];
+                          const isPaid = monthData === true || (typeof monthData === 'object' && monthData?.status === 'paid');
+                          const paymentInfo = myDues.payment_info_by_year?.['2026']?.[month];
+                          
+                          return (
+                            <Tooltip key={month}>
+                              <TooltipTrigger asChild>
+                                <div 
+                                  className={`px-3 py-1 rounded text-xs font-medium cursor-pointer transition-colors ${
+                                    isPaid 
+                                      ? 'bg-green-600/30 text-green-400 border border-green-600 hover:bg-green-600/50' 
+                                      : 'bg-slate-700 text-slate-400 border border-slate-600 hover:bg-slate-600'
+                                  }`}
+                                >
+                                  {month}
+                                </div>
+                              </TooltipTrigger>
+                              <TooltipContent className="bg-slate-700 border-slate-600 text-white">
+                                <p className="font-medium">{month} 2026</p>
+                                {isPaid ? (
+                                  <p className="text-green-400 text-xs">
+                                    {paymentInfo || 'Paid'}
+                                  </p>
+                                ) : (
+                                  <p className="text-slate-400 text-xs">Unpaid</p>
+                                )}
+                              </TooltipContent>
+                            </Tooltip>
+                          );
+                        })}
+                      </TooltipProvider>
                     </div>
                   </div>
                 )}
