@@ -434,6 +434,16 @@ function App() {
               )
             }
           />
+          <Route
+            path="/forms"
+            element={
+              isAuthenticated ? (
+                <Forms />
+              ) : (
+                <Navigate to="/" replace />
+              )
+            }
+          />
         </Routes>
         <KeepAlive />
         {isAuthenticated && <MessageNotifier />}
