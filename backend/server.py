@@ -13609,12 +13609,31 @@ async def sync_payment_links_to_dues(current_user: dict = Depends(verify_token))
                 is_dues_order = False
                 total_amount = 0
                 
+                # Debug: Log item names for troubleshooting
+                item_names_found = []
+                
                 for item in line_items:
                     item_name = (getattr(item, 'name', '') or '').lower()
+                    item_names_found.append(item_name)
                     if any(keyword in item_name for keyword in DUES_ITEM_KEYWORDS):
                         is_dues_order = True
                         if hasattr(item, 'total_money') and item.total_money:
                             total_amount += item.total_money.amount / 100
+                
+                # Also check order note/reference for dues keywords
+                order_note = (getattr(order, 'reference_id', '') or '').lower()
+                order_source = (getattr(order, 'source', None) or {})
+                if hasattr(order_source, 'name'):
+                    order_source_name = (order_source.name or '').lower()
+                else:
+                    order_source_name = ''
+                
+                if not is_dues_order:
+                    # Check if any dues keyword in order note or source
+                    if any(keyword in order_note for keyword in DUES_ITEM_KEYWORDS):
+                        is_dues_order = True
+                    elif any(keyword in order_source_name for keyword in DUES_ITEM_KEYWORDS):
+                        is_dues_order = True
                 
                 if not is_dues_order:
                     skipped_not_dues += 1
