@@ -11242,8 +11242,14 @@ async def check_and_send_birthday_notifications():
     """Check for members with birthdays today and send Discord notifications"""
     import sys
     from datetime import datetime
+    import random
     
     try:
+        # Add random delay (0-5 seconds) to stagger multiple instances
+        delay = random.uniform(0, 5)
+        print(f"🎂 [BIRTHDAY] Waiting {delay:.1f}s before checking (stagger delay)...", file=sys.stderr, flush=True)
+        await asyncio.sleep(delay)
+        
         print(f"🎂 [BIRTHDAY] Checking for birthdays today...", file=sys.stderr, flush=True)
         
         # Get today's date in MM-DD format for comparison
