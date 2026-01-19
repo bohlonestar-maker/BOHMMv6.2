@@ -14669,7 +14669,7 @@ cors_origins = [origin.strip() for origin in cors_origins_str.split(',') if orig
 # If no origins specified or only '*', use a restrictive default
 if not cors_origins or cors_origins == ['*']:
     cors_origins = [
-        "https://memberwatch.preview.emergentagent.com",
+        "https://member-hub-54.preview.emergentagent.com",
         "https://boh-tracker.emergent.host",
         "https://www.bohhub.com",
         "https://bohhub.com"

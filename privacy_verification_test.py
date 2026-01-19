@@ -12,7 +12,7 @@ import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 class PrivacyVerificationTester:
-    def __init__(self, base_url="https://memberwatch.preview.emergentagent.com/api"):
+    def __init__(self, base_url="https://member-hub-54.preview.emergentagent.com/api"):
         self.base_url = base_url
         self.admin_token = None
         self.regular_token = None

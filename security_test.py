@@ -14,7 +14,7 @@ import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 class SecurityTester:
-    def __init__(self, base_url="https://memberwatch.preview.emergentagent.com/api"):
+    def __init__(self, base_url="https://member-hub-54.preview.emergentagent.com/api"):
         self.base_url = base_url
         self.token = None
         self.tests_run = 0
