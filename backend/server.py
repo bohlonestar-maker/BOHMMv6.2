@@ -367,6 +367,81 @@ async def start_discord_bot():
         sys.stderr.flush()
 
 
+async def add_discord_role_by_name(member_handle: str, role_id: str, reason: str = "Role assignment") -> dict:
+    """Add a Discord role to a member by their handle"""
+    global discord_bot
+    
+    if not discord_bot or not DISCORD_GUILD_ID:
+        return {"success": False, "message": "Discord bot not configured"}
+    
+    try:
+        guild = discord_bot.get_guild(int(DISCORD_GUILD_ID))
+        if not guild:
+            return {"success": False, "message": "Guild not found"}
+        
+        # Find member by handle
+        discord_member = None
+        for member in guild.members:
+            display_name = member.nick or member.display_name or member.name
+            if display_name.lower() == member_handle.lower() or member_handle.lower() in display_name.lower():
+                discord_member = member
+                break
+        
+        if not discord_member:
+            return {"success": False, "message": f"Could not find Discord user for {member_handle}"}
+        
+        role = guild.get_role(int(role_id))
+        if not role:
+            return {"success": False, "message": f"Role {role_id} not found"}
+        
+        await discord_member.add_roles(role, reason=reason)
+        sys.stderr.write(f"✅ [DISCORD] Added role {role.name} to {member_handle}\n")
+        sys.stderr.flush()
+        return {"success": True, "message": f"Added role {role.name} to {member_handle}"}
+    except Exception as e:
+        sys.stderr.write(f"❌ [DISCORD] Error adding role: {e}\n")
+        sys.stderr.flush()
+        return {"success": False, "message": str(e)}
+
+
+async def remove_discord_role_by_name(member_handle: str, role_id: str, reason: str = "Role removal") -> dict:
+    """Remove a Discord role from a member by their handle"""
+    global discord_bot
+    
+    if not discord_bot or not DISCORD_GUILD_ID:
+        return {"success": False, "message": "Discord bot not configured"}
+    
+    try:
+        guild = discord_bot.get_guild(int(DISCORD_GUILD_ID))
+        if not guild:
+            return {"success": False, "message": "Guild not found"}
+        
+        # Find member by handle
+        discord_member = None
+        for member in guild.members:
+            display_name = member.nick or member.display_name or member.name
+            if display_name.lower() == member_handle.lower() or member_handle.lower() in display_name.lower():
+                discord_member = member
+                break
+        
+        if not discord_member:
+            return {"success": False, "message": f"Could not find Discord user for {member_handle}"}
+        
+        role = guild.get_role(int(role_id))
+        if not role:
+            return {"success": False, "message": f"Role {role_id} not found"}
+        
+        if role in discord_member.roles:
+            await discord_member.remove_roles(role, reason=reason)
+            sys.stderr.write(f"✅ [DISCORD] Removed role {role.name} from {member_handle}\n")
+            sys.stderr.flush()
+        return {"success": True, "message": f"Removed role {role.name} from {member_handle}"}
+    except Exception as e:
+        sys.stderr.write(f"❌ [DISCORD] Error removing role: {e}\n")
+        sys.stderr.flush()
+        return {"success": False, "message": str(e)}
+
+
 async def suspend_discord_member(member_handle: str, member_id: str, reason: str = "Dues suspension") -> dict:
     """
     Suspend a member's Discord permissions by removing their roles.
