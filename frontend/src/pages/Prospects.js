@@ -874,6 +874,127 @@ export default function Prospects({ onLogout, userRole, userChapter }) {
     }
   };
 
+  // Hangaround Attendance Handlers
+  const handleOpenHangaroundAttendance = (hangaround) => {
+    setSelectedHangaround(hangaround);
+    const currentYear = new Date().getFullYear().toString();
+    let attendanceData = {};
+    
+    if (hangaround.meeting_attendance) {
+      attendanceData = { ...hangaround.meeting_attendance };
+    }
+    
+    if (!attendanceData[currentYear]) {
+      attendanceData[currentYear] = [];
+    }
+    
+    setHangaroundAttendanceData(attendanceData);
+    setHangaroundSelectedYear(currentYear);
+    setHangaroundAttendanceDialogOpen(true);
+  };
+
+  const handleHangaroundAttendanceToggle = (index) => {
+    const yearMeetings = hangaroundAttendanceData[hangaroundSelectedYear] || [];
+    const meeting = yearMeetings[index];
+    if (!meeting) return;
+    
+    const currentStatus = meeting.status || 0;
+    const newStatus = currentStatus === 0 ? 1 : currentStatus === 1 ? 2 : 0;
+    
+    const updatedMeetings = [...yearMeetings];
+    updatedMeetings[index] = { ...meeting, status: newStatus };
+    
+    setHangaroundAttendanceData({
+      ...hangaroundAttendanceData,
+      [hangaroundSelectedYear]: updatedMeetings
+    });
+  };
+
+  const handleHangaroundAttendanceNoteChange = (index, note) => {
+    const yearMeetings = hangaroundAttendanceData[hangaroundSelectedYear] || [];
+    const updatedMeetings = [...yearMeetings];
+    if (updatedMeetings[index]) {
+      updatedMeetings[index] = { ...updatedMeetings[index], note };
+    }
+    
+    setHangaroundAttendanceData({
+      ...hangaroundAttendanceData,
+      [hangaroundSelectedYear]: updatedMeetings
+    });
+  };
+
+  const handleHangaroundAddMeeting = () => {
+    if (!hangaroundNewMeetingDate) {
+      toast.error("Please select a date");
+      return;
+    }
+    
+    const meetingYear = hangaroundNewMeetingDate.split('-')[0];
+    const yearMeetings = hangaroundAttendanceData[meetingYear] || [];
+    
+    // Check for duplicate date
+    if (yearMeetings.some(m => m.date === hangaroundNewMeetingDate)) {
+      toast.error("A meeting already exists for this date");
+      return;
+    }
+    
+    const newMeeting = {
+      date: hangaroundNewMeetingDate,
+      status: parseInt(hangaroundNewMeetingStatus),
+      note: hangaroundNewMeetingNote
+    };
+    
+    const updatedMeetings = [...yearMeetings, newMeeting].sort((a, b) => 
+      new Date(a.date) - new Date(b.date)
+    );
+    
+    setHangaroundAttendanceData({
+      ...hangaroundAttendanceData,
+      [meetingYear]: updatedMeetings
+    });
+    
+    setHangaroundAddMeetingDialogOpen(false);
+    setHangaroundNewMeetingDate("");
+    setHangaroundNewMeetingStatus(1);
+    setHangaroundNewMeetingNote("");
+    setHangaroundSelectedYear(meetingYear);
+  };
+
+  const handleHangaroundDeleteMeeting = (index) => {
+    const yearMeetings = hangaroundAttendanceData[hangaroundSelectedYear] || [];
+    const updatedMeetings = yearMeetings.filter((_, i) => i !== index);
+    
+    setHangaroundAttendanceData({
+      ...hangaroundAttendanceData,
+      [hangaroundSelectedYear]: updatedMeetings
+    });
+  };
+
+  const handleSaveHangaroundAttendance = async () => {
+    const token = localStorage.getItem("token");
+    try {
+      await axios.put(
+        `${API}/hangarounds/${selectedHangaround.id}`,
+        { meeting_attendance: hangaroundAttendanceData },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      toast.success("Attendance saved successfully");
+      fetchHangarounds();
+      setHangaroundAttendanceDialogOpen(false);
+    } catch (error) {
+      toast.error("Failed to save attendance");
+    }
+  };
+
+  const getHangaroundAttendanceSummary = (hangaround) => {
+    const currentYear = new Date().getFullYear().toString();
+    const meetings = hangaround.meeting_attendance?.[currentYear] || [];
+    const total = meetings.length;
+    const present = meetings.filter(m => m?.status === 1).length;
+    const excused = meetings.filter(m => m?.status === 2).length;
+    return { total, present, excused };
+  };
+
   const filteredHangarounds = hangarounds.filter((hangaround) => {
     const search = hangaroundSearchTerm.toLowerCase();
     return (
