@@ -4302,6 +4302,337 @@ async def update_prospect_action(
     
     return {"message": "Action updated successfully"}
 
+# ==================== HANGAROUND MANAGEMENT ENDPOINTS ====================
+# Hangarounds are the entry level - only handle and name required
+
+def can_view_hangarounds(user: dict) -> bool:
+    """Check if user can view hangarounds list (same as prospects)"""
+    return can_view_prospects(user)
+
+def can_edit_hangaround(user: dict) -> bool:
+    """Check if user can edit hangarounds (same as prospects)"""
+    return can_edit_prospect(user)
+
+@api_router.get("/hangarounds", response_model=List[Hangaround])
+async def get_hangarounds(current_user: dict = Depends(verify_token)):
+    """Get all hangarounds"""
+    if not can_view_hangarounds(current_user):
+        raise HTTPException(status_code=403, detail="Only National Admin, HA Admin, or PM can view hangarounds")
+    
+    hangarounds = await db.hangarounds.find({}, {"_id": 0}).to_list(1000)
+    user_can_edit = can_edit_hangaround(current_user)
+    
+    for hangaround in hangarounds:
+        if isinstance(hangaround.get('created_at'), str):
+            hangaround['created_at'] = datetime.fromisoformat(hangaround['created_at'])
+        if isinstance(hangaround.get('updated_at'), str):
+            hangaround['updated_at'] = datetime.fromisoformat(hangaround['updated_at'])
+        hangaround['can_edit'] = user_can_edit
+    
+    return hangarounds
+
+@api_router.get("/hangarounds/{hangaround_id}", response_model=Hangaround)
+async def get_hangaround(hangaround_id: str, current_user: dict = Depends(verify_token)):
+    """Get a single hangaround by ID"""
+    if not can_view_hangarounds(current_user):
+        raise HTTPException(status_code=403, detail="Only National Admin and HA Admin can view hangarounds")
+    
+    hangaround = await db.hangarounds.find_one({"id": hangaround_id}, {"_id": 0})
+    if not hangaround:
+        raise HTTPException(status_code=404, detail="Hangaround not found")
+    
+    if isinstance(hangaround.get('created_at'), str):
+        hangaround['created_at'] = datetime.fromisoformat(hangaround['created_at'])
+    if isinstance(hangaround.get('updated_at'), str):
+        hangaround['updated_at'] = datetime.fromisoformat(hangaround['updated_at'])
+    
+    return hangaround
+
+@api_router.post("/hangarounds", response_model=Hangaround, status_code=201)
+async def create_hangaround(hangaround_data: HangaroundCreate, current_user: dict = Depends(verify_token)):
+    """Create a new hangaround (only handle and name required)"""
+    if not can_edit_hangaround(current_user):
+        raise HTTPException(status_code=403, detail="Only National Admin and HA Admin can create hangarounds")
+    
+    hangaround = Hangaround(
+        handle=hangaround_data.handle,
+        name=hangaround_data.name
+    )
+    doc = hangaround.model_dump()
+    doc['created_at'] = doc['created_at'].isoformat()
+    doc['updated_at'] = doc['updated_at'].isoformat()
+    await db.hangarounds.insert_one(doc)
+    
+    # Try to add Discord role
+    if DISCORD_HANGAROUND_ROLE_ID and discord_bot:
+        try:
+            await add_discord_role_by_name(hangaround.handle, DISCORD_HANGAROUND_ROLE_ID, "New Hangaround")
+        except Exception as e:
+            sys.stderr.write(f"⚠️ Failed to add Discord Hangaround role: {e}\n")
+            sys.stderr.flush()
+    
+    await log_activity(
+        username=current_user["username"],
+        action="hangaround_create",
+        details=f"Created hangaround: {hangaround.name} ({hangaround.handle})"
+    )
+    
+    return hangaround
+
+@api_router.put("/hangarounds/{hangaround_id}", response_model=Hangaround)
+async def update_hangaround(hangaround_id: str, hangaround_data: HangaroundUpdate, current_user: dict = Depends(verify_token)):
+    """Update a hangaround"""
+    if not can_edit_hangaround(current_user):
+        raise HTTPException(status_code=403, detail="Only National Admin and HA Admin can edit hangarounds")
+    
+    hangaround = await db.hangarounds.find_one({"id": hangaround_id}, {"_id": 0})
+    if not hangaround:
+        raise HTTPException(status_code=404, detail="Hangaround not found")
+    
+    update_data = {k: v for k, v in hangaround_data.model_dump().items() if v is not None}
+    update_data['updated_at'] = datetime.now(timezone.utc).isoformat()
+    
+    await db.hangarounds.update_one({"id": hangaround_id}, {"$set": update_data})
+    
+    updated_hangaround = await db.hangarounds.find_one({"id": hangaround_id}, {"_id": 0})
+    if isinstance(updated_hangaround.get('created_at'), str):
+        updated_hangaround['created_at'] = datetime.fromisoformat(updated_hangaround['created_at'])
+    if isinstance(updated_hangaround.get('updated_at'), str):
+        updated_hangaround['updated_at'] = datetime.fromisoformat(updated_hangaround['updated_at'])
+    
+    await log_activity(
+        username=current_user["username"],
+        action="hangaround_update",
+        details=f"Updated hangaround: {updated_hangaround.get('name', 'Unknown')} ({updated_hangaround.get('handle', 'Unknown')})"
+    )
+    
+    return updated_hangaround
+
+@api_router.delete("/hangarounds/{hangaround_id}")
+async def delete_hangaround(
+    hangaround_id: str,
+    reason: str,
+    current_user: dict = Depends(verify_token)
+):
+    """Archive a hangaround with deletion reason"""
+    if not can_edit_hangaround(current_user):
+        raise HTTPException(status_code=403, detail="Only National Admin and HA Admin can archive hangarounds")
+    
+    hangaround = await db.hangarounds.find_one({"id": hangaround_id}, {"_id": 0})
+    if not hangaround:
+        raise HTTPException(status_code=404, detail="Hangaround not found")
+    
+    # Create archived record
+    archived_hangaround = {
+        **hangaround,
+        "deletion_reason": reason,
+        "deleted_by": current_user["username"],
+        "deleted_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.archived_hangarounds.insert_one(archived_hangaround)
+    await db.hangarounds.delete_one({"id": hangaround_id})
+    
+    await log_activity(
+        username=current_user["username"],
+        action="hangaround_archive",
+        details=f"Archived hangaround: {hangaround.get('name', 'Unknown')} ({hangaround.get('handle', 'Unknown')}) - Reason: {reason}"
+    )
+    
+    return {"message": "Hangaround archived successfully"}
+
+@api_router.post("/hangarounds/{hangaround_id}/promote", response_model=Prospect, status_code=201)
+async def promote_hangaround_to_prospect(
+    hangaround_id: str,
+    promotion_data: HangaroundToProspectPromotion,
+    current_user: dict = Depends(verify_token)
+):
+    """Promote a hangaround to prospect by adding required info"""
+    if not can_edit_hangaround(current_user):
+        raise HTTPException(status_code=403, detail="Only National Admin and HA Admin can promote hangarounds")
+    
+    hangaround = await db.hangarounds.find_one({"id": hangaround_id}, {"_id": 0})
+    if not hangaround:
+        raise HTTPException(status_code=404, detail="Hangaround not found")
+    
+    # Create prospect from hangaround data + promotion data
+    prospect = Prospect(
+        handle=hangaround['handle'],
+        name=hangaround['name'],
+        email=promotion_data.email,
+        phone=promotion_data.phone,
+        address=promotion_data.address,
+        dob=promotion_data.dob,
+        join_date=promotion_data.join_date,
+        military_service=promotion_data.military_service,
+        military_branch=promotion_data.military_branch,
+        is_first_responder=promotion_data.is_first_responder,
+        meeting_attendance=hangaround.get('meeting_attendance', {str(datetime.now(timezone.utc).year): []}),
+        actions=hangaround.get('actions', []),
+        promoted_from_hangaround=hangaround_id
+    )
+    
+    # Add promotion action
+    promotion_action = {
+        "id": str(uuid.uuid4()),
+        "type": "promotion",
+        "date": datetime.now(timezone.utc).strftime("%Y-%m-%d"),
+        "description": f"Promoted from Hangaround to Prospect by {current_user['username']}",
+        "created_by": current_user["username"],
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    prospect.actions.append(promotion_action)
+    
+    # Save prospect
+    doc = prospect.model_dump()
+    doc['created_at'] = doc['created_at'].isoformat()
+    doc['updated_at'] = doc['updated_at'].isoformat()
+    await db.prospects.insert_one(doc)
+    
+    # Archive hangaround (not delete, keep history)
+    archived_hangaround = {
+        **hangaround,
+        "promoted_to_prospect": prospect.id,
+        "promoted_at": datetime.now(timezone.utc).isoformat(),
+        "promoted_by": current_user["username"]
+    }
+    await db.archived_hangarounds.insert_one(archived_hangaround)
+    await db.hangarounds.delete_one({"id": hangaround_id})
+    
+    # Update Discord roles
+    if discord_bot:
+        try:
+            # Remove Hangaround role, add Prospect role
+            if DISCORD_HANGAROUND_ROLE_ID:
+                await remove_discord_role_by_name(hangaround['handle'], DISCORD_HANGAROUND_ROLE_ID, "Promoted to Prospect")
+            if DISCORD_PROSPECT_ROLE_ID:
+                await add_discord_role_by_name(prospect.handle, DISCORD_PROSPECT_ROLE_ID, "Promoted to Prospect")
+        except Exception as e:
+            sys.stderr.write(f"⚠️ Failed to update Discord roles for promotion: {e}\n")
+            sys.stderr.flush()
+    
+    await log_activity(
+        username=current_user["username"],
+        action="promote_hangaround",
+        details=f"Promoted hangaround {hangaround['handle']} to Prospect"
+    )
+    
+    return prospect
+
+@api_router.post("/hangarounds/{hangaround_id}/actions")
+async def add_hangaround_action(
+    hangaround_id: str,
+    action_type: str,
+    date: str,
+    description: str,
+    current_user: dict = Depends(verify_token)
+):
+    """Add a merit, promotion, or disciplinary action to a hangaround"""
+    if not can_edit_hangaround(current_user):
+        raise HTTPException(status_code=403, detail="Only National Admin and HA Admin can edit hangarounds")
+    
+    hangaround = await db.hangarounds.find_one({"id": hangaround_id}, {"_id": 0})
+    if not hangaround:
+        raise HTTPException(status_code=404, detail="Hangaround not found")
+    
+    action = {
+        "id": str(uuid.uuid4()),
+        "type": action_type,
+        "date": date,
+        "description": description,
+        "created_by": current_user["username"],
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    actions = hangaround.get("actions", [])
+    actions.append(action)
+    
+    await db.hangarounds.update_one(
+        {"id": hangaround_id},
+        {"$set": {"actions": actions, "updated_at": datetime.now(timezone.utc)}}
+    )
+    
+    await log_activity(
+        current_user["username"],
+        "add_action",
+        f"Added {action_type} action for hangaround {hangaround['handle']}"
+    )
+    
+    return {"message": "Action added successfully", "action": action}
+
+@api_router.delete("/hangarounds/{hangaround_id}/actions/{action_id}")
+async def delete_hangaround_action(
+    hangaround_id: str,
+    action_id: str,
+    current_user: dict = Depends(verify_token)
+):
+    """Delete an action from a hangaround"""
+    if not can_edit_hangaround(current_user):
+        raise HTTPException(status_code=403, detail="Only National Admin and HA Admin can edit hangarounds")
+    
+    hangaround = await db.hangarounds.find_one({"id": hangaround_id}, {"_id": 0})
+    if not hangaround:
+        raise HTTPException(status_code=404, detail="Hangaround not found")
+    
+    actions = hangaround.get("actions", [])
+    actions = [a for a in actions if a.get("id") != action_id]
+    
+    await db.hangarounds.update_one(
+        {"id": hangaround_id},
+        {"$set": {"actions": actions, "updated_at": datetime.now(timezone.utc)}}
+    )
+    
+    await log_activity(
+        current_user["username"],
+        "delete_action",
+        f"Deleted action from hangaround {hangaround['handle']}"
+    )
+    
+    return {"message": "Action deleted successfully"}
+
+# Migration endpoint to convert existing prospects to hangarounds
+@api_router.post("/admin/migrate-prospects-to-hangarounds")
+async def migrate_prospects_to_hangarounds(current_user: dict = Depends(verify_token)):
+    """One-time migration: Convert all existing prospects to hangarounds"""
+    if current_user.get("role") != "admin" or current_user.get("chapter") != "National":
+        raise HTTPException(status_code=403, detail="Only National Admin can run migration")
+    
+    prospects = await db.prospects.find({}, {"_id": 0}).to_list(1000)
+    migrated_count = 0
+    
+    for prospect in prospects:
+        hangaround = {
+            "id": prospect["id"],
+            "handle": prospect["handle"],
+            "name": prospect["name"],
+            "meeting_attendance": prospect.get("meeting_attendance", {str(datetime.now(timezone.utc).year): []}),
+            "actions": prospect.get("actions", []),
+            "created_at": prospect.get("created_at", datetime.now(timezone.utc).isoformat()),
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+            "migrated_from_prospect": True,
+            "original_prospect_data": {
+                "email": prospect.get("email"),
+                "phone": prospect.get("phone"),
+                "address": prospect.get("address"),
+                "dob": prospect.get("dob"),
+                "join_date": prospect.get("join_date"),
+                "military_service": prospect.get("military_service"),
+                "military_branch": prospect.get("military_branch"),
+                "is_first_responder": prospect.get("is_first_responder")
+            }
+        }
+        await db.hangarounds.insert_one(hangaround)
+        await db.prospects.delete_one({"id": prospect["id"]})
+        migrated_count += 1
+    
+    await log_activity(
+        username=current_user["username"],
+        action="migrate_prospects",
+        details=f"Migrated {migrated_count} prospects to hangarounds"
+    )
+    
+    return {"message": f"Successfully migrated {migrated_count} prospects to hangarounds", "count": migrated_count}
+
 # Prospect management endpoints (admin only)
 @api_router.get("/prospects", response_model=List[Prospect])
 async def get_prospects(current_user: dict = Depends(verify_token)):
