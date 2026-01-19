@@ -101,6 +101,34 @@ export default function Prospects({ onLogout, userRole, userChapter }) {
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear().toString());
   const navigate = useNavigate();
   
+  // Active tab state (hangarounds or prospects)
+  const [activeTab, setActiveTab] = useState("hangarounds");
+  
+  // Hangaround state
+  const [hangarounds, setHangarounds] = useState([]);
+  const [hangaroundDialogOpen, setHangaroundDialogOpen] = useState(false);
+  const [editingHangaround, setEditingHangaround] = useState(null);
+  const [hangaroundToDelete, setHangaroundToDelete] = useState(null);
+  const [hangaroundDeleteDialogOpen, setHangaroundDeleteDialogOpen] = useState(false);
+  const [hangaroundDeleteReason, setHangaroundDeleteReason] = useState("");
+  const [promoteToProspectDialogOpen, setPromoteToProspectDialogOpen] = useState(false);
+  const [hangaroundToPromote, setHangaroundToPromote] = useState(null);
+  const [hangaroundFormData, setHangaroundFormData] = useState({ handle: "", name: "" });
+  const [promoteToProspectFormData, setPromoteToProspectFormData] = useState({
+    email: "",
+    phone: "",
+    address: "",
+    dob: "",
+    join_date: "",
+    military_service: false,
+    military_branch: "",
+    is_first_responder: false
+  });
+  const [hangaroundSearchTerm, setHangaroundSearchTerm] = useState("");
+  const [selectedHangaround, setSelectedHangaround] = useState(null);
+  const [hangaroundActionsDialogOpen, setHangaroundActionsDialogOpen] = useState(false);
+  const [hangaroundActionForm, setHangaroundActionForm] = useState({ type: "merit", date: "", description: "" });
+  
   // Check if user can edit prospects - will be updated from API response
   // PM title has view-only access, so they cannot edit
   const userTitle = localStorage.getItem('title') || '';
