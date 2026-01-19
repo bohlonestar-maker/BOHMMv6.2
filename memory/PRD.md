@@ -122,7 +122,18 @@ Build a member management application with attendance tracking, dues management,
 
 ### API Endpoints
 
-#### Dues Reminders (NEW)
+#### Hangarounds (NEW - Jan 19, 2026)
+- `GET /api/hangarounds` - Get all hangarounds
+- `GET /api/hangarounds/{id}` - Get single hangaround
+- `POST /api/hangarounds` - Create hangaround (only handle/name required)
+- `PUT /api/hangarounds/{id}` - Update hangaround
+- `DELETE /api/hangarounds/{id}` - Archive hangaround
+- `POST /api/hangarounds/{id}/promote` - Promote to prospect
+- `POST /api/hangarounds/{id}/actions` - Add action (merit/disciplinary)
+- `DELETE /api/hangarounds/{id}/actions/{action_id}` - Delete action
+- `POST /api/admin/migrate-prospects-to-hangarounds` - Migration endpoint
+
+#### Dues Reminders
 - `GET /api/dues-reminders/templates` - Get all email templates
 - `PUT /api/dues-reminders/templates/{id}` - Update template
 - `GET /api/dues-reminders/status` - Get unpaid/suspended status
