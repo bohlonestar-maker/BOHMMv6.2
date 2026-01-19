@@ -1271,7 +1271,8 @@ export default function Prospects({ onLogout, userRole, userChapter }) {
                           </div>
                         </TableCell>
                       </TableRow>
-                    ))
+                    );
+                  })
                   )}
                 </TableBody>
               </Table>
