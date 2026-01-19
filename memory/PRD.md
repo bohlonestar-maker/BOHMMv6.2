@@ -100,6 +100,26 @@ Build a member management application with attendance tracking, dues management,
             └── OfficerTracking.js # A&D page
 ```
 
+### January 19, 2026 - Hangaround/Prospect Restructure (NEW)
+- [x] **New Membership Hierarchy:**
+  - **Hangaround** (Entry Level) - Only requires Handle and Name
+  - **Prospect** (Promoted from Hangaround) - Requires full info (email, phone, address, etc.)
+  - **Member** (Promoted from Prospect) - Existing flow
+- [x] **Backend Implementation:**
+  - New `hangarounds` collection in MongoDB
+  - CRUD endpoints: `/api/hangarounds`, `/api/hangarounds/{id}`
+  - Promotion endpoint: `/api/hangarounds/{id}/promote`
+  - Actions endpoints for merits/disciplinary records
+  - Migration endpoint to convert existing prospects
+- [x] **Frontend Implementation:**
+  - Tabs interface on Prospects page ("Hangarounds" / "Prospects")
+  - Simplified "Add Hangaround" dialog (only Handle + Name)
+  - "Promote to Prospect" button with form for remaining required info
+  - Separate tables for hangarounds and prospects
+- [x] **Discord Integration (optional):**
+  - `DISCORD_HANGAROUND_ROLE_ID` - Role added when becoming hangaround
+  - `DISCORD_PROSPECT_ROLE_ID` - Role swapped when promoted to prospect
+
 ### API Endpoints
 
 #### Dues Reminders (NEW)
