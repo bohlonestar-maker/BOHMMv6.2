@@ -128,6 +128,14 @@ export default function Prospects({ onLogout, userRole, userChapter }) {
   const [selectedHangaround, setSelectedHangaround] = useState(null);
   const [hangaroundActionsDialogOpen, setHangaroundActionsDialogOpen] = useState(false);
   const [hangaroundActionForm, setHangaroundActionForm] = useState({ type: "merit", date: "", description: "" });
+  const [hangaroundAttendanceDialogOpen, setHangaroundAttendanceDialogOpen] = useState(false);
+  const [hangaroundAttendanceExpanded, setHangaroundAttendanceExpanded] = useState(false);
+  const [hangaroundSelectedYear, setHangaroundSelectedYear] = useState(new Date().getFullYear().toString());
+  const [hangaroundAddMeetingDialogOpen, setHangaroundAddMeetingDialogOpen] = useState(false);
+  const [hangaroundNewMeetingDate, setHangaroundNewMeetingDate] = useState("");
+  const [hangaroundNewMeetingStatus, setHangaroundNewMeetingStatus] = useState(1);
+  const [hangaroundNewMeetingNote, setHangaroundNewMeetingNote] = useState("");
+  const [hangaroundAttendanceData, setHangaroundAttendanceData] = useState({});
   
   // Check if user can edit prospects - will be updated from API response
   // PM title has view-only access, so they cannot edit
