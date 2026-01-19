@@ -150,6 +150,10 @@ Build a member management application with attendance tracking, dues management,
 - `PUT /api/permissions/bulk-update` - Update permissions for a title
 
 ### Database Collections
+- `hangarounds` - Entry-level members (handle, name, meeting_attendance, actions)
+- `archived_hangarounds` - Archived/promoted hangarounds
+- `prospects` - Full prospects with contact info
+- `archived_prospects` - Archived prospects
 - `dues_email_templates` - Email templates for reminders (Day 3, 8, 10)
 - `dues_reminder_sent` - Log of reminders sent to prevent duplicates
 - `dues_extensions` - Payment extensions granted to members (member_id, extension_until, reason, granted_by)
@@ -164,15 +168,18 @@ Build a member management application with attendance tracking, dues management,
 - [x] ~~Permission Suspension~~ (Completed Jan 11)
 - [x] ~~Square subscription sync feature~~ (Completed)
 - [x] ~~Suggestion Box~~ (Completed)
+- [x] ~~Hangaround/Prospect Restructure~~ (Completed Jan 19)
 
 #### P1 - High Priority
+- [ ] Square one-time payment sync bug (payments not updating member dues)
+- [ ] Triple birthday notification fix (distributed lock not working across containers)
+- [ ] "Update Dues" dialog mobile responsiveness
 - [ ] Add quarterly/bi-yearly/yearly dues subscription options
-- [ ] Actual email sending (currently MOCKED - logged only)
 
 #### P2 - Medium Priority
-- [ ] Automated monthly sync (run on 1st of each month)
 - [ ] Suggestion Box replies/comments
-- [ ] Refactor server.py into modules (routes, models, services)
+- [ ] Refactor server.py into modules (routes, models, services) - CRITICAL: Now 14K+ lines
+- [ ] Link Discord members to system members UI
 
 ### Test Credentials
 - **Admin/National SEC:** `Lonestar` / `boh2158tc`
