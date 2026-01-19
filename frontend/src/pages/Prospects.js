@@ -2052,6 +2052,315 @@ export default function Prospects({ onLogout, userRole, userChapter }) {
             </div>
           </div>
         )}
+        </TabsContent>
+      </Tabs>
+
+      {/* ==================== HANGAROUND DIALOGS ==================== */}
+      
+      {/* Delete Hangaround Confirmation Dialog */}
+      <Dialog open={hangaroundDeleteDialogOpen} onOpenChange={setHangaroundDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Archive Hangaround</DialogTitle>
+          </DialogHeader>
+          {hangaroundToDelete && (
+            <div className="space-y-4 mt-4">
+              <p className="text-slate-200">
+                You are about to archive <span className="font-semibold">{hangaroundToDelete.handle} - {hangaroundToDelete.name}</span>. 
+                This action will move the hangaround to the archived records.
+              </p>
+              <div>
+                <Label>Reason for Archiving *</Label>
+                <Textarea
+                  value={hangaroundDeleteReason}
+                  onChange={(e) => setHangaroundDeleteReason(e.target.value)}
+                  placeholder="Enter reason for archiving..."
+                  rows={3}
+                  required
+                />
+              </div>
+              <div className="flex gap-3 justify-end">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setHangaroundDeleteDialogOpen(false)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="destructive"
+                  onClick={handleConfirmDeleteHangaround}
+                >
+                  Archive Hangaround
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Promote Hangaround to Prospect Dialog */}
+      <Dialog open={promoteToProspectDialogOpen} onOpenChange={setPromoteToProspectDialogOpen}>
+        <DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-lg sm:text-xl">
+              Promote to Prospect: {hangaroundToPromote?.handle}
+            </DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handlePromoteToProspect} className="space-y-4 mt-4">
+            <p className="text-sm text-slate-400 mb-4">
+              Complete the following information to promote this Hangaround to a Prospect.
+            </p>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <Label>Email *</Label>
+                <Input
+                  type="email"
+                  value={promoteToProspectFormData.email}
+                  onChange={(e) => setPromoteToProspectFormData({ ...promoteToProspectFormData, email: e.target.value })}
+                  required
+                  placeholder="Enter email address"
+                  data-testid="promote-email-input"
+                />
+              </div>
+              <div>
+                <Label>Phone *</Label>
+                <Input
+                  value={promoteToProspectFormData.phone}
+                  onChange={(e) => setPromoteToProspectFormData({ ...promoteToProspectFormData, phone: e.target.value })}
+                  required
+                  placeholder="Enter phone number"
+                  data-testid="promote-phone-input"
+                />
+              </div>
+            </div>
+
+            <div>
+              <Label>Address *</Label>
+              <Input
+                value={promoteToProspectFormData.address}
+                onChange={(e) => setPromoteToProspectFormData({ ...promoteToProspectFormData, address: e.target.value })}
+                required
+                placeholder="Enter full address"
+                data-testid="promote-address-input"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <Label>Date of Birth</Label>
+                <Input
+                  type="date"
+                  value={promoteToProspectFormData.dob}
+                  onChange={(e) => setPromoteToProspectFormData({ ...promoteToProspectFormData, dob: e.target.value })}
+                />
+              </div>
+              <div>
+                <Label>Anniversary Date (MM/YYYY)</Label>
+                <Input
+                  type="text"
+                  placeholder="MM/YYYY"
+                  value={promoteToProspectFormData.join_date}
+                  onChange={(e) => {
+                    let value = e.target.value.replace(/[^\d/]/g, '');
+                    if (value.length === 2 && !value.includes('/') && promoteToProspectFormData.join_date.length < value.length) {
+                      value = value + '/';
+                    }
+                    if (value.length <= 7) {
+                      setPromoteToProspectFormData({ ...promoteToProspectFormData, join_date: value });
+                    }
+                  }}
+                />
+              </div>
+            </div>
+
+            {/* Military Service Section */}
+            <div className="space-y-3 p-3 bg-slate-800 rounded-lg border border-slate-700">
+              <Label className="text-white font-semibold">Military Service</Label>
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="promote_military_service"
+                  checked={promoteToProspectFormData.military_service || false}
+                  onCheckedChange={(checked) =>
+                    setPromoteToProspectFormData({ ...promoteToProspectFormData, military_service: checked, military_branch: checked ? promoteToProspectFormData.military_branch : "" })
+                  }
+                />
+                <label htmlFor="promote_military_service" className="text-sm text-slate-200 cursor-pointer">
+                  Served in Military
+                </label>
+              </div>
+              {promoteToProspectFormData.military_service && (
+                <div className="ml-6">
+                  <Label className="text-slate-300 text-sm">Branch of Service</Label>
+                  <Select
+                    value={promoteToProspectFormData.military_branch || ""}
+                    onValueChange={(value) => setPromoteToProspectFormData({ ...promoteToProspectFormData, military_branch: value })}
+                  >
+                    <SelectTrigger className="bg-slate-900 border-slate-600 text-white">
+                      <SelectValue placeholder="Select branch" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-slate-800 border-slate-600">
+                      <SelectItem value="Army" className="text-white hover:bg-slate-700">Army</SelectItem>
+                      <SelectItem value="Navy" className="text-white hover:bg-slate-700">Navy</SelectItem>
+                      <SelectItem value="Air Force" className="text-white hover:bg-slate-700">Air Force</SelectItem>
+                      <SelectItem value="Marines" className="text-white hover:bg-slate-700">Marines</SelectItem>
+                      <SelectItem value="Coast Guard" className="text-white hover:bg-slate-700">Coast Guard</SelectItem>
+                      <SelectItem value="Space Force" className="text-white hover:bg-slate-700">Space Force</SelectItem>
+                      <SelectItem value="National Guard" className="text-white hover:bg-slate-700">National Guard</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+            </div>
+
+            {/* First Responder Section */}
+            <div className="space-y-3 p-3 bg-slate-800 rounded-lg border border-slate-700">
+              <Label className="text-white font-semibold">First Responder Service</Label>
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="promote_is_first_responder"
+                  checked={promoteToProspectFormData.is_first_responder || false}
+                  onCheckedChange={(checked) =>
+                    setPromoteToProspectFormData({ ...promoteToProspectFormData, is_first_responder: checked })
+                  }
+                />
+                <label htmlFor="promote_is_first_responder" className="text-sm text-slate-200 cursor-pointer">
+                  Served as First Responder (Police, Fire, or EMS)
+                </label>
+              </div>
+            </div>
+
+            <div className="flex gap-3 justify-end pt-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setPromoteToProspectDialogOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button 
+                type="submit" 
+                className="bg-blue-600 hover:bg-blue-700 text-white"
+                data-testid="confirm-promote-to-prospect-btn"
+              >
+                Promote to Prospect
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Hangaround Actions Dialog */}
+      <Dialog open={hangaroundActionsDialogOpen} onOpenChange={setHangaroundActionsDialogOpen}>
+        <DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-lg sm:text-xl">
+              Actions - {selectedHangaround?.handle}
+            </DialogTitle>
+          </DialogHeader>
+          {selectedHangaround && (
+            <div className="space-y-6 mt-4">
+              {/* Existing Actions List */}
+              {(hangarounds.find(h => h.id === selectedHangaround.id)?.actions || []).length > 0 && (
+                <div className="space-y-2">
+                  <Label className="text-base font-semibold">Action History</Label>
+                  <div className="space-y-2 max-h-48 overflow-y-auto">
+                    {(hangarounds.find(h => h.id === selectedHangaround.id)?.actions || []).map((action) => (
+                      <div 
+                        key={action.id} 
+                        className={`p-3 rounded-lg border ${
+                          action.type === 'merit' ? 'bg-green-900/20 border-green-700' :
+                          action.type === 'disciplinary' ? 'bg-red-900/20 border-red-700' :
+                          'bg-blue-900/20 border-blue-700'
+                        }`}
+                      >
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <span className={`text-xs font-semibold uppercase ${
+                              action.type === 'merit' ? 'text-green-400' :
+                              action.type === 'disciplinary' ? 'text-red-400' :
+                              'text-blue-400'
+                            }`}>
+                              {action.type}
+                            </span>
+                            <span className="text-slate-400 text-xs ml-2">{action.date}</span>
+                          </div>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="text-red-400 hover:text-red-300 h-6 w-6 p-0"
+                            onClick={() => handleDeleteHangaroundAction(action.id)}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                        <p className="text-slate-200 text-sm mt-1">{action.description}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Add New Action Form */}
+              <div className="border-t border-slate-700 pt-4">
+                <Label className="text-base font-semibold mb-3 block">Add New Action</Label>
+                <form onSubmit={handleAddHangaroundAction} className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label>Action Type</Label>
+                      <Select
+                        value={hangaroundActionForm.type}
+                        onValueChange={(value) => setHangaroundActionForm({ ...hangaroundActionForm, type: value })}
+                      >
+                        <SelectTrigger className="bg-slate-900 border-slate-600">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="bg-slate-800 border-slate-600">
+                          <SelectItem value="merit" className="text-green-400">Merit</SelectItem>
+                          <SelectItem value="promotion" className="text-blue-400">Promotion</SelectItem>
+                          <SelectItem value="disciplinary" className="text-red-400">Disciplinary</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label>Date</Label>
+                      <Input
+                        type="date"
+                        value={hangaroundActionForm.date}
+                        onChange={(e) => setHangaroundActionForm({ ...hangaroundActionForm, date: e.target.value })}
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label>Description</Label>
+                    <Textarea
+                      value={hangaroundActionForm.description}
+                      onChange={(e) => setHangaroundActionForm({ ...hangaroundActionForm, description: e.target.value })}
+                      placeholder="Enter action details..."
+                      rows={4}
+                      required
+                    />
+                  </div>
+
+                  <div className="flex gap-3 justify-end">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setHangaroundActionsDialogOpen(false)}
+                    >
+                      Close
+                    </Button>
+                    <Button type="submit">Add Action</Button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </PageLayout>
   );
 }
