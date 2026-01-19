@@ -159,12 +159,25 @@ export default function Prospects({ onLogout, userRole, userChapter }) {
 
   useEffect(() => {
     fetchProspects();
+    fetchHangarounds();
   }, []);
 
   useEffect(() => {
     const dates = getMeetingDates(formData.meeting_attendance.year);
     setMeetingDates(dates);
   }, [formData.meeting_attendance.year]);
+
+  const fetchHangarounds = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const response = await axios.get(`${API}/hangarounds`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setHangarounds(response.data);
+    } catch (error) {
+      console.error("Failed to load hangarounds:", error);
+    }
+  };
 
   const fetchProspects = async () => {
     try {
