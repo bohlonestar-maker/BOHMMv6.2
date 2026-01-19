@@ -709,6 +709,171 @@ export default function Prospects({ onLogout, userRole, userChapter }) {
     printWindow.print();
   };
 
+  // ==================== HANGAROUND HANDLERS ====================
+  
+  const handleAddHangaround = async (e) => {
+    e.preventDefault();
+    const token = localStorage.getItem("token");
+    
+    try {
+      if (editingHangaround) {
+        await axios.put(
+          `${API}/hangarounds/${editingHangaround.id}`,
+          hangaroundFormData,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        toast.success("Hangaround updated successfully");
+      } else {
+        await axios.post(`${API}/hangarounds`, hangaroundFormData, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        toast.success("Hangaround added successfully");
+      }
+      fetchHangarounds();
+      setHangaroundDialogOpen(false);
+      setHangaroundFormData({ handle: "", name: "" });
+      setEditingHangaround(null);
+    } catch (error) {
+      toast.error(error.response?.data?.detail || "Failed to save hangaround");
+    }
+  };
+
+  const handleEditHangaround = (hangaround) => {
+    setEditingHangaround(hangaround);
+    setHangaroundFormData({
+      handle: hangaround.handle,
+      name: hangaround.name
+    });
+    setHangaroundDialogOpen(true);
+  };
+
+  const handleDeleteHangaround = (hangaround) => {
+    setHangaroundToDelete(hangaround);
+    setHangaroundDeleteReason("");
+    setHangaroundDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDeleteHangaround = async () => {
+    if (!hangaroundDeleteReason.trim()) {
+      toast.error("Please provide a reason for archiving");
+      return;
+    }
+
+    const token = localStorage.getItem("token");
+    try {
+      await axios.delete(`${API}/hangarounds/${hangaroundToDelete.id}`, {
+        params: { reason: hangaroundDeleteReason },
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      toast.success("Hangaround archived successfully");
+      setHangaroundDeleteDialogOpen(false);
+      setHangaroundToDelete(null);
+      setHangaroundDeleteReason("");
+      fetchHangarounds();
+    } catch (error) {
+      toast.error("Failed to archive hangaround");
+    }
+  };
+
+  const handleOpenPromoteToProspect = (hangaround) => {
+    setHangaroundToPromote(hangaround);
+    setPromoteToProspectFormData({
+      email: "",
+      phone: "",
+      address: "",
+      dob: "",
+      join_date: "",
+      military_service: false,
+      military_branch: "",
+      is_first_responder: false
+    });
+    setPromoteToProspectDialogOpen(true);
+  };
+
+  const handlePromoteToProspect = async (e) => {
+    e.preventDefault();
+    
+    if (!promoteToProspectFormData.email || !promoteToProspectFormData.phone || !promoteToProspectFormData.address) {
+      toast.error("Please fill in all required fields (Email, Phone, Address)");
+      return;
+    }
+
+    const token = localStorage.getItem("token");
+    try {
+      await axios.post(
+        `${API}/hangarounds/${hangaroundToPromote.id}/promote`,
+        promoteToProspectFormData,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      toast.success(`${hangaroundToPromote.handle} promoted to Prospect successfully!`);
+      setPromoteToProspectDialogOpen(false);
+      setHangaroundToPromote(null);
+      fetchHangarounds();
+      fetchProspects();
+      setActiveTab("prospects"); // Switch to prospects tab to see the newly promoted prospect
+    } catch (error) {
+      toast.error(error.response?.data?.detail || "Failed to promote to prospect");
+    }
+  };
+
+  const handleOpenHangaroundActions = (hangaround) => {
+    setSelectedHangaround(hangaround);
+    setHangaroundActionForm({ type: "merit", date: new Date().toISOString().split('T')[0], description: "" });
+    setHangaroundActionsDialogOpen(true);
+  };
+
+  const handleAddHangaroundAction = async (e) => {
+    e.preventDefault();
+    if (!hangaroundActionForm.description.trim()) {
+      toast.error("Please enter a description");
+      return;
+    }
+
+    const token = localStorage.getItem("token");
+    try {
+      await axios.post(
+        `${API}/hangarounds/${selectedHangaround.id}/actions`,
+        null,
+        {
+          params: {
+            action_type: hangaroundActionForm.type,
+            date: hangaroundActionForm.date,
+            description: hangaroundActionForm.description
+          },
+          headers: { Authorization: `Bearer ${token}` }
+        }
+      );
+      toast.success("Action added successfully");
+      setHangaroundActionForm({ type: "merit", date: new Date().toISOString().split('T')[0], description: "" });
+      fetchHangarounds();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || "Failed to add action");
+    }
+  };
+
+  const handleDeleteHangaroundAction = async (actionId) => {
+    if (!window.confirm("Are you sure you want to delete this action?")) return;
+
+    const token = localStorage.getItem("token");
+    try {
+      await axios.delete(`${API}/hangarounds/${selectedHangaround.id}/actions/${actionId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      toast.success("Action deleted successfully");
+      fetchHangarounds();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || "Failed to delete action");
+    }
+  };
+
+  const filteredHangarounds = hangarounds.filter((hangaround) => {
+    const search = hangaroundSearchTerm.toLowerCase();
+    return (
+      hangaround.name.toLowerCase().includes(search) ||
+      hangaround.handle.toLowerCase().includes(search)
+    );
+  });
+
   const filteredProspects = prospects.filter((prospect) => {
     const search = searchTerm.toLowerCase();
     return (
