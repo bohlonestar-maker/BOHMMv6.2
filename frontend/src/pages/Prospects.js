@@ -1177,6 +1177,7 @@ export default function Prospects({ onLogout, userRole, userChapter }) {
                   <TableRow className="border-slate-700 hover:bg-transparent">
                     <TableHead className="text-slate-300">Handle</TableHead>
                     <TableHead className="text-slate-300">Name</TableHead>
+                    <TableHead className="text-slate-300">Attendance</TableHead>
                     <TableHead className="text-slate-300">Actions</TableHead>
                     <TableHead className="text-slate-300 text-right">Operations</TableHead>
                   </TableRow>
@@ -1184,15 +1185,35 @@ export default function Prospects({ onLogout, userRole, userChapter }) {
                 <TableBody>
                   {filteredHangarounds.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={4} className="text-center text-slate-400 py-8">
+                      <TableCell colSpan={5} className="text-center text-slate-400 py-8">
                         No hangarounds found
                       </TableCell>
                     </TableRow>
                   ) : (
-                    filteredHangarounds.map((hangaround) => (
+                    filteredHangarounds.map((hangaround) => {
+                      const attendance = getHangaroundAttendanceSummary(hangaround);
+                      return (
                       <TableRow key={hangaround.id} className="border-slate-700 hover:bg-slate-700/50">
                         <TableCell className="text-white font-medium">{hangaround.handle}</TableCell>
                         <TableCell className="text-slate-300">{hangaround.name}</TableCell>
+                        <TableCell>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => handleOpenHangaroundAttendance(hangaround)}
+                            className="text-slate-300 hover:text-white hover:bg-slate-600 p-1 h-auto"
+                          >
+                            {attendance.total > 0 ? (
+                              <div className="flex gap-1 items-center text-xs">
+                                <span className="text-green-400">{attendance.present}P</span>
+                                <span className="text-orange-400">{attendance.excused}E</span>
+                                <span className="text-slate-400">/ {attendance.total}</span>
+                              </div>
+                            ) : (
+                              <span className="text-xs text-slate-500">No meetings</span>
+                            )}
+                          </Button>
+                        </TableCell>
                         <TableCell>
                           <div className="flex gap-1 flex-wrap">
                             {hangaround.actions?.filter(a => a.type === 'merit').length > 0 && (
