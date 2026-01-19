@@ -916,12 +916,221 @@ export default function Prospects({ onLogout, userRole, userChapter }) {
 
   return (
     <PageLayout
-      title="Hangarounds/Prospects"
+      title="Hangarounds & Prospects"
       icon={UserCheck}
       backTo="/"
       backLabel="Members"
       actions={headerActions}
     >
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid w-full grid-cols-2 mb-6 bg-slate-700">
+          <TabsTrigger 
+            value="hangarounds" 
+            className="data-[state=active]:bg-amber-600 data-[state=active]:text-white"
+            data-testid="hangarounds-tab"
+          >
+            Hangarounds ({hangarounds.length})
+          </TabsTrigger>
+          <TabsTrigger 
+            value="prospects" 
+            className="data-[state=active]:bg-blue-600 data-[state=active]:text-white"
+            data-testid="prospects-tab"
+          >
+            Prospects ({prospects.length})
+          </TabsTrigger>
+        </TabsList>
+
+        {/* ==================== HANGAROUNDS TAB ==================== */}
+        <TabsContent value="hangarounds">
+          <div className="bg-slate-800 rounded-xl shadow-sm border border-slate-700 p-4 sm:p-6">
+            <div className="mb-4 sm:mb-6">
+              <div className="relative max-w-2xl">
+                <svg
+                  className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-slate-400 pointer-events-none z-10"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                  />
+                </svg>
+                <Input
+                  placeholder="Search hangarounds by name or handle..."
+                  value={hangaroundSearchTerm}
+                  onChange={(e) => setHangaroundSearchTerm(e.target.value)}
+                  className="w-full pl-10 py-4 sm:py-6 text-sm sm:text-base bg-slate-900 border-2 border-slate-700 text-slate-100 focus:border-slate-600 rounded-lg placeholder:text-white"
+                  data-testid="hangaround-search-input"
+                />
+              </div>
+            </div>
+            
+            <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 mb-4 sm:mb-6">
+              <div className="flex gap-2 flex-wrap">
+                {canEditProspects && (
+                  <Dialog open={hangaroundDialogOpen} onOpenChange={(open) => {
+                    setHangaroundDialogOpen(open);
+                    if (!open) {
+                      setHangaroundFormData({ handle: "", name: "" });
+                      setEditingHangaround(null);
+                    }
+                  }}>
+                    <DialogTrigger asChild>
+                      <Button
+                        size="sm"
+                        className="flex items-center justify-center gap-2 bg-amber-600 hover:bg-amber-700 text-white"
+                        data-testid="add-hangaround-btn"
+                      >
+                        <Plus className="w-4 h-4" />
+                        Add Hangaround
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-[95vw] sm:max-w-md">
+                      <DialogHeader>
+                        <DialogTitle className="text-lg sm:text-xl">
+                          {editingHangaround ? "Edit Hangaround" : "Add New Hangaround"}
+                        </DialogTitle>
+                      </DialogHeader>
+                      <form onSubmit={handleAddHangaround} className="space-y-4 mt-4">
+                        <div>
+                          <Label>Handle *</Label>
+                          <Input
+                            value={hangaroundFormData.handle}
+                            onChange={(e) => setHangaroundFormData({ ...hangaroundFormData, handle: e.target.value })}
+                            required
+                            placeholder="Enter handle/nickname"
+                            data-testid="hangaround-handle-input"
+                          />
+                        </div>
+                        <div>
+                          <Label>Name *</Label>
+                          <Input
+                            value={hangaroundFormData.name}
+                            onChange={(e) => setHangaroundFormData({ ...hangaroundFormData, name: e.target.value })}
+                            required
+                            placeholder="Enter full name"
+                            data-testid="hangaround-name-input"
+                          />
+                        </div>
+                        <p className="text-sm text-slate-400">
+                          Only Handle and Name are required for Hangarounds. Additional info will be collected when promoting to Prospect.
+                        </p>
+                        <div className="flex gap-3 justify-end pt-4">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => {
+                              setHangaroundDialogOpen(false);
+                              setHangaroundFormData({ handle: "", name: "" });
+                              setEditingHangaround(null);
+                            }}
+                          >
+                            Cancel
+                          </Button>
+                          <Button type="submit" className="bg-amber-600 hover:bg-amber-700" data-testid="save-hangaround-btn">
+                            {editingHangaround ? "Update" : "Add"} Hangaround
+                          </Button>
+                        </div>
+                      </form>
+                    </DialogContent>
+                  </Dialog>
+                )}
+              </div>
+            </div>
+
+            {/* Hangarounds Table */}
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="border-slate-700 hover:bg-transparent">
+                    <TableHead className="text-slate-300">Handle</TableHead>
+                    <TableHead className="text-slate-300">Name</TableHead>
+                    <TableHead className="text-slate-300">Actions</TableHead>
+                    <TableHead className="text-slate-300 text-right">Operations</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredHangarounds.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={4} className="text-center text-slate-400 py-8">
+                        No hangarounds found
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    filteredHangarounds.map((hangaround) => (
+                      <TableRow key={hangaround.id} className="border-slate-700 hover:bg-slate-700/50">
+                        <TableCell className="text-white font-medium">{hangaround.handle}</TableCell>
+                        <TableCell className="text-slate-300">{hangaround.name}</TableCell>
+                        <TableCell>
+                          <div className="flex gap-1 flex-wrap">
+                            {hangaround.actions?.filter(a => a.type === 'merit').length > 0 && (
+                              <span className="px-2 py-0.5 bg-green-600/20 text-green-400 rounded text-xs">
+                                {hangaround.actions.filter(a => a.type === 'merit').length} Merit
+                              </span>
+                            )}
+                            {hangaround.actions?.filter(a => a.type === 'disciplinary').length > 0 && (
+                              <span className="px-2 py-0.5 bg-red-600/20 text-red-400 rounded text-xs">
+                                {hangaround.actions.filter(a => a.type === 'disciplinary').length} Disc
+                              </span>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex gap-2 justify-end flex-wrap">
+                            {canEditProspects && (
+                              <>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => handleOpenPromoteToProspect(hangaround)}
+                                  className="bg-blue-600 hover:bg-blue-700 text-white border-blue-600"
+                                  data-testid={`promote-hangaround-${hangaround.id}`}
+                                >
+                                  <ArrowUpCircle className="w-4 h-4 mr-1" />
+                                  Promote to Prospect
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => handleOpenHangaroundActions(hangaround)}
+                                  className="bg-slate-600 hover:bg-slate-700 text-white border-slate-600"
+                                >
+                                  <FileText className="w-4 h-4" />
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => handleEditHangaround(hangaround)}
+                                  className="bg-slate-600 hover:bg-slate-700 text-white border-slate-600"
+                                >
+                                  <Pencil className="w-4 h-4" />
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => handleDeleteHangaround(hangaround)}
+                                  className="bg-red-600 hover:bg-red-700 text-white border-red-600"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              </>
+                            )}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </div>
+        </TabsContent>
+
+        {/* ==================== PROSPECTS TAB ==================== */}
+        <TabsContent value="prospects">
         <div className="bg-slate-800 rounded-xl shadow-sm border border-slate-700 p-4 sm:p-6">
           <div className="mb-4 sm:mb-6">
             <div className="relative max-w-2xl">
