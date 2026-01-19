@@ -2512,6 +2512,192 @@ export default function Prospects({ onLogout, userRole, userChapter }) {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Hangaround Attendance Dialog */}
+      <Dialog open={hangaroundAttendanceDialogOpen} onOpenChange={setHangaroundAttendanceDialogOpen}>
+        <DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-lg sm:text-xl">
+              Meeting Attendance - {selectedHangaround?.handle}
+            </DialogTitle>
+          </DialogHeader>
+          {selectedHangaround && (
+            <div className="space-y-4 mt-4">
+              {/* Year Selector and Add Meeting Button */}
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-slate-400">Year:</span>
+                  <select
+                    value={hangaroundSelectedYear}
+                    onChange={(e) => setHangaroundSelectedYear(e.target.value)}
+                    className="bg-slate-700 border border-slate-600 text-white text-sm rounded px-2 py-1"
+                  >
+                    {[new Date().getFullYear().toString(), ...Object.keys(hangaroundAttendanceData).filter(k => k !== new Date().getFullYear().toString() && k.match(/^\d{4}$/))].sort((a, b) => b - a).map(year => (
+                      <option key={year} value={year}>{year}</option>
+                    ))}
+                  </select>
+                </div>
+                {canEditProspects && (
+                  <Dialog open={hangaroundAddMeetingDialogOpen} onOpenChange={setHangaroundAddMeetingDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button
+                        size="sm"
+                        className="bg-blue-600 hover:bg-blue-700 text-sm"
+                      >
+                        <Plus className="w-4 h-4 mr-1" />
+                        Add Meeting
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-md">
+                      <DialogHeader>
+                        <DialogTitle>Add Meeting</DialogTitle>
+                      </DialogHeader>
+                      <div className="space-y-4 mt-4">
+                        <div>
+                          <Label>Meeting Date</Label>
+                          <Input
+                            type="date"
+                            value={hangaroundNewMeetingDate}
+                            onChange={(e) => setHangaroundNewMeetingDate(e.target.value)}
+                            className="mt-1 bg-slate-700 border-slate-600 text-white"
+                          />
+                        </div>
+                        <div>
+                          <Label>Status</Label>
+                          <Select
+                            value={hangaroundNewMeetingStatus.toString()}
+                            onValueChange={(value) => setHangaroundNewMeetingStatus(parseInt(value))}
+                          >
+                            <SelectTrigger className="mt-1 bg-slate-700 border-slate-600 text-white">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent className="bg-slate-800 border-slate-600">
+                              <SelectItem value="1" className="text-white hover:bg-slate-700">Present</SelectItem>
+                              <SelectItem value="2" className="text-white hover:bg-slate-700">Excused</SelectItem>
+                              <SelectItem value="0" className="text-white hover:bg-slate-700">Absent</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <Label>Note (optional)</Label>
+                          <Input
+                            value={hangaroundNewMeetingNote}
+                            onChange={(e) => setHangaroundNewMeetingNote(e.target.value)}
+                            placeholder="e.g., reason for absence"
+                            className="mt-1 bg-slate-700 border-slate-600 text-white"
+                          />
+                        </div>
+                        <div className="flex gap-3 justify-end pt-2">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => setHangaroundAddMeetingDialogOpen(false)}
+                          >
+                            Cancel
+                          </Button>
+                          <Button
+                            type="button"
+                            onClick={handleHangaroundAddMeeting}
+                            className="bg-blue-600 hover:bg-blue-700"
+                          >
+                            Add Meeting
+                          </Button>
+                        </div>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                )}
+              </div>
+
+              {/* Attendance Summary */}
+              {(() => {
+                const yearMeetings = hangaroundAttendanceData[hangaroundSelectedYear] || [];
+                const total = yearMeetings.length;
+                const present = yearMeetings.filter(m => m?.status === 1).length;
+                const excused = yearMeetings.filter(m => m?.status === 2).length;
+                const absent = yearMeetings.filter(m => m?.status === 0).length;
+                return (
+                  <div className="flex gap-2 text-sm">
+                    <span className="px-2 py-0.5 bg-slate-600 text-white rounded">{total} total</span>
+                    <span className="px-2 py-0.5 bg-green-600 text-white rounded">{present} Present</span>
+                    <span className="px-2 py-0.5 bg-orange-500 text-white rounded">{excused} Excused</span>
+                    <span className="px-2 py-0.5 bg-red-600/80 text-white rounded">{absent} Absent</span>
+                  </div>
+                );
+              })()}
+
+              {/* Legend */}
+              <div className="flex justify-between items-center text-xs">
+                <span className="text-slate-400">Click status to cycle: Present → Excused → Absent</span>
+              </div>
+
+              {/* Meetings List */}
+              <div className="space-y-2 max-h-64 overflow-y-auto">
+                {(hangaroundAttendanceData[hangaroundSelectedYear] || []).length === 0 ? (
+                  <p className="text-center text-slate-400 py-4">No meetings recorded for {hangaroundSelectedYear}</p>
+                ) : (
+                  (hangaroundAttendanceData[hangaroundSelectedYear] || []).map((meeting, idx) => (
+                    <div key={idx} className="flex items-center gap-3 p-2 bg-slate-700/50 rounded-lg">
+                      <span className="text-sm text-slate-300 w-24">{meeting.date}</span>
+                      <button
+                        type="button"
+                        onClick={() => canEditProspects && handleHangaroundAttendanceToggle(idx)}
+                        className={`w-20 py-1 rounded text-xs font-medium ${
+                          meeting.status === 1 ? 'bg-green-600 text-white' :
+                          meeting.status === 2 ? 'bg-orange-500 text-white' :
+                          'bg-red-600/80 text-white'
+                        } ${canEditProspects ? 'cursor-pointer hover:opacity-80' : 'cursor-default'}`}
+                      >
+                        {meeting.status === 1 ? 'Present' : meeting.status === 2 ? 'Excused' : 'Absent'}
+                      </button>
+                      {canEditProspects ? (
+                        <Input
+                          value={meeting.note || ''}
+                          onChange={(e) => handleHangaroundAttendanceNoteChange(idx, e.target.value)}
+                          placeholder="Note..."
+                          className="flex-1 h-8 text-sm bg-slate-700 border-slate-600 text-white"
+                        />
+                      ) : (
+                        <span className="flex-1 text-sm text-slate-400">{meeting.note || '-'}</span>
+                      )}
+                      {canEditProspects && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleHangaroundDeleteMeeting(idx)}
+                          className="text-red-400 hover:text-red-300 h-8 w-8 p-0"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      )}
+                    </div>
+                  ))
+                )}
+              </div>
+
+              {/* Save Button */}
+              <div className="flex gap-3 justify-end pt-4 border-t border-slate-700">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setHangaroundAttendanceDialogOpen(false)}
+                >
+                  Cancel
+                </Button>
+                {canEditProspects && (
+                  <Button
+                    type="button"
+                    onClick={handleSaveHangaroundAttendance}
+                    className="bg-green-600 hover:bg-green-700"
+                  >
+                    Save Attendance
+                  </Button>
+                )}
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </PageLayout>
   );
 }
