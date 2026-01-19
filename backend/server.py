@@ -1673,7 +1673,30 @@ class MemberUpdate(BaseModel):
     dues: Optional[dict] = None
     meeting_attendance: Optional[dict] = None
 
-# Prospect models (Hangarounds/Prospects)
+# Hangaround models (Entry level - minimal info required)
+class Hangaround(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    handle: str
+    name: str
+    meeting_attendance: dict = Field(default_factory=lambda: {
+        str(datetime.now(timezone.utc).year): []
+    })  # Format: {"2025": [meetings], "2024": [meetings], ...}
+    actions: list = Field(default_factory=list)  # Merit, Promotion, Disciplinary actions
+    can_edit: Optional[bool] = None  # Permission flag for frontend
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class HangaroundCreate(BaseModel):
+    handle: str
+    name: str
+
+class HangaroundUpdate(BaseModel):
+    handle: Optional[str] = None
+    name: Optional[str] = None
+    meeting_attendance: Optional[dict] = None
+
+# Prospect models (Promoted from Hangaround - full info required)
 class Prospect(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
@@ -1691,9 +1714,10 @@ class Prospect(BaseModel):
     is_first_responder: bool = False  # If True, prospect has served as Police, Fire, or EMS
     actions: list = Field(default_factory=list)  # Merit, Promotion, Disciplinary actions
     meeting_attendance: dict = Field(default_factory=lambda: {
-        str(datetime.now(timezone.utc).year): [{"status": 0, "note": ""} for _ in range(24)]
+        str(datetime.now(timezone.utc).year): []
     })  # Format: {"2025": [meetings], "2024": [meetings], ...}
     can_edit: Optional[bool] = None  # Permission flag for frontend
+    promoted_from_hangaround: Optional[str] = None  # ID of original hangaround record
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
@@ -1726,6 +1750,17 @@ class ProspectUpdate(BaseModel):
     # First Responder Service
     is_first_responder: Optional[bool] = None
     meeting_attendance: Optional[dict] = None
+
+# Model for promoting Hangaround to Prospect
+class HangaroundToProspectPromotion(BaseModel):
+    email: str
+    phone: str
+    address: str
+    dob: Optional[str] = None
+    join_date: Optional[str] = None
+    military_service: bool = False
+    military_branch: Optional[str] = None
+    is_first_responder: bool = False
 
 # Fallen Member (Wall of Honor) models
 class FallenMember(BaseModel):
