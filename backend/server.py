@@ -6641,6 +6641,84 @@ async def sync_discord_members(current_user: dict = Depends(verify_admin)):
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Sync error: {str(e)}")
 
+
+@api_router.post("/discord/cleanup-analytics")
+async def cleanup_discord_analytics(current_user: dict = Depends(verify_admin)):
+    """Clean up Discord analytics for members no longer in the server.
+    This removes orphaned voice and text activity records.
+    """
+    try:
+        if not discord_bot:
+            raise HTTPException(status_code=503, detail="Discord bot is not running")
+        
+        # Get current Discord member IDs from the bot
+        current_discord_ids = set()
+        for guild in discord_bot.guilds:
+            for member in guild.members:
+                current_discord_ids.add(str(member.id))
+        
+        # Find all unique discord IDs in analytics
+        voice_ids = await db.discord_voice_activity.distinct("discord_id")
+        text_ids = await db.discord_text_activity.distinct("discord_id")
+        
+        # Also check the old field name "discord_user_id" if it exists
+        voice_user_ids = await db.discord_voice_activity.distinct("discord_user_id")
+        text_user_ids = await db.discord_text_activity.distinct("discord_user_id")
+        
+        all_analytics_ids = set(str(id) for id in voice_ids + text_ids + voice_user_ids + text_user_ids if id)
+        
+        # Find IDs that are in analytics but not in Discord server
+        orphaned_ids = all_analytics_ids - current_discord_ids
+        
+        cleaned = {"voice": 0, "text": 0, "orphaned_users": []}
+        
+        for orphaned_id in orphaned_ids:
+            # Get user info if available
+            member_info = await db.discord_members.find_one({"discord_id": orphaned_id})
+            user_name = member_info.get("display_name") if member_info else f"Unknown ({orphaned_id})"
+            
+            # Delete voice analytics
+            voice_result = await db.discord_voice_activity.delete_many({
+                "$or": [
+                    {"discord_id": orphaned_id},
+                    {"discord_user_id": orphaned_id}
+                ]
+            })
+            cleaned["voice"] += voice_result.deleted_count
+            
+            # Delete text analytics
+            text_result = await db.discord_text_activity.delete_many({
+                "$or": [
+                    {"discord_id": orphaned_id},
+                    {"discord_user_id": orphaned_id}
+                ]
+            })
+            cleaned["text"] += text_result.deleted_count
+            
+            if voice_result.deleted_count > 0 or text_result.deleted_count > 0:
+                cleaned["orphaned_users"].append({
+                    "discord_id": orphaned_id,
+                    "name": user_name,
+                    "voice_records_removed": voice_result.deleted_count,
+                    "text_records_removed": text_result.deleted_count
+                })
+        
+        return {
+            "success": True,
+            "current_server_members": len(current_discord_ids),
+            "orphaned_analytics_users": len(orphaned_ids),
+            "voice_records_cleaned": cleaned["voice"],
+            "text_records_cleaned": cleaned["text"],
+            "details": cleaned["orphaned_users"],
+            "message": f"Cleaned up analytics for {len(cleaned['orphaned_users'])} users no longer in Discord. Removed {cleaned['voice']} voice and {cleaned['text']} text records."
+        }
+        
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Cleanup error: {str(e)}")
+
+
 @api_router.post("/discord/simulate-activity")
 async def simulate_discord_activity(current_user: dict = Depends(verify_admin)):
     """Simulate Discord activity for testing purposes"""
