@@ -14325,8 +14325,24 @@ async def update_member_dues_with_payment_info(member_id: str, year: int, month:
         }
         
         if existing:
-            # Only update if not already paid
+            # Update the record - add Square payment info even if already paid manually
+            # This ensures we always capture the Square payment details
+            existing_notes = existing.get("notes", "")
+            should_update = False
+            
             if existing.get("status") != "paid":
+                # Not yet paid - do full update
+                should_update = True
+            elif payment_id and payment_id not in existing_notes:
+                # Already paid but we have new Square payment info to add
+                # Append Square payment info to existing notes
+                if existing_notes:
+                    dues_record["notes"] = f"{existing_notes} | {payment_note}"
+                else:
+                    dues_record["notes"] = payment_note
+                should_update = True
+            
+            if should_update:
                 await db.officer_dues.update_one(
                     {"id": existing.get("id")},
                     {"$set": dues_record}
