@@ -14274,37 +14274,48 @@ async def update_member_dues_with_payment_info(member_id: str, year: int, month:
         if year_str not in dues:
             dues[year_str] = [{"status": "unpaid", "note": ""} for _ in range(12)]
         
-        # Only update if not already paid (don't overwrite existing paid status)
+        # Check current status
         current_status = None
+        current_note = ""
         if isinstance(dues[year_str], list) and len(dues[year_str]) > month:
             if isinstance(dues[year_str][month], dict):
                 current_status = dues[year_str][month].get("status")
+                current_note = dues[year_str][month].get("note", "")
             elif dues[year_str][month] == True:
                 current_status = "paid"
         
-        # Skip if already paid
-        if current_status == "paid":
-            return
+        # Update to paid - even if already paid, we want to add the Square payment info
+        should_update_member = False
+        if current_status != "paid":
+            # Not yet paid - do full update
+            dues[year_str][month] = {
+                "status": "paid",
+                "note": payment_note
+            }
+            should_update_member = True
+        elif payment_id and payment_id not in current_note:
+            # Already paid but we have new Square payment info to add
+            new_note = f"{current_note} | {payment_note}" if current_note else payment_note
+            dues[year_str][month] = {
+                "status": "paid",
+                "note": new_note
+            }
+            should_update_member = True
         
-        # Update to paid
-        dues[year_str][month] = {
-            "status": "paid",
-            "note": payment_note
-        }
-        
-        # Update member record - also clear any dues suspension
-        await db.members.update_one(
-            {"id": member_id},
-            {"$set": {
-                "dues": dues,
-                "dues_suspended": False,
-                "dues_suspended_at": None,
-                "updated_at": datetime.now(timezone.utc).isoformat()
-            }}
-        )
-        
-        # Restore Discord permissions if they were suspended
-        await restore_discord_member(member_id)
+        if should_update_member:
+            # Update member record - also clear any dues suspension
+            await db.members.update_one(
+                {"id": member_id},
+                {"$set": {
+                    "dues": dues,
+                    "dues_suspended": False,
+                    "dues_suspended_at": None,
+                    "updated_at": datetime.now(timezone.utc).isoformat()
+                }}
+            )
+            
+            # Restore Discord permissions if they were suspended
+            await restore_discord_member(member_id)
         
         # Also update officer_dues collection (for A & D page sync)
         month_str = f"{month_names[month]}_{year_str}"
