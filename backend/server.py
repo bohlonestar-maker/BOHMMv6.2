@@ -14192,6 +14192,92 @@ async def sync_payment_links_to_dues(current_user: dict = Depends(verify_token))
         raise HTTPException(status_code=500, detail=f"Failed to sync payment links: {str(e)}")
 
 
+@api_router.post("/dues/reapply-payment-notes")
+async def reapply_payment_notes(current_user: dict = Depends(verify_token)):
+    """Re-apply Square payment notes from synced_payment_links to officer_dues.
+    This fixes cases where a month was manually marked as paid before the Square sync ran.
+    """
+    if current_user.get('role') != 'admin':
+        raise HTTPException(status_code=403, detail="Admin only")
+    
+    try:
+        # Get all synced payment links
+        synced_payments = await db.synced_payment_links.find({}, {"_id": 0}).to_list(10000)
+        
+        updated_count = 0
+        errors = []
+        
+        for payment in synced_payments:
+            try:
+                member_id = payment.get("member_id")
+                payment_date_str = payment.get("payment_date")
+                payment_id = payment.get("payment_id")
+                amount = payment.get("amount", 0)
+                months_covered = payment.get("months_covered", 1)
+                
+                if not member_id or not payment_date_str:
+                    continue
+                
+                # Parse payment date
+                try:
+                    payment_dt = datetime.fromisoformat(payment_date_str.replace('Z', '+00:00'))
+                except:
+                    continue
+                
+                month_names = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+                
+                # Update each month covered by this payment
+                for month_offset in range(months_covered):
+                    target_month = payment_dt.month - 1 + month_offset
+                    target_year = payment_dt.year
+                    
+                    while target_month >= 12:
+                        target_month -= 12
+                        target_year += 1
+                    
+                    month_str = f"{month_names[target_month]}_{target_year}"
+                    payment_note = f"Paid via Square on {payment_dt.strftime('%Y-%m-%d')}"
+                    if payment_id:
+                        payment_note += f" (Trans: {payment_id[:12]}...)"
+                    if amount:
+                        payment_note += f" - ${amount:.2f}"
+                    
+                    # Find and update officer_dues record
+                    existing = await db.officer_dues.find_one({
+                        "member_id": member_id,
+                        "month": month_str
+                    })
+                    
+                    if existing:
+                        existing_notes = existing.get("notes", "")
+                        # Only update if Square payment info not already present
+                        if payment_id and payment_id[:12] not in existing_notes:
+                            new_notes = f"{existing_notes} | {payment_note}" if existing_notes and existing_notes.strip() else payment_note
+                            await db.officer_dues.update_one(
+                                {"id": existing.get("id")},
+                                {"$set": {
+                                    "notes": new_notes,
+                                    "square_payment_id": payment_id,
+                                    "updated_at": datetime.now(timezone.utc).isoformat()
+                                }}
+                            )
+                            updated_count += 1
+                    
+            except Exception as e:
+                errors.append(f"Error processing payment {payment.get('payment_id', 'unknown')}: {str(e)}")
+        
+        return {
+            "message": "Payment notes re-applied",
+            "records_updated": updated_count,
+            "total_synced_payments": len(synced_payments),
+            "errors": errors if errors else None
+        }
+        
+    except Exception as e:
+        logger.error(f"Error re-applying payment notes: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to re-apply payment notes: {str(e)}")
+
+
 @api_router.get("/dues/debug-recent-payments")
 async def debug_recent_payments(current_user: dict = Depends(verify_token)):
     """Debug endpoint to see recent Square payments and their item names"""
