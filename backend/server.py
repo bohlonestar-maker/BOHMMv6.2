@@ -6550,7 +6550,7 @@ async def resync_discord_voice_tracking(current_user: dict = Depends(verify_admi
 
 @api_router.post("/discord/sync-members")
 async def sync_discord_members(current_user: dict = Depends(verify_admin)):
-    """Sync Discord members - remove members who left the server and update existing ones"""
+    """Sync Discord members - remove members who left the server and clean up their analytics"""
     try:
         if not discord_bot:
             raise HTTPException(status_code=503, detail="Discord bot is not running")
@@ -6590,21 +6590,35 @@ async def sync_discord_members(current_user: dict = Depends(verify_admin)):
                     await db.discord_members.insert_one(member_data)
                     added_count += 1
         
-        # Remove members no longer in Discord
+        # Remove members no longer in Discord and clean up their analytics
         db_members = await db.discord_members.find({}, {"discord_id": 1}).to_list(None)
         removed_count = 0
         removed_members = []
+        analytics_cleaned = {"voice": 0, "text": 0}
         
         for db_member in db_members:
             if db_member["discord_id"] not in current_discord_ids:
+                discord_id = db_member["discord_id"]
+                
                 # Get member info before removing
-                full_member = await db.discord_members.find_one({"discord_id": db_member["discord_id"]})
+                full_member = await db.discord_members.find_one({"discord_id": discord_id})
                 removed_members.append({
-                    "discord_id": db_member["discord_id"],
+                    "discord_id": discord_id,
                     "username": full_member.get("username") if full_member else "Unknown",
                     "display_name": full_member.get("display_name") if full_member else "Unknown"
                 })
-                await db.discord_members.delete_one({"discord_id": db_member["discord_id"]})
+                
+                # Remove from discord_members collection
+                await db.discord_members.delete_one({"discord_id": discord_id})
+                
+                # Clean up voice analytics for this member
+                voice_result = await db.discord_voice_activity.delete_many({"discord_id": discord_id})
+                analytics_cleaned["voice"] += voice_result.deleted_count
+                
+                # Clean up text analytics for this member
+                text_result = await db.discord_text_activity.delete_many({"discord_id": discord_id})
+                analytics_cleaned["text"] += text_result.deleted_count
+                
                 removed_count += 1
         
         # Get final count
@@ -6618,7 +6632,8 @@ async def sync_discord_members(current_user: dict = Depends(verify_admin)):
             "added": added_count,
             "removed": removed_count,
             "removed_members": removed_members,
-            "message": f"Synced members. Updated: {updated_count}, Added: {added_count}, Removed: {removed_count}"
+            "analytics_cleaned": analytics_cleaned,
+            "message": f"Synced members. Updated: {updated_count}, Added: {added_count}, Removed: {removed_count}. Cleaned {analytics_cleaned['voice']} voice and {analytics_cleaned['text']} text analytics records."
         }
         
     except Exception as e:
