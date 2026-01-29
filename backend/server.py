@@ -535,45 +535,89 @@ async def start_discord_bot():
                     if not settings or not settings.get("tracking_enabled", True):
                         return
                     
-                    # Get the list of people who were in the channel during this session
-                    others_in_channel = session.get('others_in_channel', [])
+                    # Get prospect timings from the active session in the database
+                    session_id = session.get('session_id')
+                    active_session_data = None
+                    if session_id:
+                        active_session_data = await db.prospect_channel_active_sessions.find_one({'id': session_id})
+                    if not active_session_data:
+                        active_session_data = await db.prospect_channel_active_sessions.find_one({'discord_id': user_id})
                     
-                    # Check if any of those were Prospects (identified by "HA(p)" in name)
-                    # or Hangarounds (matched against database)
-                    prospect_handles = set()
-                    hangaround_handles = set()
+                    prospect_timings = active_session_data.get('prospect_timings', {}) if active_session_data else {}
                     
+                    # Calculate time spent with each prospect
+                    user_joined_at = session['joined_at']
+                    user_left_at = left_at
+                    
+                    prospect_time_breakdown = []
+                    total_time_with_prospects = 0
+                    
+                    for prospect_name, timing in prospect_timings.items():
+                        prospect_joined_str = timing.get('joined_at')
+                        prospect_left_str = timing.get('left_at')
+                        
+                        if not prospect_joined_str:
+                            continue
+                        
+                        # Parse timestamps
+                        prospect_joined = datetime.fromisoformat(prospect_joined_str.replace('Z', '+00:00'))
+                        prospect_left = datetime.fromisoformat(prospect_left_str.replace('Z', '+00:00')) if prospect_left_str else user_left_at
+                        
+                        # Calculate overlap
+                        overlap_start = max(user_joined_at, prospect_joined)
+                        overlap_end = min(user_left_at, prospect_left)
+                        
+                        if overlap_end > overlap_start:
+                            overlap_seconds = int((overlap_end - overlap_start).total_seconds())
+                            total_time_with_prospects += overlap_seconds
+                            
+                            prospect_time_breakdown.append({
+                                'prospect_name': prospect_name,
+                                'prospect_discord_id': timing.get('discord_id'),
+                                'time_together_seconds': overlap_seconds,
+                                'prospect_joined_at': prospect_joined_str,
+                                'prospect_left_at': prospect_left_str or user_left_at.isoformat()
+                            })
+                    
+                    # Calculate time alone (total duration minus time with any prospect)
+                    time_alone_seconds = max(0, int(duration) - total_time_with_prospects)
+                    
+                    # Get hangarounds from database for backward compatibility
                     hangarounds = await db.hangarounds.find({}, {"handle": 1, "_id": 0}).to_list(1000)
                     hangaround_handle_set = {h['handle'].lower() for h in hangarounds if h.get('handle')}
+                    
+                    others_in_channel = session.get('others_in_channel', [])
+                    hangaround_handles = set()
                     
                     for other in others_in_channel:
                         other_name = other.get('display_name', '')
                         other_name_lower = other_name.lower()
-                        
-                        # Prospect identified by "HA(p)" in Discord name
-                        if 'ha(p)' in other_name_lower:
-                            prospect_handles.add(other_name)
-                        
-                        # Hangaround matched against database
                         for hh in hangaround_handle_set:
                             if hh in other_name_lower:
                                 hangaround_handles.add(other_name)
                                 break
                     
-                    # Save the prospect channel activity
+                    # Build list of prospect names for backward compatibility
+                    prospect_names = [p['prospect_name'] for p in prospect_time_breakdown]
+                    
+                    # Save the prospect channel activity with time breakdown
                     prospect_activity = {
                         'id': str(uuid.uuid4()),
                         'discord_id': user_id,
                         'display_name': display_name,
                         'channel_name': session['channel_name'],
-                        'joined_at': session['joined_at'],
-                        'left_at': left_at,
+                        'joined_at': user_joined_at,
+                        'left_at': user_left_at,
                         'duration_seconds': int(duration),
                         'date': left_at.date().isoformat(),
                         'others_in_channel': others_in_channel,
-                        'prospects_present': list(prospect_handles),
+                        'prospects_present': prospect_names,
                         'hangarounds_present': list(hangaround_handles),
-                        'had_prospect_interaction': len(prospect_handles) > 0 or len(hangaround_handles) > 0
+                        'had_prospect_interaction': len(prospect_time_breakdown) > 0 or len(hangaround_handles) > 0,
+                        # New fields for time breakdown
+                        'prospect_time_breakdown': prospect_time_breakdown,
+                        'total_time_with_prospects_seconds': total_time_with_prospects,
+                        'time_alone_seconds': time_alone_seconds
                     }
                     
                     await db.prospect_channel_activity.insert_one(prospect_activity)
