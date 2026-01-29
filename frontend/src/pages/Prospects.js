@@ -1020,6 +1020,18 @@ export default function Prospects({ onLogout, userRole, userChapter }) {
       <span className="text-xs sm:text-sm text-slate-300">
         {localStorage.getItem("username")} ({userRole})
       </span>
+      {/* Prospect Channel Analytics - only for specific titles */}
+      {userRole === 'admin' && ['Prez', 'VP', 'S@A', 'ENF', 'SEC'].includes(userTitle) && (
+        <Button
+          onClick={() => navigate("/prospect-channel-analytics")}
+          variant="outline"
+          size="sm"
+          className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm bg-blue-700 text-white border-blue-600 hover:bg-blue-600"
+        >
+          <BarChart3 className="w-3 h-3 sm:w-4 sm:h-4" />
+          <span className="hidden sm:inline">Channel Analytics</span>
+        </Button>
+      )}
       {userRole === 'admin' && (
         <Button
           onClick={() => navigate("/users")}
