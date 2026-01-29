@@ -125,15 +125,23 @@ Build a member management application with attendance tracking, dues management,
   - Track Discord voice activity in "Prospect" and "Prospect 2" channels
   - Track who else was in the channel during each session
   - Identify if actual Prospects/Hangarounds were present during sessions
+  - **Prospects are identified by "HA(p)" in their Discord display name**
 - [x] **Access Control:**
   - Only National/HA Officers: Prez, VP, S@A, ENF, SEC can view
 - [x] **Backend Implementation:**
-  - New `prospect_channel_activity` collection for detailed tracking
+  - New `prospect_channel_activity` collection for completed session tracking
+  - New `prospect_channel_active_sessions` collection for live real-time tracking
   - New `prospect_channel_settings` collection for enable/disable and reset tracking
-  - Endpoints: GET/POST `/api/prospect-channel-analytics`, `/settings`, `/reset`
+  - Endpoints: GET/POST `/api/prospect-channel-analytics`, `/active`, `/settings`, `/reset`
+  - Duplicate prevention: On startup and join events, cleans old sessions for same user
 - [x] **Frontend Implementation:**
   - New page: `/prospect-channel-analytics`
   - Access from Prospects page via "Channel Analytics" button
+  - **Live tracking view** with real-time updating timers (polls every 5s)
+  - Shows "Currently in Prospect Channels (N)" with each user's:
+    - Display name, channel name, live duration timer
+    - Other users in the same channel
+    - Highlighted "With Prospects: [names]" when a Prospect is present
   - Summary cards: Unique Visitors, Total Sessions, Sessions w/ Prospect, Total Time
   - User table with expandable session details
   - Date range filtering (All Time, 7 Days, 30 Days, Custom)
