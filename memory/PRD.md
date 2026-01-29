@@ -206,7 +206,7 @@ Build a member management application with attendance tracking, dues management,
 - [x] ~~Hangaround/Prospect Restructure~~ (Completed Jan 19)
 
 #### P1 - High Priority
-- [ ] Square one-time payment sync bug (payments not updating member dues)
+- [x] ~~Square one-time payment sync bug~~ (Completed Jan 29 - fixed + admin reapply endpoint)
 - [ ] Triple birthday notification fix (distributed lock not working across containers)
 - [ ] "Update Dues" dialog mobile responsiveness
 - [ ] Add quarterly/bi-yearly/yearly dues subscription options
