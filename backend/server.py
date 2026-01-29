@@ -358,6 +358,65 @@ async def start_discord_bot():
                     sys.stderr.write(f"❌ [DISCORD] Voice tracking error: {str(e)}\n")
                     sys.stderr.flush()
             
+            async def save_active_prospect_session(self, session_id, user_id, display_name, channel_name, joined_at, others_in_channel):
+                """Save an active session when user joins a Prospect channel"""
+                try:
+                    channel_name_lower = channel_name.lower()
+                    
+                    # Check if this is a Prospect channel
+                    prospect_channels = ['prospect', 'prospect 2', 'prospect2', 'prospects']
+                    is_prospect_channel = any(pc in channel_name_lower for pc in prospect_channels)
+                    
+                    if not is_prospect_channel:
+                        return
+                    
+                    # Check if tracking is enabled
+                    settings = await db.prospect_channel_settings.find_one({"_id": "main"})
+                    if not settings or not settings.get("tracking_enabled", True):
+                        return
+                    
+                    # Check if any others are Prospects or Hangarounds
+                    prospects = await db.prospects.find({}, {"handle": 1, "_id": 0}).to_list(1000)
+                    hangarounds = await db.hangarounds.find({}, {"handle": 1, "_id": 0}).to_list(1000)
+                    
+                    prospect_handle_set = {p['handle'].lower() for p in prospects if p.get('handle')}
+                    hangaround_handle_set = {h['handle'].lower() for h in hangarounds if h.get('handle')}
+                    
+                    prospects_present = []
+                    hangarounds_present = []
+                    
+                    for other in others_in_channel:
+                        other_name_lower = other.get('display_name', '').lower()
+                        for ph in prospect_handle_set:
+                            if ph in other_name_lower:
+                                prospects_present.append(other.get('display_name'))
+                                break
+                        for hh in hangaround_handle_set:
+                            if hh in other_name_lower:
+                                hangarounds_present.append(other.get('display_name'))
+                                break
+                    
+                    # Save active session
+                    active_session = {
+                        'id': session_id,
+                        'discord_id': user_id,
+                        'display_name': display_name,
+                        'channel_name': channel_name,
+                        'joined_at': joined_at.isoformat(),
+                        'status': 'active',
+                        'others_in_channel': others_in_channel,
+                        'prospects_present': prospects_present,
+                        'hangarounds_present': hangarounds_present
+                    }
+                    
+                    await db.prospect_channel_active_sessions.insert_one(active_session)
+                    sys.stderr.write(f"📊 [PROSPECT] Started tracking {display_name} in {channel_name}\n")
+                    sys.stderr.flush()
+                    
+                except Exception as e:
+                    sys.stderr.write(f"❌ [PROSPECT] Error saving active session: {str(e)}\n")
+                    sys.stderr.flush()
+            
             async def track_prospect_channel_activity(self, user_id, display_name, session, duration, left_at):
                 """Track activity in Prospect voice channels with additional context"""
                 try:
