@@ -7658,6 +7658,60 @@ async def get_prospect_channel_analytics(
         raise HTTPException(status_code=500, detail=f"Error fetching analytics: {str(e)}")
 
 
+@api_router.get("/prospect-channel-analytics/active")
+async def get_active_prospect_sessions(current_user: dict = Depends(verify_token)):
+    """Get currently active sessions in Prospect channels (users currently in the channel)"""
+    if not can_view_prospect_analytics(current_user):
+        raise HTTPException(
+            status_code=403, 
+            detail="Only National/HA Officers (Prez, VP, S@A, ENF, SEC) can view Prospect analytics"
+        )
+    
+    try:
+        # Get all active sessions
+        active_sessions = await db.prospect_channel_active_sessions.find({}, {"_id": 0}).to_list(1000)
+        
+        now = datetime.now(timezone.utc)
+        
+        # Calculate current duration for each session
+        result = []
+        for session in active_sessions:
+            joined_at_str = session.get('joined_at')
+            if joined_at_str:
+                try:
+                    joined_at = datetime.fromisoformat(joined_at_str.replace('Z', '+00:00'))
+                    duration_seconds = int((now - joined_at).total_seconds())
+                except:
+                    duration_seconds = 0
+            else:
+                duration_seconds = 0
+            
+            result.append({
+                'id': session.get('id'),
+                'discord_id': session.get('discord_id'),
+                'display_name': session.get('display_name'),
+                'channel_name': session.get('channel_name'),
+                'joined_at': joined_at_str,
+                'duration_seconds': duration_seconds,
+                'duration_formatted': format_duration(duration_seconds),
+                'others_in_channel': session.get('others_in_channel', []),
+                'prospects_present': session.get('prospects_present', []),
+                'hangarounds_present': session.get('hangarounds_present', [])
+            })
+        
+        # Sort by duration (longest first)
+        result.sort(key=lambda x: x['duration_seconds'], reverse=True)
+        
+        return {
+            'active_count': len(result),
+            'sessions': result,
+            'timestamp': now.isoformat()
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error fetching active sessions: {str(e)}")
+
+
 def format_duration(seconds: int) -> str:
     """Format seconds into human-readable duration"""
     if seconds < 60:
