@@ -347,12 +347,20 @@ async def start_discord_bot():
                                     'display_name': other_member.display_name
                                 })
                         
+                        new_session_id = str(uuid.uuid4())
                         self.voice_sessions[user_id] = {
+                            'session_id': new_session_id,
                             'joined_at': now,
                             'channel_id': str(after.channel.id),
                             'channel_name': after.channel.name,
                             'others_in_channel': others_in_channel
                         }
+                        
+                        # Save active session for new Prospect channel
+                        await self.save_active_prospect_session(
+                            new_session_id, user_id, member.display_name,
+                            after.channel.name, now, others_in_channel
+                        )
                 
                 except Exception as e:
                     sys.stderr.write(f"❌ [DISCORD] Voice tracking error: {str(e)}\n")
