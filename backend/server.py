@@ -7749,14 +7749,29 @@ async def get_prospect_channel_analytics(
             for h in record.get('hangarounds_present', []):
                 stats['unique_hangarounds_met'].add(h)
             
-            # Add session detail
+            # Add session detail with time breakdown
+            prospect_time_breakdown = record.get('prospect_time_breakdown', [])
             stats['sessions'].append({
                 'date': record.get('date'),
                 'channel': record.get('channel_name'),
                 'duration_minutes': round(record.get('duration_seconds', 0) / 60, 1),
+                'duration_seconds': record.get('duration_seconds', 0),
                 'prospects_present': record.get('prospects_present', []),
                 'hangarounds_present': record.get('hangarounds_present', []),
-                'others_present': [o.get('display_name') for o in record.get('others_in_channel', [])]
+                'others_present': [o.get('display_name') for o in record.get('others_in_channel', [])],
+                # New time breakdown fields
+                'prospect_time_breakdown': [
+                    {
+                        'prospect_name': p.get('prospect_name'),
+                        'time_together_seconds': p.get('time_together_seconds', 0),
+                        'time_together_formatted': format_duration(p.get('time_together_seconds', 0))
+                    }
+                    for p in prospect_time_breakdown
+                ],
+                'total_time_with_prospects_seconds': record.get('total_time_with_prospects_seconds', 0),
+                'total_time_with_prospects_formatted': format_duration(record.get('total_time_with_prospects_seconds', 0)),
+                'time_alone_seconds': record.get('time_alone_seconds', 0),
+                'time_alone_formatted': format_duration(record.get('time_alone_seconds', 0))
             })
         
         # Convert sets to lists and format response
