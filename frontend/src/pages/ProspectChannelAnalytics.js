@@ -501,6 +501,29 @@ export default function ProspectChannelAnalytics() {
                     {expandedUser === user.discord_id && (
                       <TableRow className="bg-slate-900/50">
                         <TableCell colSpan={7} className="p-4">
+                          {/* Aggregated Time per Prospect */}
+                          {user.time_per_prospect?.length > 0 && (
+                            <div className="mb-4 p-3 bg-slate-800/50 rounded-lg border border-slate-700">
+                              <div className="text-sm font-medium text-green-400 mb-2">Total Time with Each Prospect:</div>
+                              <div className="space-y-1">
+                                {user.time_per_prospect.map((p, idx) => (
+                                  <div key={idx} className="flex items-center gap-2 text-sm">
+                                    <span className="text-slate-300">├──</span>
+                                    <span className="text-green-400">{p.prospect_name}:</span>
+                                    <span className="text-blue-400 font-mono">{p.total_time_formatted}</span>
+                                  </div>
+                                ))}
+                                {user.total_time_alone_seconds > 0 && (
+                                  <div className="flex items-center gap-2 text-sm">
+                                    <span className="text-slate-300">└──</span>
+                                    <span className="text-slate-400">Time alone:</span>
+                                    <span className="text-slate-500 font-mono">{user.total_time_alone_formatted}</span>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          )}
+                          
                           <div className="text-sm text-slate-400 mb-2">Session Details:</div>
                           <div className="space-y-2 max-h-64 overflow-y-auto">
                             {user.sessions?.map((session, idx) => (
@@ -512,27 +535,49 @@ export default function ProspectChannelAnalytics() {
                                     : 'bg-slate-800 border-slate-700'
                                 }`}
                               >
-                                <div className="flex flex-wrap gap-4 items-center">
+                                <div className="flex flex-wrap gap-4 items-center mb-2">
                                   <span className="text-slate-300">{session.date}</span>
                                   <span className="text-slate-400">{session.channel}</span>
-                                  <span className="text-blue-400">{session.duration_minutes} min</span>
-                                  {session.prospects_present?.length > 0 && (
-                                    <span className="text-green-400">
-                                      Prospects: {session.prospects_present.join(", ")}
-                                    </span>
-                                  )}
-                                  {session.hangarounds_present?.length > 0 && (
-                                    <span className="text-amber-400">
-                                      Hangarounds: {session.hangarounds_present.join(", ")}
-                                    </span>
-                                  )}
-                                  {session.others_present?.length > 0 && (
-                                    <span className="text-slate-500 text-xs">
-                                      Also present: {session.others_present.slice(0, 5).join(", ")}
-                                      {session.others_present.length > 5 && ` +${session.others_present.length - 5} more`}
-                                    </span>
-                                  )}
+                                  <span className="text-blue-400">Total: {session.duration_minutes} min</span>
                                 </div>
+                                
+                                {/* Time breakdown per prospect for this session */}
+                                {session.prospect_time_breakdown?.length > 0 && (
+                                  <div className="ml-4 mt-2 space-y-1 text-sm border-l-2 border-green-700 pl-3">
+                                    {session.prospect_time_breakdown.map((breakdown, bIdx) => (
+                                      <div key={bIdx} className="flex items-center gap-2">
+                                        <span className="text-green-400">├── {breakdown.prospect_name}:</span>
+                                        <span className="text-blue-400 font-mono">{breakdown.time_together_formatted}</span>
+                                      </div>
+                                    ))}
+                                    {session.time_alone_seconds > 0 && (
+                                      <div className="flex items-center gap-2">
+                                        <span className="text-slate-400">└── Alone:</span>
+                                        <span className="text-slate-500 font-mono">{session.time_alone_formatted}</span>
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+                                
+                                {/* Fallback for sessions without breakdown (older data) */}
+                                {(!session.prospect_time_breakdown || session.prospect_time_breakdown.length === 0) && session.prospects_present?.length > 0 && (
+                                  <div className="text-green-400 text-sm mt-1">
+                                    With Prospects: {session.prospects_present.join(", ")}
+                                  </div>
+                                )}
+                                
+                                {session.hangarounds_present?.length > 0 && (
+                                  <div className="text-amber-400 text-sm mt-1">
+                                    Hangarounds: {session.hangarounds_present.join(", ")}
+                                  </div>
+                                )}
+                                
+                                {session.others_present?.length > 0 && (
+                                  <div className="text-slate-500 text-xs mt-1">
+                                    Also present: {session.others_present.slice(0, 5).join(", ")}
+                                    {session.others_present.length > 5 && ` +${session.others_present.length - 5} more`}
+                                  </div>
+                                )}
                               </div>
                             ))}
                           </div>
