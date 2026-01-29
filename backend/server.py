@@ -237,10 +237,20 @@ async def start_discord_bot():
                 try:
                     # User joined voice channel
                     if before.channel is None and after.channel is not None:
+                        # Capture who else is in the channel (for Prospect channel tracking)
+                        others_in_channel = []
+                        for other_member in after.channel.members:
+                            if str(other_member.id) != user_id and not other_member.bot:
+                                others_in_channel.append({
+                                    'discord_id': str(other_member.id),
+                                    'display_name': other_member.display_name
+                                })
+                        
                         self.voice_sessions[user_id] = {
                             'joined_at': now,
                             'channel_id': str(after.channel.id),
-                            'channel_name': after.channel.name
+                            'channel_name': after.channel.name,
+                            'others_in_channel': others_in_channel
                         }
                         sys.stderr.write(f"🎤 [DISCORD] {member.display_name} joined {after.channel.name}\n")
                         sys.stderr.flush()
