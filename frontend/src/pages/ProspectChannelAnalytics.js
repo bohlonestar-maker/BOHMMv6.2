@@ -539,7 +539,7 @@ export default function ProspectChannelAnalytics() {
                         </TableCell>
                       </TableRow>
                     )}
-                  </>
+                  </React.Fragment>
                 ))
               )}
             </TableBody>
