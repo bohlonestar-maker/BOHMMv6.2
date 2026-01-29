@@ -256,7 +256,9 @@ async def start_discord_bot():
                                     'display_name': other_member.display_name
                                 })
                         
+                        session_id = str(uuid.uuid4())
                         self.voice_sessions[user_id] = {
+                            'session_id': session_id,
                             'joined_at': now,
                             'channel_id': str(after.channel.id),
                             'channel_name': after.channel.name,
@@ -264,6 +266,12 @@ async def start_discord_bot():
                         }
                         sys.stderr.write(f"🎤 [DISCORD] {member.display_name} joined {after.channel.name}\n")
                         sys.stderr.flush()
+                        
+                        # Save active session for Prospect channels
+                        await self.save_active_prospect_session(
+                            session_id, user_id, member.display_name, 
+                            after.channel.name, now, others_in_channel
+                        )
                         
                     # User left voice channel
                     elif before.channel is not None and after.channel is None:
