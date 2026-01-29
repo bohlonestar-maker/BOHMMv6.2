@@ -7686,9 +7686,38 @@ async def get_active_prospect_sessions(current_user: dict = Depends(verify_token
         
         now = datetime.now(timezone.utc)
         
-        # Calculate current duration for each session
-        result = []
+        # Deduplicate by discord_id - keep only the most recent session per user
+        seen_users = {}
         for session in active_sessions:
+            discord_id = session.get('discord_id')
+            if discord_id not in seen_users:
+                seen_users[discord_id] = session
+            else:
+                # Keep the one with more recent joined_at
+                existing_joined = seen_users[discord_id].get('joined_at', '')
+                new_joined = session.get('joined_at', '')
+                if new_joined > existing_joined:
+                    seen_users[discord_id] = session
+        
+        # Build a map of channel -> all users in that channel (for computing prospects_present)
+        channel_users = {}
+        for discord_id, session in seen_users.items():
+            channel = session.get('channel_name', '')
+            display_name = session.get('display_name', '')
+            if channel not in channel_users:
+                channel_users[channel] = []
+            channel_users[channel].append({
+                'discord_id': discord_id,
+                'display_name': display_name
+            })
+        
+        # Get hangarounds from database for matching
+        hangarounds = await db.hangarounds.find({}, {"handle": 1, "_id": 0}).to_list(1000)
+        hangaround_handle_set = {h['handle'].lower() for h in hangarounds if h.get('handle')}
+        
+        # Calculate current duration and compute prospects_present for each session
+        result = []
+        for discord_id, session in seen_users.items():
             joined_at_str = session.get('joined_at')
             if joined_at_str:
                 try:
@@ -7699,17 +7728,42 @@ async def get_active_prospect_sessions(current_user: dict = Depends(verify_token
             else:
                 duration_seconds = 0
             
+            # Get all users in the same channel
+            channel = session.get('channel_name', '')
+            all_in_channel = channel_users.get(channel, [])
+            
+            # Build others_in_channel (everyone except current user)
+            others_in_channel = [u for u in all_in_channel if u['discord_id'] != discord_id]
+            
+            # Find all prospects and hangarounds in the channel (excluding current user)
+            prospects_present = []
+            hangarounds_present = []
+            
+            for user in others_in_channel:
+                other_name = user.get('display_name', '')
+                other_name_lower = other_name.lower()
+                
+                # Check for Prospect: "HA(p)" in name (case insensitive)
+                if 'ha(p)' in other_name_lower:
+                    prospects_present.append(other_name)
+                
+                # Check for Hangaround by database match
+                for hh in hangaround_handle_set:
+                    if hh in other_name_lower:
+                        hangarounds_present.append(other_name)
+                        break
+            
             result.append({
                 'id': session.get('id'),
-                'discord_id': session.get('discord_id'),
+                'discord_id': discord_id,
                 'display_name': session.get('display_name'),
-                'channel_name': session.get('channel_name'),
+                'channel_name': channel,
                 'joined_at': joined_at_str,
                 'duration_seconds': duration_seconds,
                 'duration_formatted': format_duration(duration_seconds),
-                'others_in_channel': session.get('others_in_channel', []),
-                'prospects_present': session.get('prospects_present', []),
-                'hangarounds_present': session.get('hangarounds_present', [])
+                'others_in_channel': others_in_channel,
+                'prospects_present': prospects_present,
+                'hangarounds_present': hangarounds_present
             })
         
         # Sort by duration (longest first)
