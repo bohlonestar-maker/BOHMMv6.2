@@ -8,7 +8,7 @@ import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 def test_can_edit_flag():
-    base_url = "https://member-hub-54.preview.emergentagent.com/api"
+    base_url = "https://attendance-mgr-4.preview.emergentagent.com/api"
     
     # Login as admin
     login_response = requests.post(

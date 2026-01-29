@@ -12,7 +12,7 @@ import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 class AttendanceUpdateTester:
-    def __init__(self, base_url="https://member-hub-54.preview.emergentagent.com/api"):
+    def __init__(self, base_url="https://attendance-mgr-4.preview.emergentagent.com/api"):
         self.base_url = base_url
         self.token = None
         

@@ -32,7 +32,7 @@ def check_discord_sessions():
     
     # Login to API
     login_response = requests.post(
-        'https://member-hub-54.preview.emergentagent.com/api/auth/login',
+        'https://attendance-mgr-4.preview.emergentagent.com/api/auth/login',
         json={'username': 'testadmin', 'password': 'testpass123'},
         verify=False
     )
@@ -89,7 +89,7 @@ def check_discord_sessions():
     
     # Get bot status
     bot_response = requests.get(
-        'https://member-hub-54.preview.emergentagent.com/api/discord/test-activity',
+        'https://attendance-mgr-4.preview.emergentagent.com/api/discord/test-activity',
         headers=headers,
         verify=False
     )
@@ -108,7 +108,7 @@ def check_discord_sessions():
     
     # Get analytics
     analytics_response = requests.get(
-        'https://member-hub-54.preview.emergentagent.com/api/discord/analytics',
+        'https://attendance-mgr-4.preview.emergentagent.com/api/discord/analytics',
         headers=headers,
         verify=False
     )
