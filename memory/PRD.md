@@ -151,7 +151,8 @@ Build a member management application with attendance tracking, dues management,
 ### API Endpoints
 
 #### Prospect Channel Analytics (NEW - Jan 29, 2026)
-- `GET /api/prospect-channel-analytics` - Get all analytics (with optional date filters)
+- `GET /api/prospect-channel-analytics` - Get all completed session analytics (with optional date filters)
+- `GET /api/prospect-channel-analytics/active` - Get real-time active users in Prospect channels
 - `GET /api/prospect-channel-analytics/settings` - Get tracking settings
 - `POST /api/prospect-channel-analytics/settings?tracking_enabled=true/false` - Enable/disable tracking
 - `POST /api/prospect-channel-analytics/reset` - Reset all analytics data
