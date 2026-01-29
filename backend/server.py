@@ -212,10 +212,20 @@ async def start_discord_bot():
                             if not member.bot and not should_ignore_user(member):
                                 user_id = str(member.id)
                                 if user_id not in self.voice_sessions:
+                                    # Capture who else is in the channel
+                                    others_in_channel = []
+                                    for other_member in voice_channel.members:
+                                        if str(other_member.id) != user_id and not other_member.bot:
+                                            others_in_channel.append({
+                                                'discord_id': str(other_member.id),
+                                                'display_name': other_member.display_name
+                                            })
+                                    
                                     self.voice_sessions[user_id] = {
                                         'joined_at': datetime.now(timezone.utc),
                                         'channel_id': str(voice_channel.id),
-                                        'channel_name': voice_channel.name
+                                        'channel_name': voice_channel.name,
+                                        'others_in_channel': others_in_channel
                                     }
                                     sys.stderr.write(f"🎤 [DISCORD] Tracking {member.display_name} already in {voice_channel.name}\n")
                     
