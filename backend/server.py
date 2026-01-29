@@ -205,7 +205,11 @@ async def start_discord_bot():
                 sys.stderr.write(f"✅ [DISCORD] Monitoring {len(self.guilds)} guild(s):\n")
                 for guild in self.guilds:
                     sys.stderr.write(f"   - {guild.name} ({guild.id}): {guild.member_count} members\n")
-                    
+                
+                # Clear stale active prospect sessions from previous runs
+                await db.prospect_channel_active_sessions.delete_many({})
+                
+                for guild in self.guilds:
                     # Scan for users already in voice channels and start tracking them
                     for voice_channel in guild.voice_channels:
                         for member in voice_channel.members:
