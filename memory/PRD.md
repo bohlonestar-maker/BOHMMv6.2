@@ -142,6 +142,12 @@ Build a member management application with attendance tracking, dues management,
 
 ### API Endpoints
 
+#### Prospect Channel Analytics (NEW - Jan 29, 2026)
+- `GET /api/prospect-channel-analytics` - Get all analytics (with optional date filters)
+- `GET /api/prospect-channel-analytics/settings` - Get tracking settings
+- `POST /api/prospect-channel-analytics/settings?tracking_enabled=true/false` - Enable/disable tracking
+- `POST /api/prospect-channel-analytics/reset` - Reset all analytics data
+
 #### Hangarounds (NEW - Jan 19, 2026)
 - `GET /api/hangarounds` - Get all hangarounds
 - `GET /api/hangarounds/{id}` - Get single hangaround
