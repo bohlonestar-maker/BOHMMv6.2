@@ -453,9 +453,8 @@ export default function ProspectChannelAnalytics() {
                 </TableRow>
               ) : (
                 analytics?.users?.map((user) => (
-                  <>
+                  <React.Fragment key={user.discord_id}>
                     <TableRow
-                      key={user.discord_id}
                       className="border-slate-700 hover:bg-slate-700/50 cursor-pointer"
                       onClick={() => toggleUserExpanded(user.discord_id)}
                     >
