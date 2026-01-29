@@ -256,7 +256,8 @@ async def start_discord_bot():
                             if duration >= 1:
                                 voice_activity = {
                                     'id': str(uuid.uuid4()),
-                                    'discord_user_id': user_id,
+                                    'discord_id': user_id,
+                                    'discord_user_id': user_id,  # Keep for backwards compatibility
                                     'channel_id': session['channel_id'],
                                     'channel_name': session['channel_name'],
                                     'joined_at': session['joined_at'],
@@ -268,6 +269,11 @@ async def start_discord_bot():
                                 await db.discord_voice_activity.insert_one(voice_activity)
                                 sys.stderr.write(f"💾 [DISCORD] Saved {member.display_name} voice session: {duration/60:.1f} min in {session['channel_name']}\n")
                                 sys.stderr.flush()
+                                
+                                # Track Prospect channel activity separately if enabled
+                                await self.track_prospect_channel_activity(
+                                    user_id, member.display_name, session, duration, now
+                                )
                             else:
                                 sys.stderr.write(f"⏭️ [DISCORD] Skipping {member.display_name} session < 1s\n")
                                 sys.stderr.flush()
