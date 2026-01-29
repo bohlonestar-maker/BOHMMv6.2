@@ -472,7 +472,16 @@ async def start_discord_bot():
                     }
                     
                     await db.prospect_channel_activity.insert_one(prospect_activity)
-                    sys.stderr.write(f"📊 [PROSPECT] Tracked {display_name} in {session['channel_name']}: {duration/60:.1f}min, prospects: {list(prospect_handles)}\n")
+                    
+                    # Remove the active session now that it's completed
+                    session_id = session.get('session_id')
+                    if session_id:
+                        await db.prospect_channel_active_sessions.delete_one({"id": session_id})
+                    else:
+                        # Fallback: delete by discord_id if no session_id
+                        await db.prospect_channel_active_sessions.delete_one({"discord_id": user_id})
+                    
+                    sys.stderr.write(f"📊 [PROSPECT] Completed {display_name} in {session['channel_name']}: {duration/60:.1f}min, prospects: {list(prospect_handles)}\n")
                     sys.stderr.flush()
                     
                 except Exception as e:
