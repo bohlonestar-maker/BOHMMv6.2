@@ -7431,6 +7431,216 @@ async def get_discord_analytics(days: int = 90, current_user: dict = Depends(ver
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Analytics error: {str(e)}")
 
+
+# ==================== PROSPECT CHANNEL ANALYTICS ====================
+
+def can_view_prospect_analytics(user: dict) -> bool:
+    """Check if user can view Prospect channel analytics.
+    Allowed: N Prez, VP, S@A, ENF, SEC and HA Prez, VP, S@A, ENF, SEC
+    """
+    role = user.get('role', '')
+    chapter = user.get('chapter', '')
+    title = user.get('title', '')
+    
+    if role != 'admin':
+        return False
+    
+    allowed_chapters = ['National', 'HA']
+    allowed_titles = ['Prez', 'VP', 'S@A', 'ENF', 'SEC']
+    
+    return chapter in allowed_chapters and title in allowed_titles
+
+
+@api_router.get("/prospect-channel-analytics")
+async def get_prospect_channel_analytics(
+    start_date: str = None,
+    end_date: str = None,
+    current_user: dict = Depends(verify_token)
+):
+    """Get Prospect channel voice analytics"""
+    if not can_view_prospect_analytics(current_user):
+        raise HTTPException(
+            status_code=403, 
+            detail="Only National/HA Officers (Prez, VP, S@A, ENF, SEC) can view Prospect analytics"
+        )
+    
+    try:
+        # Get settings
+        settings = await db.prospect_channel_settings.find_one({"_id": "main"})
+        tracking_enabled = settings.get("tracking_enabled", True) if settings else True
+        
+        # Build query
+        query = {}
+        if start_date:
+            query["date"] = {"$gte": start_date}
+        if end_date:
+            if "date" in query:
+                query["date"]["$lte"] = end_date
+            else:
+                query["date"] = {"$lte": end_date}
+        
+        # Get all activity records
+        activity = await db.prospect_channel_activity.find(query, {"_id": 0}).to_list(10000)
+        
+        # Aggregate by user
+        user_stats = {}
+        for record in activity:
+            user_id = record.get('discord_id')
+            display_name = record.get('display_name', 'Unknown')
+            
+            if user_id not in user_stats:
+                user_stats[user_id] = {
+                    'discord_id': user_id,
+                    'display_name': display_name,
+                    'total_sessions': 0,
+                    'total_duration_seconds': 0,
+                    'sessions_with_prospect': 0,
+                    'duration_with_prospect_seconds': 0,
+                    'unique_prospects_met': set(),
+                    'unique_hangarounds_met': set(),
+                    'sessions': []
+                }
+            
+            stats = user_stats[user_id]
+            stats['total_sessions'] += 1
+            stats['total_duration_seconds'] += record.get('duration_seconds', 0)
+            
+            if record.get('had_prospect_interaction'):
+                stats['sessions_with_prospect'] += 1
+                stats['duration_with_prospect_seconds'] += record.get('duration_seconds', 0)
+            
+            for p in record.get('prospects_present', []):
+                stats['unique_prospects_met'].add(p)
+            for h in record.get('hangarounds_present', []):
+                stats['unique_hangarounds_met'].add(h)
+            
+            # Add session detail
+            stats['sessions'].append({
+                'date': record.get('date'),
+                'channel': record.get('channel_name'),
+                'duration_minutes': round(record.get('duration_seconds', 0) / 60, 1),
+                'prospects_present': record.get('prospects_present', []),
+                'hangarounds_present': record.get('hangarounds_present', []),
+                'others_present': [o.get('display_name') for o in record.get('others_in_channel', [])]
+            })
+        
+        # Convert sets to lists and format response
+        result = []
+        for user_id, stats in user_stats.items():
+            result.append({
+                'discord_id': stats['discord_id'],
+                'display_name': stats['display_name'],
+                'total_sessions': stats['total_sessions'],
+                'total_time_minutes': round(stats['total_duration_seconds'] / 60, 1),
+                'total_time_formatted': format_duration(stats['total_duration_seconds']),
+                'sessions_with_prospect': stats['sessions_with_prospect'],
+                'time_with_prospect_minutes': round(stats['duration_with_prospect_seconds'] / 60, 1),
+                'time_with_prospect_formatted': format_duration(stats['duration_with_prospect_seconds']),
+                'unique_prospects_met': list(stats['unique_prospects_met']),
+                'unique_hangarounds_met': list(stats['unique_hangarounds_met']),
+                'sessions': sorted(stats['sessions'], key=lambda x: x['date'], reverse=True)
+            })
+        
+        # Sort by total time
+        result.sort(key=lambda x: x['total_time_minutes'], reverse=True)
+        
+        return {
+            'tracking_enabled': tracking_enabled,
+            'total_records': len(activity),
+            'unique_users': len(result),
+            'users': result
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error fetching analytics: {str(e)}")
+
+
+def format_duration(seconds: int) -> str:
+    """Format seconds into human-readable duration"""
+    if seconds < 60:
+        return f"{seconds}s"
+    elif seconds < 3600:
+        minutes = seconds // 60
+        return f"{minutes}m"
+    else:
+        hours = seconds // 3600
+        minutes = (seconds % 3600) // 60
+        return f"{hours}h {minutes}m"
+
+
+@api_router.get("/prospect-channel-analytics/settings")
+async def get_prospect_channel_settings(current_user: dict = Depends(verify_token)):
+    """Get Prospect channel tracking settings"""
+    if not can_view_prospect_analytics(current_user):
+        raise HTTPException(status_code=403, detail="Access denied")
+    
+    settings = await db.prospect_channel_settings.find_one({"_id": "main"})
+    if not settings:
+        settings = {"_id": "main", "tracking_enabled": True}
+        await db.prospect_channel_settings.insert_one(settings)
+    
+    return {
+        "tracking_enabled": settings.get("tracking_enabled", True),
+        "last_reset": settings.get("last_reset"),
+        "reset_by": settings.get("reset_by")
+    }
+
+
+@api_router.post("/prospect-channel-analytics/settings")
+async def update_prospect_channel_settings(
+    tracking_enabled: bool,
+    current_user: dict = Depends(verify_token)
+):
+    """Enable or disable Prospect channel tracking"""
+    if not can_view_prospect_analytics(current_user):
+        raise HTTPException(status_code=403, detail="Access denied")
+    
+    await db.prospect_channel_settings.update_one(
+        {"_id": "main"},
+        {"$set": {"tracking_enabled": tracking_enabled}},
+        upsert=True
+    )
+    
+    await log_activity(
+        current_user["username"],
+        "prospect_tracking_toggle",
+        f"{'Enabled' if tracking_enabled else 'Disabled'} Prospect channel tracking"
+    )
+    
+    return {"message": f"Prospect channel tracking {'enabled' if tracking_enabled else 'disabled'}"}
+
+
+@api_router.post("/prospect-channel-analytics/reset")
+async def reset_prospect_channel_analytics(current_user: dict = Depends(verify_token)):
+    """Reset all Prospect channel analytics data"""
+    if not can_view_prospect_analytics(current_user):
+        raise HTTPException(status_code=403, detail="Access denied")
+    
+    # Delete all activity records
+    result = await db.prospect_channel_activity.delete_many({})
+    
+    # Update settings with reset info
+    await db.prospect_channel_settings.update_one(
+        {"_id": "main"},
+        {"$set": {
+            "last_reset": datetime.now(timezone.utc).isoformat(),
+            "reset_by": current_user["username"]
+        }},
+        upsert=True
+    )
+    
+    await log_activity(
+        current_user["username"],
+        "prospect_analytics_reset",
+        f"Reset Prospect channel analytics ({result.deleted_count} records deleted)"
+    )
+    
+    return {
+        "message": f"Prospect channel analytics reset successfully",
+        "records_deleted": result.deleted_count
+    }
+
+
 @api_router.post("/discord/import-members")
 async def import_discord_members(current_user: dict = Depends(verify_admin)):
     """Import Discord members and link to existing members using enhanced fuzzy matching"""
