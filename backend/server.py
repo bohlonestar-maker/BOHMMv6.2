@@ -221,13 +221,22 @@ async def start_discord_bot():
                                                 'display_name': other_member.display_name
                                             })
                                     
+                                    session_id = str(uuid.uuid4())
+                                    now = datetime.now(timezone.utc)
                                     self.voice_sessions[user_id] = {
-                                        'joined_at': datetime.now(timezone.utc),
+                                        'session_id': session_id,
+                                        'joined_at': now,
                                         'channel_id': str(voice_channel.id),
                                         'channel_name': voice_channel.name,
                                         'others_in_channel': others_in_channel
                                     }
                                     sys.stderr.write(f"🎤 [DISCORD] Tracking {member.display_name} already in {voice_channel.name}\n")
+                                    
+                                    # Save active session for Prospect channels
+                                    await self.save_active_prospect_session(
+                                        session_id, user_id, member.display_name,
+                                        voice_channel.name, now, others_in_channel
+                                    )
                     
                 sys.stderr.write(f"✅ [DISCORD] Now tracking {len(self.voice_sessions)} user(s) already in voice\n")
                 sys.stderr.flush()
