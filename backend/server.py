@@ -303,6 +303,7 @@ async def start_discord_bot():
                             
                             voice_activity = {
                                 'id': str(uuid.uuid4()),
+                                'discord_id': user_id,
                                 'discord_user_id': user_id,
                                 'channel_id': session['channel_id'],
                                 'channel_name': session['channel_name'],
@@ -313,12 +314,26 @@ async def start_discord_bot():
                             }
                             
                             await db.discord_voice_activity.insert_one(voice_activity)
+                            
+                            # Track prospect channel activity for the previous channel
+                            await self.track_prospect_channel_activity(
+                                user_id, member.display_name, session, duration, now
+                            )
                         
-                        # Start new session
+                        # Start new session with others in channel info
+                        others_in_channel = []
+                        for other_member in after.channel.members:
+                            if str(other_member.id) != user_id and not other_member.bot:
+                                others_in_channel.append({
+                                    'discord_id': str(other_member.id),
+                                    'display_name': other_member.display_name
+                                })
+                        
                         self.voice_sessions[user_id] = {
                             'joined_at': now,
                             'channel_id': str(after.channel.id),
-                            'channel_name': after.channel.name
+                            'channel_name': after.channel.name,
+                            'others_in_channel': others_in_channel
                         }
                 
                 except Exception as e:
