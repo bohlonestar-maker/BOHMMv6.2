@@ -7733,21 +7733,33 @@ async def get_prospect_channel_analytics(
                     'duration_with_prospect_seconds': 0,
                     'unique_prospects_met': set(),
                     'unique_hangarounds_met': set(),
+                    'time_per_prospect': {},  # Aggregate time per prospect
+                    'total_time_alone_seconds': 0,
                     'sessions': []
                 }
             
             stats = user_stats[user_id]
             stats['total_sessions'] += 1
             stats['total_duration_seconds'] += record.get('duration_seconds', 0)
+            stats['total_time_alone_seconds'] += record.get('time_alone_seconds', 0)
             
             if record.get('had_prospect_interaction'):
                 stats['sessions_with_prospect'] += 1
-                stats['duration_with_prospect_seconds'] += record.get('duration_seconds', 0)
+                stats['duration_with_prospect_seconds'] += record.get('total_time_with_prospects_seconds', record.get('duration_seconds', 0))
             
             for p in record.get('prospects_present', []):
                 stats['unique_prospects_met'].add(p)
             for h in record.get('hangarounds_present', []):
                 stats['unique_hangarounds_met'].add(h)
+            
+            # Aggregate time per prospect from breakdown
+            for breakdown in record.get('prospect_time_breakdown', []):
+                prospect_name = breakdown.get('prospect_name')
+                time_together = breakdown.get('time_together_seconds', 0)
+                if prospect_name:
+                    if prospect_name not in stats['time_per_prospect']:
+                        stats['time_per_prospect'][prospect_name] = 0
+                    stats['time_per_prospect'][prospect_name] += time_together
             
             # Add session detail with time breakdown
             prospect_time_breakdown = record.get('prospect_time_breakdown', [])
