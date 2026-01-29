@@ -400,47 +400,104 @@ async def start_discord_bot():
                     await db.prospect_channel_active_sessions.delete_many({"discord_id": user_id})
                     
                     # Check if any others are Prospects (identified by "HA(p)" in their name)
-                    # or Hangarounds (identified by matching against hangarounds database)
-                    prospects_present = []
-                    hangarounds_present = []
+                    # Build prospect_timings to track when each prospect was present
+                    prospect_timings = {}  # {prospect_name: {'discord_id': id, 'joined_at': timestamp}}
                     
                     # Get hangarounds from database for matching
                     hangarounds = await db.hangarounds.find({}, {"handle": 1, "_id": 0}).to_list(1000)
                     hangaround_handle_set = {h['handle'].lower() for h in hangarounds if h.get('handle')}
                     
+                    joined_at_iso = joined_at.isoformat()
+                    
                     for other in others_in_channel:
                         other_name = other.get('display_name', '')
+                        other_id = other.get('discord_id', '')
                         other_name_lower = other_name.lower()
                         
                         # Check for Prospect: "HA(p)" in name (case insensitive)
                         if 'ha(p)' in other_name_lower:
-                            prospects_present.append(other_name)
-                        
-                        # Check for Hangaround by database match
-                        for hh in hangaround_handle_set:
-                            if hh in other_name_lower:
-                                hangarounds_present.append(other_name)
-                                break
+                            # Prospect was already in channel when user joined
+                            prospect_timings[other_name] = {
+                                'discord_id': other_id,
+                                'joined_at': joined_at_iso,  # They were there from the start of this user's session
+                                'left_at': None  # Still present
+                            }
                     
-                    # Save active session
+                    # Save active session with prospect_timings for overlap calculation
                     active_session = {
                         'id': session_id,
                         'discord_id': user_id,
                         'display_name': display_name,
                         'channel_name': channel_name,
-                        'joined_at': joined_at.isoformat(),
+                        'joined_at': joined_at_iso,
                         'status': 'active',
                         'others_in_channel': others_in_channel,
-                        'prospects_present': prospects_present,
-                        'hangarounds_present': hangarounds_present
+                        'prospect_timings': prospect_timings  # Track prospect join/leave times
                     }
                     
                     await db.prospect_channel_active_sessions.insert_one(active_session)
+                    
+                    # If this user is a prospect, update all other active sessions in this channel
+                    if 'ha(p)' in display_name.lower():
+                        await self.update_sessions_prospect_joined(channel_name, user_id, display_name, joined_at_iso)
+                    
                     sys.stderr.write(f"📊 [PROSPECT] Started tracking {display_name} in {channel_name}\n")
                     sys.stderr.flush()
                     
                 except Exception as e:
                     sys.stderr.write(f"❌ [PROSPECT] Error saving active session: {str(e)}\n")
+                    sys.stderr.flush()
+            
+            async def update_sessions_prospect_joined(self, channel_name, prospect_id, prospect_name, joined_at_iso):
+                """When a prospect joins, update all other active sessions in the channel"""
+                try:
+                    # Find all active sessions in this channel (excluding the prospect themselves)
+                    active_sessions = await db.prospect_channel_active_sessions.find({
+                        'channel_name': channel_name,
+                        'discord_id': {'$ne': prospect_id}
+                    }).to_list(1000)
+                    
+                    for session in active_sessions:
+                        prospect_timings = session.get('prospect_timings', {})
+                        if prospect_name not in prospect_timings:
+                            prospect_timings[prospect_name] = {
+                                'discord_id': prospect_id,
+                                'joined_at': joined_at_iso,
+                                'left_at': None
+                            }
+                            await db.prospect_channel_active_sessions.update_one(
+                                {'id': session['id']},
+                                {'$set': {'prospect_timings': prospect_timings}}
+                            )
+                    
+                    sys.stderr.write(f"📊 [PROSPECT] Updated {len(active_sessions)} sessions: {prospect_name} joined\n")
+                    sys.stderr.flush()
+                except Exception as e:
+                    sys.stderr.write(f"❌ [PROSPECT] Error updating sessions on prospect join: {str(e)}\n")
+                    sys.stderr.flush()
+            
+            async def update_sessions_prospect_left(self, channel_name, prospect_id, prospect_name, left_at_iso):
+                """When a prospect leaves, update all other active sessions in the channel"""
+                try:
+                    # Find all active sessions in this channel
+                    active_sessions = await db.prospect_channel_active_sessions.find({
+                        'channel_name': channel_name,
+                        'discord_id': {'$ne': prospect_id}
+                    }).to_list(1000)
+                    
+                    for session in active_sessions:
+                        prospect_timings = session.get('prospect_timings', {})
+                        if prospect_name in prospect_timings and prospect_timings[prospect_name].get('left_at') is None:
+                            prospect_timings[prospect_name]['left_at'] = left_at_iso
+                            await db.prospect_channel_active_sessions.update_one(
+                                {'id': session['id']},
+                                {'$set': {'prospect_timings': prospect_timings}}
+                            )
+                    
+                    sys.stderr.write(f"📊 [PROSPECT] Updated {len(active_sessions)} sessions: {prospect_name} left\n")
+                    sys.stderr.flush()
+                except Exception as e:
+                    sys.stderr.write(f"❌ [PROSPECT] Error updating sessions on prospect leave: {str(e)}\n")
                     sys.stderr.flush()
             
             async def track_prospect_channel_activity(self, user_id, display_name, session, duration, left_at):
