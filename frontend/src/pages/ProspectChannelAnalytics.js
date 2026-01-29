@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import axios from "axios";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -27,7 +27,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { BarChart3, RefreshCw, Trash2, Clock, Users, ChevronDown, ChevronRight, Settings, ArrowLeft } from "lucide-react";
+import { BarChart3, RefreshCw, Trash2, Clock, Users, ChevronDown, ChevronRight, Settings, ArrowLeft, Radio } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 const API = process.env.REACT_APP_BACKEND_URL + "/api";
@@ -35,6 +35,7 @@ const API = process.env.REACT_APP_BACKEND_URL + "/api";
 export default function ProspectChannelAnalytics() {
   const navigate = useNavigate();
   const [analytics, setAnalytics] = useState(null);
+  const [activeSessions, setActiveSessions] = useState(null);
   const [settings, setSettings] = useState({ tracking_enabled: true });
   const [loading, setLoading] = useState(true);
   const [expandedUser, setExpandedUser] = useState(null);
@@ -43,10 +44,33 @@ export default function ProspectChannelAnalytics() {
   const [endDate, setEndDate] = useState("");
   const [resetDialogOpen, setResetDialogOpen] = useState(false);
   const [settingsDialogOpen, setSettingsDialogOpen] = useState(false);
+  const [tick, setTick] = useState(0); // For live timer updates
+
+  const fetchActiveSessions = useCallback(async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const response = await axios.get(`${API}/prospect-channel-analytics/active`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setActiveSessions(response.data);
+    } catch (error) {
+      console.error("Failed to fetch active sessions:", error);
+    }
+  }, []);
 
   useEffect(() => {
     fetchData();
   }, []);
+
+  // Update active sessions every 5 seconds
+  useEffect(() => {
+    fetchActiveSessions();
+    const interval = setInterval(() => {
+      fetchActiveSessions();
+      setTick(t => t + 1); // Trigger re-render for timer updates
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [fetchActiveSessions]);
 
   const fetchData = async () => {
     setLoading(true);
@@ -54,13 +78,15 @@ export default function ProspectChannelAnalytics() {
       const token = localStorage.getItem("token");
       const headers = { Authorization: `Bearer ${token}` };
 
-      const [analyticsRes, settingsRes] = await Promise.all([
+      const [analyticsRes, settingsRes, activeRes] = await Promise.all([
         axios.get(`${API}/prospect-channel-analytics`, { headers }),
         axios.get(`${API}/prospect-channel-analytics/settings`, { headers }),
+        axios.get(`${API}/prospect-channel-analytics/active`, { headers }),
       ]);
 
       setAnalytics(analyticsRes.data);
       setSettings(settingsRes.data);
+      setActiveSessions(activeRes.data);
     } catch (error) {
       if (error.response?.status === 403) {
         toast.error("You don't have permission to view this page");
@@ -141,6 +167,19 @@ export default function ProspectChannelAnalytics() {
 
   const toggleUserExpanded = (userId) => {
     setExpandedUser(expandedUser === userId ? null : userId);
+  };
+
+  // Calculate live duration from joined_at
+  const getLiveDuration = (joinedAt) => {
+    if (!joinedAt) return "0s";
+    try {
+      const joined = new Date(joinedAt);
+      const now = new Date();
+      const seconds = Math.floor((now - joined) / 1000);
+      return formatTotalTime(seconds);
+    } catch {
+      return "0s";
+    }
   };
 
   if (loading) {
@@ -248,11 +287,64 @@ export default function ProspectChannelAnalytics() {
           </div>
         )}
 
+        {/* Active Sessions - Currently in Channel */}
+        {activeSessions && activeSessions.active_count > 0 && (
+          <div className="bg-green-900/30 border border-green-700 rounded-lg p-4 mb-6">
+            <div className="flex items-center gap-2 mb-4">
+              <Radio className="w-5 h-5 text-green-400 animate-pulse" />
+              <h2 className="text-lg font-semibold text-green-400">
+                Currently in Prospect Channels ({activeSessions.active_count})
+              </h2>
+            </div>
+            <div className="grid gap-3">
+              {activeSessions.sessions.map((session) => (
+                <div
+                  key={session.id}
+                  className="bg-slate-800/80 rounded-lg p-4 border border-green-800"
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+                      <span className="font-medium text-white text-lg">{session.display_name}</span>
+                      <span className="text-slate-400 text-sm">in {session.channel_name}</span>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <div className="bg-blue-600/30 px-4 py-2 rounded-lg">
+                        <span className="text-blue-400 font-mono text-xl" key={tick}>
+                          {getLiveDuration(session.joined_at)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="mt-3 flex flex-wrap gap-2 text-sm">
+                    {session.prospects_present?.length > 0 && (
+                      <span className="text-green-400">
+                        With Prospects: {session.prospects_present.join(", ")}
+                      </span>
+                    )}
+                    {session.hangarounds_present?.length > 0 && (
+                      <span className="text-amber-400">
+                        With Hangarounds: {session.hangarounds_present.join(", ")}
+                      </span>
+                    )}
+                    {session.others_in_channel?.length > 0 && (
+                      <span className="text-slate-500">
+                        Others: {session.others_in_channel.map(o => o.display_name).slice(0, 5).join(", ")}
+                        {session.others_in_channel.length > 5 && ` +${session.others_in_channel.length - 5} more`}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Filters */}
         <div className="bg-slate-800 rounded-lg p-4 mb-6 border border-slate-700">
           <div className="flex flex-wrap gap-4 items-end">
             <div>
-              <Label className="text-slate-300 text-sm">Date Range</Label>
+              <Label className="text-slate-300 text-sm">Date Range (Completed Sessions)</Label>
               <Select value={dateRange} onValueChange={setDateRange}>
                 <SelectTrigger className="w-40 bg-slate-700 border-slate-600 text-white">
                   <SelectValue />
@@ -307,7 +399,7 @@ export default function ProspectChannelAnalytics() {
           <div className="bg-slate-800 rounded-lg p-4 border border-slate-700">
             <div className="flex items-center gap-2 text-slate-400 mb-2">
               <BarChart3 className="w-5 h-5" />
-              <span className="text-sm">Total Sessions</span>
+              <span className="text-sm">Completed Sessions</span>
             </div>
             <div className="text-3xl font-bold text-white">{analytics?.total_records || 0}</div>
           </div>
@@ -331,8 +423,11 @@ export default function ProspectChannelAnalytics() {
           </div>
         </div>
 
-        {/* User Table */}
+        {/* Completed Sessions Table */}
         <div className="bg-slate-800 rounded-lg border border-slate-700 overflow-hidden">
+          <div className="p-4 border-b border-slate-700">
+            <h3 className="text-lg font-semibold text-white">Completed Sessions History</h3>
+          </div>
           <Table>
             <TableHeader>
               <TableRow className="border-slate-700 hover:bg-transparent">
@@ -353,7 +448,7 @@ export default function ProspectChannelAnalytics() {
               {analytics?.users?.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={7} className="text-center text-slate-400 py-8">
-                    No activity recorded yet. Activity will appear here when users join Prospect voice channels.
+                    No completed sessions yet. Sessions will appear here when users leave Prospect channels.
                   </TableCell>
                 </TableRow>
               ) : (
