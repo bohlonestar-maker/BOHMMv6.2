@@ -276,6 +276,16 @@ function App() {
             }
           />
           <Route
+            path="/prospect-channel-analytics"
+            element={
+              isAuthenticated && userRole === 'admin' && (userChapter === 'National' || userChapter === 'HA') ? (
+                <ProspectChannelAnalytics />
+              ) : (
+                <Navigate to="/" replace />
+              )
+            }
+          />
+          <Route
             path="/events"
             element={
               isAuthenticated ? (
