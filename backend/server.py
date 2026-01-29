@@ -396,25 +396,30 @@ async def start_discord_bot():
                     if not settings or not settings.get("tracking_enabled", True):
                         return
                     
-                    # Check if any others are Prospects or Hangarounds
-                    prospects = await db.prospects.find({}, {"handle": 1, "_id": 0}).to_list(1000)
-                    hangarounds = await db.hangarounds.find({}, {"handle": 1, "_id": 0}).to_list(1000)
+                    # Delete any existing active session for this user (prevent duplicates)
+                    await db.prospect_channel_active_sessions.delete_many({"discord_id": user_id})
                     
-                    prospect_handle_set = {p['handle'].lower() for p in prospects if p.get('handle')}
-                    hangaround_handle_set = {h['handle'].lower() for h in hangarounds if h.get('handle')}
-                    
+                    # Check if any others are Prospects (identified by "HA(p)" in their name)
+                    # or Hangarounds (identified by matching against hangarounds database)
                     prospects_present = []
                     hangarounds_present = []
                     
+                    # Get hangarounds from database for matching
+                    hangarounds = await db.hangarounds.find({}, {"handle": 1, "_id": 0}).to_list(1000)
+                    hangaround_handle_set = {h['handle'].lower() for h in hangarounds if h.get('handle')}
+                    
                     for other in others_in_channel:
-                        other_name_lower = other.get('display_name', '').lower()
-                        for ph in prospect_handle_set:
-                            if ph in other_name_lower:
-                                prospects_present.append(other.get('display_name'))
-                                break
+                        other_name = other.get('display_name', '')
+                        other_name_lower = other_name.lower()
+                        
+                        # Check for Prospect: "HA(p)" in name (case insensitive)
+                        if 'ha(p)' in other_name_lower:
+                            prospects_present.append(other_name)
+                        
+                        # Check for Hangaround by database match
                         for hh in hangaround_handle_set:
                             if hh in other_name_lower:
-                                hangarounds_present.append(other.get('display_name'))
+                                hangarounds_present.append(other_name)
                                 break
                     
                     # Save active session
