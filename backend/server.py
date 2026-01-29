@@ -7789,6 +7789,16 @@ async def get_prospect_channel_analytics(
         # Convert sets to lists and format response
         result = []
         for user_id, stats in user_stats.items():
+            # Format time per prospect as a list
+            time_per_prospect_list = [
+                {
+                    'prospect_name': name,
+                    'total_time_seconds': seconds,
+                    'total_time_formatted': format_duration(seconds)
+                }
+                for name, seconds in sorted(stats['time_per_prospect'].items(), key=lambda x: x[1], reverse=True)
+            ]
+            
             result.append({
                 'discord_id': stats['discord_id'],
                 'display_name': stats['display_name'],
@@ -7800,6 +7810,10 @@ async def get_prospect_channel_analytics(
                 'time_with_prospect_formatted': format_duration(stats['duration_with_prospect_seconds']),
                 'unique_prospects_met': list(stats['unique_prospects_met']),
                 'unique_hangarounds_met': list(stats['unique_hangarounds_met']),
+                # New aggregated time breakdown
+                'time_per_prospect': time_per_prospect_list,
+                'total_time_alone_seconds': stats['total_time_alone_seconds'],
+                'total_time_alone_formatted': format_duration(stats['total_time_alone_seconds']),
                 'sessions': sorted(stats['sessions'], key=lambda x: x['date'], reverse=True)
             })
         
