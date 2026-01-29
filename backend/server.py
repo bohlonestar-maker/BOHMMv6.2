@@ -288,6 +288,15 @@ async def start_discord_bot():
                         
                     # User left voice channel
                     elif before.channel is not None and after.channel is None:
+                        # If this user is a prospect, update other sessions in the channel they're leaving
+                        if 'ha(p)' in member.display_name.lower():
+                            channel_name_lower = before.channel.name.lower()
+                            prospect_channels = ['prospect', 'prospect 2', 'prospect2', 'prospects']
+                            if any(pc in channel_name_lower for pc in prospect_channels):
+                                await self.update_sessions_prospect_left(
+                                    before.channel.name, user_id, member.display_name, now.isoformat()
+                                )
+                        
                         if user_id in self.voice_sessions:
                             # We have a tracked session - calculate duration
                             session = self.voice_sessions[user_id]
