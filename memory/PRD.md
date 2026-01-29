@@ -185,10 +185,13 @@ Build a member management application with attendance tracking, dues management,
 - `PUT /api/permissions/bulk-update` - Update permissions for a title
 
 ### Database Collections
-- `hangarounds` - Entry-level members (handle, name, meeting_attendance, actions)
+- `hangarounds` - Entry-level members (handle, name, meeting_attendance, actions, status: 'hangaround')
 - `archived_hangarounds` - Archived/promoted hangarounds
-- `prospects` - Full prospects with contact info
+- `prospects` - Full prospects with contact info (status: 'prospect' or 'archived')
 - `archived_prospects` - Archived prospects
+- `prospect_channel_activity` - Completed voice channel sessions (discord_id, display_name, channel_name, joined_at, left_at, duration_seconds, others_present, prospects_present)
+- `prospect_channel_active_sessions` - Real-time active voice sessions (discord_id, display_name, channel_name, joined_at, others_in_channel)
+- `prospect_channel_settings` - Tracking settings (tracking_enabled)
 - `dues_email_templates` - Email templates for reminders (Day 3, 8, 10)
 - `dues_reminder_sent` - Log of reminders sent to prevent duplicates
 - `dues_extensions` - Payment extensions granted to members (member_id, extension_until, reason, granted_by)
