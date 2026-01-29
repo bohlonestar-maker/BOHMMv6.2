@@ -120,6 +120,26 @@ Build a member management application with attendance tracking, dues management,
   - `DISCORD_HANGAROUND_ROLE_ID` - Role added when becoming hangaround
   - `DISCORD_PROSPECT_ROLE_ID` - Role swapped when promoted to prospect
 
+### January 29, 2026 - Prospect Channel Analytics (NEW)
+- [x] **Feature Overview:**
+  - Track Discord voice activity in "Prospect" and "Prospect 2" channels
+  - Track who else was in the channel during each session
+  - Identify if actual Prospects/Hangarounds were present during sessions
+- [x] **Access Control:**
+  - Only National/HA Officers: Prez, VP, S@A, ENF, SEC can view
+- [x] **Backend Implementation:**
+  - New `prospect_channel_activity` collection for detailed tracking
+  - New `prospect_channel_settings` collection for enable/disable and reset tracking
+  - Endpoints: GET/POST `/api/prospect-channel-analytics`, `/settings`, `/reset`
+- [x] **Frontend Implementation:**
+  - New page: `/prospect-channel-analytics`
+  - Access from Prospects page via "Channel Analytics" button
+  - Summary cards: Unique Visitors, Total Sessions, Sessions w/ Prospect, Total Time
+  - User table with expandable session details
+  - Date range filtering (All Time, 7 Days, 30 Days, Custom)
+  - Settings dialog to enable/disable tracking
+  - Reset button to clear all data
+
 ### API Endpoints
 
 #### Hangarounds (NEW - Jan 19, 2026)
