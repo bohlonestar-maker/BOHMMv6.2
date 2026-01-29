@@ -461,25 +461,29 @@ async def start_discord_bot():
                         return
                     
                     # Get the list of people who were in the channel during this session
-                    # We stored this when the user joined
                     others_in_channel = session.get('others_in_channel', [])
                     
-                    # Check if any of those were actual Prospects or Hangarounds
+                    # Check if any of those were Prospects (identified by "HA(p)" in name)
+                    # or Hangarounds (matched against database)
                     prospect_handles = set()
                     hangaround_handles = set()
                     
-                    prospects = await db.prospects.find({}, {"handle": 1, "_id": 0}).to_list(1000)
                     hangarounds = await db.hangarounds.find({}, {"handle": 1, "_id": 0}).to_list(1000)
-                    
-                    prospect_handle_set = {p['handle'].lower() for p in prospects if p.get('handle')}
                     hangaround_handle_set = {h['handle'].lower() for h in hangarounds if h.get('handle')}
                     
                     for other in others_in_channel:
-                        other_name_lower = other.get('display_name', '').lower()
-                        if any(ph in other_name_lower for ph in prospect_handle_set):
-                            prospect_handles.add(other.get('display_name'))
-                        if any(hh in other_name_lower for hh in hangaround_handle_set):
-                            hangaround_handles.add(other.get('display_name'))
+                        other_name = other.get('display_name', '')
+                        other_name_lower = other_name.lower()
+                        
+                        # Prospect identified by "HA(p)" in Discord name
+                        if 'ha(p)' in other_name_lower:
+                            prospect_handles.add(other_name)
+                        
+                        # Hangaround matched against database
+                        for hh in hangaround_handle_set:
+                            if hh in other_name_lower:
+                                hangaround_handles.add(other_name)
+                                break
                     
                     # Save the prospect channel activity
                     prospect_activity = {
