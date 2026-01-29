@@ -7773,8 +7773,11 @@ async def reset_prospect_channel_analytics(current_user: dict = Depends(verify_t
     if not can_view_prospect_analytics(current_user):
         raise HTTPException(status_code=403, detail="Access denied")
     
-    # Delete all activity records
+    # Delete all activity records (completed sessions)
     result = await db.prospect_channel_activity.delete_many({})
+    
+    # Also delete active sessions
+    active_result = await db.prospect_channel_active_sessions.delete_many({})
     
     # Update settings with reset info
     await db.prospect_channel_settings.update_one(
@@ -7789,7 +7792,7 @@ async def reset_prospect_channel_analytics(current_user: dict = Depends(verify_t
     await log_activity(
         current_user["username"],
         "prospect_analytics_reset",
-        f"Reset Prospect channel analytics ({result.deleted_count} records deleted)"
+        f"Reset Prospect channel analytics ({result.deleted_count} completed + {active_result.deleted_count} active records deleted)"
     )
     
     return {
