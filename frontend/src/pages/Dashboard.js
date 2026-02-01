@@ -670,6 +670,7 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
       military_service: member.military_service || false,
       military_branch: member.military_branch || "",
       is_first_responder: member.is_first_responder || false,
+      non_dues_paying: member.non_dues_paying || false,
       dues: duesData,
       meeting_attendance: attendanceData
     });
