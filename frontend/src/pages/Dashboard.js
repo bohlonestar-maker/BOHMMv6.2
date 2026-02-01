@@ -697,6 +697,7 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
       military_service: false,
       military_branch: "",
       is_first_responder: false,
+      non_dues_paying: false,
       dues: {
         [currentYear]: Array(12).fill(false)
       },
