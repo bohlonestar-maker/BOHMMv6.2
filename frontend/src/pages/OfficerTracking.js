@@ -540,6 +540,36 @@ function OfficerTracking() {
       const now = new Date();
       const currentMonth = `${now.toLocaleString('en-US', { month: 'short' })}_${now.getFullYear()}`;
       
+      // If status is 'extended', create/update extension
+      if (duesForm.status === 'extended') {
+        if (!duesForm.extensionDate) {
+          toast.error("Please enter an extension date");
+          return;
+        }
+        
+        // Create or update extension
+        await axios.post(`${BACKEND_URL}/api/dues-reminders/extensions`, {
+          member_id: selectedMember.id,
+          extension_until: duesForm.extensionDate,
+          reason: duesForm.notes || 'Extension granted from A&D panel'
+        }, { headers: { Authorization: `Bearer ${token}` } });
+        
+        toast.success("Extension granted");
+      } else {
+        // If status is 'paid' and member had an extension, revoke it
+        if (duesForm.status === 'paid' && memberExtension) {
+          try {
+            await axios.delete(`${BACKEND_URL}/api/dues-reminders/extensions/${selectedMember.id}`, {
+              headers: { Authorization: `Bearer ${token}` }
+            });
+          } catch (err) {
+            // Extension might already be removed, continue
+            console.log("Extension revoke:", err.response?.data?.detail || err.message);
+          }
+        }
+      }
+      
+      // Update dues status
       await axios.post(`${BACKEND_URL}/api/officer-tracking/dues`, {
         member_id: selectedMember.id,
         month: currentMonth,
@@ -549,6 +579,7 @@ function OfficerTracking() {
       
       toast.success("Dues status updated");
       setDuesDialog(false);
+      setMemberExtension(null);
       fetchData();
     } catch (error) {
       toast.error(error.response?.data?.detail || "Failed to update dues");
