@@ -9,7 +9,7 @@ import { Badge } from "../components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "../components/ui/dialog";
 import { Textarea } from "../components/ui/textarea";
 import { toast } from "sonner";
-import { Users, Calendar, DollarSign, CheckCircle, XCircle, Clock, ArrowLeft, Search, Printer, CreditCard, Gift, Shield } from "lucide-react";
+import { Users, Calendar, DollarSign, CheckCircle, XCircle, Clock, ArrowLeft, Search, Printer, CreditCard, Gift, Shield, Pencil } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import axios from 'axios';
 
