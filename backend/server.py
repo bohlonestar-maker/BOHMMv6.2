@@ -10330,6 +10330,10 @@ async def get_dues_reminder_status(current_user: dict = Depends(verify_token)):
     # Determine who hasn't paid
     unpaid_members = []
     for member in members:
+        # Skip non-dues paying members (honorary, exempt, etc.)
+        if member.get("non_dues_paying", False):
+            continue
+        
         dues = member.get("dues", {})
         year_str = str(year)
         month_idx = month - 1
