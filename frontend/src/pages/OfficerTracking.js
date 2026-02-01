@@ -1285,6 +1285,11 @@ function OfficerTracking() {
             <DialogTitle className="text-white text-lg">Update Dues</DialogTitle>
             <DialogDescription className="text-sm">
               Update dues status for {selectedMember?.handle}
+              {memberExtension && (
+                <span className="block mt-1 text-blue-400">
+                  Current extension until: {new Date(memberExtension.extension_until).toLocaleDateString()}
+                </span>
+              )}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
@@ -1308,6 +1313,25 @@ function OfficerTracking() {
                 })}
               </div>
             </div>
+            
+            {/* Extension Date - shown when Extended is selected */}
+            {duesForm.status === 'extended' && (
+              <div className="space-y-2 p-3 bg-blue-900/30 rounded-lg border border-blue-700">
+                <Label className="text-blue-300 text-sm font-semibold">Extension Date</Label>
+                <Input
+                  type="date"
+                  value={duesForm.extensionDate}
+                  onChange={(e) => setDuesForm({...duesForm, extensionDate: e.target.value})}
+                  min={new Date().toISOString().split('T')[0]}
+                  className="bg-slate-700 border-slate-600 text-white text-sm"
+                  data-testid="extension-date-input"
+                />
+                <p className="text-xs text-blue-300">
+                  Member will not receive dues reminders until this date.
+                </p>
+              </div>
+            )}
+            
             <div className="space-y-2">
               <Label className="text-slate-300 text-sm">Notes (Optional)</Label>
               <Textarea 
