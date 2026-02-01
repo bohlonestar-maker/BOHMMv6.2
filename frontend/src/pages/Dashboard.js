@@ -1415,35 +1415,62 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
                   <div>
                     <h3 className="text-sm font-medium text-slate-400 mb-2">Recent Payments</h3>
                     <div className="space-y-2 max-h-48 overflow-y-auto">
-                      {/* Square subscription payments */}
-                      {myDues.square_payments?.slice(0, 5).map((payment, idx) => (
-                        <div key={`sub-${idx}`} className="flex justify-between items-center bg-slate-700/50 rounded p-2 text-sm">
-                          <div>
-                            <span className="text-green-400 font-medium">${payment.amount?.toFixed(2)}</span>
-                            <span className="text-slate-400 ml-2">
-                              {payment.paid_at ? new Date(payment.paid_at).toLocaleDateString() : 'Pending'}
-                            </span>
-                          </div>
-                          <Badge className={payment.status === 'PAID' ? 'bg-green-600' : 'bg-yellow-600'}>
-                            {payment.status}
-                          </Badge>
-                        </div>
-                      ))}
-                      {/* One-time payments */}
-                      {myDues.one_time_payments?.slice(0, 5).map((payment, idx) => (
-                        <div key={`otp-${idx}`} className="flex justify-between items-center bg-slate-700/50 rounded p-2 text-sm">
-                          <div>
-                            <span className="text-green-400 font-medium">${payment.amount?.toFixed(2)}</span>
-                            <span className="text-slate-400 ml-2">
-                              {payment.payment_date ? new Date(payment.payment_date).toLocaleDateString() : ''}
-                            </span>
-                            <span className="text-slate-500 ml-2 text-xs">
-                              ({payment.months_covered} month{payment.months_covered > 1 ? 's' : ''})
-                            </span>
-                          </div>
-                          <Badge className="bg-green-600">Paid</Badge>
-                        </div>
-                      ))}
+                      {/* Combine and deduplicate payments by payment_id */}
+                      {(() => {
+                        const seen = new Set();
+                        const allPayments = [];
+                        
+                        // Add subscription payments first
+                        myDues.square_payments?.forEach(payment => {
+                          const key = payment.payment_id || `sub-${payment.invoice_id}`;
+                          if (!seen.has(key)) {
+                            seen.add(key);
+                            allPayments.push({
+                              ...payment,
+                              type: 'subscription',
+                              displayDate: payment.paid_at,
+                              sortDate: payment.paid_at || payment.invoice_date
+                            });
+                          }
+                        });
+                        
+                        // Add one-time payments, skipping duplicates
+                        myDues.one_time_payments?.forEach(payment => {
+                          const key = payment.square_payment_id || `otp-${payment.id}`;
+                          if (!seen.has(key)) {
+                            seen.add(key);
+                            allPayments.push({
+                              ...payment,
+                              type: 'one_time',
+                              displayDate: payment.payment_date,
+                              sortDate: payment.payment_date
+                            });
+                          }
+                        });
+                        
+                        // Sort by date descending and take first 5
+                        return allPayments
+                          .sort((a, b) => new Date(b.sortDate || 0) - new Date(a.sortDate || 0))
+                          .slice(0, 5)
+                          .map((payment, idx) => (
+                            <div key={idx} className="flex justify-between items-center bg-slate-700/50 rounded p-2 text-sm">
+                              <div>
+                                <span className="text-green-400 font-medium">${payment.amount?.toFixed(2)}</span>
+                                <span className="text-slate-400 ml-2">
+                                  {payment.displayDate ? new Date(payment.displayDate).toLocaleDateString() : 'Pending'}
+                                </span>
+                                {payment.type === 'one_time' && payment.months_covered && (
+                                  <span className="text-slate-500 ml-2 text-xs">
+                                    ({payment.months_covered} month{payment.months_covered > 1 ? 's' : ''})
+                                  </span>
+                                )}
+                              </div>
+                              <Badge className={payment.status === 'PAID' || payment.type === 'one_time' ? 'bg-green-600' : 'bg-yellow-600'}>
+                                {payment.status || 'Paid'}
+                              </Badge>
+                            </div>
+                          ));
+                      })()}
                     </div>
                   </div>
                 )}
