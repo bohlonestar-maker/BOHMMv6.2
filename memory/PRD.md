@@ -45,7 +45,27 @@ Build a member management application with attendance tracking, dues management,
 - **Manual Trigger:** "Run Check Now" button to manually trigger reminder check
 - **Scheduled Job:** Runs daily at 12:30 AM CST via APScheduler
 
+#### 6. Non-Dues Paying Members
+- **Purpose:** Allow marking members as exempt from dues (Honorary, exempt, etc.)
+- **Exemptions:** Non-dues paying members are excluded from:
+  - Dues reminder emails
+  - Automatic suspension
+  - Unpaid dues reports/counts
+- **UI:** "Dues Exemption" checkbox in member edit form
+- **Visual Indicator:** "Exempt" badge displayed in Officer Tracking dues tab
+
 ### What's Been Implemented
+
+#### February 1, 2026 - Non-Dues Paying Members
+- [x] **Backend:**
+  - Added `non_dues_paying: bool` field to Member, MemberCreate, MemberUpdate models
+  - Modified dues reminder check to skip non-dues paying members
+  - Modified dues status endpoint to exclude non-dues paying members from unpaid list
+  - Added `non_dues_paying` to officer-tracking/members response
+- [x] **Frontend:**
+  - Added "Dues Exemption" checkbox in member edit form (amber styling)
+  - Added "Exempt" badge in Officer Tracking dues tab (desktop and mobile)
+  - Added "Non-Dues Paying" status badge for exempt members
 
 #### January 11, 2026 - Dues Reminders System
 - [x] **Backend API Endpoints:**
