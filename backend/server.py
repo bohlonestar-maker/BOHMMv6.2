@@ -15146,6 +15146,139 @@ async def sync_payment_links_to_dues(current_user: dict = Depends(verify_token))
         raise HTTPException(status_code=500, detail=f"Failed to sync payment links: {str(e)}")
 
 
+@api_router.post("/dues/cleanup-duplicate-notes")
+async def cleanup_duplicate_payment_notes(current_user: dict = Depends(verify_token)):
+    """Clean up duplicate payment notes in officer_dues records.
+    This fixes cases where the same transaction was recorded multiple times.
+    """
+    if current_user.get('role') != 'admin':
+        raise HTTPException(status_code=403, detail="Admin only")
+    
+    try:
+        # Get all officer_dues records with notes
+        records = await db.officer_dues.find(
+            {"notes": {"$exists": True, "$ne": ""}},
+            {"_id": 0}
+        ).to_list(10000)
+        
+        cleaned_count = 0
+        
+        for record in records:
+            notes = record.get("notes", "")
+            if not notes or "|" not in notes:
+                continue
+            
+            # Split by | separator
+            parts = notes.split("|")
+            
+            # Extract unique transaction IDs
+            seen_trans = set()
+            unique_parts = []
+            
+            for part in parts:
+                part = part.strip()
+                if not part:
+                    continue
+                
+                # Extract transaction ID if present
+                trans_id = None
+                if "(Trans:" in part:
+                    try:
+                        start = part.index("(Trans:") + 7
+                        end = part.index("...", start)
+                        trans_id = part[start:end].strip()
+                    except:
+                        pass
+                
+                # If we have a transaction ID, check for duplicates
+                if trans_id:
+                    if trans_id in seen_trans:
+                        continue  # Skip duplicate
+                    seen_trans.add(trans_id)
+                
+                unique_parts.append(part)
+            
+            # If we removed duplicates, update the record
+            if len(unique_parts) < len(parts):
+                new_notes = " | ".join(unique_parts)
+                await db.officer_dues.update_one(
+                    {"id": record.get("id")},
+                    {"$set": {"notes": new_notes}}
+                )
+                cleaned_count += 1
+        
+        # Also clean up member dues records
+        members = await db.members.find(
+            {"dues": {"$exists": True}},
+            {"_id": 0, "id": 1, "dues": 1}
+        ).to_list(10000)
+        
+        member_cleaned = 0
+        for member in members:
+            member_id = member.get("id")
+            dues = member.get("dues", {})
+            updated = False
+            
+            for year_str, months in dues.items():
+                if not isinstance(months, list):
+                    continue
+                
+                for i, month_data in enumerate(months):
+                    if not isinstance(month_data, dict):
+                        continue
+                    
+                    note = month_data.get("note", "")
+                    if not note or "|" not in note:
+                        continue
+                    
+                    # Split and dedupe
+                    parts = note.split("|")
+                    seen_trans = set()
+                    unique_parts = []
+                    
+                    for part in parts:
+                        part = part.strip()
+                        if not part:
+                            continue
+                        
+                        trans_id = None
+                        if "(Trans:" in part:
+                            try:
+                                start = part.index("(Trans:") + 7
+                                end = part.index("...", start)
+                                trans_id = part[start:end].strip()
+                            except:
+                                pass
+                        
+                        if trans_id:
+                            if trans_id in seen_trans:
+                                continue
+                            seen_trans.add(trans_id)
+                        
+                        unique_parts.append(part)
+                    
+                    if len(unique_parts) < len(parts):
+                        dues[year_str][i]["note"] = " | ".join(unique_parts)
+                        updated = True
+            
+            if updated:
+                await db.members.update_one(
+                    {"id": member_id},
+                    {"$set": {"dues": dues}}
+                )
+                member_cleaned += 1
+        
+        return {
+            "message": "Duplicate payment notes cleaned up",
+            "officer_dues_cleaned": cleaned_count,
+            "members_cleaned": member_cleaned
+        }
+        
+    except Exception as e:
+        logger.error(f"Error cleaning up duplicate notes: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to clean up duplicate notes: {str(e)}")
+
+
 @api_router.post("/dues/reapply-payment-notes")
 async def reapply_payment_notes(current_user: dict = Depends(verify_token)):
     """Re-apply Square payment notes from synced_payment_links to officer_dues.
