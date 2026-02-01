@@ -460,24 +460,43 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
     const token = localStorage.getItem("token");
     try {
       const response = await axios.delete(`${API}/members/${memberToDelete.id}`, {
-        params: { reason: deleteReason, kick_from_discord: kickFromDiscord },
+        params: { 
+          reason: deleteReason, 
+          kick_from_discord: kickFromDiscord,
+          cancel_square_subscription: cancelSquareSubscription
+        },
         headers: { Authorization: `Bearer ${token}` },
       });
       
+      // Build success message based on what was done
+      let successMsg = "Member archived successfully";
+      const actions = [];
+      
       if (kickFromDiscord && response.data.discord_result) {
         if (response.data.discord_result.success) {
-          toast.success("Member archived and kicked from Discord");
+          actions.push("kicked from Discord");
         } else {
-          toast.success("Member archived (Discord kick failed: " + response.data.discord_result.message + ")");
+          actions.push("Discord kick failed");
         }
-      } else {
-        toast.success("Member archived successfully");
       }
+      
+      if (response.data.square_subscription_cancelled) {
+        actions.push("Square subscription cancelled");
+      } else if (response.data.square_result?.had_subscription && !response.data.square_subscription_cancelled) {
+        actions.push("Square cancellation failed");
+      }
+      
+      if (actions.length > 0) {
+        successMsg = `Member archived (${actions.join(", ")})`;
+      }
+      
+      toast.success(successMsg);
       
       setDeleteDialogOpen(false);
       setMemberToDelete(null);
       setDeleteReason("");
       setKickFromDiscord(false);
+      setCancelSquareSubscription(true);
       fetchMembers();
     } catch (error) {
       toast.error("Failed to archive member");
