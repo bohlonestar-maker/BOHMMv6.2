@@ -1885,6 +1885,29 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
                         </div>
                       </div>
 
+                      {/* Non-Dues Paying (Exempt) Section */}
+                      <div className="space-y-3 p-3 bg-amber-900/30 rounded-lg border border-amber-700">
+                        <Label className="text-white font-semibold">💰 Dues Exemption</Label>
+                        <div className="flex items-center space-x-2">
+                          <Checkbox
+                            id="non_dues_paying"
+                            checked={formData.non_dues_paying || false}
+                            onCheckedChange={(checked) =>
+                              setFormData({ ...formData, non_dues_paying: checked })
+                            }
+                            data-testid="non-dues-paying-checkbox"
+                          />
+                          <label htmlFor="non_dues_paying" className="text-sm text-slate-200 cursor-pointer">
+                            Non-Dues Paying Member (Honorary, Exempt)
+                          </label>
+                        </div>
+                        {formData.non_dues_paying && (
+                          <p className="text-xs text-amber-300 ml-6">
+                            This member will not receive dues reminders and will not be included in dues tracking reports.
+                          </p>
+                        )}
+                      </div>
+
                       <div className="space-y-3">
                         <div className="flex justify-between items-center">
                           <Label className="text-white">Dues Tracking</Label>
