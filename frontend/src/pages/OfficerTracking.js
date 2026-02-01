@@ -85,6 +85,9 @@ function OfficerTracking() {
   const [duesHistoryData, setDuesHistoryData] = useState(null);
   const [loadingDuesHistory, setLoadingDuesHistory] = useState(false);
   
+  // Dues Extensions
+  const [allExtensions, setAllExtensions] = useState([]);
+  
   // Attendance Dialog
   const [attendanceDialog, setAttendanceDialog] = useState(false);
   const [selectedMember, setSelectedMember] = useState(null);
