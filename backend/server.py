@@ -12852,6 +12852,53 @@ async def check_and_send_anniversary_notifications():
         client = AsyncIOMotorClient(mongo_url)
         thread_db = client[db_name]
         
+        # Check today's date key to avoid duplicate notifications (use year-month)
+        month_key = today.strftime("%Y-%m")
+        
+        # Try to acquire a distributed lock for this job run
+        # This prevents multiple instances from running the same job simultaneously
+        import uuid
+        lock_id = str(uuid.uuid4())
+        lock_result = await thread_db.scheduler_locks.update_one(
+            {
+                "job_name": "anniversary_check",
+                "lock_date": month_key,
+                "completed": False
+            },
+            {
+                "$setOnInsert": {
+                    "job_name": "anniversary_check",
+                    "lock_date": month_key,
+                    "lock_id": lock_id,
+                    "locked_at": datetime.now(),
+                    "completed": False
+                }
+            },
+            upsert=True
+        )
+        
+        # If we didn't get the lock (another instance got it), exit early
+        if not lock_result.upserted_id:
+            # Check if already completed
+            existing_lock = await thread_db.scheduler_locks.find_one({
+                "job_name": "anniversary_check",
+                "lock_date": month_key
+            })
+            if existing_lock and existing_lock.get("completed"):
+                print(f"🎉 [ANNIVERSARY] Already completed by another instance this month, skipping.", file=sys.stderr, flush=True)
+            else:
+                print(f"🎉 [ANNIVERSARY] Another instance is running this job, skipping.", file=sys.stderr, flush=True)
+            client.close()
+            return
+        
+        print(f"🎉 [ANNIVERSARY] Acquired job lock: {lock_id}", file=sys.stderr, flush=True)
+        
+        # Ensure unique index exists to prevent duplicate anniversary notifications
+        await thread_db.anniversary_notifications.create_index(
+            [("member_id", 1), ("notification_month", 1)],
+            unique=True
+        )
+        
         # Fetch all members with join_date set
         members = await thread_db.members.find(
             {"join_date": {"$exists": True, "$ne": None, "$ne": ""}},
@@ -12859,9 +12906,6 @@ async def check_and_send_anniversary_notifications():
         ).to_list(1000)
         
         print(f"🎉 [ANNIVERSARY] Found {len(members)} members with join_date records", file=sys.stderr, flush=True)
-        
-        # Check today's date key to avoid duplicate notifications (use year-month)
-        month_key = today.strftime("%Y-%m")
         
         anniversary_count = 0
         for member in members:
@@ -12892,7 +12936,7 @@ async def check_and_send_anniversary_notifications():
                         
                         member_id = member.get('id', member.get('handle', ''))
                         
-                        # Check if we already sent notification this month
+                        # Check if we already sent notification this month (with unique index backup)
                         existing = await thread_db.anniversary_notifications.find_one({
                             "member_id": member_id,
                             "notification_month": month_key
@@ -12910,18 +12954,46 @@ async def check_and_send_anniversary_notifications():
                         success = await send_anniversary_notification(decrypted_member, years)
                         
                         if success:
-                            # Record that we sent the notification
-                            await thread_db.anniversary_notifications.insert_one({
-                                "member_id": member_id,
-                                "member_name": decrypted_member.get('name', decrypted_member.get('handle', '')),
-                                "notification_month": month_key,
-                                "years": years,
-                                "sent_at": datetime.now()
-                            })
-                            anniversary_count += 1
+                            # Record that we sent the notification (use upsert for safety with unique index)
+                            try:
+                                await thread_db.anniversary_notifications.update_one(
+                                    {
+                                        "member_id": member_id,
+                                        "notification_month": month_key
+                                    },
+                                    {
+                                        "$setOnInsert": {
+                                            "member_id": member_id,
+                                            "member_name": decrypted_member.get('name', decrypted_member.get('handle', '')),
+                                            "notification_month": month_key,
+                                            "years": years,
+                                            "sent_at": datetime.now()
+                                        }
+                                    },
+                                    upsert=True
+                                )
+                                anniversary_count += 1
+                            except Exception as dup_err:
+                                # Duplicate key error means another instance already recorded it
+                                print(f"   ⚠️ Duplicate notification prevented for {member.get('handle')}", file=sys.stderr, flush=True)
                             
             except Exception as e:
                 print(f"   ❌ Error processing join_date for {member.get('handle', 'unknown')}: {str(e)}", file=sys.stderr, flush=True)
+        
+        # Mark job as completed
+        await thread_db.scheduler_locks.update_one(
+            {
+                "job_name": "anniversary_check",
+                "lock_date": month_key
+            },
+            {
+                "$set": {
+                    "completed": True,
+                    "completed_at": datetime.now(),
+                    "notifications_sent": anniversary_count
+                }
+            }
+        )
         
         print(f"🎉 [ANNIVERSARY] Sent {anniversary_count} anniversary notification(s) this month", file=sys.stderr, flush=True)
         client.close()
