@@ -24,9 +24,13 @@
 - **Menu Restructured**
   - All Admin items now grouped together under red "ADMIN" header
   - Moved A & D, Forms, and Reports to Admin section
-  - Clearer visual separation between sections
-  - Admin section includes: A & D, Forms, Reports, Admin, Change Log, Permissions, Dues Reminders, Message Monitor, AI Knowledge, Discord Analytics
+  - Forms moved back to Club Features (accessible to all members)
+  - Admin section includes: A & D, Reports, System Users, Change Log, Permissions, Dues Reminders, Message Monitor, AI Knowledge, Discord Analytics
   - Added scrollable menu for better mobile experience
+  - **Permission-based access**: A&D, Reports, System Users, and Dues Reminders now controlled by permissions set in Permission Panel
+
+- **Mobile Dues Edit Button**
+  - Added "Edit / Add Extension" button to mobile dues card view
 
 - **Cancel Unmatched Square Subscriptions**
   - Added "Cancel" button next to each unmatched subscription in View Subscriptions dialog
