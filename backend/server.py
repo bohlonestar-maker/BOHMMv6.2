@@ -14553,7 +14553,9 @@ async def get_square_subscriptions(current_user: dict = Depends(verify_token)):
             )
             
             subs = result.subscriptions or []
-            active_subs = [s for s in subs if s.status == "ACTIVE"]
+            # Filter to ACTIVE subscriptions that are NOT scheduled for cancellation
+            # (canceled_date being set means cancellation is scheduled)
+            active_subs = [s for s in subs if s.status == "ACTIVE" and not s.canceled_date]
             subscriptions.extend(active_subs)
             
             cursor = result.cursor
