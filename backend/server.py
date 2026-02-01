@@ -5202,9 +5202,9 @@ async def get_prospects(current_user: dict = Depends(verify_token)):
 @api_router.get("/prospects/{prospect_id}", response_model=Prospect)
 async def get_prospect(prospect_id: str, current_user: dict = Depends(verify_token)):
     """Get a single prospect by ID"""
-    # Check if user can view prospects
-    if not can_view_prospects(current_user):
-        raise HTTPException(status_code=403, detail="Only National Admin and HA Admin can view prospects")
+    # Check if user can view prospects - permission based
+    if not await can_view_prospects_async(current_user):
+        raise HTTPException(status_code=403, detail="You don't have permission to view prospects")
     
     prospect = await db.prospects.find_one({"id": prospect_id}, {"_id": 0})
     if not prospect:
