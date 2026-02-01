@@ -1654,7 +1654,7 @@ def can_view_national_ad(user: dict) -> bool:
     return user_title in national_ad_titles
 
 def can_view_prospects(user: dict) -> bool:
-    """Check if user can view prospects list"""
+    """Check if user can view prospects list - DEPRECATED, use async version"""
     role = user.get("role", "")
     chapter = user.get("chapter", "")
     user_title = user.get("title", "")
@@ -1667,6 +1667,34 @@ def can_view_prospects(user: dict) -> bool:
     if role == "admin" and chapter in ["National", "HA"]:
         return True
     return False
+
+async def can_view_prospects_async(user: dict) -> bool:
+    """Check if user can view prospects list - permission based"""
+    role = user.get("role", "")
+    if role == "admin":
+        return True
+    return await check_permission(user, "view_prospects")
+
+async def can_edit_members_async(user: dict) -> bool:
+    """Check if user can edit members - permission based"""
+    role = user.get("role", "")
+    if role == "admin":
+        return True
+    return await check_permission(user, "edit_members")
+
+async def can_view_reports_async(user: dict) -> bool:
+    """Check if user can view reports - permission based"""
+    role = user.get("role", "")
+    if role == "admin":
+        return True
+    return await check_permission(user, "view_reports")
+
+async def can_manage_events_async(user: dict) -> bool:
+    """Check if user can manage events - permission based"""
+    role = user.get("role", "")
+    if role == "admin":
+        return True
+    return await check_permission(user, "manage_events")
 
 def can_edit_member(user: dict, member_chapter: str) -> bool:
     """Check if user can edit a member based on their chapter and title restrictions"""
