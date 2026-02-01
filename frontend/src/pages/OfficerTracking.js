@@ -121,17 +121,19 @@ function OfficerTracking() {
   const fetchData = useCallback(async () => {
     try {
       setLoading(true);
-      const [membersRes, attendanceRes, duesRes, summaryRes] = await Promise.all([
+      const [membersRes, attendanceRes, duesRes, summaryRes, extensionsRes] = await Promise.all([
         axios.get(`${BACKEND_URL}/api/officer-tracking/members`, { headers: { Authorization: `Bearer ${token}` } }),
         axios.get(`${BACKEND_URL}/api/officer-tracking/attendance`, { headers: { Authorization: `Bearer ${token}` } }),
         axios.get(`${BACKEND_URL}/api/officer-tracking/dues`, { headers: { Authorization: `Bearer ${token}` } }),
-        axios.get(`${BACKEND_URL}/api/officer-tracking/summary`, { headers: { Authorization: `Bearer ${token}` } })
+        axios.get(`${BACKEND_URL}/api/officer-tracking/summary`, { headers: { Authorization: `Bearer ${token}` } }),
+        axios.get(`${BACKEND_URL}/api/dues-reminders/extensions`, { headers: { Authorization: `Bearer ${token}` } }).catch(() => ({ data: { extensions: [] } }))
       ]);
       
       setMembers(membersRes.data);
       setAttendance(attendanceRes.data);
       setDues(duesRes.data);
       setSummary(summaryRes.data);
+      setAllExtensions(extensionsRes.data?.extensions || []);
     } catch (error) {
       if (error.response?.status === 403) {
         toast.error("Access denied. Officers only.");
