@@ -448,6 +448,7 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
     setMemberToDelete(member);
     setDeleteReason("");
     setKickFromDiscord(false);
+    setCancelSquareSubscription(true);
     setDeleteDialogOpen(true);
   };
 
