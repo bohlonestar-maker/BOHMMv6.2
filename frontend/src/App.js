@@ -166,6 +166,38 @@ function App() {
   const [userTitle, setUserTitle] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // Function to refresh permissions from server
+  const refreshPermissions = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    
+    try {
+      const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL || process.env.REACT_APP_BACKEND_URL}/api/auth/verify`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      const { permissions, chapter, title, role } = response.data;
+      
+      // Update state and localStorage with fresh permissions
+      setUserPermissions(permissions);
+      setUserChapter(chapter);
+      setUserTitle(title);
+      setUserRole(role);
+      
+      localStorage.setItem('permissions', JSON.stringify(permissions));
+      if (chapter) localStorage.setItem('chapter', chapter);
+      if (title) localStorage.setItem('title', title);
+      if (role) localStorage.setItem('role', role);
+      
+    } catch (error) {
+      console.error("Failed to refresh permissions:", error);
+      // If token is invalid, log out
+      if (error.response?.status === 401) {
+        handleLogout();
+      }
+    }
+  };
+
   useEffect(() => {
     const token = localStorage.getItem('token');
     const role = localStorage.getItem('role');
@@ -183,6 +215,9 @@ function App() {
       }
       setUserChapter(chapter || null);
       setUserTitle(title || null);
+      
+      // Refresh permissions from server on initial load
+      refreshPermissions();
     }
     setLoading(false);
   }, []);
