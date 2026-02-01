@@ -6147,7 +6147,7 @@ async def get_invite(token: str):
 
 
 @api_router.post("/invites/{token}/resend")
-async def resend_invite(token: str, current_user: dict = Depends(verify_admin)):
+async def resend_invite(token: str, current_user: dict = Depends(verify_can_manage_users)):
     """Resend an invitation email"""
     invite = await db.invites.find_one({"token": token})
     if not invite:
