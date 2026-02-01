@@ -479,13 +479,44 @@ function OfficerTracking() {
     return labels[matchType] || { text: matchType, color: 'bg-gray-500' };
   };
 
-  const openDuesDialog = (member, preselectedStatus = null) => {
+  const openDuesDialog = async (member, preselectedStatus = null) => {
     setSelectedMember(member);
     const existing = getCurrentMonthDues(member.id);
-    setDuesForm({
-      status: preselectedStatus || existing?.status || 'paid',
-      notes: existing?.notes || ''
-    });
+    
+    // Fetch member's current extension if any
+    try {
+      const response = await axios.get(`${BACKEND_URL}/api/dues-reminders/extensions`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const extensions = response.data.extensions || [];
+      const memberExt = extensions.find(e => e.member_id === member.id && e.is_active);
+      setMemberExtension(memberExt || null);
+      
+      // If member has active extension, pre-fill the date
+      if (memberExt) {
+        const extDate = memberExt.extension_until?.split('T')[0] || '';
+        setDuesForm({
+          status: preselectedStatus || existing?.status || 'extended',
+          notes: existing?.notes || '',
+          extensionDate: extDate
+        });
+      } else {
+        setDuesForm({
+          status: preselectedStatus || existing?.status || 'paid',
+          notes: existing?.notes || '',
+          extensionDate: ''
+        });
+      }
+    } catch (error) {
+      console.error("Failed to fetch extensions:", error);
+      setMemberExtension(null);
+      setDuesForm({
+        status: preselectedStatus || existing?.status || 'paid',
+        notes: existing?.notes || '',
+        extensionDate: ''
+      });
+    }
+    
     setDuesDialog(true);
   };
 
