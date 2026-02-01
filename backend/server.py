@@ -4849,8 +4849,12 @@ async def update_prospect_action(
 # Hangarounds are the entry level - only handle and name required
 
 def can_view_hangarounds(user: dict) -> bool:
-    """Check if user can view hangarounds list (same as prospects)"""
+    """Check if user can view hangarounds list (same as prospects) - DEPRECATED"""
     return can_view_prospects(user)
+
+async def can_view_hangarounds_async(user: dict) -> bool:
+    """Check if user can view hangarounds list - permission based"""
+    return await can_view_prospects_async(user)
 
 def can_edit_hangaround(user: dict) -> bool:
     """Check if user can edit hangarounds (same as prospects)"""
@@ -4859,8 +4863,8 @@ def can_edit_hangaround(user: dict) -> bool:
 @api_router.get("/hangarounds", response_model=List[Hangaround])
 async def get_hangarounds(current_user: dict = Depends(verify_token)):
     """Get all hangarounds"""
-    if not can_view_hangarounds(current_user):
-        raise HTTPException(status_code=403, detail="Only National Admin, HA Admin, or PM can view hangarounds")
+    if not await can_view_hangarounds_async(current_user):
+        raise HTTPException(status_code=403, detail="You don't have permission to view hangarounds")
     
     hangarounds = await db.hangarounds.find({}, {"_id": 0}).to_list(1000)
     user_can_edit = can_edit_hangaround(current_user)
