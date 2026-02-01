@@ -3809,9 +3809,9 @@ async def delete_member(
     current_user: dict = Depends(verify_token)
 ):
     """Archive a member with deletion reason, optionally kick from Discord and cancel Square subscription"""
-    # Check if user is an admin first
-    if current_user.get("role") != "admin":
-        raise HTTPException(status_code=403, detail="Admin access required")
+    # Check permission
+    if not await can_edit_members_async(current_user):
+        raise HTTPException(status_code=403, detail="You don't have permission to delete members")
     
     # Get member info before archiving
     member = await db.members.find_one({"id": member_id}, {"_id": 0})
