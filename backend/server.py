@@ -3671,6 +3671,83 @@ async def get_member_attendance_summary(
 
 # ==================== END MEETING MANAGEMENT ====================
 
+async def cancel_member_square_subscription(member_id: str, member_handle: str):
+    """Cancel a member's Square subscription if they have one"""
+    result = {
+        "had_subscription": False,
+        "cancelled": False,
+        "subscription_id": None,
+        "error": None
+    }
+    
+    if not square_client:
+        result["error"] = "Square client not configured"
+        return result
+    
+    try:
+        # First check if member has a linked subscription in our database
+        subscription_link = await db.member_subscriptions.find_one({"member_id": member_id})
+        
+        if not subscription_link:
+            # Try to find by member handle in subscription links
+            subscription_link = await db.member_subscriptions.find_one({"member_handle": member_handle})
+        
+        if not subscription_link:
+            return result  # No linked subscription
+        
+        square_customer_id = subscription_link.get("square_customer_id")
+        if not square_customer_id:
+            return result
+        
+        # Search for active subscriptions for this customer
+        search_result = square_client.subscriptions.search(
+            query={
+                "filter": {
+                    "customer_ids": [square_customer_id],
+                    "location_ids": [SQUARE_LOCATION_ID]
+                }
+            }
+        )
+        
+        subscriptions = search_result.subscriptions or []
+        active_subscriptions = [s for s in subscriptions if s.status == "ACTIVE"]
+        
+        if not active_subscriptions:
+            # No active subscription found, just clean up the link
+            await db.member_subscriptions.delete_one({"square_customer_id": square_customer_id})
+            return result
+        
+        result["had_subscription"] = True
+        
+        # Cancel each active subscription
+        for sub in active_subscriptions:
+            try:
+                cancel_result = square_client.subscriptions.cancel_subscription(
+                    subscription_id=sub.id
+                )
+                
+                if cancel_result.subscription:
+                    result["cancelled"] = True
+                    result["subscription_id"] = sub.id
+                    logger.info(f"Cancelled Square subscription {sub.id} for member {member_handle}")
+                else:
+                    result["error"] = f"Failed to cancel subscription {sub.id}"
+                    if cancel_result.errors:
+                        result["error"] += f": {cancel_result.errors}"
+            except Exception as e:
+                result["error"] = f"Error cancelling subscription {sub.id}: {str(e)}"
+                logger.error(f"Error cancelling Square subscription: {e}")
+        
+        # Clean up the subscription link in our database
+        await db.member_subscriptions.delete_one({"square_customer_id": square_customer_id})
+        
+    except Exception as e:
+        result["error"] = f"Error processing subscription cancellation: {str(e)}"
+        logger.error(f"Error in cancel_member_square_subscription: {e}")
+    
+    return result
+
+
 @api_router.delete("/members/{member_id}")
 async def delete_member(
     member_id: str, 
