@@ -10851,6 +10851,12 @@ async def check_and_send_dues_reminders():
         year_str = str(year)
         month_idx = month - 1
         
+        # Skip non-dues paying members (honorary, exempt, etc.)
+        if member.get("non_dues_paying", False):
+            sys.stderr.write(f"⏭️ [DUES] Skipping {member.get('handle')} - non-dues paying member\n")
+            sys.stderr.flush()
+            continue
+        
         # Check if member has an active extension
         if await has_active_extension(member_id):
             sys.stderr.write(f"⏭️ [DUES] Skipping {member.get('handle')} - has active extension\n")
