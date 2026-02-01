@@ -1044,12 +1044,23 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
                   )}
                   
                   {/* === ADMIN SECTION (Grouped Together) === */}
-                  {(userRole === 'admin' || userChapter === 'National' || userPermissions?.manage_dues_reminders || localStorage.getItem("username") === "Lonestar") && (
+                  {(userRole === 'admin' || userChapter === 'National' || userPermissions?.manage_dues_reminders || localStorage.getItem("username") === "Lonestar" || ['Prez', 'VP', 'S@A', 'Enf', 'SEC', 'CD', 'T', 'ENF', 'PM', 'CMD', 'NVP', 'NPrez'].includes(userTitle)) && (
                     <>
                       <DropdownMenuSeparator className="bg-slate-700" />
                       <div className="px-2 py-1.5 text-xs font-semibold text-red-400 uppercase tracking-wider">
                         Admin
                       </div>
+                      
+                      {/* A & D (Attendance & Dues) - Officers can view (except CC and CCLC) */}
+                      {['Prez', 'VP', 'S@A', 'Enf', 'SEC', 'CD', 'T', 'ENF', 'PM', 'CMD', 'NVP', 'NPrez'].includes(userTitle) && (
+                        <DropdownMenuItem 
+                          onSelect={(e) => { e.preventDefault(); navigate("/officer-tracking"); }} 
+                          className="text-red-400 focus:bg-red-900/30 focus:text-red-300 cursor-pointer"
+                        >
+                          <Users className="w-4 h-4 mr-2" />
+                          A & D
+                        </DropdownMenuItem>
+                      )}
                       
                       {/* Admin Panel - Admin only */}
                       {userRole === 'admin' && (
