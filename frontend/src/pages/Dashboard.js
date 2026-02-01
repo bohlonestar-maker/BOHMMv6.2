@@ -2550,6 +2550,20 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
                     </label>
                   </div>
                   
+                  {/* Cancel Square Subscription option */}
+                  <div className="flex items-center gap-3 p-3 bg-slate-700/50 rounded-lg border border-slate-600">
+                    <input
+                      type="checkbox"
+                      id="cancelSquareSubscription"
+                      checked={cancelSquareSubscription}
+                      onChange={(e) => setCancelSquareSubscription(e.target.checked)}
+                      className="w-4 h-4 rounded border-slate-500 bg-slate-600 text-amber-600 focus:ring-amber-500"
+                    />
+                    <label htmlFor="cancelSquareSubscription" className="text-sm text-slate-200 cursor-pointer">
+                      Cancel Square subscription (if any)
+                    </label>
+                  </div>
+                  
                   {/* Buttons */}
                   <div className="flex gap-3 justify-end pt-4 border-t border-slate-700">
                     <button
