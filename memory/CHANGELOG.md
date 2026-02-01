@@ -53,6 +53,11 @@
   - Added deduplication logic to prevent same user appearing multiple times
   - All prospects in channel now correctly shown (was only showing first prospect)
 
+- **Dues Payment History - Duplicate Transactions Fixed**
+  - Fixed issue where same transaction appeared multiple times in payment notes
+  - Created admin cleanup endpoint to deduplicate historical records
+  - Frontend now deduplicates payment records from multiple sources
+
 ---
 
 ## January 29, 2026
