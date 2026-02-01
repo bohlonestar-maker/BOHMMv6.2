@@ -3290,7 +3290,12 @@ async def get_member(member_id: str, current_user: dict = Depends(verify_token))
     return member
 
 @api_router.post("/members", response_model=Member, status_code=201)
-async def create_member(member_data: MemberCreate, current_user: dict = Depends(verify_admin)):
+async def create_member(member_data: MemberCreate, current_user: dict = Depends(verify_token)):
+    """Create a new member - permission based"""
+    # Check permission
+    if not await can_edit_members_async(current_user):
+        raise HTTPException(status_code=403, detail="You don't have permission to create members")
+    
     # Check for duplicate handle
     existing_by_handle = await db.members.find_one({"handle": member_data.handle})
     if existing_by_handle:
