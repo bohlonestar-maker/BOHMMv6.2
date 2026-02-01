@@ -2020,6 +2020,8 @@ class Member(BaseModel):
     military_branch: Optional[str] = None  # Army, Navy, Air Force, Marines, Coast Guard, Space Force, National Guard
     # First Responder Service
     is_first_responder: bool = False  # If True, member has served as Police, Fire, or EMS
+    # Dues Exemption
+    non_dues_paying: bool = False  # If True, member is exempt from dues (honorary members, etc.)
     actions: list = Field(default_factory=list)  # Merit, Promotion, Disciplinary actions
     # Format: [{"type": "merit|promotion|disciplinary", "date": "YYYY-MM-DD", "description": "...", "added_by": "username", "added_at": "ISO timestamp"}]
     dues: dict = Field(default_factory=lambda: {
@@ -2053,6 +2055,8 @@ class MemberCreate(BaseModel):
     military_branch: Optional[str] = None
     # First Responder Service
     is_first_responder: bool = False
+    # Dues Exemption
+    non_dues_paying: bool = False
     dues: Optional[dict] = None
 
 class MemberUpdate(BaseModel):
@@ -2075,6 +2079,8 @@ class MemberUpdate(BaseModel):
     military_branch: Optional[str] = None
     # First Responder Service
     is_first_responder: Optional[bool] = None
+    # Dues Exemption
+    non_dues_paying: Optional[bool] = None
     dues: Optional[dict] = None
     meeting_attendance: Optional[dict] = None
 
