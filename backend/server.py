@@ -6237,7 +6237,7 @@ async def accept_invite(accept_data: InviteAccept):
     }
 
 @api_router.get("/invites")
-async def list_invites(current_user: dict = Depends(verify_admin)):
+async def list_invites(current_user: dict = Depends(verify_can_manage_users)):
     """List all invites (used and unused)"""
     invites = await db.invites.find({}, {"_id": 0}).to_list(1000)
     
