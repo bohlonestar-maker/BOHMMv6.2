@@ -1047,30 +1047,40 @@ function OfficerTracking() {
                         </div>
                         
                         {canEdit && !isExempt && (
-                          <div className="flex gap-2">
+                          <div className="space-y-2">
+                            <div className="flex gap-2">
+                              <Button
+                                size="sm"
+                                className="flex-1 bg-green-600 hover:bg-green-700 h-9 text-xs"
+                                onClick={() => handleQuickDuesUpdate(member, 'paid')}
+                              >
+                                <CheckCircle className="w-4 h-4 mr-1" />
+                                Paid
+                              </Button>
+                              <Button
+                                size="sm"
+                                className="flex-1 bg-orange-500 hover:bg-orange-600 h-9 text-xs"
+                                onClick={() => handleQuickDuesUpdate(member, 'late')}
+                              >
+                                <Clock className="w-4 h-4 mr-1" />
+                                Late
+                              </Button>
+                              <Button
+                                size="sm"
+                                className="flex-1 bg-red-600 hover:bg-red-700 h-9 text-xs"
+                                onClick={() => handleQuickDuesUpdate(member, 'unpaid')}
+                              >
+                                <XCircle className="w-4 h-4 mr-1" />
+                                Unpaid
+                              </Button>
+                            </div>
                             <Button
                               size="sm"
-                              className="flex-1 bg-green-600 hover:bg-green-700 h-9 text-xs"
-                              onClick={() => handleQuickDuesUpdate(member, 'paid')}
+                              className="w-full bg-blue-600 hover:bg-blue-700 h-9 text-xs"
+                              onClick={() => openDuesDialog(member)}
                             >
-                              <CheckCircle className="w-4 h-4 mr-1" />
-                              Paid
-                            </Button>
-                            <Button
-                              size="sm"
-                              className="flex-1 bg-orange-500 hover:bg-orange-600 h-9 text-xs"
-                              onClick={() => handleQuickDuesUpdate(member, 'late')}
-                            >
-                              <Clock className="w-4 h-4 mr-1" />
-                              Late
-                            </Button>
-                            <Button
-                              size="sm"
-                              className="flex-1 bg-red-600 hover:bg-red-700 h-9 text-xs"
-                              onClick={() => handleQuickDuesUpdate(member, 'unpaid')}
-                            >
-                              <XCircle className="w-4 h-4 mr-1" />
-                              Unpaid
+                              <Pencil className="w-4 h-4 mr-1" />
+                              Edit / Add Extension
                             </Button>
                           </div>
                         )}
