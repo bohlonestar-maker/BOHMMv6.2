@@ -1435,8 +1435,9 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
                         });
                         
                         // Add one-time payments, skipping duplicates
+                        // The field is 'payment_id' in synced_payment_links, not 'square_payment_id'
                         myDues.one_time_payments?.forEach(payment => {
-                          const key = payment.square_payment_id || `otp-${payment.id}`;
+                          const key = payment.payment_id || payment.square_payment_id || `otp-${payment.order_id || payment.id || Math.random()}`;
                           if (!seen.has(key)) {
                             seen.add(key);
                             allPayments.push({
