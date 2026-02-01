@@ -14703,7 +14703,8 @@ async def sync_subscriptions_to_dues(current_user: dict = Depends(verify_token))
             )
             
             subs = result.subscriptions or []
-            active_subs = [s for s in subs if s.status == "ACTIVE"]
+            # Filter to ACTIVE subscriptions that are NOT scheduled for cancellation
+            active_subs = [s for s in subs if s.status == "ACTIVE" and not s.canceled_date]
             subscriptions.extend(active_subs)
             
             cursor = result.cursor
