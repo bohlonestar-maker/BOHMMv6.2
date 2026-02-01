@@ -11651,8 +11651,12 @@ async def get_upcoming_events_count(current_user: dict = Depends(verify_token)):
     return {"count": count}
 
 @api_router.post("/events")
-async def create_event(event_data: EventCreate, current_user: dict = Depends(verify_admin)):
-    """Create a new event (admin only) - supports recurring events"""
+async def create_event(event_data: EventCreate, current_user: dict = Depends(verify_token)):
+    """Create a new event - permission based"""
+    # Check permission
+    if not await can_manage_events_async(current_user):
+        raise HTTPException(status_code=403, detail="You don't have permission to manage events")
+    
     from dateutil.relativedelta import relativedelta
     
     # Get creator's chapter and title from current_user
