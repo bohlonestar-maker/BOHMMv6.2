@@ -10,7 +10,7 @@ import urllib3
 # Suppress SSL warnings
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-BASE_URL = "https://attendance-mgr-4.preview.emergentagent.com/api"
+BASE_URL = "https://member-tracker-40.preview.emergentagent.com/api"
 
 def login():
     """Login and get token"""
