@@ -921,6 +921,7 @@ function OfficerTracking() {
                       {filteredMembers.map(member => {
                         const currentDues = getCurrentMonthDues(member.id);
                         const isExempt = member.non_dues_paying;
+                        const extension = getMemberExtension(member.id);
                         
                         return (
                           <TableRow key={member.id} className="border-slate-700">
@@ -932,11 +933,18 @@ function OfficerTracking() {
                               {isExempt && (
                                 <Badge className="ml-2 bg-amber-600 text-white text-xs">Exempt</Badge>
                               )}
+                              {extension && (
+                                <Badge className="ml-2 bg-blue-600 text-white text-xs" title={`Until ${new Date(extension.extension_until).toLocaleDateString()}`}>
+                                  Extended
+                                </Badge>
+                              )}
                             </TableCell>
                             <TableCell className="text-slate-300">{member.title || '-'}</TableCell>
                             <TableCell>
                               {isExempt ? (
                                 <Badge className="bg-amber-600">Non-Dues Paying</Badge>
+                              ) : extension ? (
+                                <Badge className="bg-blue-600">Extended to {new Date(extension.extension_until).toLocaleDateString()}</Badge>
                               ) : currentDues ? getStatusBadge(currentDues.status) : (
                                 <Badge variant="outline">Not Recorded</Badge>
                               )}
