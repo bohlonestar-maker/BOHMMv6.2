@@ -3,6 +3,16 @@
 ## February 1, 2026
 
 ### New Features
+- **Non-Dues Paying Members**
+  - Added `non_dues_paying` field to Member model
+  - New "Dues Exemption" checkbox in member edit form (amber styling)
+  - Members marked as non-dues paying are excluded from:
+    - Dues reminder emails
+    - Suspension logic
+    - Unpaid dues reports
+  - Officer Tracking dues tab shows "Exempt" badge for non-dues paying members
+  - Status column shows "Non-Dues Paying" instead of regular dues status
+
 - **Cancel Unmatched Square Subscriptions**
   - Added "Cancel" button next to each unmatched subscription in View Subscriptions dialog
   - Directly cancels the subscription in Square via API
