@@ -1415,16 +1415,22 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
                   <div>
                     <h3 className="text-sm font-medium text-slate-400 mb-2">Recent Payments</h3>
                     <div className="space-y-2 max-h-48 overflow-y-auto">
-                      {/* Combine and deduplicate payments by payment_id */}
+                      {/* Combine and deduplicate payments */}
                       {(() => {
                         const seen = new Set();
                         const allPayments = [];
                         
-                        // Add subscription payments first
+                        // Add subscription payments first (these are more authoritative)
                         myDues.square_payments?.forEach(payment => {
                           const key = payment.payment_id || `sub-${payment.invoice_id}`;
+                          const dateKey = payment.paid_at ? new Date(payment.paid_at).toDateString() : null;
+                          
                           if (!seen.has(key)) {
                             seen.add(key);
+                            // Also track by date+amount to catch duplicates from synced_payment_links
+                            if (dateKey && payment.amount) {
+                              seen.add(`${dateKey}-${payment.amount}`);
+                            }
                             allPayments.push({
                               ...payment,
                               type: 'subscription',
@@ -1435,18 +1441,26 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
                         });
                         
                         // Add one-time payments, skipping duplicates
-                        // The field is 'payment_id' in synced_payment_links, not 'square_payment_id'
+                        // Skip if same date+amount combination already exists (from subscription payments)
                         myDues.one_time_payments?.forEach(payment => {
-                          const key = payment.payment_id || payment.square_payment_id || `otp-${payment.order_id || payment.id || Math.random()}`;
-                          if (!seen.has(key)) {
-                            seen.add(key);
-                            allPayments.push({
-                              ...payment,
-                              type: 'one_time',
-                              displayDate: payment.payment_date,
-                              sortDate: payment.payment_date
-                            });
+                          const key = payment.payment_id || payment.square_payment_id || `otp-${payment.order_id || Math.random()}`;
+                          const dateKey = payment.payment_date ? new Date(payment.payment_date).toDateString() : null;
+                          const dateAmountKey = dateKey && payment.amount ? `${dateKey}-${payment.amount}` : null;
+                          
+                          // Skip if we already have this payment by ID or by date+amount
+                          if (seen.has(key) || (dateAmountKey && seen.has(dateAmountKey))) {
+                            return;
                           }
+                          
+                          seen.add(key);
+                          if (dateAmountKey) seen.add(dateAmountKey);
+                          
+                          allPayments.push({
+                            ...payment,
+                            type: 'one_time',
+                            displayDate: payment.payment_date,
+                            sortDate: payment.payment_date
+                          });
                         });
                         
                         // Sort by date descending and take first 5
