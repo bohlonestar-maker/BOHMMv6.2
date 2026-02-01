@@ -1032,16 +1032,16 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
                     Forms
                   </DropdownMenuItem>
                   
-                  {/* === ADMIN SECTION (Only visible to officers/admins) === */}
-                  {(userRole === 'admin' || userChapter === 'National' || userPermissions?.manage_dues_reminders || localStorage.getItem("username") === "Lonestar" || ['Prez', 'VP', 'S@A', 'Enf', 'SEC', 'CD', 'T', 'ENF', 'CMD', 'NVP', 'NPrez'].includes(userTitle)) && (
+                  {/* === ADMIN SECTION (Only visible to users with admin permissions) === */}
+                  {(userRole === 'admin' || userPermissions?.ad_page_access || userPermissions?.manage_dues_reminders || userPermissions?.manage_system_users || userPermissions?.view_reports || userChapter === 'National') && (
                     <>
                       <DropdownMenuSeparator className="bg-slate-700" />
                       <div className="px-2 py-1.5 text-xs font-semibold text-red-400 uppercase tracking-wider">
                         Admin
                       </div>
                       
-                      {/* A & D (Attendance & Dues) - Officers can view (except CC, CCLC, PM, Member, MD) */}
-                      {['Prez', 'VP', 'S@A', 'Enf', 'SEC', 'CD', 'T', 'ENF', 'CMD', 'NVP', 'NPrez'].includes(userTitle) && (
+                      {/* A & D (Attendance & Dues) - Permission based */}
+                      {(userRole === 'admin' || userPermissions?.ad_page_access) && (
                         <DropdownMenuItem 
                           onSelect={(e) => { e.preventDefault(); navigate("/officer-tracking"); }} 
                           className="text-red-400 focus:bg-red-900/30 focus:text-red-300 cursor-pointer"
@@ -1051,8 +1051,8 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
                         </DropdownMenuItem>
                       )}
                       
-                      {/* Reports - Officers only (not PM, Member, CC, CCLC, MD) */}
-                      {userTitle && !['PM', 'Member', 'CC', 'CCLC', 'MD'].includes(userTitle) && (
+                      {/* Reports - Permission based */}
+                      {(userRole === 'admin' || userPermissions?.view_reports) && (
                         <DropdownMenuItem 
                           onSelect={(e) => { e.preventDefault(); navigate("/quarterly-reports"); }} 
                           className="text-red-400 focus:bg-red-900/30 focus:text-red-300 cursor-pointer"
@@ -1062,14 +1062,14 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
                         </DropdownMenuItem>
                       )}
                       
-                      {/* Admin Panel - Admin only */}
-                      {userRole === 'admin' && (
+                      {/* System Users - Permission based */}
+                      {(userRole === 'admin' || userPermissions?.manage_system_users) && (
                         <DropdownMenuItem 
                           onSelect={(e) => { e.preventDefault(); navigate("/users"); }} 
                           className="text-red-400 focus:bg-red-900/30 focus:text-red-300 cursor-pointer"
                         >
                           <Settings className="w-4 h-4 mr-2" />
-                          Admin
+                          System Users
                         </DropdownMenuItem>
                       )}
                       
