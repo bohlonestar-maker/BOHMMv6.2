@@ -6089,7 +6089,7 @@ async def change_own_password(password_data: OwnPasswordChange, current_user: di
 
 # Invite endpoints
 @api_router.post("/invites")
-async def create_invite(invite_data: InviteCreate, current_user: dict = Depends(verify_admin)):
+async def create_invite(invite_data: InviteCreate, current_user: dict = Depends(verify_can_manage_users)):
     # Check if user with email already exists
     existing = await db.users.find_one({"username": invite_data.email})
     if existing:
