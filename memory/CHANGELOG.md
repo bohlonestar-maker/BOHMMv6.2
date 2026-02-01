@@ -13,6 +13,13 @@
   - Officer Tracking dues tab shows "Exempt" badge for non-dues paying members
   - Status column shows "Non-Dues Paying" instead of regular dues status
 
+- **Dues Extensions from A&D Panel**
+  - Can now add dues extensions directly from the Update Dues dialog
+  - Select "Extended" status to reveal date picker
+  - Enter extension end date - member won't receive reminders until then
+  - Extension status displayed in dues table with "Extended" badge and date
+  - When dues are marked as "Paid", any active extension is automatically lifted
+
 ### UI Improvements
 - **Menu Restructured**
   - All Admin items now grouped together under red "ADMIN" header
