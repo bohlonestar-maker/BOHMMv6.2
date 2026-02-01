@@ -9101,7 +9101,8 @@ async def get_members_by_chapter(current_user: dict = Depends(verify_token)):
             "chapter": m.get("chapter"),
             "email": m.get("email"),
             "meeting_attendance": m.get("meeting_attendance", []),
-            "dues_history": m.get("dues_history", [])
+            "dues_history": m.get("dues_history", []),
+            "non_dues_paying": m.get("non_dues_paying", False)
         } for m in members]
     
     return result
