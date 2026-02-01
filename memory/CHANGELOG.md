@@ -29,6 +29,12 @@
   - Displays breakdown like: "Time with HA(p) Dice: 30m, Time with HA(p) Sparky: 45m"
   - Aggregated "Total Time with Each Prospect" summary in expanded user view
 
+- **Admin User Manual (PDF)**
+  - Created comprehensive admin manual in Markdown (`/app/admin_manual.md`)
+  - Generated downloadable PDF using ReportLab library
+  - Available at `/app/BOH_Hub_Admin_Manual.pdf`
+  - Covers all admin features: member management, dues, permissions, Discord integration
+
 ### Bug Fixes
 - **Anniversary Notifications Fixed (Duplicate Prevention)**
   - Applied same distributed lock mechanism as birthday notifications
