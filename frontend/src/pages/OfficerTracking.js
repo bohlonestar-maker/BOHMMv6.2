@@ -385,6 +385,7 @@ function OfficerTracking() {
   const [linkingSubscription, setLinkingSubscription] = useState(null);
   const [selectedMemberForLink, setSelectedMemberForLink] = useState('');
   const [linkingInProgress, setLinkingInProgress] = useState(false);
+  const [cancellingSubscription, setCancellingSubscription] = useState(null);
 
   const handleViewSubscriptions = async () => {
     setLoadingSubscriptions(true);
@@ -404,6 +405,31 @@ function OfficerTracking() {
       toast.error(error.response?.data?.detail || "Failed to fetch subscriptions");
     } finally {
       setLoadingSubscriptions(false);
+    }
+  };
+
+  const handleCancelSquareSubscription = async (subscription) => {
+    if (!window.confirm(`⚠️ CANCEL SUBSCRIPTION\n\nAre you sure you want to cancel the Square subscription for:\n\n${subscription.customer_name || 'Unknown'} (${subscription.customer_email || 'No email'})\n\nThis will cancel their recurring payment in Square.`)) {
+      return;
+    }
+    
+    setCancellingSubscription(subscription.subscription_id);
+    try {
+      await axios.delete(`${BACKEND_URL}/api/dues/cancel-square-subscription/${subscription.subscription_id}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      toast.success("Square subscription cancelled successfully!");
+      
+      // Refresh subscriptions
+      const response = await axios.get(`${BACKEND_URL}/api/dues/subscriptions`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setSubscriptions(response.data);
+    } catch (error) {
+      toast.error(error.response?.data?.detail || "Failed to cancel subscription");
+    } finally {
+      setCancellingSubscription(null);
     }
   };
 
