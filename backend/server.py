@@ -5970,7 +5970,7 @@ async def update_user(user_id: str, user_data: UserUpdate, current_user: dict = 
     return updated_user
 
 @api_router.delete("/users/{user_id}")
-async def delete_user(user_id: str, current_user: dict = Depends(verify_admin)):
+async def delete_user(user_id: str, current_user: dict = Depends(verify_can_manage_users)):
     """Delete a user - Only National Prez, VP, or SEC can delete system users"""
     # Check if current user is authorized (National Prez, VP, or SEC)
     user_chapter = current_user.get('chapter', '')
