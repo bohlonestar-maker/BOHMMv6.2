@@ -22,7 +22,7 @@ styles.add(ParagraphStyle(name='SubTitle', fontSize=24, alignment=TA_CENTER, spa
 styles.add(ParagraphStyle(name='Chapter', fontSize=24, spaceBefore=30, spaceAfter=15, textColor=colors.HexColor('#1a365d'), borderWidth=2, borderColor=colors.HexColor('#3182ce'), borderPadding=5))
 styles.add(ParagraphStyle(name='Section', fontSize=16, spaceBefore=20, spaceAfter=10, textColor=colors.HexColor('#2c5282')))
 styles.add(ParagraphStyle(name='SubSection', fontSize=13, spaceBefore=15, spaceAfter=8, textColor=colors.HexColor('#2b6cb0')))
-styles.add(ParagraphStyle(name='BodyText', fontSize=11, spaceAfter=6, textColor=colors.HexColor('#333333'), leading=14))
+styles.add(ParagraphStyle(name='Body', fontSize=11, spaceAfter=6, textColor=colors.HexColor('#333333'), leading=14))
 styles.add(ParagraphStyle(name='BulletText', fontSize=11, spaceAfter=4, leftIndent=20, textColor=colors.HexColor('#333333'), leading=14))
 styles.add(ParagraphStyle(name='NumberedText', fontSize=11, spaceAfter=4, leftIndent=20, textColor=colors.HexColor('#333333'), leading=14))
 
@@ -33,9 +33,9 @@ story.append(Spacer(1, 2*inch))
 story.append(Paragraph('BOH Hub', styles['MainTitle']))
 story.append(Paragraph('Administrator Manual', styles['SubTitle']))
 story.append(Spacer(1, 0.5*inch))
-story.append(Paragraph('Version 2.0 | February 2026', styles['BodyText']))
+story.append(Paragraph('Version 2.0 | February 2026', styles['Body']))
 story.append(Spacer(1, 2*inch))
-story.append(Paragraph('<i>Member Management System</i>', styles['BodyText']))
+story.append(Paragraph('<i>Member Management System</i>', styles['Body']))
 story.append(PageBreak())
 
 # Table of Contents
@@ -55,20 +55,20 @@ toc = [
     '12. Troubleshooting'
 ]
 for item in toc:
-    story.append(Paragraph(item, styles['BodyText']))
+    story.append(Paragraph(item, styles['Body']))
 story.append(PageBreak())
 
 # Section 1: Getting Started
 story.append(Paragraph('1. Getting Started', styles['Chapter']))
 
 story.append(Paragraph('Logging In', styles['Section']))
-story.append(Paragraph('To access the BOH Hub system:', styles['BodyText']))
+story.append(Paragraph('To access the BOH Hub system:', styles['Body']))
 story.append(Paragraph('1. Navigate to the application URL', styles['NumberedText']))
 story.append(Paragraph('2. Enter your Username and Password', styles['NumberedText']))
 story.append(Paragraph('3. Click Sign In', styles['NumberedText']))
 
 story.append(Paragraph('User Roles', styles['Section']))
-story.append(Paragraph('The system has four access levels:', styles['BodyText']))
+story.append(Paragraph('The system has four access levels:', styles['Body']))
 role_data = [
     ['Role', 'Access Level'],
     ['Admin', 'Full system access, all features'],
@@ -91,7 +91,7 @@ story.append(Spacer(1, 0.2*inch))
 story.append(role_table)
 
 story.append(Paragraph('Navigation', styles['Section']))
-story.append(Paragraph('The main navigation menu includes:', styles['BodyText']))
+story.append(Paragraph('The main navigation menu includes:', styles['Body']))
 nav_items = [
     '• Dashboard - Home page with overview',
     '• Members - Member directory',
@@ -108,7 +108,7 @@ story.append(PageBreak())
 
 # Section 2: Dashboard
 story.append(Paragraph('2. Dashboard Overview', styles['Chapter']))
-story.append(Paragraph('The Dashboard provides a quick overview of the organization status.', styles['BodyText']))
+story.append(Paragraph('The Dashboard provides a quick overview of the organization status.', styles['Body']))
 
 story.append(Paragraph('My Dues Section', styles['Section']))
 dues_items = [
@@ -146,7 +146,7 @@ story.append(Paragraph('3. Select "Edit" and update fields', styles['NumberedTex
 story.append(Paragraph('4. Click "Save Changes"', styles['NumberedText']))
 
 story.append(Paragraph('Archiving a Member', styles['Section']))
-story.append(Paragraph('When a member leaves the organization:', styles['BodyText']))
+story.append(Paragraph('When a member leaves the organization:', styles['Body']))
 story.append(Paragraph('1. Click three-dot menu > "Archive"', styles['NumberedText']))
 story.append(Paragraph('2. Enter deletion reason', styles['NumberedText']))
 story.append(Paragraph('3. Optional: Check "Also kick from Discord server"', styles['NumberedText']))
@@ -186,7 +186,7 @@ story.append(PageBreak())
 story.append(Paragraph('4. Dues Management', styles['Chapter']))
 
 story.append(Paragraph('Understanding Dues Status', styles['Section']))
-story.append(Paragraph('Each month can have one of these statuses:', styles['BodyText']))
+story.append(Paragraph('Each month can have one of these statuses:', styles['Body']))
 story.append(Paragraph('• Paid (Green) - Payment confirmed', styles['BulletText']))
 story.append(Paragraph('• Unpaid (Gray) - No payment recorded', styles['BulletText']))
 story.append(Paragraph('• Suspended (Red) - Member suspended for non-payment', styles['BulletText']))
@@ -204,13 +204,13 @@ story.append(Paragraph('3. Select new status and add notes', styles['NumberedTex
 story.append(Paragraph('4. Click "Save"', styles['NumberedText']))
 
 story.append(Paragraph('Dues Reminders', styles['Section']))
-story.append(Paragraph('The system automatically sends email reminders:', styles['BodyText']))
+story.append(Paragraph('The system automatically sends email reminders:', styles['Body']))
 story.append(Paragraph('• Day 3: First reminder', styles['BulletText']))
 story.append(Paragraph('• Day 8: Second reminder', styles['BulletText']))
 story.append(Paragraph('• Day 10: Final warning before suspension', styles['BulletText']))
 
 story.append(Paragraph('Dues Extensions', styles['Section']))
-story.append(Paragraph('To grant extra time to pay:', styles['BodyText']))
+story.append(Paragraph('To grant extra time to pay:', styles['Body']))
 story.append(Paragraph('1. Find member in Dues list', styles['NumberedText']))
 story.append(Paragraph('2. Click "Grant Extension"', styles['NumberedText']))
 story.append(Paragraph('3. Select end date and enter reason', styles['NumberedText']))
@@ -222,7 +222,7 @@ story.append(PageBreak())
 story.append(Paragraph('5. Square Payment Integration', styles['Chapter']))
 
 story.append(Paragraph('Automatic Sync', styles['Section']))
-story.append(Paragraph('The system automatically syncs with Square hourly to:', styles['BodyText']))
+story.append(Paragraph('The system automatically syncs with Square hourly to:', styles['Body']))
 story.append(Paragraph('• Match subscription payments to members', styles['BulletText']))
 story.append(Paragraph('• Update dues status for paid months', styles['BulletText']))
 story.append(Paragraph('• Track one-time payments', styles['BulletText']))
@@ -233,7 +233,7 @@ story.append(Paragraph('2. Click "Sync Square"', styles['NumberedText']))
 story.append(Paragraph('3. Review any unmatched payments', styles['NumberedText']))
 
 story.append(Paragraph('Viewing Subscriptions', styles['Section']))
-story.append(Paragraph('Click "View Subscriptions" in the Dues tab to see:', styles['BodyText']))
+story.append(Paragraph('Click "View Subscriptions" in the Dues tab to see:', styles['Body']))
 story.append(Paragraph('• Matched Subscriptions - Linked to members', styles['BulletText']))
 story.append(Paragraph('• Unmatched Subscriptions - Need manual linking', styles['BulletText']))
 
@@ -243,7 +243,7 @@ story.append(Paragraph('2. Click "Link"', styles['NumberedText']))
 story.append(Paragraph('3. Select member and confirm', styles['NumberedText']))
 
 story.append(Paragraph('Cancelling Unmatched Subscriptions', styles['Section']))
-story.append(Paragraph('For subscriptions of former members:', styles['BodyText']))
+story.append(Paragraph('For subscriptions of former members:', styles['Body']))
 story.append(Paragraph('1. Find the unmatched subscription', styles['NumberedText']))
 story.append(Paragraph('2. Click "Cancel"', styles['NumberedText']))
 story.append(Paragraph('3. Confirm the cancellation', styles['NumberedText']))
@@ -272,22 +272,22 @@ story.append(PageBreak())
 story.append(Paragraph('6. Discord Integration', styles['Chapter']))
 
 story.append(Paragraph('Discord Bot Features', styles['Section']))
-story.append(Paragraph('The integrated Discord bot provides:', styles['BodyText']))
+story.append(Paragraph('The integrated Discord bot provides:', styles['Body']))
 story.append(Paragraph('• Birthday and anniversary notifications', styles['BulletText']))
 story.append(Paragraph('• Voice channel tracking', styles['BulletText']))
 story.append(Paragraph('• Text activity logging', styles['BulletText']))
 story.append(Paragraph('• Role-based permissions', styles['BulletText']))
 
 story.append(Paragraph('Notifications', styles['Section']))
-story.append(Paragraph('Automatic notifications sent to designated channels:', styles['BodyText']))
+story.append(Paragraph('Automatic notifications sent to designated channels:', styles['Body']))
 story.append(Paragraph('• Birthdays: Posted on members birthday', styles['BulletText']))
 story.append(Paragraph('• Anniversaries: Posted on 1st of join month', styles['BulletText']))
 
 story.append(Paragraph('Prospect Channel Analytics', styles['Section']))
-story.append(Paragraph('Special tracking for Prospect voice channels:', styles['BodyText']))
+story.append(Paragraph('Special tracking for Prospect voice channels:', styles['Body']))
 story.append(Paragraph('1. Go to Prospects page', styles['NumberedText']))
 story.append(Paragraph('2. Click "Channel Analytics"', styles['NumberedText']))
-story.append(Paragraph('Features include:', styles['BodyText']))
+story.append(Paragraph('Features include:', styles['Body']))
 story.append(Paragraph('• Live view of current users', styles['BulletText']))
 story.append(Paragraph('• Time spent with each prospect', styles['BulletText']))
 story.append(Paragraph('• Historical session data', styles['BulletText']))
@@ -298,18 +298,18 @@ story.append(PageBreak())
 story.append(Paragraph('7. Prospects & Hangarounds', styles['Chapter']))
 
 story.append(Paragraph('Pipeline Overview', styles['Section']))
-story.append(Paragraph('Two-stage prospecting workflow:', styles['BodyText']))
+story.append(Paragraph('Two-stage prospecting workflow:', styles['Body']))
 story.append(Paragraph('1. Hangaround - Initial contact, minimal info required', styles['NumberedText']))
 story.append(Paragraph('2. Prospect - Full information required', styles['NumberedText']))
 
 story.append(Paragraph('Managing Hangarounds', styles['Section']))
-story.append(Paragraph('Adding a Hangaround:', styles['BodyText']))
+story.append(Paragraph('Adding a Hangaround:', styles['Body']))
 story.append(Paragraph('1. Go to Prospects > Hangarounds tab', styles['NumberedText']))
 story.append(Paragraph('2. Click "Add Hangaround"', styles['NumberedText']))
 story.append(Paragraph('3. Enter Handle (required)', styles['NumberedText']))
 story.append(Paragraph('4. Click "Save"', styles['NumberedText']))
 
-story.append(Paragraph('Promoting to Prospect:', styles['BodyText']))
+story.append(Paragraph('Promoting to Prospect:', styles['Body']))
 story.append(Paragraph('1. Click "Promote" on the hangaround', styles['NumberedText']))
 story.append(Paragraph('2. Fill in required information', styles['NumberedText']))
 story.append(Paragraph('3. Click "Confirm Promotion"', styles['NumberedText']))
@@ -318,7 +318,7 @@ story.append(PageBreak())
 
 # Section 8-12 (abbreviated)
 story.append(Paragraph('8. Officer Tracking', styles['Chapter']))
-story.append(Paragraph('The Officer Tracking section provides tools for managing dues, reminders, and reports.', styles['BodyText']))
+story.append(Paragraph('The Officer Tracking section provides tools for managing dues, reminders, and reports.', styles['Body']))
 story.append(Paragraph('• Dues Tab - View and update member dues by month', styles['BulletText']))
 story.append(Paragraph('• Reminders Tab - View sent reminders and resend if needed', styles['BulletText']))
 story.append(Paragraph('• Reports Tab - Access financial summaries', styles['BulletText']))
@@ -326,13 +326,13 @@ story.append(Paragraph('• Reports Tab - Access financial summaries', styles['B
 story.append(PageBreak())
 
 story.append(Paragraph('9. Meeting Management', styles['Chapter']))
-story.append(Paragraph('Creating a Meeting:', styles['BodyText']))
+story.append(Paragraph('Creating a Meeting:', styles['Body']))
 story.append(Paragraph('1. Go to Meeting Manager', styles['NumberedText']))
 story.append(Paragraph('2. Click "Schedule Meeting"', styles['NumberedText']))
 story.append(Paragraph('3. Enter meeting details', styles['NumberedText']))
 story.append(Paragraph('4. Click "Create"', styles['NumberedText']))
 
-story.append(Paragraph('Taking Attendance:', styles['BodyText']))
+story.append(Paragraph('Taking Attendance:', styles['Body']))
 story.append(Paragraph('1. Open the meeting', styles['NumberedText']))
 story.append(Paragraph('2. Click "Take Attendance"', styles['NumberedText']))
 story.append(Paragraph('3. Check off members present', styles['NumberedText']))
@@ -341,7 +341,7 @@ story.append(Paragraph('4. Click "Save Attendance"', styles['NumberedText']))
 story.append(PageBreak())
 
 story.append(Paragraph('10. Analytics & Reports', styles['Chapter']))
-story.append(Paragraph('Discord Analytics:', styles['BodyText']))
+story.append(Paragraph('Discord Analytics:', styles['Body']))
 story.append(Paragraph('• Voice channel participation', styles['BulletText']))
 story.append(Paragraph('• Text message activity', styles['BulletText']))
 story.append(Paragraph('• Most active members', styles['BulletText']))
@@ -349,7 +349,7 @@ story.append(Paragraph('• Most active members', styles['BulletText']))
 story.append(PageBreak())
 
 story.append(Paragraph('11. System Administration', styles['Chapter']))
-story.append(Paragraph('Creating Admin Users:', styles['BodyText']))
+story.append(Paragraph('Creating Admin Users:', styles['Body']))
 story.append(Paragraph('1. Go to Admin section', styles['NumberedText']))
 story.append(Paragraph('2. Click "Add User"', styles['NumberedText']))
 story.append(Paragraph('3. Enter username/password', styles['NumberedText']))
@@ -390,8 +390,8 @@ story.append(Spacer(1, 0.2*inch))
 story.append(color_table)
 
 story.append(Spacer(1, 0.5*inch))
-story.append(Paragraph('Document Version: 2.0 | Last Updated: February 2026', styles['BodyText']))
-story.append(Paragraph('BOH Hub - Member Management System', styles['BodyText']))
+story.append(Paragraph('Document Version: 2.0 | Last Updated: February 2026', styles['Body']))
+story.append(Paragraph('BOH Hub - Member Management System', styles['Body']))
 
 # Build PDF
 doc.build(story)
