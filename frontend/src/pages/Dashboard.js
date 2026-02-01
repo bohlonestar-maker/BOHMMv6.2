@@ -1074,9 +1074,6 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
                           Admin
                         </DropdownMenuItem>
                       )}
-                          A & D
-                        </DropdownMenuItem>
-                      )}
                       
                       {/* Admin Panel - Admin only */}
                       {userRole === 'admin' && (
