@@ -3722,7 +3722,7 @@ async def cancel_member_square_subscription(member_id: str, member_handle: str):
         # Cancel each active subscription
         for sub in active_subscriptions:
             try:
-                cancel_result = square_client.subscriptions.cancel_subscription(
+                cancel_result = square_client.subscriptions.cancel(
                     subscription_id=sub.id
                 )
                 
