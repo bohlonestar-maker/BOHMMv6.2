@@ -166,6 +166,20 @@ function App() {
   const [userTitle, setUserTitle] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('username');
+    localStorage.removeItem('role');
+    localStorage.removeItem('permissions');
+    localStorage.removeItem('chapter');
+    localStorage.removeItem('title');
+    setIsAuthenticated(false);
+    setUserRole(null);
+    setUserPermissions(null);
+    setUserChapter(null);
+    setUserTitle(null);
+  };
+
   // Function to refresh permissions from server
   const refreshPermissions = async () => {
     const token = localStorage.getItem('token');
@@ -238,20 +252,6 @@ function App() {
     setUserPermissions(permissions);
     setUserChapter(chapter);
     setUserTitle(title);
-  };
-
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('username');
-    localStorage.removeItem('role');
-    localStorage.removeItem('permissions');
-    localStorage.removeItem('chapter');
-    localStorage.removeItem('title');
-    setIsAuthenticated(false);
-    setUserRole(null);
-    setUserPermissions(null);
-    setUserChapter(null);
-    setUserTitle(null);
   };
 
   if (loading) {
