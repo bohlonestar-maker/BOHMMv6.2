@@ -1,5 +1,72 @@
 # BOH Hub Changelog
 
+## February 1, 2026
+
+### New Features
+- **Cancel Unmatched Square Subscriptions**
+  - Added "Cancel" button next to each unmatched subscription in View Subscriptions dialog
+  - Directly cancels the subscription in Square via API
+  - Subscriptions with scheduled cancellation now immediately hidden from lists
+
+- **Auto-Cancel Square Subscription on Member Deletion**
+  - When archiving a member, their Square subscription is now automatically cancelled (enabled by default)
+  - New checkbox "Cancel Square subscription (if any)" in the archive dialog
+  - Activity log records if subscription was cancelled
+
+- **Prospect Channel Analytics - Time Breakdown**
+  - Completed sessions now show exact time spent with each prospect
+  - Tracks when prospects join/leave during a user's session
+  - Displays breakdown like: "Time with HA(p) Dice: 30m, Time with HA(p) Sparky: 45m"
+  - Aggregated "Total Time with Each Prospect" summary in expanded user view
+
+### Bug Fixes
+- **Anniversary Notifications Fixed (Duplicate Prevention)**
+  - Applied same distributed lock mechanism as birthday notifications
+  - Uses `scheduler_locks` collection to prevent multiple container instances from running simultaneously
+  - Added unique index on `anniversary_notifications` collection
+  
+- **Square Cancel Subscription Method Fixed**
+  - Fixed "SubscriptionsClient object has no attribute 'cancel_subscription'" error
+  - Updated to use correct SDK method: `square_client.subscriptions.cancel()`
+
+- **Cancelled Subscriptions Now Hidden**
+  - Subscriptions with `canceled_date` set are now filtered out from all lists
+  - Previously, cancelled subscriptions still showed as "ACTIVE" until billing period ended
+
+- **Prospect Channel Analytics - Duplicate Users Fixed**
+  - Added deduplication logic to prevent same user appearing multiple times
+  - All prospects in channel now correctly shown (was only showing first prospect)
+
+---
+
+## January 29, 2026
+
+### New Features
+- **Hangaround/Prospect Workflow**
+  - New "Hangaround" status as preliminary step before Prospect
+  - Tabbed UI on Prospects page (Hangarounds | Prospects)
+  - Promote Hangarounds to Prospects with full info collection
+
+- **Hangaround Meeting Attendance**
+  - Track meeting attendance for Hangarounds
+
+- **Prospect Channel Analytics**
+  - New page at `/prospect-channel-analytics`
+  - Real-time view of users currently in Prospect voice channels
+  - Live timers showing session duration
+  - Identifies prospects by "HA(p)" in Discord display name
+  - Role-based access (Prez, VP, S@A, ENF, SEC only)
+
+- **Discord Analytics Cleanup**
+  - Admin endpoint to purge analytics for departed Discord members
+
+### Bug Fixes
+- **Square One-Time Payment Sync**
+  - Fixed bug where payment notes weren't added to already-paid months
+  - Added admin endpoint `/api/admin/reapply-payment-notes` for historical fix
+
+---
+
 ## January 9, 2026
 
 ### New Features
