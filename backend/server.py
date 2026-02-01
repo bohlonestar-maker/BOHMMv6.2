@@ -3753,9 +3753,10 @@ async def delete_member(
     member_id: str, 
     reason: str,
     kick_from_discord: bool = False,
+    cancel_square_subscription: bool = True,
     current_user: dict = Depends(verify_token)
 ):
-    """Archive a member with deletion reason and optionally kick from Discord"""
+    """Archive a member with deletion reason, optionally kick from Discord and cancel Square subscription"""
     # Check if user is an admin first
     if current_user.get("role") != "admin":
         raise HTTPException(status_code=403, detail="Admin access required")
@@ -3781,6 +3782,17 @@ async def delete_member(
         except Exception as e:
             discord_result = {"success": False, "message": str(e)}
     
+    # Cancel Square subscription if requested
+    square_result = None
+    if cancel_square_subscription:
+        try:
+            square_result = await cancel_member_square_subscription(
+                member_id=member_id,
+                member_handle=member.get("handle", "Unknown")
+            )
+        except Exception as e:
+            square_result = {"cancelled": False, "error": str(e)}
+    
     # Create archived record
     archived_member = {
         **member,
@@ -3788,7 +3800,9 @@ async def delete_member(
         "deleted_by": current_user["username"],
         "deleted_at": datetime.now(timezone.utc).isoformat(),
         "kicked_from_discord": kick_from_discord,
-        "discord_kick_result": discord_result
+        "discord_kick_result": discord_result,
+        "square_subscription_cancelled": square_result.get("cancelled") if square_result else False,
+        "square_cancellation_result": square_result
     }
     
     # Move to archived collection
@@ -3802,16 +3816,19 @@ async def delete_member(
     
     # Log activity
     discord_note = " (kicked from Discord)" if kick_from_discord and discord_result and discord_result.get("success") else ""
+    square_note = " (Square subscription cancelled)" if square_result and square_result.get("cancelled") else ""
     await log_activity(
         username=current_user["username"],
         action="member_archive",
-        details=f"Archived member: {member.get('name', 'Unknown')} ({member.get('handle', 'Unknown')}) - Reason: {reason}{discord_note}"
+        details=f"Archived member: {member.get('name', 'Unknown')} ({member.get('handle', 'Unknown')}) - Reason: {reason}{discord_note}{square_note}"
     )
     
     return {
         "message": "Member archived successfully",
         "discord_kicked": kick_from_discord,
-        "discord_result": discord_result
+        "discord_result": discord_result,
+        "square_subscription_cancelled": square_result.get("cancelled") if square_result else False,
+        "square_result": square_result
     }
 
 # Dues tracking endpoint
