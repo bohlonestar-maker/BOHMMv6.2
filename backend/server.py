@@ -3710,7 +3710,8 @@ async def cancel_member_square_subscription(member_id: str, member_handle: str):
         )
         
         subscriptions = search_result.subscriptions or []
-        active_subscriptions = [s for s in subscriptions if s.status == "ACTIVE"]
+        # Filter to ACTIVE subscriptions that are NOT scheduled for cancellation
+        active_subscriptions = [s for s in subscriptions if s.status == "ACTIVE" and not s.canceled_date]
         
         if not active_subscriptions:
             # No active subscription found, just clean up the link
