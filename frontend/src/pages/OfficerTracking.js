@@ -99,8 +99,10 @@ function OfficerTracking() {
   const [duesDialog, setDuesDialog] = useState(false);
   const [duesForm, setDuesForm] = useState({
     status: 'paid',
-    notes: ''
+    notes: '',
+    extensionDate: ''
   });
+  const [memberExtension, setMemberExtension] = useState(null);
   
   const token = localStorage.getItem('token');
   const userTitle = localStorage.getItem('title');
