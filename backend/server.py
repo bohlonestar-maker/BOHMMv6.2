@@ -6008,7 +6008,7 @@ class PasswordChange(BaseModel):
     new_password: str
 
 @api_router.put("/users/{user_id}/password")
-async def change_user_password(user_id: str, password_data: PasswordChange, current_user: dict = Depends(verify_admin)):
+async def change_user_password(user_id: str, password_data: PasswordChange, current_user: dict = Depends(verify_can_manage_users)):
     """Change password for a user - Only National Prez, VP, or SEC can change other users' passwords"""
     # Check if current user is authorized (National Prez, VP, or SEC)
     user_chapter = current_user.get('chapter', '')
