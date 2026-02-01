@@ -15320,9 +15320,12 @@ async def update_member_dues_with_payment_info(member_id: str, year: int, month:
         if isinstance(dues[year_str], list) and len(dues[year_str]) > month:
             if isinstance(dues[year_str][month], dict):
                 current_status = dues[year_str][month].get("status")
-                current_note = dues[year_str][month].get("note", "")
+                current_note = dues[year_str][month].get("note", "") or ""
             elif dues[year_str][month] == True:
                 current_status = "paid"
+        
+        # Use first 12 chars of payment_id for duplicate detection (matches the note format)
+        payment_id_short = payment_id[:12] if payment_id else None
         
         # Update to paid - even if already paid, we want to add the Square payment info
         should_update_member = False
@@ -15333,7 +15336,7 @@ async def update_member_dues_with_payment_info(member_id: str, year: int, month:
                 "note": payment_note
             }
             should_update_member = True
-        elif payment_id and payment_id not in current_note:
+        elif payment_id_short and payment_id_short not in current_note:
             # Already paid but we have new Square payment info to add
             new_note = f"{current_note} | {payment_note}" if current_note else payment_note
             dues[year_str][month] = {
@@ -15341,6 +15344,7 @@ async def update_member_dues_with_payment_info(member_id: str, year: int, month:
                 "note": new_note
             }
             should_update_member = True
+        # If payment_id is already in the note, skip (duplicate)
         
         if should_update_member:
             # Update member record - also clear any dues suspension
@@ -15364,43 +15368,50 @@ async def update_member_dues_with_payment_info(member_id: str, year: int, month:
             "month": month_str
         })
         
-        dues_record = {
-            "id": existing.get("id") if existing else str(uuid.uuid4()),
-            "member_id": member_id,
-            "month": month_str,
-            "status": "paid",
-            "notes": payment_note,
-            "square_payment_id": payment_id,
-            "updated_at": datetime.now(timezone.utc).isoformat(),
-            "updated_by": "square_sync"
-        }
-        
         if existing:
-            # Update the record - add Square payment info even if already paid manually
-            # This ensures we always capture the Square payment details
-            existing_notes = existing.get("notes", "")
+            # Check for duplicate payment before updating
+            existing_notes = existing.get("notes", "") or ""
+            existing_payment_id = existing.get("square_payment_id", "") or ""
+            
+            # Skip if this payment is already recorded (check both full ID and short ID)
+            if payment_id and (payment_id == existing_payment_id or (payment_id_short and payment_id_short in existing_notes)):
+                # Already have this payment recorded, skip
+                return
+            
             should_update = False
+            new_notes = payment_note
             
             if existing.get("status") != "paid":
                 # Not yet paid - do full update
                 should_update = True
-            elif payment_id and payment_id not in existing_notes:
+            elif payment_id_short and payment_id_short not in existing_notes:
                 # Already paid but we have new Square payment info to add
-                # Append Square payment info to existing notes
-                if existing_notes:
-                    dues_record["notes"] = f"{existing_notes} | {payment_note}"
-                else:
-                    dues_record["notes"] = payment_note
+                new_notes = f"{existing_notes} | {payment_note}" if existing_notes else payment_note
                 should_update = True
             
             if should_update:
                 await db.officer_dues.update_one(
                     {"id": existing.get("id")},
-                    {"$set": dues_record}
+                    {"$set": {
+                        "status": "paid",
+                        "notes": new_notes,
+                        "square_payment_id": payment_id,
+                        "updated_at": datetime.now(timezone.utc).isoformat(),
+                        "updated_by": "square_sync"
+                    }}
                 )
         else:
-            dues_record["created_at"] = datetime.now(timezone.utc).isoformat()
-            dues_record["created_by"] = "square_sync"
+            # Create new record
+            dues_record = {
+                "id": str(uuid.uuid4()),
+                "member_id": member_id,
+                "month": month_str,
+                "status": "paid",
+                "notes": payment_note,
+                "square_payment_id": payment_id,
+                "created_at": datetime.now(timezone.utc).isoformat(),
+                "created_by": "square_sync"
+            }
             await db.officer_dues.insert_one(dues_record)
         
         logger.info(f"Member {member_id} dues updated for {month_names[month]} {year_str} via sync")
