@@ -5311,9 +5311,9 @@ async def delete_prospect(
 
 @api_router.get("/prospects/export/csv")
 async def export_prospects_csv(current_user: dict = Depends(verify_token)):
-    # Check if user can view prospects
-    if not can_view_prospects(current_user):
-        raise HTTPException(status_code=403, detail="Only National Admin and HA Admin can export prospects")
+    # Check if user can view prospects - permission based
+    if not await can_view_prospects_async(current_user):
+        raise HTTPException(status_code=403, detail="You don't have permission to export prospects")
     
     prospects = await db.prospects.find({}, {"_id": 0}).to_list(1000)
     
