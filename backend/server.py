@@ -5179,9 +5179,9 @@ async def migrate_prospects_to_hangarounds(current_user: dict = Depends(verify_t
 # Prospect management endpoints (admin only)
 @api_router.get("/prospects", response_model=List[Prospect])
 async def get_prospects(current_user: dict = Depends(verify_token)):
-    # Check if user can view prospects (National Admin, HA Admin, or PM)
-    if not can_view_prospects(current_user):
-        raise HTTPException(status_code=403, detail="Only National Admin, HA Admin, or PM can view prospects")
+    # Check if user can view prospects - permission based
+    if not await can_view_prospects_async(current_user):
+        raise HTTPException(status_code=403, detail="You don't have permission to view prospects")
     
     prospects = await db.prospects.find({}, {"_id": 0}).to_list(1000)
     
