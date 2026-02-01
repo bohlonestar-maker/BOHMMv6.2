@@ -960,7 +960,7 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
                     )}
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="w-56 bg-slate-800 border-slate-700" sideOffset={8}>
+                <DropdownMenuContent align="start" className="w-56 bg-slate-800 border-slate-700 max-h-[80vh] overflow-y-auto" sideOffset={8}>
                   {/* === MEMBER MANAGEMENT === */}
                   {canAccessProspects && (
                     <DropdownMenuItem 
@@ -1054,85 +1054,90 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
                     </DropdownMenuItem>
                   )}
                   
-                  {/* === NATIONALS ONLY === */}
-                  {userChapter === 'National' && (
+                  {/* === ADMIN SECTION (Grouped Together) === */}
+                  {(userRole === 'admin' || userChapter === 'National' || userPermissions?.manage_dues_reminders || localStorage.getItem("username") === "Lonestar") && (
                     <>
                       <DropdownMenuSeparator className="bg-slate-700" />
+                      <div className="px-2 py-1.5 text-xs font-semibold text-red-400 uppercase tracking-wider">
+                        Admin
+                      </div>
+                      
+                      {/* Admin Panel - Admin only */}
+                      {userRole === 'admin' && (
+                        <DropdownMenuItem 
+                          onSelect={(e) => { e.preventDefault(); navigate("/users"); }} 
+                          className="text-red-400 focus:bg-red-900/30 focus:text-red-300 cursor-pointer"
+                        >
+                          <Settings className="w-4 h-4 mr-2" />
+                          Admin
+                        </DropdownMenuItem>
+                      )}
+                      
+                      {/* Change Log - Admin only */}
+                      {userRole === 'admin' && (
+                        <DropdownMenuItem 
+                          onSelect={(e) => { e.preventDefault(); navigate("/update-log"); }} 
+                          className="text-red-400 focus:bg-red-900/30 focus:text-red-300 cursor-pointer"
+                        >
+                          <Clock className="w-4 h-4 mr-2" />
+                          Change Log
+                        </DropdownMenuItem>
+                      )}
+                      
+                      {/* Permission Panel - National Prez, VP, SEC, T only */}
+                      {userChapter === 'National' && ['Prez', 'VP', 'SEC', 'T'].includes(userTitle) && (
+                        <DropdownMenuItem 
+                          onSelect={(e) => { e.preventDefault(); navigate("/permissions"); }} 
+                          className="text-red-400 focus:bg-red-900/30 focus:text-red-300 cursor-pointer"
+                        >
+                          <Shield className="w-4 h-4 mr-2" />
+                          Permissions
+                        </DropdownMenuItem>
+                      )}
+                      
+                      {/* Dues Reminders - users with manage_dues_reminders permission */}
+                      {(userRole === 'admin' || userPermissions?.manage_dues_reminders) && (
+                        <DropdownMenuItem 
+                          onSelect={(e) => { e.preventDefault(); navigate("/dues-reminders"); }} 
+                          className="text-red-400 focus:bg-red-900/30 focus:text-red-300 cursor-pointer"
+                        >
+                          <Mail className="w-4 h-4 mr-2" />
+                          Dues Reminders
+                        </DropdownMenuItem>
+                      )}
+                      
+                      {/* Message Monitor - Lonestar only */}
+                      {localStorage.getItem("username") === "Lonestar" && (
+                        <DropdownMenuItem 
+                          onSelect={(e) => { e.preventDefault(); navigate("/message-monitor"); }} 
+                          className="text-red-400 focus:bg-red-900/30 focus:text-red-300 cursor-pointer"
+                        >
+                          <MessageCircle className="w-4 h-4 mr-2" />
+                          Message Monitor
+                        </DropdownMenuItem>
+                      )}
                       
                       {/* AI Knowledge Manager - Nationals only */}
-                      <DropdownMenuItem 
-                        onSelect={(e) => { e.preventDefault(); navigate("/ai-knowledge"); }} 
-                        className="text-cyan-400 focus:bg-cyan-900/30 focus:text-cyan-300 cursor-pointer"
-                      >
-                        <Database className="w-4 h-4 mr-2" />
-                        AI Knowledge
-                      </DropdownMenuItem>
+                      {userChapter === 'National' && (
+                        <DropdownMenuItem 
+                          onSelect={(e) => { e.preventDefault(); navigate("/ai-knowledge"); }} 
+                          className="text-red-400 focus:bg-red-900/30 focus:text-red-300 cursor-pointer"
+                        >
+                          <Database className="w-4 h-4 mr-2" />
+                          AI Knowledge
+                        </DropdownMenuItem>
+                      )}
                       
                       {/* Discord Analytics - Nationals only */}
-                      <DropdownMenuItem 
-                        onSelect={(e) => { e.preventDefault(); navigate("/discord-analytics"); }} 
-                        className="text-slate-200 focus:bg-slate-700 focus:text-white cursor-pointer"
-                      >
-                        <Headphones className="w-4 h-4 mr-2" />
-                        Discord Analytics
-                      </DropdownMenuItem>
-                    </>
-                  )}
-                  
-                  {/* === ADMIN ONLY === */}
-                  {userRole === 'admin' && (
-                    <>
-                      <DropdownMenuSeparator className="bg-slate-700" />
-                      <DropdownMenuItem 
-                        onSelect={(e) => { e.preventDefault(); navigate("/users"); }} 
-                        className="text-red-400 focus:bg-red-900/30 focus:text-red-300 cursor-pointer"
-                      >
-                        <Settings className="w-4 h-4 mr-2" />
-                        Admin
-                      </DropdownMenuItem>
-                      <DropdownMenuItem 
-                        onSelect={(e) => { e.preventDefault(); navigate("/update-log"); }} 
-                        className="text-slate-200 focus:bg-slate-700 focus:text-white cursor-pointer"
-                      >
-                        <Clock className="w-4 h-4 mr-2" />
-                        Change Log
-                      </DropdownMenuItem>
-                    </>
-                  )}
-                  
-                  {/* Permission Panel - National Prez, VP, SEC, T only */}
-                  {userChapter === 'National' && ['Prez', 'VP', 'SEC', 'T'].includes(userTitle) && (
-                    <DropdownMenuItem 
-                      onSelect={(e) => { e.preventDefault(); navigate("/permissions"); }} 
-                      className="text-purple-400 focus:bg-purple-900/30 focus:text-purple-300 cursor-pointer"
-                    >
-                      <Shield className="w-4 h-4 mr-2" />
-                      Permissions
-                    </DropdownMenuItem>
-                  )}
-                  
-                  {/* Dues Reminders - users with manage_dues_reminders permission */}
-                  {(userRole === 'admin' || userPermissions?.manage_dues_reminders) && (
-                    <DropdownMenuItem 
-                      onSelect={(e) => { e.preventDefault(); navigate("/dues-reminders"); }} 
-                      className="text-amber-400 focus:bg-amber-900/30 focus:text-amber-300 cursor-pointer"
-                    >
-                      <Mail className="w-4 h-4 mr-2" />
-                      Dues Reminders
-                    </DropdownMenuItem>
-                  )}
-                  
-                  {/* Message Monitor - Lonestar only */}
-                  {localStorage.getItem("username") === "Lonestar" && (
-                    <>
-                      <DropdownMenuSeparator className="bg-slate-700" />
-                      <DropdownMenuItem 
-                        onSelect={(e) => { e.preventDefault(); navigate("/message-monitor"); }} 
-                        className="text-purple-400 focus:bg-purple-900/30 focus:text-purple-300 cursor-pointer"
-                      >
-                        <MessageCircle className="w-4 h-4 mr-2" />
-                        Message Monitor
-                      </DropdownMenuItem>
+                      {userChapter === 'National' && (
+                        <DropdownMenuItem 
+                          onSelect={(e) => { e.preventDefault(); navigate("/discord-analytics"); }} 
+                          className="text-red-400 focus:bg-red-900/30 focus:text-red-300 cursor-pointer"
+                        >
+                          <Headphones className="w-4 h-4 mr-2" />
+                          Discord Analytics
+                        </DropdownMenuItem>
+                      )}
                     </>
                   )}
                   
