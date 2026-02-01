@@ -927,6 +927,7 @@ function OfficerTracking() {
                 <div className="md:hidden space-y-3">
                   {filteredMembers.map(member => {
                     const currentDues = getCurrentMonthDues(member.id);
+                    const isExempt = member.non_dues_paying;
                     
                     return (
                       <div key={member.id} className="bg-slate-700/50 rounded-lg p-3 border border-slate-600">
@@ -935,17 +936,24 @@ function OfficerTracking() {
                           onClick={() => openDuesHistoryDialog(member)}
                         >
                           <div>
-                            <div className="font-medium text-blue-400 underline">{member.handle}</div>
+                            <div className="font-medium text-blue-400 underline">
+                              {member.handle}
+                              {isExempt && (
+                                <Badge className="ml-2 bg-amber-600 text-white text-xs">Exempt</Badge>
+                              )}
+                            </div>
                             <div className="text-xs text-slate-400">{member.title || 'Brother'}</div>
                           </div>
                           <div>
-                            {currentDues ? getStatusBadge(currentDues.status) : (
+                            {isExempt ? (
+                              <Badge className="bg-amber-600 text-xs">Non-Dues Paying</Badge>
+                            ) : currentDues ? getStatusBadge(currentDues.status) : (
                               <Badge variant="outline" className="text-xs">Not Recorded</Badge>
                             )}
                           </div>
                         </div>
                         
-                        {canEdit && (
+                        {canEdit && !isExempt && (
                           <div className="flex gap-2">
                             <Button
                               size="sm"
