@@ -10312,7 +10312,7 @@ async def get_dues_reminder_status(current_user: dict = Depends(verify_token)):
     month_names = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
     
     # Get all members
-    members = await db.members.find({}, {"_id": 0, "id": 1, "handle": 1, "name": 1, "email": 1, "chapter": 1, "dues": 1}).to_list(1000)
+    members = await db.members.find({}, {"_id": 0, "id": 1, "handle": 1, "name": 1, "email": 1, "chapter": 1, "dues": 1, "non_dues_paying": 1}).to_list(1000)
     
     # Get sent reminders for this month
     sent_reminders = await db.dues_reminder_sent.find(
