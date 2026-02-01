@@ -23,11 +23,20 @@
 ### UI Improvements
 - **Menu Restructured**
   - All Admin items now grouped together under red "ADMIN" header
-  - Moved A & D, Forms, and Reports to Admin section
   - Forms moved back to Club Features (accessible to all members)
-  - Admin section includes: A & D, Reports, System Users, Change Log, Permissions, Dues Reminders, Message Monitor, AI Knowledge, Discord Analytics
+  - Admin section includes: A & D, Reports, Manage Events, System Users, Change Log, Permissions, Dues Reminders, Message Monitor, AI Knowledge, Discord Analytics
   - Added scrollable menu for better mobile experience
-  - **Permission-based access**: A&D, Reports, System Users, and Dues Reminders now controlled by permissions set in Permission Panel
+
+- **Permission-Based Menu Visibility**
+  - Menu items now only appear if user has the corresponding permission enabled
+  - Permissions controlled via Permission Panel:
+    - `A&D Page Access` → A & D menu item
+    - `View Prospects` → Prospects menu item
+    - `View Reports` → Reports menu item
+    - `Manage Events` → Manage Events menu item
+    - `Manage System Users` → System Users menu item
+    - `Manage Dues Reminders` → Dues Reminders menu item
+  - Users without any admin permissions won't see the Admin section at all
 
 - **Mobile Dues Edit Button**
   - Added "Edit / Add Extension" button to mobile dues card view
