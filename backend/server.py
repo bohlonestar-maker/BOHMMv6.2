@@ -11890,8 +11890,12 @@ async def send_event_discord_notification_now(event_id: str, current_user: dict 
         raise HTTPException(status_code=500, detail="Failed to send Discord notification")
 
 @api_router.delete("/events/{event_id}")
-async def delete_event(event_id: str, current_user: dict = Depends(verify_admin)):
-    """Delete an event (admin only)"""
+async def delete_event(event_id: str, current_user: dict = Depends(verify_token)):
+    """Delete an event - permission based"""
+    # Check permission
+    if not await can_manage_events_async(current_user):
+        raise HTTPException(status_code=403, detail="You don't have permission to manage events")
+    
     event = await db.events.find_one({"id": event_id})
     if not event:
         raise HTTPException(status_code=404, detail="Event not found")
