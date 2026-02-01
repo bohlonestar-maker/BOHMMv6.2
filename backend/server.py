@@ -5842,7 +5842,7 @@ async def get_logs(
     return logs
 
 @api_router.post("/users", response_model=UserResponse, status_code=201)
-async def create_user(user_data: UserCreate, current_user: dict = Depends(verify_admin)):
+async def create_user(user_data: UserCreate, current_user: dict = Depends(verify_can_manage_users)):
     # Check if username exists
     existing = await db.users.find_one({"username": user_data.username})
     if existing:
