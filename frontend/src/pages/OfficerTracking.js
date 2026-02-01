@@ -941,13 +941,19 @@ function OfficerTracking() {
                             </TableCell>
                             <TableCell className="text-slate-300">{member.title || '-'}</TableCell>
                             <TableCell>
-                              {isExempt ? (
-                                <Badge className="bg-amber-600">Non-Dues Paying</Badge>
-                              ) : extension ? (
-                                <Badge className="bg-blue-600">Extended to {new Date(extension.extension_until).toLocaleDateString()}</Badge>
-                              ) : currentDues ? getStatusBadge(currentDues.status) : (
-                                <Badge variant="outline">Not Recorded</Badge>
-                              )}
+                              <div 
+                                className={canEdit ? "cursor-pointer hover:opacity-80" : ""}
+                                onClick={() => canEdit && openDuesDialog(member)}
+                                title={canEdit ? "Click to edit" : ""}
+                              >
+                                {isExempt ? (
+                                  <Badge className="bg-amber-600">Non-Dues Paying</Badge>
+                                ) : extension ? (
+                                  <Badge className="bg-blue-600">Extended to {new Date(extension.extension_until).toLocaleDateString()}</Badge>
+                                ) : currentDues ? getStatusBadge(currentDues.status) : (
+                                  <Badge variant="outline">Not Recorded</Badge>
+                                )}
+                              </div>
                             </TableCell>
                             <TableCell>
                               <Button
@@ -990,9 +996,8 @@ function OfficerTracking() {
                               <TableCell>
                                 <Button
                                   size="sm"
-                                  variant="outline"
+                                  className="bg-blue-600 hover:bg-blue-700 text-white text-xs h-7"
                                   onClick={() => openDuesDialog(member)}
-                                  className="text-xs h-7"
                                 >
                                   Edit
                                 </Button>
