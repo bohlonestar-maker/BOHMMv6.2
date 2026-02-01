@@ -1075,17 +1075,6 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
                         </DropdownMenuItem>
                       )}
                       
-                      {/* Admin Panel - Admin only */}
-                      {userRole === 'admin' && (
-                        <DropdownMenuItem 
-                          onSelect={(e) => { e.preventDefault(); navigate("/users"); }} 
-                          className="text-red-400 focus:bg-red-900/30 focus:text-red-300 cursor-pointer"
-                        >
-                          <Settings className="w-4 h-4 mr-2" />
-                          Admin
-                        </DropdownMenuItem>
-                      )}
-                      
                       {/* Change Log - Admin only */}
                       {userRole === 'admin' && (
                         <DropdownMenuItem 
