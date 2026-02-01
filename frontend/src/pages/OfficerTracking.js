@@ -846,6 +846,7 @@ function OfficerTracking() {
                     <TableBody>
                       {filteredMembers.map(member => {
                         const currentDues = getCurrentMonthDues(member.id);
+                        const isExempt = member.non_dues_paying;
                         
                         return (
                           <TableRow key={member.id} className="border-slate-700">
@@ -854,10 +855,15 @@ function OfficerTracking() {
                               onClick={() => openDuesHistoryDialog(member)}
                             >
                               {member.handle}
+                              {isExempt && (
+                                <Badge className="ml-2 bg-amber-600 text-white text-xs">Exempt</Badge>
+                              )}
                             </TableCell>
                             <TableCell className="text-slate-300">{member.title || '-'}</TableCell>
                             <TableCell>
-                              {currentDues ? getStatusBadge(currentDues.status) : (
+                              {isExempt ? (
+                                <Badge className="bg-amber-600">Non-Dues Paying</Badge>
+                              ) : currentDues ? getStatusBadge(currentDues.status) : (
                                 <Badge variant="outline">Not Recorded</Badge>
                               )}
                             </TableCell>
