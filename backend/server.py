@@ -3342,9 +3342,10 @@ async def create_member(member_data: MemberCreate, current_user: dict = Depends(
 
 @api_router.put("/members/{member_id}", response_model=Member)
 async def update_member(member_id: str, member_data: MemberUpdate, current_user: dict = Depends(verify_token)):
-    # Check if user is an admin first
-    if current_user.get("role") != "admin":
-        raise HTTPException(status_code=403, detail="Admin access required")
+    """Update a member - permission based"""
+    # Check permission
+    if not await can_edit_members_async(current_user):
+        raise HTTPException(status_code=403, detail="You don't have permission to edit members")
     
     member = await db.members.find_one({"id": member_id}, {"_id": 0})
     if not member:
