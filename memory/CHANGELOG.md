@@ -13,6 +13,13 @@
   - Officer Tracking dues tab shows "Exempt" badge for non-dues paying members
   - Status column shows "Non-Dues Paying" instead of regular dues status
 
+### UI Improvements
+- **Menu Restructured**
+  - All Admin items now grouped together under red "ADMIN" header
+  - Clearer visual separation between sections
+  - Admin items include: Admin, Change Log, Permissions, Dues Reminders, Message Monitor, AI Knowledge, Discord Analytics
+  - Added scrollable menu for better mobile experience
+
 - **Cancel Unmatched Square Subscriptions**
   - Added "Cancel" button next to each unmatched subscription in View Subscriptions dialog
   - Directly cancels the subscription in Square via API
