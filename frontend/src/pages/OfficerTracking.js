@@ -1050,7 +1050,7 @@ function OfficerTracking() {
                         <TableHead>Customer Name</TableHead>
                         <TableHead>Email</TableHead>
                         <TableHead>Status</TableHead>
-                        {canEdit && <TableHead>Action</TableHead>}
+                        {canEdit && <TableHead>Actions</TableHead>}
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -1061,16 +1061,26 @@ function OfficerTracking() {
                           <TableCell><Badge variant="outline">{sub.status}</Badge></TableCell>
                           {canEdit && (
                             <TableCell>
-                              <Button 
-                                size="sm" 
-                                variant="outline"
-                                onClick={() => {
-                                  setLinkingSubscription(sub);
-                                  setSelectedMemberForLink('');
-                                }}
-                              >
-                                Link
-                              </Button>
+                              <div className="flex gap-2">
+                                <Button 
+                                  size="sm" 
+                                  variant="outline"
+                                  onClick={() => {
+                                    setLinkingSubscription(sub);
+                                    setSelectedMemberForLink('');
+                                  }}
+                                >
+                                  Link
+                                </Button>
+                                <Button 
+                                  size="sm" 
+                                  variant="destructive"
+                                  disabled={cancellingSubscription === sub.subscription_id}
+                                  onClick={() => handleCancelSquareSubscription(sub)}
+                                >
+                                  {cancellingSubscription === sub.subscription_id ? 'Cancelling...' : 'Cancel'}
+                                </Button>
+                              </div>
                             </TableCell>
                           )}
                         </TableRow>
