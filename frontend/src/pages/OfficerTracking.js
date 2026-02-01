@@ -158,6 +158,11 @@ function OfficerTracking() {
     return dues.filter(d => d.member_id === memberId);
   };
 
+  // Check if member has an active extension
+  const getMemberExtension = (memberId) => {
+    return allExtensions.find(e => e.member_id === memberId && e.is_active);
+  };
+
   const getAttendanceStats = (memberId) => {
     const records = getAttendanceForMember(memberId);
     const present = records.filter(r => r.status === 'present').length;
