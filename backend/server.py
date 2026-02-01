@@ -11791,9 +11791,13 @@ async def create_event(event_data: EventCreate, current_user: dict = Depends(ver
 async def update_event(
     event_id: str,
     event_data: EventUpdate,
-    current_user: dict = Depends(verify_admin)
+    current_user: dict = Depends(verify_token)
 ):
-    """Update an event (admin only)"""
+    """Update an event - permission based"""
+    # Check permission
+    if not await can_manage_events_async(current_user):
+        raise HTTPException(status_code=403, detail="You don't have permission to manage events")
+    
     event = await db.events.find_one({"id": event_id})
     if not event:
         raise HTTPException(status_code=404, detail="Event not found")
