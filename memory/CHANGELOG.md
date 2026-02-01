@@ -16,8 +16,9 @@
 ### UI Improvements
 - **Menu Restructured**
   - All Admin items now grouped together under red "ADMIN" header
+  - Moved A & D, Forms, and Reports to Admin section
   - Clearer visual separation between sections
-  - Admin items include: Admin, Change Log, Permissions, Dues Reminders, Message Monitor, AI Knowledge, Discord Analytics
+  - Admin section includes: A & D, Forms, Reports, Admin, Change Log, Permissions, Dues Reminders, Message Monitor, AI Knowledge, Discord Analytics
   - Added scrollable menu for better mobile experience
 
 - **Cancel Unmatched Square Subscriptions**
