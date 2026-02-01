@@ -172,7 +172,7 @@ function App() {
     if (!token) return;
     
     try {
-      const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL || process.env.REACT_APP_BACKEND_URL}/api/auth/verify`, {
+      const response = await axios.get(`${BACKEND_URL}/api/auth/verify`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
