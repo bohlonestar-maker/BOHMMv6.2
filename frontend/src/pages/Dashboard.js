@@ -118,6 +118,7 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
   const [memberToDelete, setMemberToDelete] = useState(null);
   const [deleteReason, setDeleteReason] = useState("");
   const [kickFromDiscord, setKickFromDiscord] = useState(false);
+  const [cancelSquareSubscription, setCancelSquareSubscription] = useState(true);
   const [selectedMember, setSelectedMember] = useState(null);
   const [actionForm, setActionForm] = useState({ type: "merit", date: "", description: "" });
   const [editingAction, setEditingAction] = useState(null);
