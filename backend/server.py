@@ -15489,7 +15489,7 @@ async def cancel_square_subscription(
             }
         
         # Cancel the subscription
-        cancel_result = square_client.subscriptions.cancel_subscription(
+        cancel_result = square_client.subscriptions.cancel(
             subscription_id=subscription_id
         )
         
