@@ -15383,6 +15383,68 @@ async def unlink_subscription(
     return {"message": "Subscription link removed", "success": True}
 
 
+@api_router.delete("/dues/cancel-square-subscription/{subscription_id}")
+async def cancel_square_subscription(
+    subscription_id: str,
+    current_user: dict = Depends(verify_token)
+):
+    """Cancel a Square subscription directly (for unmatched/orphaned subscriptions)"""
+    if not is_secretary(current_user) and current_user.get('role') != 'admin':
+        raise HTTPException(status_code=403, detail="Only Secretaries can cancel subscriptions")
+    
+    if not square_client:
+        raise HTTPException(status_code=500, detail="Square client not configured")
+    
+    try:
+        # Get subscription details first to find customer info
+        sub_result = square_client.subscriptions.get(subscription_id=subscription_id)
+        
+        if not sub_result.subscription:
+            raise HTTPException(status_code=404, detail="Subscription not found in Square")
+        
+        subscription = sub_result.subscription
+        customer_id = subscription.customer_id
+        
+        # Check if subscription is already cancelled
+        if subscription.status == "CANCELED":
+            # Just clean up our local link if any
+            await db.member_subscriptions.delete_one({"square_customer_id": customer_id})
+            return {
+                "message": "Subscription was already cancelled",
+                "subscription_id": subscription_id,
+                "status": "CANCELED",
+                "success": True
+            }
+        
+        # Cancel the subscription
+        cancel_result = square_client.subscriptions.cancel_subscription(
+            subscription_id=subscription_id
+        )
+        
+        if cancel_result.subscription:
+            # Clean up any local subscription link
+            await db.member_subscriptions.delete_one({"square_customer_id": customer_id})
+            
+            logger.info(f"Cancelled Square subscription {subscription_id} by {current_user.get('username')}")
+            
+            return {
+                "message": "Square subscription cancelled successfully",
+                "subscription_id": subscription_id,
+                "customer_id": customer_id,
+                "canceled_date": cancel_result.subscription.canceled_date,
+                "success": True
+            }
+        else:
+            errors = cancel_result.errors if cancel_result.errors else "Unknown error"
+            raise HTTPException(status_code=400, detail=f"Failed to cancel subscription: {errors}")
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error cancelling Square subscription {subscription_id}: {e}")
+        raise HTTPException(status_code=500, detail=f"Error cancelling subscription: {str(e)}")
+
+
 @api_router.get("/dues/all-members-for-linking")
 async def get_members_for_linking(current_user: dict = Depends(verify_token)):
     """Get all members for the subscription linking dropdown"""
