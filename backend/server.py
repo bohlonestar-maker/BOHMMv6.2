@@ -5713,9 +5713,9 @@ async def get_uploaded_file(filename: str):
 
 # ==================== END WALL OF HONOR ====================
 
-# User management endpoints (admin only)
+# User management endpoints (admin or users with manage_system_users permission)
 @api_router.get("/users", response_model=List[UserResponse])
-async def get_users(current_user: dict = Depends(verify_admin)):
+async def get_users(current_user: dict = Depends(verify_can_manage_users)):
     users = await db.users.find({}, {"_id": 0, "password_hash": 0}).to_list(1000)
     
     # Convert and add default permissions if missing
