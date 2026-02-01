@@ -5906,7 +5906,7 @@ async def create_user(user_data: UserCreate, current_user: dict = Depends(verify
     )
 
 @api_router.put("/users/{user_id}")
-async def update_user(user_id: str, user_data: UserUpdate, current_user: dict = Depends(verify_admin)):
+async def update_user(user_id: str, user_data: UserUpdate, current_user: dict = Depends(verify_can_manage_users)):
     """Update a user - Only National Prez, VP, or SEC can edit system users"""
     # Check if current user is authorized (National Prez, VP, or SEC)
     user_chapter = current_user.get('chapter', '')
