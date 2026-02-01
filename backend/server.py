@@ -4211,9 +4211,13 @@ async def get_attendance_quarterly_report(
     year: int = None,
     quarter: str = None,
     chapter: str = None,
-    current_user: dict = Depends(verify_admin)
+    current_user: dict = Depends(verify_token)
 ):
     """Get quarterly or yearly meeting attendance report by chapter"""
+    # Check permission
+    if not await can_view_reports_async(current_user):
+        raise HTTPException(status_code=403, detail="You don't have permission to view reports")
+    
     if year is None:
         year = datetime.now(timezone.utc).year
     
