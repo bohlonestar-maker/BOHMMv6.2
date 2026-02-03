@@ -1542,7 +1542,7 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
                 data-testid="search-input"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 py-4 sm:py-6 text-sm sm:text-base border-2 border-slate-300 focus:border-slate-600 rounded-lg"
+                className="w-full pl-10 py-4 sm:py-6 text-sm sm:text-base border-2 border-slate-600 focus:border-slate-400 rounded-lg bg-slate-700 text-white placeholder:text-slate-400"
               />
             </div>
             
