@@ -182,9 +182,8 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
   // Check if user can access prospects (National, HA Admin, or PM)
   const canAccessProspects = userPermissions?.view_prospects;
 
-  // Helper to check permissions
+  // Helper to check permissions - NO admin bypass, all access controlled via Permission Panel
   const hasPermission = (permission) => {
-    if (userRole === 'admin') return true;
     return userPermissions?.[permission] === true;
   };
 
