@@ -1774,25 +1774,8 @@ def is_primary_store_admin(user: dict) -> bool:
     return title in allowed_titles
 
 async def can_manage_store_async(user: dict) -> bool:
-    """Async version - Check if user can manage store (primary admin OR delegated admin)"""
-    # First check if user is a primary admin
-    if is_primary_store_admin(user):
-        return True
-    
-    # Check if user is a delegated store admin
-    username = user.get("username", "")
-    if not username:
-        return False
-    
-    # Must be an admin in National chapter to be delegated
-    role = user.get("role", "")
-    chapter = user.get("chapter", "")
-    if role != "admin" or chapter != "National":
-        return False
-    
-    # Check database for delegated admin status
-    delegated = await db.store_admins.find_one({"username": username})
-    return delegated is not None
+    """Check if user can manage store - permission based (no admin bypass)"""
+    return await check_permission(user, "manage_store")
 
 def filter_member_for_user(member: dict, user: dict) -> dict:
     """Filter member data based on user permissions"""
