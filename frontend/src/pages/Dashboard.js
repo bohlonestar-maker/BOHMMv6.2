@@ -2309,6 +2309,22 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
                           )}
                         </TableCell>
                       )}
+                      <TableCell>
+                        {canSeePersonalEmail(member) ? (
+                          <a
+                            href={`mailto:${member.personal_email}`}
+                            className="flex items-center gap-1 text-blue-400 hover:text-blue-300 hover:underline text-sm"
+                            data-testid={`personal-email-link-${member.id}`}
+                          >
+                            <Mail className="w-3 h-3" />
+                            <span className="text-white">{member.personal_email}</span>
+                          </a>
+                        ) : member.personal_email && member.personal_email_private ? (
+                          <span className="text-slate-500 text-sm italic">Private</span>
+                        ) : (
+                          <span className="text-slate-500 text-sm">—</span>
+                        )}
+                      </TableCell>
                       {hasPermission('phone') && (
                         <TableCell>
                           <a
