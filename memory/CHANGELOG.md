@@ -20,6 +20,12 @@
   - Extension status displayed in dues table with "Extended" badge and date
   - When dues are marked as "Paid", any active extension is automatically lifted
 
+- **Dual Email Fields for Members**
+  - Added "Personal Email" field in addition to existing "BOH Email"
+  - Both emails have independent privacy settings
+  - BOH Email remains required; Personal Email is optional
+  - Displayed in Edit Member dialog with clear labels
+
 ### UI Improvements
 - **Menu Restructured**
   - All Admin items now grouped together under red "ADMIN" header
