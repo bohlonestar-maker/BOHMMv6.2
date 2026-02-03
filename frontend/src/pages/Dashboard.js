@@ -1719,7 +1719,7 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
                       </div>
 
                       <div>
-                        <Label className="text-white">Email</Label>
+                        <Label className="text-white">BOH Email</Label>
                         <Input
                           data-testid="email-input"
                           type="email"
@@ -1729,6 +1729,7 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
                           }
                           required
                           className="text-white"
+                          placeholder="Club email address"
                         />
                         <div className="flex items-center space-x-2 mt-2">
                           <Checkbox
@@ -1740,7 +1741,34 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
                             className="border-slate-400 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
                           />
                           <label htmlFor="email_private" className="text-sm font-medium cursor-pointer text-slate-300">
-                            Make email private (visible only to National members & chapter officers)
+                            Make BOH email private
+                          </label>
+                        </div>
+                      </div>
+
+                      <div>
+                        <Label className="text-white">Personal Email</Label>
+                        <Input
+                          data-testid="personal-email-input"
+                          type="email"
+                          value={formData.personal_email}
+                          onChange={(e) =>
+                            setFormData({ ...formData, personal_email: e.target.value })
+                          }
+                          className="text-white"
+                          placeholder="Personal email address (optional)"
+                        />
+                        <div className="flex items-center space-x-2 mt-2">
+                          <Checkbox
+                            id="personal_email_private"
+                            checked={formData.personal_email_private}
+                            onCheckedChange={(checked) =>
+                              setFormData({ ...formData, personal_email_private: checked })
+                            }
+                            className="border-slate-400 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
+                          />
+                          <label htmlFor="personal_email_private" className="text-sm font-medium cursor-pointer text-slate-300">
+                            Make personal email private
                           </label>
                         </div>
                       </div>
