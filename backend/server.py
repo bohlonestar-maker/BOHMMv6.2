@@ -4006,6 +4006,7 @@ async def export_members_csv(current_user: dict = Depends(verify_token)):
         
         if is_admin or permissions.get("email"):
             row.append(member.get('email', ''))
+            row.append(member.get('personal_email', '') or '')
         
         if is_admin or permissions.get("phone"):
             row.append(member.get('phone', ''))
