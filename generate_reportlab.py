@@ -396,4 +396,4 @@ story.append(Paragraph('BOH Hub - Member Management System', styles['Body']))
 # Build PDF
 doc.build(story)
 print("PDF generated successfully!")
-print("Download at: https://member-tracker-40.preview.emergentagent.com/BOH_Hub_Admin_Manual.pdf")
+print("Download at: https://bohnexus.preview.emergentagent.com/BOH_Hub_Admin_Manual.pdf")
