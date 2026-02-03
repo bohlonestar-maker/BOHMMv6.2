@@ -1617,11 +1617,7 @@ async def verify_admin(current_user: dict = Depends(verify_token)):
     return current_user
 
 async def verify_can_manage_users(current_user: dict = Depends(verify_token)):
-    """Check if user can manage system users - admin role OR manage_system_users permission"""
-    if current_user["role"] == "admin":
-        return current_user
-    
-    # Check permission from database
+    """Check if user can manage system users - permission based (no admin bypass)"""
     has_perm = await check_permission(current_user, "manage_system_users")
     if not has_perm:
         raise HTTPException(status_code=403, detail="You don't have permission to manage system users")
