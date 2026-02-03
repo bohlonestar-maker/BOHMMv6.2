@@ -9083,11 +9083,7 @@ async def check_view_full_member_info(user: dict) -> bool:
 
 
 async def check_manage_system_users(user: dict) -> bool:
-    """Check if user can manage system users from database"""
-    user_role = user.get('role', '')
-    if user_role == 'admin':
-        return True
-    
+    """Check if user can manage system users from database (no admin bypass)"""
     return await check_permission(user, "manage_system_users")
 
 class AttendanceRecord(BaseModel):
