@@ -56,6 +56,11 @@ Build a member management application with attendance tracking, dues management,
 
 ### What's Been Implemented
 
+#### February 3, 2026 - Personal Email in Print Custom
+- [x] **Backend:** Added `Personal Email` column to CSV export API
+- [x] **Frontend:** Personal Email now appears in Print Custom column selection
+- [x] Works with "Contact" preset - automatically selected
+
 #### February 1, 2026 - Non-Dues Paying Members
 - [x] **Backend:**
   - Added `non_dues_paying: bool` field to Member, MemberCreate, MemberUpdate models
