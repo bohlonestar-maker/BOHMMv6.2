@@ -9073,20 +9073,12 @@ def can_access_ad(user: dict) -> bool:
 
 
 async def check_ad_access(user: dict) -> bool:
-    """Async check if user can access A&D page from database"""
-    user_role = user.get('role', '')
-    if user_role == 'admin':
-        return True
-    
+    """Async check if user can access A&D page from database (no admin bypass)"""
     return await check_permission(user, "ad_page_access")
 
 
 async def check_view_full_member_info(user: dict) -> bool:
-    """Check if user can view full member info from database"""
-    user_role = user.get('role', '')
-    if user_role == 'admin':
-        return True
-    
+    """Check if user can view full member info from database (no admin bypass)"""
     return await check_permission(user, "view_full_member_info")
 
 
