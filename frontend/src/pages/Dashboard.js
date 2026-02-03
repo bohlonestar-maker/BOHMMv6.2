@@ -1033,7 +1033,7 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
                   </DropdownMenuItem>
                   
                   {/* === ADMIN SECTION (Only visible to users with admin permissions) === */}
-                  {(userRole === 'admin' || userPermissions?.ad_page_access || userPermissions?.manage_dues_reminders || userPermissions?.manage_system_users || userPermissions?.view_reports || userPermissions?.manage_events) && (
+                  {(userPermissions?.ad_page_access || userPermissions?.manage_dues_reminders || userPermissions?.manage_system_users || userPermissions?.view_reports || userPermissions?.manage_events) && (
                     <>
                       <DropdownMenuSeparator className="bg-slate-700" />
                       <div className="px-2 py-1.5 text-xs font-semibold text-red-400 uppercase tracking-wider">
@@ -1041,7 +1041,7 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
                       </div>
                       
                       {/* A & D (Attendance & Dues) - Permission based */}
-                      {(userRole === 'admin' || userPermissions?.ad_page_access) && (
+                      {userPermissions?.ad_page_access && (
                         <DropdownMenuItem 
                           onSelect={(e) => { e.preventDefault(); navigate("/officer-tracking"); }} 
                           className="text-red-400 focus:bg-red-900/30 focus:text-red-300 cursor-pointer"
@@ -1052,7 +1052,7 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
                       )}
                       
                       {/* Reports - Permission based */}
-                      {(userRole === 'admin' || userPermissions?.view_reports) && (
+                      {userPermissions?.view_reports && (
                         <DropdownMenuItem 
                           onSelect={(e) => { e.preventDefault(); navigate("/quarterly-reports"); }} 
                           className="text-red-400 focus:bg-red-900/30 focus:text-red-300 cursor-pointer"
@@ -1063,7 +1063,7 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
                       )}
                       
                       {/* Manage Events - Permission based */}
-                      {(userRole === 'admin' || userPermissions?.manage_events) && (
+                      {userPermissions?.manage_events && (
                         <DropdownMenuItem 
                           onSelect={(e) => { e.preventDefault(); navigate("/events"); }} 
                           className="text-red-400 focus:bg-red-900/30 focus:text-red-300 cursor-pointer"
@@ -1074,7 +1074,7 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
                       )}
                       
                       {/* System Users - Permission based */}
-                      {(userRole === 'admin' || userPermissions?.manage_system_users) && (
+                      {userPermissions?.manage_system_users && (
                         <DropdownMenuItem 
                           onSelect={(e) => { e.preventDefault(); navigate("/users"); }} 
                           className="text-red-400 focus:bg-red-900/30 focus:text-red-300 cursor-pointer"
@@ -1084,8 +1084,8 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
                         </DropdownMenuItem>
                       )}
                       
-                      {/* Change Log - Admin only */}
-                      {userRole === 'admin' && (
+                      {/* Change Log - Permission based (reuse manage_system_users or add new permission) */}
+                      {userPermissions?.manage_system_users && (
                         <DropdownMenuItem 
                           onSelect={(e) => { e.preventDefault(); navigate("/update-log"); }} 
                           className="text-red-400 focus:bg-red-900/30 focus:text-red-300 cursor-pointer"
