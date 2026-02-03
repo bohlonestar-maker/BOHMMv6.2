@@ -230,6 +230,17 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
     return false;
   };
 
+  // Check if user can see personal email for a specific member
+  // - If personal_email_private is true, only users with view_private_personal_email can see
+  // - Otherwise, visible to all users who can see the member
+  const canSeePersonalEmail = (member) => {
+    if (!member?.personal_email) return false;
+    if (member?.personal_email_private) {
+      return hasPermission('view_private_personal_email');
+    }
+    return true;
+  };
+
   // Fetch available years (admin only)
   useEffect(() => {
     if (userRole === 'admin') {
