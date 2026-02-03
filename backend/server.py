@@ -3959,6 +3959,7 @@ async def export_members_csv(current_user: dict = Depends(verify_token)):
         header.extend(['Chapter', 'Title', 'Member Handle', 'Name'])
     if is_admin or permissions.get("email"):
         header.append('Email Address')
+        header.append('Personal Email')
     if is_admin or permissions.get("phone"):
         header.append('Phone Number')
     if is_admin or permissions.get("address"):
