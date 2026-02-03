@@ -10120,15 +10120,10 @@ async def get_title_permissions(title: str, chapter: str = None) -> dict:
 
 
 async def check_permission(user: dict, permission_key: str) -> bool:
-    """Check if user has a specific permission based on their title and chapter"""
+    """Check if user has a specific permission based on their title and chapter (no admin bypass)"""
     user_title = user.get("title", "")
     user_chapter = user.get("chapter", "")
-    user_role = user.get("role", "")
     username = user.get("username", "")
-    
-    # Admins always have all permissions
-    if user_role == "admin":
-        return True
     
     # Check if user/member is suspended for unpaid dues
     # First try to get the user's linked member_id
