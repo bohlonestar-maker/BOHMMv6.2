@@ -56,6 +56,12 @@ Build a member management application with attendance tracking, dues management,
 
 ### What's Been Implemented
 
+#### February 3, 2026 - Personal Email Visibility & Permissions
+- [x] **Backend:** Added `view_private_personal_email` permission to AVAILABLE_PERMISSIONS
+- [x] **Frontend:** Added Personal Email column to main dashboard member table
+- [x] Personal emails show if not marked private, "Private" if marked private and user lacks permission
+- [x] New "View Private Personal Email" permission in Permission Panel
+
 #### February 3, 2026 - Personal Email in Print Custom
 - [x] **Backend:** Added `Personal Email` column to CSV export API
 - [x] **Frontend:** Personal Email now appears in Print Custom column selection
