@@ -2011,7 +2011,8 @@ class Member(BaseModel):
     title: str  # Prez, VP, S@A, ENF, SEC, T, CD, CC, CCLC, MD, PM
     handle: str
     name: str
-    email: str  # Changed from EmailStr to allow "Private" for hidden emails
+    email: str  # BOH Email - Changed from EmailStr to allow "Private" for hidden emails
+    personal_email: Optional[str] = None  # Personal Email
     phone: str
     address: str
     dob: Optional[str] = None  # Date of Birth (YYYY-MM-DD format)
@@ -2020,6 +2021,7 @@ class Member(BaseModel):
     phone_private: bool = False  # If True, only admins can see phone
     address_private: bool = False  # If True, only admins can see address
     email_private: bool = False  # If True, only National members and chapter officers (Prez, VP, S@A, Enf, SEC) can see email
+    personal_email_private: bool = False  # If True, personal email is hidden from non-privileged users
     name_private: bool = False  # If True, only National members and chapter officers can see real name
     # Military Service
     military_service: bool = False  # If True, member has served in military
