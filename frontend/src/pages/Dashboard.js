@@ -1107,7 +1107,7 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
                       )}
                       
                       {/* Dues Reminders - users with manage_dues_reminders permission */}
-                      {(userRole === 'admin' || userPermissions?.manage_dues_reminders) && (
+                      {userPermissions?.manage_dues_reminders && (
                         <DropdownMenuItem 
                           onSelect={(e) => { e.preventDefault(); navigate("/dues-reminders"); }} 
                           className="text-red-400 focus:bg-red-900/30 focus:text-red-300 cursor-pointer"
