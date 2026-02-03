@@ -2048,7 +2048,8 @@ class MemberCreate(BaseModel):
     title: str
     handle: str
     name: str
-    email: str  # Changed from EmailStr to allow "Private" for hidden emails
+    email: str  # BOH Email - Changed from EmailStr to allow "Private" for hidden emails
+    personal_email: Optional[str] = None  # Personal Email
     phone: str
     address: str
     dob: Optional[str] = None
@@ -2057,6 +2058,7 @@ class MemberCreate(BaseModel):
     phone_private: bool = False
     address_private: bool = False
     email_private: bool = False
+    personal_email_private: bool = False
     name_private: bool = False
     # Military Service
     military_service: bool = False
@@ -2072,7 +2074,8 @@ class MemberUpdate(BaseModel):
     title: Optional[str] = None
     handle: Optional[str] = None
     name: Optional[str] = None
-    email: Optional[str] = None  # Changed from EmailStr to allow "Private" for hidden emails
+    email: Optional[str] = None  # BOH Email
+    personal_email: Optional[str] = None  # Personal Email
     phone: Optional[str] = None
     address: Optional[str] = None
     dob: Optional[str] = None
@@ -2081,6 +2084,7 @@ class MemberUpdate(BaseModel):
     phone_private: Optional[bool] = None
     address_private: Optional[bool] = None
     email_private: Optional[bool] = None
+    personal_email_private: Optional[bool] = None
     name_private: Optional[bool] = None
     # Military Service
     military_service: Optional[bool] = None
