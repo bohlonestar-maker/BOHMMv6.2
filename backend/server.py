@@ -2781,11 +2781,6 @@ async def login(login_data: LoginRequest):
     # Combine both permission sets
     all_permissions = {**static_permissions, **dynamic_permissions}
     
-    # Admins get all available permissions set to true
-    if user["role"] == "admin":
-        for perm in AVAILABLE_PERMISSIONS:
-            all_permissions[perm["key"]] = True
-    
     # Trigger Square catalog sync in background (non-blocking)
     # Only runs if user is a store admin (doesn't matter, sync is idempotent)
     try:
