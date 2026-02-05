@@ -9822,19 +9822,33 @@ async def get_tracking_summary(current_user: dict = Depends(verify_token)):
     current_month = f"{month_names[now.month - 1]}_{now.year}"  # e.g., "Jan_2026"
     
     summary = {}
+    
+    # Get all active dues extensions (extension_date >= today)
+    today_str = now.strftime("%Y-%m-%d")
+    active_extensions = await db.dues_extensions.find({
+        "extension_date": {"$gte": today_str}
+    }).to_list(length=None)
+    extended_member_ids = set(ext.get("member_id") for ext in active_extensions)
+    
     for chapter in CHAPTERS:
         # Skip National chapter if user can't view it
         if chapter == "National" and not can_view_national:
             continue
             
-        # Get ALL members in chapter
+        # Get ALL members in chapter (include non_dues_paying field)
         members = await db.members.find(
             {"chapter": chapter},
-            {"id": 1, "dues": 1}
+            {"id": 1, "dues": 1, "non_dues_paying": 1}
         ).to_list(length=None)
-        member_ids = [m.get("id") for m in members]
         
-        # Get attendance stats for last 30 days
+        # Separate dues-paying members from non-dues-paying (exempt) members
+        dues_paying_members = [m for m in members if not m.get("non_dues_paying", False)]
+        non_dues_paying_members = [m for m in members if m.get("non_dues_paying", False)]
+        
+        member_ids = [m.get("id") for m in members]
+        dues_paying_member_ids = [m.get("id") for m in dues_paying_members]
+        
+        # Get attendance stats for last 30 days (all members)
         thirty_days_ago = (now - timedelta(days=30)).strftime("%Y-%m-%d")
         attendance = await db.officer_attendance.find({
             "member_id": {"$in": member_ids},
@@ -9846,7 +9860,7 @@ async def get_tracking_summary(current_user: dict = Depends(verify_token)):
         
         # Count dues paid for current month from officer_dues collection
         dues_from_officer_dues = await db.officer_dues.find({
-            "member_id": {"$in": member_ids},
+            "member_id": {"$in": dues_paying_member_ids},
             "month": current_month,
             "status": "paid"
         }).to_list(length=None)
@@ -9858,8 +9872,14 @@ async def get_tracking_summary(current_user: dict = Depends(verify_token)):
         month_idx = now.month - 1  # 0-indexed
         
         paid_count = paid_from_officer_dues
-        for m in members:
-            if m.get("id") not in paid_member_ids_from_collection:
+        for m in dues_paying_members:
+            member_id = m.get("id")
+            if member_id not in paid_member_ids_from_collection:
+                # Check if member has an active extension - count as paid
+                if member_id in extended_member_ids:
+                    paid_count += 1
+                    continue
+                    
                 dues = m.get("dues", {})
                 if year_str in dues and isinstance(dues[year_str], list) and len(dues[year_str]) > month_idx:
                     month_data = dues[year_str][month_idx]
@@ -9870,12 +9890,15 @@ async def get_tracking_summary(current_user: dict = Depends(verify_token)):
                     elif month_data == "paid" or month_data is True:
                         paid_count += 1
         
+        # Dues total only counts dues-paying members (excludes exempt/non-dues-paying)
+        dues_total = len(dues_paying_members)
+        
         summary[chapter] = {
             "member_count": len(member_ids),
             "attendance_rate": round(present_count / total_attendance * 100, 1) if total_attendance > 0 else 0,
             "meetings_tracked": total_attendance,
             "dues_paid": paid_count,
-            "dues_total": len(member_ids),
+            "dues_total": dues_total,
             "current_month": current_month
         }
     
