@@ -374,6 +374,8 @@ export default function QuarterlyReports() {
     switch (status) {
       case "paid": return "✓";
       case "late": return "L";
+      case "exempt": return "—";
+      case "extended": return "E";
       default: return "✗";
     }
   };
