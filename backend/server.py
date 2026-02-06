@@ -4376,39 +4376,88 @@ async def get_dues_quarterly_report(
     writer.writerow([])
     writer.writerow(header)
     
+    # Get all officer_dues records for the year
+    month_names_short = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+    officer_dues_records = await db.officer_dues.find({
+        "month": {"$regex": f"_{year}$"}
+    }, {"_id": 0}).to_list(length=None)
+    
+    # Build a lookup: member_id -> {month_key: status}
+    officer_dues_lookup = {}
+    for record in officer_dues_records:
+        member_id = record.get("member_id")
+        month_key = record.get("month")  # e.g., "Jan_2026"
+        status = record.get("status", "unpaid")
+        if member_id not in officer_dues_lookup:
+            officer_dues_lookup[member_id] = {}
+        officer_dues_lookup[member_id][month_key] = status
+    
+    # Get active dues extensions
+    today_str = datetime.now().strftime("%Y-%m-%d")
+    active_extensions = await db.dues_extensions.find({
+        "extension_date": {"$gte": today_str}
+    }, {"_id": 0}).to_list(length=None)
+    extended_member_ids = set(ext.get("member_id") for ext in active_extensions)
+    
     # Data rows
     for member in sorted_members:
-        dues = member.get("dues", {})
-        year_str = str(year)
+        member_id = member.get("id")
+        is_non_dues_paying = member.get("non_dues_paying", False)
+        has_extension = member_id in extended_member_ids
         
-        # Handle both old and new format
-        if 'year' in dues:
-            months_data = dues.get('months', [])
-        else:
-            months_data = dues.get(year_str, [])
-        
-        # Get status for quarter months
+        # Get status for each month in the report period
         quarter_paid = 0
         quarter_late = 0
         quarter_unpaid = 0
         month_statuses = []
         
         for month_idx in months:
-            idx = month_idx - 1
-            if idx < len(months_data):
-                month_due = months_data[idx]
-                if isinstance(month_due, dict):
-                    status = month_due.get('status', 'unpaid')
-                elif month_due == True:
-                    status = 'paid'
+            month_key = f"{month_names_short[month_idx - 1]}_{year}"
+            
+            # Check officer_dues collection first (A&D source)
+            officer_dues_status = officer_dues_lookup.get(member_id, {}).get(month_key)
+            
+            if officer_dues_status:
+                status = officer_dues_status
+            else:
+                # Fallback to member.dues field
+                dues = member.get("dues", {})
+                year_str = str(year)
+                
+                if 'year' in dues:
+                    months_data = dues.get('months', [])
+                else:
+                    months_data = dues.get(year_str, [])
+                
+                idx = month_idx - 1
+                if idx < len(months_data):
+                    month_due = months_data[idx]
+                    if isinstance(month_due, dict):
+                        status = month_due.get('status', 'unpaid')
+                    elif month_due == True or month_due == 'paid':
+                        status = 'paid'
+                    else:
+                        status = 'unpaid'
                 else:
                     status = 'unpaid'
+            
+            # Non-dues paying members show as "Exempt"
+            if is_non_dues_paying:
+                month_statuses.append("Exempt")
+            # Members with extension show as "Extended" for current/future months
+            elif has_extension and status == 'unpaid':
+                current_month = datetime.now().month
+                if month_idx >= current_month:
+                    month_statuses.append("Extended")
+                    status = 'extended'
+                else:
+                    month_statuses.append(status.capitalize())
             else:
-                status = 'unpaid'
+                month_statuses.append(status.capitalize())
             
-            month_statuses.append(status.capitalize())
-            
-            if status == 'paid':
+            if is_non_dues_paying or status == 'extended':
+                pass  # Don't count in totals
+            elif status == 'paid':
                 quarter_paid += 1
             elif status == 'late':
                 quarter_late += 1
@@ -4422,7 +4471,12 @@ async def get_dues_quarterly_report(
             member.get('name', ''),
         ]
         row.extend(month_statuses)
-        row.extend([str(quarter_paid), str(quarter_late), str(quarter_unpaid)])
+        
+        # For exempt members, show N/A for totals
+        if is_non_dues_paying:
+            row.extend(["N/A", "N/A", "N/A"])
+        else:
+            row.extend([str(quarter_paid), str(quarter_late), str(quarter_unpaid)])
         
         writer.writerow(row)
     
