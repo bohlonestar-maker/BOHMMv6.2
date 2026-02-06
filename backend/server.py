@@ -9913,36 +9913,41 @@ async def get_tracking_summary(current_user: dict = Depends(verify_token)):
         total_attendance = len(attendance)
         
         # Count dues paid for current month from officer_dues collection
+        # Include both 'paid' and 'extended' status as paid
         dues_from_officer_dues = await db.officer_dues.find({
             "member_id": {"$in": dues_paying_member_ids},
             "month": current_month,
-            "status": "paid"
+            "status": {"$in": ["paid", "extended"]}
         }).to_list(length=None)
         paid_from_officer_dues = len(dues_from_officer_dues)
         
-        # Also count from members.dues field for members not in officer_dues
-        paid_member_ids_from_collection = set(d.get("member_id") for d in dues_from_officer_dues)
+        # Track which members already have a dues record
+        members_with_dues_record = set(d.get("member_id") for d in dues_from_officer_dues)
         year_str = str(now.year)
         month_idx = now.month - 1  # 0-indexed
         
         paid_count = paid_from_officer_dues
         for m in dues_paying_members:
             member_id = m.get("id")
-            if member_id not in paid_member_ids_from_collection:
-                # Check if member has an active extension - count as paid
-                if member_id in extended_member_ids:
-                    paid_count += 1
-                    continue
-                    
-                dues = m.get("dues", {})
-                if year_str in dues and isinstance(dues[year_str], list) and len(dues[year_str]) > month_idx:
-                    month_data = dues[year_str][month_idx]
-                    # Handle different formats: dict with status, or just a status string/bool
-                    if isinstance(month_data, dict):
-                        if month_data.get("status") == "paid":
-                            paid_count += 1
-                    elif month_data == "paid" or month_data is True:
+            # Skip if already counted from officer_dues collection
+            if member_id in members_with_dues_record:
+                continue
+                
+            # Check if member has an active extension (not already recorded) - count as paid
+            if member_id in extended_member_ids:
+                paid_count += 1
+                continue
+                
+            # Fallback: check members.dues field
+            dues = m.get("dues", {})
+            if year_str in dues and isinstance(dues[year_str], list) and len(dues[year_str]) > month_idx:
+                month_data = dues[year_str][month_idx]
+                # Handle different formats: dict with status, or just a status string/bool
+                if isinstance(month_data, dict):
+                    if month_data.get("status") in ["paid", "extended"]:
                         paid_count += 1
+                elif month_data == "paid" or month_data is True:
+                    paid_count += 1
         
         # Dues total only counts dues-paying members (excludes exempt/non-dues-paying)
         dues_total = len(dues_paying_members)
