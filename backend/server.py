@@ -2597,7 +2597,7 @@ async def start_scheduler():
             replace_existing=True
         )
         
-        # Square dues sync - run twice daily at 12:01 AM CST (06:01 UTC) and 6:01 PM CST (00:01 UTC)
+        # Square dues sync - run twice daily at 12:01 AM CST (06:01 UTC) and 12:01 PM CST (18:01 UTC)
         scheduler.add_job(
             run_square_sync_job,
             CronTrigger(hour=6, minute=1),  # 12:01 AM CST = 06:01 UTC
@@ -2606,8 +2606,8 @@ async def start_scheduler():
         )
         scheduler.add_job(
             run_square_sync_job,
-            CronTrigger(hour=0, minute=1),  # 6:01 PM CST = 00:01 UTC (next day)
-            id='square_sync_evening',
+            CronTrigger(hour=18, minute=1),  # 12:01 PM CST = 18:01 UTC
+            id='square_sync_afternoon',
             replace_existing=True
         )
         
@@ -2618,7 +2618,7 @@ async def start_scheduler():
         sys.stderr.write("   🎉 Anniversary notifications: 1st of month at 9:00 AM CST\n")
         sys.stderr.write("   🎆 New Year initialization: Jan 1st at 12:01 AM CST\n")
         sys.stderr.write("   💰 Dues reminder check: daily at 12:30 AM CST\n")
-        sys.stderr.write("   💳 Square dues sync: daily at 12:01 AM & 6:01 PM CST\n")
+        sys.stderr.write("   💳 Square dues sync: daily at 12:01 AM & 12:01 PM CST\n")
         sys.stderr.flush()
     except Exception as e:
         sys.stderr.write(f"⚠️ [SCHEDULER] Failed to start scheduler (app will continue without it): {str(e)}\n")
