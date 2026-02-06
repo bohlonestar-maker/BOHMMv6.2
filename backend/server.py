@@ -9919,10 +9919,11 @@ async def get_tracking_summary(current_user: dict = Depends(verify_token)):
             "month": current_month,
             "status": {"$in": ["paid", "extended"]}
         }).to_list(length=None)
-        paid_from_officer_dues = len(dues_from_officer_dues)
         
-        # Track which members already have a dues record
-        members_with_dues_record = set(d.get("member_id") for d in dues_from_officer_dues)
+        # Count UNIQUE members who have paid (avoid duplicate records)
+        members_paid_in_officer_dues = set(d.get("member_id") for d in dues_from_officer_dues)
+        paid_from_officer_dues = len(members_paid_in_officer_dues)
+        
         year_str = str(now.year)
         month_idx = now.month - 1  # 0-indexed
         
@@ -9930,7 +9931,7 @@ async def get_tracking_summary(current_user: dict = Depends(verify_token)):
         for m in dues_paying_members:
             member_id = m.get("id")
             # Skip if already counted from officer_dues collection
-            if member_id in members_with_dues_record:
+            if member_id in members_paid_in_officer_dues:
                 continue
                 
             # Check if member has an active extension (not already recorded) - count as paid
