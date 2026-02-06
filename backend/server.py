@@ -4395,7 +4395,7 @@ async def get_dues_quarterly_report(
     # Get active dues extensions
     today_str = datetime.now().strftime("%Y-%m-%d")
     active_extensions = await db.dues_extensions.find({
-        "extension_date": {"$gte": today_str}
+        "extension_until": {"$gte": today_str}
     }, {"_id": 0}).to_list(length=None)
     extended_member_ids = set(ext.get("member_id") for ext in active_extensions)
     
