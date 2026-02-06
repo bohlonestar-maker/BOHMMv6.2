@@ -111,12 +111,12 @@ function OfficerTracking() {
   const userTitle = localStorage.getItem('title');
   const userRole = localStorage.getItem('role');
   
-  // Check if user can edit (only SEC, NVP, NPrez - admin role does NOT grant edit)
+  // Check if user can edit attendance - based on edit_attendance permission
   useEffect(() => {
-    const editTitles = ['SEC', 'NVP', 'NPrez'];
-    const canUserEdit = editTitles.includes(userTitle);
+    const permissions = JSON.parse(localStorage.getItem('permissions') || '{}');
+    const canUserEdit = permissions.edit_attendance === true;
     setCanEdit(canUserEdit);
-  }, [userTitle]);
+  }, []);
 
   const fetchData = useCallback(async () => {
     try {
