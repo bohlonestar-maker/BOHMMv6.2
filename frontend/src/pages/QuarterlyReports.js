@@ -130,11 +130,42 @@ export default function QuarterlyReports() {
     setPreviewLoading(true);
     setPreviewType("dues");
     try {
-      const response = await axios.get(`${API}/members`, {
-        headers: { Authorization: `Bearer ${token}` }
+      // Fetch members and officer_dues data together
+      const [membersRes, officerDuesRes, extensionsRes] = await Promise.all([
+        axios.get(`${API}/members`, { headers: { Authorization: `Bearer ${token}` } }),
+        axios.get(`${API}/officer-tracking/dues`, { headers: { Authorization: `Bearer ${token}` } }),
+        axios.get(`${API}/dues-reminders/extensions`, { headers: { Authorization: `Bearer ${token}` } }).catch(() => ({ data: { extensions: [] } }))
+      ]);
+      
+      let members = membersRes.data;
+      const officerDues = officerDuesRes.data || [];
+      const extensions = extensionsRes.data?.extensions || [];
+      
+      // Build lookup for officer_dues: member_id -> { month_key: status }
+      const officerDuesLookup = {};
+      officerDues.forEach(record => {
+        const memberId = record.member_id;
+        const monthKey = record.month; // e.g., "Jan_2026"
+        if (!officerDuesLookup[memberId]) {
+          officerDuesLookup[memberId] = {};
+        }
+        officerDuesLookup[memberId][monthKey] = record.status;
       });
       
-      let members = response.data;
+      // Build set of members with active extensions
+      const today = new Date().toISOString().split('T')[0];
+      const extendedMemberIds = new Set(
+        extensions
+          .filter(ext => ext.extension_date >= today)
+          .map(ext => ext.member_id)
+      );
+      
+      // Attach lookup and extension info to each member
+      members = members.map(m => ({
+        ...m,
+        _officerDues: officerDuesLookup[m.id] || {},
+        _hasExtension: extendedMemberIds.has(m.id)
+      }));
       
       if (selectedChapter !== "All") {
         members = members.filter(m => m.chapter === selectedChapter);
