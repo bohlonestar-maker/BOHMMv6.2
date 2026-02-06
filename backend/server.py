@@ -9877,10 +9877,10 @@ async def get_tracking_summary(current_user: dict = Depends(verify_token)):
     
     summary = {}
     
-    # Get all active dues extensions (extension_date >= today)
+    # Get all active dues extensions (extension_until >= today)
     today_str = now.strftime("%Y-%m-%d")
     active_extensions = await db.dues_extensions.find({
-        "extension_date": {"$gte": today_str}
+        "extension_until": {"$gte": today_str}
     }).to_list(length=None)
     extended_member_ids = set(ext.get("member_id") for ext in active_extensions)
     
