@@ -651,6 +651,8 @@ export default function QuarterlyReports() {
                             className={`text-center px-2 ${
                               status === 'paid' ? 'bg-green-900/50 text-green-400 paid' :
                               status === 'late' ? 'bg-yellow-900/50 text-yellow-400 late' :
+                              status === 'exempt' ? 'bg-slate-700/50 text-slate-400' :
+                              status === 'extended' ? 'bg-blue-900/50 text-blue-400' :
                               'bg-red-900/50 text-red-400 unpaid'
                             }`}
                           >
