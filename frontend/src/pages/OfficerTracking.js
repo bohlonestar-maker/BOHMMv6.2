@@ -1252,9 +1252,6 @@ function OfficerTracking() {
           )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowSubscriptionsDialog(false)}>Close</Button>
-            <Button onClick={handleSyncSubscriptions} className="bg-purple-600 hover:bg-purple-700">
-              Sync Now
-            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
