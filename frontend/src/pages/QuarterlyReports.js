@@ -297,6 +297,27 @@ export default function QuarterlyReports() {
 
   // Get dues status for a member
   const getDuesStatus = (member, monthIndex) => {
+    // Check for non-dues-paying members
+    if (member.non_dues_paying) {
+      return "exempt";
+    }
+    
+    // Build the month key like "Jan_2026"
+    const monthKey = `${MONTHS[monthIndex]}_${selectedYear}`;
+    
+    // First check officer_dues (A&D page source)
+    const officerDuesStatus = member._officerDues?.[monthKey];
+    if (officerDuesStatus) {
+      return officerDuesStatus;
+    }
+    
+    // Check for extension (only for current/future months)
+    const currentMonth = new Date().getMonth();
+    if (member._hasExtension && monthIndex >= currentMonth && parseInt(selectedYear) === new Date().getFullYear()) {
+      return "extended";
+    }
+    
+    // Fallback to member.dues field
     const yearData = member.dues?.[selectedYear];
     if (!yearData || !yearData[monthIndex]) return "unpaid";
     
