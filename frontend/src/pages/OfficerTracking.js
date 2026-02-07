@@ -633,9 +633,9 @@ function OfficerTracking() {
 
   const getStatusBadge = (status) => {
     const badges = {
-      present: <Badge className="bg-green-600"><CheckCircle className="w-3 h-3 mr-1" />Present</Badge>,
-      absent: <Badge className="bg-red-600"><XCircle className="w-3 h-3 mr-1" />Absent</Badge>,
-      excused: <Badge className="bg-yellow-600"><Clock className="w-3 h-3 mr-1" />Excused</Badge>,
+      present: <Badge className="bg-green-500 text-black"><CheckCircle className="w-3 h-3 mr-1" />Present</Badge>,
+      absent: <Badge className="bg-red-500 text-black"><XCircle className="w-3 h-3 mr-1" />Absent</Badge>,
+      excused: <Badge className="bg-yellow-400 text-black"><Clock className="w-3 h-3 mr-1" />Excused</Badge>,
       paid: <Badge className="bg-green-600"><CheckCircle className="w-3 h-3 mr-1" />Paid</Badge>,
       unpaid: <Badge className="bg-red-600"><XCircle className="w-3 h-3 mr-1" />Not Paid</Badge>,
       late: <Badge className="bg-orange-500"><Clock className="w-3 h-3 mr-1" />Late</Badge>,
