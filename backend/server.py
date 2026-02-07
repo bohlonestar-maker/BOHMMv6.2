@@ -2048,7 +2048,7 @@ class MemberCreate(BaseModel):
     title: str
     handle: str
     name: str
-    email: str  # BOH Email - Changed from EmailStr to allow "Private" for hidden emails
+    email: Optional[str] = None  # BOH Email - Optional, can be empty
     personal_email: Optional[str] = None  # Personal Email
     phone: str
     address: str
