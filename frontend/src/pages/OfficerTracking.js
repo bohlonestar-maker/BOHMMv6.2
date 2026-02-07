@@ -63,6 +63,7 @@ function OfficerTracking() {
   const [selectedChapter, setSelectedChapter] = useState('National');
   const [activeTab, setActiveTab] = useState('attendance');
   const [canEdit, setCanEdit] = useState(false);
+  const [canEditDues, setCanEditDues] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   
   // Square Payments State
