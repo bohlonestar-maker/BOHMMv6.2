@@ -212,6 +212,29 @@ function App() {
     }
   };
 
+  // Refresh permissions periodically (every 2 minutes) to catch permission changes
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    
+    const intervalId = setInterval(() => {
+      refreshPermissions();
+    }, 2 * 60 * 1000); // 2 minutes
+    
+    return () => clearInterval(intervalId);
+  }, [isAuthenticated]);
+
+  // Refresh permissions on window focus (when user comes back to tab)
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    
+    const handleFocus = () => {
+      refreshPermissions();
+    };
+    
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, [isAuthenticated]);
+
   useEffect(() => {
     const token = localStorage.getItem('token');
     const role = localStorage.getItem('role');
