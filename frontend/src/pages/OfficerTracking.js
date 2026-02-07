@@ -895,7 +895,7 @@ function OfficerTracking() {
             {activeTab === 'dues' && (
               <div className="space-y-4">
                 {/* Square Sync Buttons - Responsive */}
-                {canEdit && (
+                {canEditDues && (
                   <div className="flex flex-col sm:flex-row gap-2 sm:justify-end">
                     <Button variant="outline" onClick={handleViewSubscriptions} className="text-xs sm:text-sm h-9 sm:h-10 border-slate-500 bg-slate-700 hover:bg-slate-600 text-white">
                       <CreditCard className="w-4 h-4 mr-2" />
