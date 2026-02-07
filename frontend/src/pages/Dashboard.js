@@ -2294,7 +2294,7 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
                       <TableCell className="text-white">{member.name}</TableCell>
                       {(hasPermission('email') || true) && (
                         <TableCell>
-                          {canSeeEmail(member) ? (
+                          {canSeeEmail(member) && member.email ? (
                             <a
                               href={`mailto:${member.email}`}
                               className="flex items-center gap-1 text-blue-400 hover:text-blue-300 hover:underline text-sm"
@@ -2309,7 +2309,7 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
                         </TableCell>
                       )}
                       <TableCell>
-                        {canSeePersonalEmail(member) ? (
+                        {canSeePersonalEmail(member) && member.personal_email ? (
                           <a
                             href={`mailto:${member.personal_email}`}
                             className="flex items-center gap-1 text-blue-400 hover:text-blue-300 hover:underline text-sm"
@@ -2326,8 +2326,9 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
                       </TableCell>
                       {hasPermission('phone') && (
                         <TableCell>
-                          <a
-                            href={`tel:${member.phone}`}
+                          {member.phone ? (
+                            <a
+                              href={`tel:${member.phone}`}
                             className="flex items-center gap-1 text-blue-400 hover:text-blue-300 hover:underline text-sm"
                             data-testid={`phone-link-${member.id}`}
                           >
