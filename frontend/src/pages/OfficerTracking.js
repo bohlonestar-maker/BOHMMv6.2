@@ -115,12 +115,42 @@ function OfficerTracking() {
   
   // Check if user can edit attendance - based on edit_attendance permission
   // Check if user can edit dues - based on edit_dues permission
+  // Also listen for permission changes via storage event and window focus
   useEffect(() => {
-    const permissions = JSON.parse(localStorage.getItem('permissions') || '{}');
-    const canUserEditAttendance = permissions.edit_attendance === true;
-    const canUserEditDues = permissions.edit_dues === true;
-    setCanEdit(canUserEditAttendance);
-    setCanEditDues(canUserEditDues);
+    const updatePermissions = () => {
+      const permissions = JSON.parse(localStorage.getItem('permissions') || '{}');
+      const canUserEditAttendance = permissions.edit_attendance === true;
+      const canUserEditDues = permissions.edit_dues === true;
+      setCanEdit(canUserEditAttendance);
+      setCanEditDues(canUserEditDues);
+    };
+    
+    // Initial check
+    updatePermissions();
+    
+    // Listen for storage changes (from other tabs or App.js refresh)
+    const handleStorage = (e) => {
+      if (e.key === 'permissions') {
+        updatePermissions();
+      }
+    };
+    
+    // Also refresh on window focus
+    const handleFocus = () => {
+      updatePermissions();
+    };
+    
+    window.addEventListener('storage', handleStorage);
+    window.addEventListener('focus', handleFocus);
+    
+    // Check every 30 seconds for permission updates
+    const intervalId = setInterval(updatePermissions, 30000);
+    
+    return () => {
+      window.removeEventListener('storage', handleStorage);
+      window.removeEventListener('focus', handleFocus);
+      clearInterval(intervalId);
+    };
   }, []);
 
   const fetchData = useCallback(async () => {
