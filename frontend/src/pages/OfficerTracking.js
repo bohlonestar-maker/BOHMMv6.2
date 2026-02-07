@@ -996,7 +996,7 @@ function OfficerTracking() {
                                 </div>
                               </TableCell>
                             )}
-                            {canEdit && (
+                            {canEditDues && (
                               <TableCell>
                                 <Button
                                   size="sm"
@@ -1050,7 +1050,7 @@ function OfficerTracking() {
                           </div>
                         </div>
                         
-                        {canEdit && !isExempt && (
+                        {canEditDues && !isExempt && (
                           <div className="space-y-2">
                             <div className="flex gap-2">
                               <Button
