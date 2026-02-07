@@ -113,10 +113,13 @@ function OfficerTracking() {
   const userRole = localStorage.getItem('role');
   
   // Check if user can edit attendance - based on edit_attendance permission
+  // Check if user can edit dues - based on edit_dues permission
   useEffect(() => {
     const permissions = JSON.parse(localStorage.getItem('permissions') || '{}');
-    const canUserEdit = permissions.edit_attendance === true;
-    setCanEdit(canUserEdit);
+    const canUserEditAttendance = permissions.edit_attendance === true;
+    const canUserEditDues = permissions.edit_dues === true;
+    setCanEdit(canUserEditAttendance);
+    setCanEditDues(canUserEditDues);
   }, []);
 
   const fetchData = useCallback(async () => {
