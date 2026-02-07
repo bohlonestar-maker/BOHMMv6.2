@@ -817,13 +817,13 @@ function OfficerTracking() {
                               )}
                             </TableCell>
                             <TableCell>
-                              <Button size="sm" variant="outline" onClick={() => openViewMeetingsDialog(member)} className="text-xs">
+                              <Button size="sm" variant="outline" onClick={() => openViewMeetingsDialog(member)} className="text-xs border-slate-500 bg-slate-700 hover:bg-slate-600 text-white">
                                 View All
                               </Button>
                             </TableCell>
                             {canEdit && (
                               <TableCell>
-                                <Button size="sm" onClick={() => openAttendanceDialog(member)} className="text-xs">
+                                <Button size="sm" onClick={() => openAttendanceDialog(member)} className="text-xs bg-blue-600 hover:bg-blue-700 text-white">
                                   Record
                                 </Button>
                               </TableCell>
