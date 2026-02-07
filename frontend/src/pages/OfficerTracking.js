@@ -871,11 +871,11 @@ function OfficerTracking() {
                         </div>
                         
                         <div className="flex gap-2">
-                          <Button size="sm" variant="outline" onClick={() => openViewMeetingsDialog(member)} className="flex-1 text-xs h-8">
+                          <Button size="sm" variant="outline" onClick={() => openViewMeetingsDialog(member)} className="flex-1 text-xs h-8 border-slate-500 bg-slate-700 hover:bg-slate-600 text-white">
                             View All
                           </Button>
                           {canEdit && (
-                            <Button size="sm" onClick={() => openAttendanceDialog(member)} className="flex-1 text-xs h-8">
+                            <Button size="sm" onClick={() => openAttendanceDialog(member)} className="flex-1 text-xs h-8 bg-blue-600 hover:bg-blue-700 text-white">
                               Record
                             </Button>
                           )}
