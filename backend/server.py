@@ -10160,6 +10160,7 @@ async def get_my_dues(current_user: dict = Depends(verify_token)):
 AVAILABLE_PERMISSIONS = [
     {"key": "ad_page_access", "label": "A&D Page Access", "description": "Can view Attendance & Dues page"},
     {"key": "edit_attendance", "label": "Edit Attendance", "description": "Can record and edit attendance on A&D page"},
+    {"key": "edit_dues", "label": "Edit Dues", "description": "Can update dues status on A&D page"},
     {"key": "view_full_member_info", "label": "View Full Member Info", "description": "Can see all member details (address, DOB, etc.)"},
     {"key": "view_private_personal_email", "label": "View Private Personal Email", "description": "Can see personal emails even if marked private"},
     {"key": "edit_members", "label": "Edit Members", "description": "Can add/edit/delete members"},
