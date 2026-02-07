@@ -917,8 +917,8 @@ function OfficerTracking() {
                         <TableHead className="text-slate-400">Title</TableHead>
                         <TableHead className="text-slate-400">Current Month Status</TableHead>
                         <TableHead className="text-slate-400">History</TableHead>
-                        {canEdit && <TableHead className="text-slate-400">Quick Update</TableHead>}
-                        {canEdit && <TableHead className="text-slate-400">Notes</TableHead>}
+                        {canEditDues && <TableHead className="text-slate-400">Quick Update</TableHead>}
+                        {canEditDues && <TableHead className="text-slate-400">Notes</TableHead>}
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -946,9 +946,9 @@ function OfficerTracking() {
                             <TableCell className="text-slate-300">{member.title || '-'}</TableCell>
                             <TableCell>
                               <div 
-                                className={canEdit ? "cursor-pointer hover:opacity-80" : ""}
-                                onClick={() => canEdit && openDuesDialog(member)}
-                                title={canEdit ? "Click to edit" : ""}
+                                className={canEditDues ? "cursor-pointer hover:opacity-80" : ""}
+                                onClick={() => canEditDues && openDuesDialog(member)}
+                                title={canEditDues ? "Click to edit" : ""}
                               >
                                 {isExempt ? (
                                   <Badge className="bg-amber-600">Non-Dues Paying</Badge>
@@ -969,7 +969,7 @@ function OfficerTracking() {
                                 View
                               </Button>
                             </TableCell>
-                            {canEdit && (
+                            {canEditDues && (
                               <TableCell>
                                 <div className="flex gap-1">
                                   <Button
