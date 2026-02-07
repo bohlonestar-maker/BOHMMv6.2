@@ -1308,8 +1308,8 @@ function OfficerTracking() {
             </div>
           </div>
           <DialogFooter className="flex-col sm:flex-row gap-2">
-            <Button variant="outline" onClick={() => setAttendanceDialog(false)} className="w-full sm:w-auto">Cancel</Button>
-            <Button onClick={handleAttendanceSubmit} className="w-full sm:w-auto">Save</Button>
+            <Button variant="outline" onClick={() => setAttendanceDialog(false)} className="w-full sm:w-auto border-slate-500 bg-slate-700 hover:bg-slate-600 text-white">Cancel</Button>
+            <Button onClick={handleAttendanceSubmit} className="w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white">Save Attendance</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
