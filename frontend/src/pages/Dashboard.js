@@ -2329,28 +2329,35 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
                           {member.phone ? (
                             <a
                               href={`tel:${member.phone}`}
-                            className="flex items-center gap-1 text-blue-400 hover:text-blue-300 hover:underline text-sm"
-                            data-testid={`phone-link-${member.id}`}
-                          >
-                            <Phone className="w-3 h-3" />
-                            <span className="text-white">{member.phone}</span>
-                          </a>
+                              className="flex items-center gap-1 text-blue-400 hover:text-blue-300 hover:underline text-sm"
+                              data-testid={`phone-link-${member.id}`}
+                            >
+                              <Phone className="w-3 h-3" />
+                              <span className="text-white">{member.phone}</span>
+                            </a>
+                          ) : (
+                            <span className="text-slate-500 text-sm">—</span>
+                          )}
                         </TableCell>
                       )}
                       {hasPermission('address') && (
                         <TableCell>
-                          <a
-                            href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-                              member.address
-                            )}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex items-center gap-1 text-blue-400 hover:text-blue-300 hover:underline text-sm"
-                            data-testid={`address-link-${member.id}`}
-                          >
-                            <MapPin className="w-3 h-3" />
-                            <span className="text-white">{member.address}</span>
-                          </a>
+                          {member.address ? (
+                            <a
+                              href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+                                member.address
+                              )}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center gap-1 text-blue-400 hover:text-blue-300 hover:underline text-sm"
+                              data-testid={`address-link-${member.id}`}
+                            >
+                              <MapPin className="w-3 h-3" />
+                              <span className="text-white">{member.address}</span>
+                            </a>
+                          ) : (
+                            <span className="text-slate-500 text-sm">—</span>
+                          )}
                         </TableCell>
                       )}
                       {hasPermission('dues_tracking') && (
