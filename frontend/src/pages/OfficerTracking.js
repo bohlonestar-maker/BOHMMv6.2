@@ -1158,7 +1158,7 @@ function OfficerTracking() {
               <div>
                 <h3 className="font-semibold text-yellow-500 mb-2">
                   ⚠ Unmatched Subscriptions ({subscriptions.unmatched?.length || 0})
-                  {subscriptions.unmatched?.length > 0 && canEdit && (
+                  {subscriptions.unmatched?.length > 0 && canEditDues && (
                     <span className="text-xs font-normal text-muted-foreground ml-2">
                       Click "Link" to manually assign a member
                     </span>
@@ -1171,7 +1171,7 @@ function OfficerTracking() {
                         <TableHead>Customer Name</TableHead>
                         <TableHead>Email</TableHead>
                         <TableHead>Status</TableHead>
-                        {canEdit && <TableHead>Actions</TableHead>}
+                        {canEditDues && <TableHead>Actions</TableHead>}
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -1180,7 +1180,7 @@ function OfficerTracking() {
                           <TableCell>{sub.customer_name || 'Unknown'}</TableCell>
                           <TableCell className="text-sm text-muted-foreground">{sub.customer_email || '-'}</TableCell>
                           <TableCell><Badge variant="outline">{sub.status}</Badge></TableCell>
-                          {canEdit && (
+                          {canEditDues && (
                             <TableCell>
                               <div className="flex gap-2">
                                 <Button 
