@@ -1737,9 +1737,8 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
                           onChange={(e) =>
                             setFormData({ ...formData, email: e.target.value })
                           }
-                          required
                           className="text-white"
-                          placeholder="Club email address"
+                          placeholder="Club email address (optional)"
                         />
                         <div className="flex items-center space-x-2 mt-2">
                           <Checkbox
