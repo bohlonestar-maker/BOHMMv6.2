@@ -9405,8 +9405,9 @@ async def delete_member_attendance(
 ):
     """Delete a meeting from member's attendance - syncs to officer_attendance collection"""
     # Check permission
-    if not is_secretary(current_user) and current_user.get('role') != 'admin':
-        raise HTTPException(status_code=403, detail="Only Secretaries can delete attendance")
+    has_permission = await check_edit_attendance_permission(current_user)
+    if not has_permission and not is_secretary(current_user):
+        raise HTTPException(status_code=403, detail="You don't have permission to delete attendance")
     
     # Remove from officer_attendance collection
     result = await db.officer_attendance.delete_many({
