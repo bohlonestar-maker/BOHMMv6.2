@@ -1361,9 +1361,104 @@ function OfficerTracking() {
                   Current extension until: {new Date(memberExtension.extension_until).toLocaleDateString()}
                 </span>
               )}
+              {selectedMember?.dues_suspended && (
+                <span className="block mt-1 text-red-400 font-semibold">
+                  ⚠️ Member is currently SUSPENDED
+                </span>
+              )}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
+            {/* Suspension Controls */}
+            <div className={`p-3 rounded-lg border ${selectedMember?.dues_suspended ? 'bg-red-900/30 border-red-700' : 'bg-slate-700/30 border-slate-600'}`}>
+              <div className="flex items-center justify-between">
+                <div>
+                  <span className={`text-sm font-medium ${selectedMember?.dues_suspended ? 'text-red-300' : 'text-slate-300'}`}>
+                    {selectedMember?.dues_suspended ? '🚫 Member Suspended' : 'Member Active'}
+                  </span>
+                  {selectedMember?.dues_suspended && selectedMember?.dues_suspended_at && (
+                    <p className="text-xs text-red-400 mt-1">
+                      Suspended on {new Date(selectedMember.dues_suspended_at).toLocaleDateString()}
+                      {selectedMember?.suspension_reason && ` - ${selectedMember.suspension_reason}`}
+                    </p>
+                  )}
+                </div>
+                {selectedMember?.dues_suspended ? (
+                  <Button
+                    size="sm"
+                    className="bg-green-600 hover:bg-green-700 text-white"
+                    onClick={async () => {
+                      try {
+                        const response = await axios.post(
+                          `${BACKEND_URL}/api/members/${selectedMember.id}/unsuspend`,
+                          {},
+                          { headers: { Authorization: `Bearer ${token}` } }
+                        );
+                        // Update local state
+                        setMembers(prev => {
+                          const updated = { ...prev };
+                          const chapter = selectedMember.chapter;
+                          updated[chapter] = updated[chapter].map(m => 
+                            m.id === selectedMember.id ? { ...m, dues_suspended: false, dues_suspended_at: null } : m
+                          );
+                          return updated;
+                        });
+                        setSelectedMember(prev => ({ ...prev, dues_suspended: false, dues_suspended_at: null }));
+                        toast.success(response.data.message || 'Member unsuspended');
+                        if (response.data.discord_restored) {
+                          toast.success('Discord roles restored');
+                        }
+                      } catch (error) {
+                        toast.error(error.response?.data?.detail || 'Failed to unsuspend member');
+                      }
+                    }}
+                    data-testid="unsuspend-btn"
+                  >
+                    <Shield className="w-4 h-4 mr-1" />
+                    Unsuspend
+                  </Button>
+                ) : (
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    className="bg-red-600 hover:bg-red-700 text-white"
+                    onClick={async () => {
+                      if (!window.confirm(`Are you sure you want to suspend ${selectedMember?.handle}? This will remove all their Discord roles.`)) {
+                        return;
+                      }
+                      try {
+                        const response = await axios.post(
+                          `${BACKEND_URL}/api/members/${selectedMember.id}/suspend`,
+                          { reason: 'Manual suspension from A&D page' },
+                          { headers: { Authorization: `Bearer ${token}` } }
+                        );
+                        // Update local state
+                        setMembers(prev => {
+                          const updated = { ...prev };
+                          const chapter = selectedMember.chapter;
+                          updated[chapter] = updated[chapter].map(m => 
+                            m.id === selectedMember.id ? { ...m, dues_suspended: true, dues_suspended_at: new Date().toISOString() } : m
+                          );
+                          return updated;
+                        });
+                        setSelectedMember(prev => ({ ...prev, dues_suspended: true, dues_suspended_at: new Date().toISOString() }));
+                        toast.success(response.data.message || 'Member suspended');
+                        if (response.data.discord_suspended) {
+                          toast.success('Discord roles removed');
+                        }
+                      } catch (error) {
+                        toast.error(error.response?.data?.detail || 'Failed to suspend member');
+                      }
+                    }}
+                    data-testid="suspend-btn"
+                  >
+                    <XCircle className="w-4 h-4 mr-1" />
+                    Suspend
+                  </Button>
+                )}
+              </div>
+            </div>
+
             {/* Non-Dues Paying Toggle */}
             <div className="p-3 bg-amber-900/30 rounded-lg border border-amber-700">
               <div className="flex items-center space-x-2">
