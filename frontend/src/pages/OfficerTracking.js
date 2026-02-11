@@ -1056,10 +1056,11 @@ function OfficerTracking() {
                   {filteredMembers.map(member => {
                     const currentDues = getCurrentMonthDues(member.id);
                     const isExempt = member.non_dues_paying;
+                    const isSuspended = member.dues_suspended;
                     const extension = getMemberExtension(member.id);
                     
                     return (
-                      <div key={member.id} className="bg-slate-700/50 rounded-lg p-3 border border-slate-600">
+                      <div key={member.id} className={`rounded-lg p-3 border ${isSuspended ? 'bg-red-900/30 border-red-700' : 'bg-slate-700/50 border-slate-600'}`}>
                         <div 
                           className="flex justify-between items-start mb-3 cursor-pointer"
                           onClick={() => openDuesHistoryDialog(member)}
@@ -1067,6 +1068,9 @@ function OfficerTracking() {
                           <div>
                             <div className="font-medium text-blue-400 underline">
                               {member.handle}
+                              {isSuspended && (
+                                <Badge className="ml-2 bg-red-600 text-white text-xs">Suspended</Badge>
+                              )}
                               {isExempt && (
                                 <Badge className="ml-2 bg-amber-600 text-white text-xs">Exempt</Badge>
                               )}
@@ -1077,7 +1081,9 @@ function OfficerTracking() {
                             <div className="text-xs text-slate-400">{member.title || 'Brother'}</div>
                           </div>
                           <div>
-                            {isExempt ? (
+                            {isSuspended ? (
+                              <Badge className="bg-red-600 text-xs">Suspended</Badge>
+                            ) : isExempt ? (
                               <Badge className="bg-amber-600 text-xs">Non-Dues Paying</Badge>
                             ) : extension ? (
                               <Badge className="bg-blue-600 text-xs">Until {new Date(extension.extension_until).toLocaleDateString()}</Badge>
@@ -1087,7 +1093,7 @@ function OfficerTracking() {
                           </div>
                         </div>
                         
-                        {canEditDues && !isExempt && (
+                        {canEditDues && !isExempt && !isSuspended && (
                           <div className="space-y-2">
                             <div className="flex gap-2">
                               <Button
