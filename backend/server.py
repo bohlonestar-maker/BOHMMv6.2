@@ -10769,6 +10769,101 @@ async def revoke_dues_extension(
     return {"success": True, "message": "Extension revoked"}
 
 
+class SuspendMemberRequest(BaseModel):
+    reason: str = "Manual suspension"
+
+
+@api_router.post("/members/{member_id}/suspend")
+async def suspend_member(
+    member_id: str,
+    request: SuspendMemberRequest,
+    current_user: dict = Depends(verify_token)
+):
+    """Manually suspend a member - remove Discord roles and mark as suspended"""
+    has_access = await check_permission(current_user, "edit_dues")
+    if not has_access:
+        raise HTTPException(status_code=403, detail="You don't have permission to suspend members")
+    
+    # Get member info
+    member = await db.members.find_one({"id": member_id}, {"_id": 0})
+    if not member:
+        raise HTTPException(status_code=404, detail="Member not found")
+    
+    # Check if already suspended
+    if member.get("dues_suspended"):
+        raise HTTPException(status_code=400, detail="Member is already suspended")
+    
+    # Suspend in Discord
+    discord_result = await suspend_discord_member(
+        member.get("handle"),
+        member_id,
+        request.reason
+    )
+    
+    # Update member record
+    await db.members.update_one(
+        {"id": member_id},
+        {"$set": {
+            "dues_suspended": True,
+            "dues_suspended_at": datetime.now(timezone.utc).isoformat(),
+            "suspended_by": current_user.get("username"),
+            "suspension_reason": request.reason
+        }}
+    )
+    
+    logger.info(f"Member {member.get('handle')} suspended by {current_user.get('username')}: {request.reason}")
+    
+    return {
+        "success": True,
+        "message": f"Member {member.get('handle')} has been suspended",
+        "discord_suspended": discord_result.get("success", False),
+        "discord_message": discord_result.get("message", "")
+    }
+
+
+@api_router.post("/members/{member_id}/unsuspend")
+async def unsuspend_member(
+    member_id: str,
+    current_user: dict = Depends(verify_token)
+):
+    """Manually unsuspend a member - restore Discord roles and clear suspension"""
+    has_access = await check_permission(current_user, "edit_dues")
+    if not has_access:
+        raise HTTPException(status_code=403, detail="You don't have permission to unsuspend members")
+    
+    # Get member info
+    member = await db.members.find_one({"id": member_id}, {"_id": 0})
+    if not member:
+        raise HTTPException(status_code=404, detail="Member not found")
+    
+    # Check if actually suspended
+    if not member.get("dues_suspended"):
+        raise HTTPException(status_code=400, detail="Member is not suspended")
+    
+    # Restore Discord roles
+    discord_result = await restore_discord_member(member_id)
+    
+    # Clear suspension from member record
+    await db.members.update_one(
+        {"id": member_id},
+        {"$set": {
+            "dues_suspended": False,
+            "dues_suspended_at": None,
+            "reinstated_by": current_user.get("username"),
+            "reinstated_at": datetime.now(timezone.utc).isoformat()
+        }}
+    )
+    
+    logger.info(f"Member {member.get('handle')} unsuspended by {current_user.get('username')}")
+    
+    return {
+        "success": True,
+        "message": f"Member {member.get('handle')} has been unsuspended",
+        "discord_restored": discord_result.get("success", False),
+        "discord_message": discord_result.get("message", "")
+    }
+
+
 @api_router.post("/dues-reminders/reinstate/{member_id}")
 async def reinstate_member(
     member_id: str,
