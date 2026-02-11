@@ -9364,9 +9364,10 @@ async def record_attendance(record: AttendanceRecord, current_user: dict = Depen
 
 @api_router.delete("/officer-tracking/attendance/{record_id}")
 async def delete_attendance(record_id: str, current_user: dict = Depends(verify_token)):
-    """Delete attendance record - only Secretaries can edit"""
-    if not is_secretary(current_user):
-        raise HTTPException(status_code=403, detail="Only Secretaries can delete attendance")
+    """Delete attendance record - requires edit_attendance permission"""
+    has_permission = await check_edit_attendance_permission(current_user)
+    if not has_permission and not is_secretary(current_user):
+        raise HTTPException(status_code=403, detail="You don't have permission to delete attendance")
     
     # Get the record first to update member
     record = await db.officer_attendance.find_one({"id": record_id})
