@@ -9784,9 +9784,10 @@ async def get_member_dues_history(member_id: str, current_user: dict = Depends(v
 
 @api_router.delete("/officer-tracking/dues/{record_id}")
 async def delete_dues(record_id: str, current_user: dict = Depends(verify_token)):
-    """Delete dues record - only Secretaries can edit"""
-    if not is_secretary(current_user):
-        raise HTTPException(status_code=403, detail="Only Secretaries can delete dues records")
+    """Delete dues record - requires edit_dues permission"""
+    has_permission = await check_edit_dues_permission(current_user)
+    if not has_permission and not is_secretary(current_user):
+        raise HTTPException(status_code=403, detail="You don't have permission to delete dues records")
     
     # Get the record first to update member
     record = await db.officer_dues.find_one({"id": record_id})
