@@ -956,15 +956,19 @@ function OfficerTracking() {
                       {filteredMembers.map(member => {
                         const currentDues = getCurrentMonthDues(member.id);
                         const isExempt = member.non_dues_paying;
+                        const isSuspended = member.dues_suspended;
                         const extension = getMemberExtension(member.id);
                         
                         return (
-                          <TableRow key={member.id} className="border-slate-700">
+                          <TableRow key={member.id} className={`border-slate-700 ${isSuspended ? 'bg-red-900/20' : ''}`}>
                             <TableCell 
                               className="font-medium text-blue-400 hover:text-blue-300 cursor-pointer underline"
                               onClick={() => openDuesHistoryDialog(member)}
                             >
                               {member.handle}
+                              {isSuspended && (
+                                <Badge className="ml-2 bg-red-600 text-white text-xs">Suspended</Badge>
+                              )}
                               {isExempt && (
                                 <Badge className="ml-2 bg-amber-600 text-white text-xs">Exempt</Badge>
                               )}
@@ -981,7 +985,9 @@ function OfficerTracking() {
                                 onClick={() => canEditDues && openDuesDialog(member)}
                                 title={canEditDues ? "Click to edit" : ""}
                               >
-                                {isExempt ? (
+                                {isSuspended ? (
+                                  <Badge className="bg-red-600">Suspended</Badge>
+                                ) : isExempt ? (
                                   <Badge className="bg-amber-600">Non-Dues Paying</Badge>
                                 ) : extension ? (
                                   <Badge className="bg-blue-600">Extended to {new Date(extension.extension_until).toLocaleDateString()}</Badge>
