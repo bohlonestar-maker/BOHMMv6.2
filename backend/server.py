@@ -9523,9 +9523,10 @@ async def get_dues_records(
 
 @api_router.post("/officer-tracking/dues")
 async def record_dues(record: DuesRecord, current_user: dict = Depends(verify_token)):
-    """Record dues status - only Secretaries, NVP, and NPrez can edit"""
-    if not is_secretary(current_user):
-        raise HTTPException(status_code=403, detail="Only Secretaries, NVP, and NPrez can edit dues")
+    """Record dues status - requires edit_dues permission"""
+    has_permission = await check_edit_dues_permission(current_user)
+    if not has_permission and not is_secretary(current_user):
+        raise HTTPException(status_code=403, detail="You don't have permission to edit dues")
     
     # Check for existing record in officer_dues collection
     existing = await db.officer_dues.find_one({
