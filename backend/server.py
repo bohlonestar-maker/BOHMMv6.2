@@ -9091,6 +9091,22 @@ async def check_edit_dues_permission(user: dict) -> bool:
     
     return False
 
+async def check_edit_attendance_permission(user: dict) -> bool:
+    """Check if user has edit_attendance permission from Permission Panel"""
+    chapter = user.get('chapter', 'National')
+    title = user.get('title', '')
+    
+    # Check permission from database
+    perms = await db.role_permissions.find_one(
+        {"chapter": chapter, "title": title},
+        {"_id": 0, "edit_attendance": 1}
+    )
+    
+    if perms and perms.get('edit_attendance'):
+        return True
+    
+    return False
+
 def is_secretary(user: dict) -> bool:
     """Legacy check - now uses AD_EDIT_TITLES as fallback. Real control via permissions."""
     user_title = user.get('title', '')
