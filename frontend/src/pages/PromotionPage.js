@@ -37,6 +37,8 @@ export default function PromotionPage() {
   const [hasPermission, setHasPermission] = useState(null);
 
   // Check permission on mount
+  const [userChapter, setUserChapter] = useState(null);
+  
   useEffect(() => {
     const checkPermission = async () => {
       try {
@@ -50,6 +52,7 @@ export default function PromotionPage() {
           return;
         }
         setHasPermission(true);
+        setUserChapter(response.data?.chapter || null);
       } catch (error) {
         console.error('Error checking permission:', error);
         navigate('/login');
@@ -69,7 +72,14 @@ export default function PromotionPage() {
           axios.get(`${BACKEND_URL}/api/discord/roles`, { headers: { Authorization: `Bearer ${token}` } })
         ]);
         
-        setMembers(membersRes.data || []);
+        let membersList = membersRes.data || [];
+        
+        // Filter members by chapter if user is not National
+        if (userChapter && userChapter !== 'National') {
+          membersList = membersList.filter(m => m.chapter === userChapter);
+        }
+        
+        setMembers(membersList);
         setDiscordRoles(rolesRes.data?.roles || []);
       } catch (error) {
         console.error('Error fetching data:', error);
@@ -80,7 +90,7 @@ export default function PromotionPage() {
     };
     
     fetchData();
-  }, [token, hasPermission]);
+  }, [token, hasPermission, userChapter]);
 
   // Show loading while checking permission
   if (hasPermission === null) {
