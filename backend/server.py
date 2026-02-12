@@ -16710,51 +16710,31 @@ async def get_member_discord_roles(member_id: str, current_user: dict = Depends(
     """Get a member's current Discord roles"""
     global discord_bot
     
+    if not discord_bot or not DISCORD_GUILD_ID:
+        return {"roles": [], "nickname": None, "message": "Discord bot not configured"}
+    
     # Get member from database
     member = await db.members.find_one({"id": member_id}, {"_id": 0})
     if not member:
         raise HTTPException(status_code=404, detail="Member not found")
     
-    # If Discord bot isn't running or guild ID not configured
-    if not discord_bot:
-        return {"roles": [], "nickname": member.get("handle"), "message": "Discord bot not connected"}
-    
-    if not DISCORD_GUILD_ID:
-        return {"roles": [], "nickname": member.get("handle"), "message": "Discord guild ID not configured"}
+    member_handle = member.get("handle", "")
     
     try:
         guild = discord_bot.get_guild(int(DISCORD_GUILD_ID))
         if not guild:
-            return {"roles": [], "nickname": member.get("handle"), "message": "Discord guild not found"}
+            return {"roles": [], "nickname": None, "message": "Guild not found"}
         
-        # Find Discord member
+        # Find Discord member by handle
         discord_member = None
-        member_handle = member.get("handle", "")
-        
-        # Check linked discord_id first
-        linked = await db.discord_members.find_one({
-            "$or": [
-                {"linked_member_id": member_id},
-                {"linked_handle": member_handle}
-            ]
-        })
-        
-        if linked and linked.get("discord_id"):
-            try:
-                discord_member = guild.get_member(int(linked["discord_id"]))
-            except (ValueError, TypeError):
-                pass  # Invalid discord_id format
-        
-        # Search by name if not found
-        if not discord_member:
-            for dm in guild.members:
-                display_name = dm.nick or dm.display_name or dm.name
-                if display_name.lower() == member_handle.lower() or member_handle.lower() in display_name.lower():
-                    discord_member = dm
-                    break
+        for dm in guild.members:
+            display_name = dm.nick or dm.display_name or dm.name
+            if display_name.lower() == member_handle.lower() or member_handle.lower() in display_name.lower():
+                discord_member = dm
+                break
         
         if not discord_member:
-            return {"roles": [], "nickname": None, "message": "Member not found in Discord"}
+            return {"roles": [], "nickname": None, "message": f"Member '{member_handle}' not found in Discord"}
         
         roles = []
         for role in discord_member.roles:
@@ -16772,8 +16752,7 @@ async def get_member_discord_roles(member_id: str, current_user: dict = Depends(
             "discord_id": str(discord_member.id)
         }
     except Exception as e:
-        logger.error(f"Error getting member Discord roles: {e}")
-        return {"roles": [], "nickname": member.get("handle"), "message": f"Error: {str(e)}"}
+        return {"roles": [], "nickname": None, "message": str(e)}
 
 
 @api_router.post("/discord/member/{member_id}/roles")
