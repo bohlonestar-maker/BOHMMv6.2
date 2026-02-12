@@ -156,6 +156,42 @@ export default function PromotionPage() {
     }
   };
 
+  // Update member chapter and title in database
+  const handleUpdateMemberInfo = async () => {
+    if (!selectedMemberId) {
+      toast.error('Please select a member');
+      return;
+    }
+    
+    if (!chapter || !title) {
+      toast.error('Please select both chapter and title');
+      return;
+    }
+    
+    setUpdatingMemberInfo(true);
+    try {
+      const response = await axios.put(
+        `${BACKEND_URL}/api/members/${selectedMemberId}`,
+        { chapter, title },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+      if (response.data) {
+        toast.success(`Member updated to ${chapter} ${title}`);
+        // Update local state
+        setSelectedMember(prev => ({ ...prev, chapter, title }));
+        // Refresh members list
+        const membersRes = await axios.get(`${BACKEND_URL}/api/members`, { headers: { Authorization: `Bearer ${token}` } });
+        setMembers(membersRes.data || []);
+      }
+    } catch (error) {
+      console.error('Error updating member info:', error);
+      toast.error(error.response?.data?.detail || 'Failed to update member info');
+    } finally {
+      setUpdatingMemberInfo(false);
+    }
+  };
+
   // Sort roles by position (higher position = more important)
   const sortedRoles = [...discordRoles].sort((a, b) => b.position - a.position);
 
