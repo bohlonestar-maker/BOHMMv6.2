@@ -16830,76 +16830,37 @@ async def update_member_discord_nickname(
     """Update a member's Discord nickname"""
     global discord_bot
     
-    logger.info(f"Nickname update requested for member {member_id}")
-    
-    if not discord_bot:
-        logger.error("Discord bot not running")
-        raise HTTPException(status_code=503, detail="Discord bot not running")
-    
-    if not DISCORD_GUILD_ID:
-        logger.error(f"DISCORD_GUILD_ID is not set: {repr(DISCORD_GUILD_ID)}")
-        raise HTTPException(status_code=500, detail="Discord guild ID not configured")
+    if not discord_bot or not DISCORD_GUILD_ID:
+        raise HTTPException(status_code=503, detail="Discord bot not configured")
     
     member = await db.members.find_one({"id": member_id}, {"_id": 0})
     if not member:
         raise HTTPException(status_code=404, detail="Member not found")
     
     member_handle = member.get("handle", "")
-    logger.info(f"Looking up Discord member for: {member_handle}")
     
     try:
-        guild_id_int = int(DISCORD_GUILD_ID)
-        guild = discord_bot.get_guild(guild_id_int)
+        guild = discord_bot.get_guild(int(DISCORD_GUILD_ID))
         if not guild:
-            logger.error(f"Guild not found for ID: {DISCORD_GUILD_ID}")
-            raise HTTPException(status_code=404, detail="Discord guild not found")
+            raise HTTPException(status_code=404, detail="Guild not found")
         
-        # Find Discord member
+        # Find Discord member by handle
         discord_member = None
-        
-        # Check linked discord_id first
-        linked = await db.discord_members.find_one({
-            "$or": [
-                {"linked_member_id": member_id},
-                {"linked_handle": member_handle}
-            ]
-        })
-        
-        logger.info(f"Linked record found: {linked is not None}, discord_id: {linked.get('discord_id') if linked else None}")
-        
-        if linked and linked.get("discord_id"):
-            discord_id = linked.get("discord_id")
-            if discord_id:
-                try:
-                    discord_id_int = int(discord_id)
-                    discord_member = guild.get_member(discord_id_int)
-                    logger.info(f"Found member by linked discord_id: {discord_member is not None}")
-                except (ValueError, TypeError) as e:
-                    logger.error(f"Invalid discord_id format: {repr(discord_id)}, error: {e}")
+        for dm in guild.members:
+            display_name = dm.nick or dm.display_name or dm.name
+            if display_name.lower() == member_handle.lower() or member_handle.lower() in display_name.lower():
+                discord_member = dm
+                break
         
         if not discord_member:
-            logger.info("Searching guild members by name...")
-            for dm in guild.members:
-                display_name = dm.nick or dm.display_name or dm.name
-                if display_name.lower() == member_handle.lower() or member_handle.lower() in display_name.lower():
-                    discord_member = dm
-                    logger.info(f"Found member by name search: {display_name}")
-                    break
+            raise HTTPException(status_code=404, detail=f"Member '{member_handle}' not found in Discord")
         
-        if not discord_member:
-            logger.error(f"Member {member_handle} not found in Discord")
-            raise HTTPException(status_code=404, detail=f"Member '{member_handle}' not found in Discord. They may need to be linked first.")
-        
-        old_nick = discord_member.nick or discord_member.display_name
         await discord_member.edit(nick=request.nickname, reason=f"Nickname update by {current_user.get('username')}")
-        
-        logger.info(f"Discord nickname changed for {member_handle}: '{old_nick}' -> '{request.nickname}' by {current_user.get('username')}")
         
         return {"success": True, "message": f"Nickname updated to '{request.nickname}'"}
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error updating Discord nickname: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 # ==================== END DISCORD PROMOTION ENDPOINTS ====================
