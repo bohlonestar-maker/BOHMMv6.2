@@ -17,6 +17,9 @@ const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const CHAPTERS = ["National", "AD", "HA", "HS"];
 const TITLES = ["Prez", "VP", "S@A", "ENF", "SEC", "T", "CD", "CC", "CCLC", "MD", "PM", "(pm)", "Brother", "Honorary"];
 
+// Allowed titles for National chapter only
+const ALLOWED_TITLES = ["Prez", "VP", "S@A", "ENF", "T", "SEC"];
+
 export default function PromotionPage() {
   const navigate = useNavigate();
   const token = localStorage.getItem('token');
@@ -34,28 +37,47 @@ export default function PromotionPage() {
   const [promoting, setPromoting] = useState(false);
   const [updatingNickname, setUpdatingNickname] = useState(false);
   const [updatingMemberInfo, setUpdatingMemberInfo] = useState(false);
+  const [hasAccess, setHasAccess] = useState(false);
 
-  // Fetch members and Discord roles on mount
+  // Check access and fetch data on mount
   useEffect(() => {
-    const fetchData = async () => {
+    const checkAccessAndFetch = async () => {
       try {
-        const [membersRes, rolesRes] = await Promise.all([
-          axios.get(`${BACKEND_URL}/api/members`, { headers: { Authorization: `Bearer ${token}` } }),
-          axios.get(`${BACKEND_URL}/api/discord/roles`, { headers: { Authorization: `Bearer ${token}` } })
-        ]);
+        // Get user info
+        const authResponse = await axios.get(`${BACKEND_URL}/api/auth/verify`, { 
+          headers: { Authorization: `Bearer ${token}` } 
+        });
         
-        setMembers(membersRes.data || []);
-        setDiscordRoles(rolesRes.data?.roles || []);
+        const userChapter = authResponse.data?.chapter;
+        const userTitle = authResponse.data?.title;
+        
+        // Check if user is National with allowed title
+        if (userChapter === 'National' && ALLOWED_TITLES.includes(userTitle)) {
+          setHasAccess(true);
+          
+          // Fetch members and roles
+          const [membersRes, rolesRes] = await Promise.all([
+            axios.get(`${BACKEND_URL}/api/members`, { headers: { Authorization: `Bearer ${token}` } }),
+            axios.get(`${BACKEND_URL}/api/discord/roles`, { headers: { Authorization: `Bearer ${token}` } })
+          ]);
+          
+          setMembers(membersRes.data || []);
+          setDiscordRoles(rolesRes.data?.roles || []);
+        } else {
+          setHasAccess(false);
+        }
       } catch (error) {
-        console.error('Error fetching data:', error);
-        toast.error('Failed to load data');
+        console.error('Error:', error);
+        if (error.response?.status === 401) {
+          navigate('/login');
+        }
       } finally {
         setLoading(false);
       }
     };
     
-    fetchData();
-  }, [token]);
+    checkAccessAndFetch();
+  }, [token, navigate]);
 
   // When member is selected, fetch their current Discord roles
   const handleMemberSelect = async (memberId) => {
