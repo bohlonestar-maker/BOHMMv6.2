@@ -6423,10 +6423,9 @@ async def restore_archived_member(member_id: str, current_user: dict = Depends(v
                     )
                     
                     # Send email with the invite from support email
-                    if smtp_configured:
+                    if support_smtp_configured:
                         try:
                             subject = "Welcome Back to Brothers of the Highway Discord!"
-                            support_email = "support@boh2158.org"
                             
                             text_content = f"""
 Hello {member_name},
@@ -6465,14 +6464,14 @@ Welcome back, Brother!
                             
                             msg = MIMEMultipart('alternative')
                             msg['Subject'] = subject
-                            msg['From'] = support_email
+                            msg['From'] = SUPPORT_SMTP_USERNAME
                             msg['To'] = personal_email
                             msg.attach(MIMEText(text_content, 'plain'))
                             msg.attach(MIMEText(html_content, 'html'))
                             
                             with smtplib.SMTP_SSL(SMTP_HOST, int(SMTP_PORT)) as server:
-                                server.login(SMTP_USERNAME, SMTP_PASSWORD)
-                                server.sendmail(support_email, personal_email, msg.as_string())
+                                server.login(SUPPORT_SMTP_USERNAME, SUPPORT_SMTP_PASSWORD)
+                                server.sendmail(SUPPORT_SMTP_USERNAME, personal_email, msg.as_string())
                             
                             discord_invite_sent = True
                             sys.stderr.write(f"✅ Discord invite sent to {personal_email} for restored member {member_handle}\n")
