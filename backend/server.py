@@ -114,11 +114,20 @@ SMTP_PASSWORD = os.environ.get('SMTP_PASSWORD')
 SMTP_FROM_EMAIL = os.environ.get('SMTP_FROM_EMAIL')
 SMTP_USE_TLS = os.environ.get('SMTP_USE_TLS', 'true').lower() == 'true'
 
+# Support email configuration
+SUPPORT_SMTP_USERNAME = os.environ.get('SUPPORT_SMTP_USERNAME')
+SUPPORT_SMTP_PASSWORD = os.environ.get('SUPPORT_SMTP_PASSWORD')
+
 smtp_configured = all([SMTP_HOST, SMTP_USERNAME, SMTP_PASSWORD, SMTP_FROM_EMAIL])
+support_smtp_configured = all([SMTP_HOST, SUPPORT_SMTP_USERNAME, SUPPORT_SMTP_PASSWORD])
+
 if smtp_configured:
     sys.stderr.write(f"✅ [INIT] SMTP configured: {SMTP_HOST}:{SMTP_PORT} (from: {SMTP_FROM_EMAIL})\n")
 else:
     sys.stderr.write("⚠️ [INIT] SMTP not configured (missing SMTP_HOST, SMTP_USERNAME, SMTP_PASSWORD, or SMTP_FROM_EMAIL)\n")
+
+if support_smtp_configured:
+    sys.stderr.write(f"✅ [INIT] Support SMTP configured: {SUPPORT_SMTP_USERNAME}\n")
 sys.stderr.flush()
 
 # Discord configuration
