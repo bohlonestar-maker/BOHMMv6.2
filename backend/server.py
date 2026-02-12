@@ -16746,9 +16746,12 @@ async def get_member_discord_roles(member_id: str, current_user: dict = Depends(
     if not member:
         raise HTTPException(status_code=404, detail="Member not found")
     
-    # If Discord bot isn't running, return empty roles with message
+    # If Discord bot isn't running or guild ID not configured
     if not discord_bot:
         return {"roles": [], "nickname": member.get("handle"), "message": "Discord bot not connected"}
+    
+    if not DISCORD_GUILD_ID:
+        return {"roles": [], "nickname": member.get("handle"), "message": "Discord guild ID not configured"}
     
     try:
         guild = discord_bot.get_guild(int(DISCORD_GUILD_ID))
@@ -16768,7 +16771,10 @@ async def get_member_discord_roles(member_id: str, current_user: dict = Depends(
         })
         
         if linked and linked.get("discord_id"):
-            discord_member = guild.get_member(int(linked["discord_id"]))
+            try:
+                discord_member = guild.get_member(int(linked["discord_id"]))
+            except (ValueError, TypeError):
+                pass  # Invalid discord_id format
         
         # Search by name if not found
         if not discord_member:
@@ -16797,6 +16803,7 @@ async def get_member_discord_roles(member_id: str, current_user: dict = Depends(
             "discord_id": str(discord_member.id)
         }
     except Exception as e:
+        logger.error(f"Error getting member Discord roles: {e}")
         return {"roles": [], "nickname": member.get("handle"), "message": f"Error: {str(e)}"}
 
 
