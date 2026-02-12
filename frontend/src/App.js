@@ -514,6 +514,16 @@ function App() {
               )
             }
           />
+          <Route
+            path="/promotions"
+            element={
+              isAuthenticated ? (
+                <PromotionPage />
+              ) : (
+                <Navigate to="/" replace />
+              )
+            }
+          />
         </Routes>
         <KeepAlive />
         {isAuthenticated && <MessageNotifier />}
