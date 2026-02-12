@@ -1049,7 +1049,7 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
                   </DropdownMenuItem>
                   
                   {/* === ADMIN SECTION (Only visible to users with admin permissions) === */}
-                  {(userPermissions?.ad_page_access || userPermissions?.view_promotions || userPermissions?.manage_dues_reminders || userPermissions?.manage_system_users || userPermissions?.view_reports || userPermissions?.manage_events) && (
+                  {(userPermissions?.ad_page_access || userPermissions?.manage_dues_reminders || userPermissions?.manage_system_users || userPermissions?.view_reports || userPermissions?.manage_events) && (
                     <>
                       <DropdownMenuSeparator className="bg-slate-700" />
                       <div className="px-2 py-1.5 text-xs font-semibold text-red-400 uppercase tracking-wider">
@@ -1067,8 +1067,8 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
                         </DropdownMenuItem>
                       )}
                       
-                      {/* Promotions - Permission based */}
-                      {userPermissions?.view_promotions && (
+                      {/* Promotions - Available to all admins */}
+                      {userPermissions?.ad_page_access && (
                         <DropdownMenuItem 
                           onSelect={(e) => { e.preventDefault(); navigate("/promotions"); }} 
                           className="text-red-400 focus:bg-red-900/30 focus:text-red-300 cursor-pointer"
