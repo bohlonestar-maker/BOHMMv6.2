@@ -16684,18 +16684,19 @@ async def get_member_discord_roles(member_id: str, current_user: dict = Depends(
     """Get a member's current Discord roles"""
     global discord_bot
     
-    if not discord_bot:
-        raise HTTPException(status_code=503, detail="Discord bot not running")
-    
     # Get member from database
     member = await db.members.find_one({"id": member_id}, {"_id": 0})
     if not member:
         raise HTTPException(status_code=404, detail="Member not found")
     
+    # If Discord bot isn't running, return empty roles with message
+    if not discord_bot:
+        return {"roles": [], "nickname": member.get("handle"), "message": "Discord bot not connected"}
+    
     try:
         guild = discord_bot.get_guild(int(DISCORD_GUILD_ID))
         if not guild:
-            raise HTTPException(status_code=404, detail="Discord guild not found")
+            return {"roles": [], "nickname": member.get("handle"), "message": "Discord guild not found"}
         
         # Find Discord member
         discord_member = None
@@ -16739,7 +16740,7 @@ async def get_member_discord_roles(member_id: str, current_user: dict = Depends(
             "discord_id": str(discord_member.id)
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        return {"roles": [], "nickname": member.get("handle"), "message": f"Error: {str(e)}"}
 
 
 @api_router.post("/discord/member/{member_id}/roles")
