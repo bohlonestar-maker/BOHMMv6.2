@@ -7,12 +7,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { Checkbox } from "../components/ui/checkbox";
 import { Badge } from "../components/ui/badge";
 import { toast } from "sonner";
-import { Users, Shield, Award, RefreshCw, Save, ArrowLeft } from "lucide-react";
+import { Users, Shield, Award, RefreshCw, Save, ArrowLeft, Building, UserCog } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import axios from 'axios';
 import PageLayout from "../components/PageLayout";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+
+const CHAPTERS = ["National", "AD", "HA", "HS"];
+const TITLES = ["Prez", "VP", "S@A", "ENF", "SEC", "T", "CD", "CC", "CCLC", "MD", "PM", "(pm)", "Brother", "Honorary"];
 
 export default function PromotionPage() {
   const navigate = useNavigate();
@@ -25,9 +28,12 @@ export default function PromotionPage() {
   const [selectedRoles, setSelectedRoles] = useState([]);
   const [currentDiscordRoles, setCurrentDiscordRoles] = useState([]);
   const [nickname, setNickname] = useState('');
+  const [chapter, setChapter] = useState('');
+  const [title, setTitle] = useState('');
   const [loading, setLoading] = useState(true);
   const [promoting, setPromoting] = useState(false);
   const [updatingNickname, setUpdatingNickname] = useState(false);
+  const [updatingMemberInfo, setUpdatingMemberInfo] = useState(false);
 
   // Fetch members and Discord roles on mount
   useEffect(() => {
