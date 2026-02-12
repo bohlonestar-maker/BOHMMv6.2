@@ -62,9 +62,15 @@ Build a member management application with attendance tracking, dues management,
   - `GET /api/discord/member/{member_id}/roles` - Get member's current Discord roles
   - `POST /api/discord/member/{member_id}/roles` - Update member's Discord roles
   - `POST /api/discord/member/{member_id}/nickname` - Update member's Discord nickname
+  - `PUT /api/members/{member_id}` - Update member's chapter & title (existing endpoint)
 - [x] **Frontend UI (PromotionPage.js):**
   - Member selection dropdown showing all members
   - Discord Nickname section with input and "Update Nickname" button
+  - **Chapter & Title section** with:
+    - Chapter dropdown (National, AD, HA, HS)
+    - Title dropdown (Prez, VP, S@A, ENF, SEC, T, etc.)
+    - Warning message when values changed (amber highlight)
+    - "Update Chapter & Title" button to save to database
   - Discord Roles section with:
     - Current roles displayed as colored badges
     - Grid of 33 role checkboxes with Discord color indicators
