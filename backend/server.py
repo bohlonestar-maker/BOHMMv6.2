@@ -16819,6 +16819,9 @@ async def update_member_discord_roles(
     if not discord_bot:
         raise HTTPException(status_code=503, detail="Discord bot not running")
     
+    if not DISCORD_GUILD_ID:
+        raise HTTPException(status_code=500, detail="Discord guild ID not configured")
+    
     member = await db.members.find_one({"id": member_id}, {"_id": 0})
     if not member:
         raise HTTPException(status_code=404, detail="Member not found")
@@ -16840,7 +16843,10 @@ async def update_member_discord_roles(
         })
         
         if linked and linked.get("discord_id"):
-            discord_member = guild.get_member(int(linked["discord_id"]))
+            try:
+                discord_member = guild.get_member(int(linked["discord_id"]))
+            except (ValueError, TypeError):
+                pass  # Invalid discord_id format
         
         if not discord_member:
             for dm in guild.members:
@@ -16866,23 +16872,23 @@ async def update_member_discord_roles(
         
         # Add new roles
         for role_id in roles_to_add:
-            role = guild.get_role(int(role_id))
-            if role:
-                try:
+            try:
+                role = guild.get_role(int(role_id))
+                if role:
                     await discord_member.add_roles(role, reason=f"Promotion by {current_user.get('username')}")
                     added += 1
-                except Exception as e:
-                    errors.append(f"Failed to add {role.name}: {str(e)}")
+            except Exception as e:
+                errors.append(f"Failed to add role {role_id}: {str(e)}")
         
         # Remove old roles
         for role_id in roles_to_remove:
-            role = guild.get_role(int(role_id))
-            if role and not role.is_bot_managed():
-                try:
+            try:
+                role = guild.get_role(int(role_id))
+                if role and not role.is_bot_managed():
                     await discord_member.remove_roles(role, reason=f"Role update by {current_user.get('username')}")
                     removed += 1
-                except Exception as e:
-                    errors.append(f"Failed to remove {role.name}: {str(e)}")
+            except Exception as e:
+                errors.append(f"Failed to remove role {role_id}: {str(e)}")
         
         message = f"Updated roles: {added} added, {removed} removed"
         if errors:
@@ -16894,6 +16900,7 @@ async def update_member_discord_roles(
     except HTTPException:
         raise
     except Exception as e:
+        logger.error(f"Error updating Discord roles: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
