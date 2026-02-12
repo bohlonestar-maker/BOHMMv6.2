@@ -228,7 +228,12 @@ export default function PromotionPage() {
         setSelectedMember(prev => ({ ...prev, chapter, title }));
         // Refresh members list
         const membersRes = await axios.get(`${BACKEND_URL}/api/members`, { headers: { Authorization: `Bearer ${token}` } });
-        setMembers(membersRes.data || []);
+        let membersList = membersRes.data || [];
+        // Re-apply chapter filter after refresh
+        if (userChapter && userChapter !== 'National') {
+          membersList = membersList.filter(m => m.chapter === userChapter);
+        }
+        setMembers(membersList);
       }
     } catch (error) {
       console.error('Error updating member info:', error);
@@ -254,6 +259,16 @@ export default function PromotionPage() {
           Back to Dashboard
         </Button>
 
+        {/* Chapter Scope Indicator */}
+        {userChapter && userChapter !== 'National' && (
+          <div className="p-3 bg-blue-900/30 border border-blue-600/50 rounded-lg">
+            <p className="text-blue-300 text-sm flex items-center gap-2">
+              <Building className="w-4 h-4" />
+              You can only manage members in the <span className="font-semibold">{userChapter}</span> chapter
+            </p>
+          </div>
+        )}
+
         {/* Member Selection */}
         <Card className="bg-slate-800 border-slate-700">
           <CardHeader>
@@ -262,7 +277,10 @@ export default function PromotionPage() {
               Select Member
             </CardTitle>
             <CardDescription>
-              Choose a member to manage their Discord roles and nickname
+              {userChapter === 'National' 
+                ? 'Choose a member to manage their Discord roles and nickname'
+                : `Choose a ${userChapter} member to manage their Discord roles and nickname`
+              }
             </CardDescription>
           </CardHeader>
           <CardContent>
