@@ -16643,11 +16643,19 @@ async def get_discord_roles(current_user: dict = Depends(verify_token)):
     """Get all Discord roles from the server"""
     global discord_bot
     
+    sys.stderr.write(f"[PROMO] /discord/roles called - bot={discord_bot is not None}, guild_id={DISCORD_GUILD_ID}\n")
+    sys.stderr.flush()
+    
     if not discord_bot or not DISCORD_GUILD_ID:
+        sys.stderr.write(f"[PROMO] Discord not configured - returning empty\n")
+        sys.stderr.flush()
         return {"roles": [], "message": "Discord bot not configured"}
     
     try:
         guild = discord_bot.get_guild(int(DISCORD_GUILD_ID))
+        sys.stderr.write(f"[PROMO] Guild lookup result: {guild is not None}\n")
+        sys.stderr.flush()
+        
         if not guild:
             return {"roles": [], "message": "Guild not found"}
         
@@ -16662,8 +16670,12 @@ async def get_discord_roles(current_user: dict = Depends(verify_token)):
                     "permissions": str(role.permissions.value)
                 })
         
+        sys.stderr.write(f"[PROMO] Returning {len(roles)} roles\n")
+        sys.stderr.flush()
         return {"roles": roles}
     except Exception as e:
+        sys.stderr.write(f"[PROMO] Error: {e}\n")
+        sys.stderr.flush()
         return {"roles": [], "message": str(e)}
 
 
