@@ -16660,20 +16660,28 @@ async def get_discord_roles(current_user: dict = Depends(verify_token)):
                         })
                 
                 # Cache roles to database for offline access
-                await db.discord_roles_cache.update_one(
-                    {"guild_id": DISCORD_GUILD_ID},
-                    {"$set": {"roles": roles, "updated_at": datetime.now(timezone.utc)}},
-                    upsert=True
-                )
+                try:
+                    await db.discord_roles_cache.update_one(
+                        {"guild_id": str(DISCORD_GUILD_ID)},
+                        {"$set": {"roles": roles, "updated_at": datetime.now(timezone.utc)}},
+                        upsert=True
+                    )
+                    logger.info(f"Cached {len(roles)} Discord roles to database")
+                except Exception as cache_err:
+                    logger.error(f"Failed to cache Discord roles: {cache_err}")
                 
                 return {"roles": roles}
         except Exception as e:
-            print(f"⚠️ Error fetching live Discord roles: {e}", file=sys.stderr, flush=True)
+            logger.error(f"Error fetching live Discord roles: {e}")
     
     # Fallback: Try to get cached roles from database
-    cached = await db.discord_roles_cache.find_one({"guild_id": DISCORD_GUILD_ID}, {"_id": 0})
-    if cached and cached.get("roles"):
-        return {"roles": cached["roles"], "cached": True}
+    try:
+        cached = await db.discord_roles_cache.find_one({"guild_id": str(DISCORD_GUILD_ID)}, {"_id": 0})
+        if cached and cached.get("roles"):
+            logger.info(f"Returning {len(cached['roles'])} cached Discord roles")
+            return {"roles": cached["roles"], "cached": True}
+    except Exception as e:
+        logger.error(f"Error fetching cached roles: {e}")
     
     # No bot and no cache - return empty with message
     return {"roles": [], "message": "Discord bot not connected and no cached roles available"}
