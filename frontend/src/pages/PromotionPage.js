@@ -219,6 +219,40 @@ export default function PromotionPage() {
   // Sort roles by position (higher position = more important)
   const sortedRoles = [...discordRoles].sort((a, b) => b.position - a.position);
 
+  // Loading state
+  if (loading) {
+    return (
+      <PageLayout title="Member Promotion">
+        <div className="flex items-center justify-center py-12">
+          <RefreshCw className="w-8 h-8 animate-spin text-blue-500" />
+        </div>
+      </PageLayout>
+    );
+  }
+
+  // Access denied
+  if (!hasAccess) {
+    return (
+      <PageLayout title="Member Promotion">
+        <div className="space-y-6">
+          <Button 
+            variant="outline" 
+            onClick={() => navigate('/')}
+            className="mb-4"
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Dashboard
+          </Button>
+          <Card className="bg-red-900/30 border-red-600/50">
+            <CardContent className="pt-6">
+              <p className="text-red-300">Access denied. This page is only available to National officers (Prez, VP, S@A, ENF, T, SEC).</p>
+            </CardContent>
+          </Card>
+        </div>
+      </PageLayout>
+    );
+  }
+
   return (
     <PageLayout title="Member Promotion">
       <div className="space-y-6">
