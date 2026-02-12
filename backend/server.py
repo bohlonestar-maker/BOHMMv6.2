@@ -1079,22 +1079,32 @@ async def kick_discord_member(member_handle: str, member_id: str, reason: str = 
         discord_user_id = None
         if linked_member:
             discord_user_id = linked_member.get("discord_id")
+            sys.stderr.write(f"✅ [KICK] Found linked Discord ID: {discord_user_id}\n")
+            sys.stderr.flush()
+        else:
+            sys.stderr.write(f"⚠️ [KICK] No linked Discord account found for member\n")
+            sys.stderr.flush()
         
         if not discord_user_id:
             # Try to find by matching display name to handle
-            sys.stderr.write(f"🔍 [DISCORD] Searching for member {member_handle} to kick...\n")
+            sys.stderr.write(f"🔍 [KICK] Searching guild members for handle '{member_handle}'...\n")
             sys.stderr.flush()
             
             guild = discord_bot.get_guild(int(DISCORD_GUILD_ID))
             if not guild:
+                sys.stderr.write(f"❌ [KICK] Could not find guild {DISCORD_GUILD_ID}\n")
+                sys.stderr.flush()
                 return {"success": False, "message": f"Could not find guild {DISCORD_GUILD_ID}"}
+            
+            sys.stderr.write(f"🔍 [KICK] Searching {len(guild.members)} guild members...\n")
+            sys.stderr.flush()
             
             # Search for member by nickname or username
             for discord_member in guild.members:
                 display_name = discord_member.nick or discord_member.display_name or discord_member.name
                 if display_name.lower() == member_handle.lower() or member_handle.lower() in display_name.lower():
                     discord_user_id = str(discord_member.id)
-                    sys.stderr.write(f"✅ [DISCORD] Matched {member_handle} to Discord user {display_name}\n")
+                    sys.stderr.write(f"✅ [KICK] Matched '{member_handle}' to Discord user '{display_name}' (ID: {discord_user_id})\n")
                     sys.stderr.flush()
                     break
         
