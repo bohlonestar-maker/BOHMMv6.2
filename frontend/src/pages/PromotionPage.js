@@ -500,13 +500,6 @@ export default function PromotionPage() {
             </CardContent>
           </Card>
         )}
-
-        {/* Loading State */}
-        {loading && (
-          <div className="flex items-center justify-center py-12">
-            <RefreshCw className="w-8 h-8 animate-spin text-blue-500" />
-          </div>
-        )}
       </div>
     </PageLayout>
   );
