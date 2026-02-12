@@ -230,6 +230,12 @@ Build a member management application with attendance tracking, dues management,
 - `DELETE /api/dues-reminders/extensions/{member_id}` - Revoke extension
 - `POST /api/dues-reminders/test-discord-suspension` - Test Discord suspension
 
+#### Discord Promotion (NEW - Feb 12, 2026)
+- `GET /api/discord/roles` - Get all Discord server roles
+- `GET /api/discord/member/{member_id}/roles` - Get member's current Discord roles
+- `POST /api/discord/member/{member_id}/roles` - Update member's Discord roles
+- `POST /api/discord/member/{member_id}/nickname` - Update member's Discord nickname
+
 #### Permissions
 - `GET /api/permissions/all` - Get all permissions by chapter
 - `PUT /api/permissions/bulk-update` - Update permissions for a title
