@@ -390,4 +390,4 @@ pdf.body_text('BOH Hub - Member Management System')
 # Save PDF
 pdf.output('/app/frontend/public/BOH_Hub_Admin_Manual.pdf')
 print("PDF generated successfully!")
-print("Download at: https://member-manager-26.preview.emergentagent.com/BOH_Hub_Admin_Manual.pdf")
+print("Download at: https://role-master-5.preview.emergentagent.com/BOH_Hub_Admin_Manual.pdf")

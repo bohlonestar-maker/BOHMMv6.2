@@ -11,7 +11,7 @@ import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 def check_user_chapter():
-    base_url = "https://member-manager-26.preview.emergentagent.com/api"
+    base_url = "https://role-master-5.preview.emergentagent.com/api"
     
     # Login as testadmin
     response = requests.post(

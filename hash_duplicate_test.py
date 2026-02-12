@@ -8,7 +8,7 @@ import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 class HashDuplicatePreventionTester:
-    def __init__(self, base_url="https://member-manager-26.preview.emergentagent.com/api"):
+    def __init__(self, base_url="https://role-master-5.preview.emergentagent.com/api"):
         self.base_url = base_url
         self.token = None
         self.tests_run = 0
