@@ -201,7 +201,7 @@ export default function PromotionPage() {
         {/* Back Button */}
         <Button 
           variant="outline" 
-          onClick={() => navigate('/dashboard')}
+          onClick={() => navigate('/')}
           className="mb-4"
         >
           <ArrowLeft className="w-4 h-4 mr-2" />
