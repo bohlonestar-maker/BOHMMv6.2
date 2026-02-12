@@ -1099,14 +1099,47 @@ async def kick_discord_member(member_handle: str, member_id: str, reason: str = 
             sys.stderr.write(f"🔍 [KICK] Searching {len(guild.members)} guild members...\n")
             sys.stderr.flush()
             
+            # Log first few members to debug
+            member_names = [m.nick or m.display_name or m.name for m in list(guild.members)[:10]]
+            sys.stderr.write(f"🔍 [KICK] Sample members in cache: {member_names}\n")
+            sys.stderr.flush()
+            
             # Search for member by nickname or username
             for discord_member in guild.members:
                 display_name = discord_member.nick or discord_member.display_name or discord_member.name
-                if display_name.lower() == member_handle.lower() or member_handle.lower() in display_name.lower():
+                # Check exact match, partial match, or if handle contains the display name
+                handle_lower = member_handle.lower()
+                display_lower = display_name.lower()
+                if (display_lower == handle_lower or 
+                    handle_lower in display_lower or 
+                    display_lower in handle_lower or
+                    # Also try matching without spaces
+                    handle_lower.replace(" ", "") in display_lower.replace(" ", "") or
+                    display_lower.replace(" ", "") in handle_lower.replace(" ", "")):
                     discord_user_id = str(discord_member.id)
                     sys.stderr.write(f"✅ [KICK] Matched '{member_handle}' to Discord user '{display_name}' (ID: {discord_user_id})\n")
                     sys.stderr.flush()
                     break
+            
+            # If still not found, try to search by fetching all members (bypasses cache)
+            if not discord_user_id:
+                sys.stderr.write(f"🔍 [KICK] Not found in cache, trying to fetch all members...\n")
+                sys.stderr.flush()
+                try:
+                    async for discord_member in guild.fetch_members(limit=None):
+                        display_name = discord_member.nick or discord_member.display_name or discord_member.name
+                        handle_lower = member_handle.lower()
+                        display_lower = display_name.lower()
+                        if (display_lower == handle_lower or 
+                            handle_lower in display_lower or 
+                            display_lower in handle_lower):
+                            discord_user_id = str(discord_member.id)
+                            sys.stderr.write(f"✅ [KICK] Matched '{member_handle}' to Discord user '{display_name}' via fetch (ID: {discord_user_id})\n")
+                            sys.stderr.flush()
+                            break
+                except Exception as fetch_err:
+                    sys.stderr.write(f"⚠️ [KICK] Failed to fetch members: {fetch_err}\n")
+                    sys.stderr.flush()
         
         if not discord_user_id:
             return {"success": False, "message": f"Could not find Discord user for member {member_handle}"}
