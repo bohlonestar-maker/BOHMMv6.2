@@ -16707,7 +16707,8 @@ async def get_discord_debug(current_user: dict = Depends(verify_token)):
     debug_info = {
         "discord_bot_running": discord_bot is not None,
         "guild_id_configured": DISCORD_GUILD_ID is not None and DISCORD_GUILD_ID != "",
-        "guild_id_value": DISCORD_GUILD_ID[:10] + "..." if DISCORD_GUILD_ID else None,
+        "guild_id_value": str(DISCORD_GUILD_ID) if DISCORD_GUILD_ID else "NOT SET",
+        "guild_id_type": str(type(DISCORD_GUILD_ID).__name__),
         "bot_token_configured": DISCORD_BOT_TOKEN is not None and DISCORD_BOT_TOKEN != "",
     }
     
