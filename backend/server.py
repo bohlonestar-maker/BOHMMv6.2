@@ -16764,47 +16764,30 @@ async def update_member_discord_roles(
     """Update a member's Discord roles"""
     global discord_bot
     
-    if not discord_bot:
-        raise HTTPException(status_code=503, detail="Discord bot not running")
-    
-    if not DISCORD_GUILD_ID:
-        raise HTTPException(status_code=500, detail="Discord guild ID not configured")
+    if not discord_bot or not DISCORD_GUILD_ID:
+        raise HTTPException(status_code=503, detail="Discord bot not configured")
     
     member = await db.members.find_one({"id": member_id}, {"_id": 0})
     if not member:
         raise HTTPException(status_code=404, detail="Member not found")
     
+    member_handle = member.get("handle", "")
+    
     try:
         guild = discord_bot.get_guild(int(DISCORD_GUILD_ID))
         if not guild:
-            raise HTTPException(status_code=404, detail="Discord guild not found")
+            raise HTTPException(status_code=404, detail="Guild not found")
         
-        # Find Discord member
+        # Find Discord member by handle
         discord_member = None
-        member_handle = member.get("handle", "")
-        
-        linked = await db.discord_members.find_one({
-            "$or": [
-                {"linked_member_id": member_id},
-                {"linked_handle": member_handle}
-            ]
-        })
-        
-        if linked and linked.get("discord_id"):
-            try:
-                discord_member = guild.get_member(int(linked["discord_id"]))
-            except (ValueError, TypeError):
-                pass  # Invalid discord_id format
+        for dm in guild.members:
+            display_name = dm.nick or dm.display_name or dm.name
+            if display_name.lower() == member_handle.lower() or member_handle.lower() in display_name.lower():
+                discord_member = dm
+                break
         
         if not discord_member:
-            for dm in guild.members:
-                display_name = dm.nick or dm.display_name or dm.name
-                if display_name.lower() == member_handle.lower() or member_handle.lower() in display_name.lower():
-                    discord_member = dm
-                    break
-        
-        if not discord_member:
-            raise HTTPException(status_code=404, detail="Member not found in Discord")
+            raise HTTPException(status_code=404, detail=f"Member '{member_handle}' not found in Discord")
         
         # Get current roles and requested roles
         current_role_ids = {str(r.id) for r in discord_member.roles if r.name != "@everyone"}
@@ -16816,39 +16799,25 @@ async def update_member_discord_roles(
         
         added = 0
         removed = 0
-        errors = []
         
         # Add new roles
         for role_id in roles_to_add:
-            try:
-                role = guild.get_role(int(role_id))
-                if role:
-                    await discord_member.add_roles(role, reason=f"Promotion by {current_user.get('username')}")
-                    added += 1
-            except Exception as e:
-                errors.append(f"Failed to add role {role_id}: {str(e)}")
+            role = guild.get_role(int(role_id))
+            if role:
+                await discord_member.add_roles(role, reason=f"Promotion by {current_user.get('username')}")
+                added += 1
         
         # Remove old roles
         for role_id in roles_to_remove:
-            try:
-                role = guild.get_role(int(role_id))
-                if role and not role.is_bot_managed():
-                    await discord_member.remove_roles(role, reason=f"Role update by {current_user.get('username')}")
-                    removed += 1
-            except Exception as e:
-                errors.append(f"Failed to remove role {role_id}: {str(e)}")
+            role = guild.get_role(int(role_id))
+            if role and not role.is_bot_managed():
+                await discord_member.remove_roles(role, reason=f"Role update by {current_user.get('username')}")
+                removed += 1
         
-        message = f"Updated roles: {added} added, {removed} removed"
-        if errors:
-            message += f". Errors: {', '.join(errors)}"
-        
-        logger.info(f"Discord roles updated for {member_handle} by {current_user.get('username')}: +{added}/-{removed}")
-        
-        return {"success": True, "message": message, "added": added, "removed": removed}
+        return {"success": True, "message": f"Updated roles: {added} added, {removed} removed", "added": added, "removed": removed}
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error updating Discord roles: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
