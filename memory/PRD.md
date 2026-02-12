@@ -257,6 +257,7 @@ Build a member management application with attendance tracking, dues management,
 - [x] ~~Square subscription sync feature~~ (Completed)
 - [x] ~~Suggestion Box~~ (Completed)
 - [x] ~~Hangaround/Prospect Restructure~~ (Completed Jan 19)
+- [x] ~~Promotion Page~~ (Completed Feb 12)
 
 #### P1 - High Priority
 - [x] ~~Square one-time payment sync bug~~ (Completed Jan 29 - fixed + admin reapply endpoint)
