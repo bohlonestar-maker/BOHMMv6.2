@@ -80,7 +80,18 @@ export default function PromotionPage() {
     };
     
     fetchData();
-  }, [token]);
+  }, [token, hasPermission]);
+
+  // Show loading while checking permission
+  if (hasPermission === null) {
+    return (
+      <PageLayout title="Member Promotion">
+        <div className="flex items-center justify-center py-12">
+          <RefreshCw className="w-8 h-8 animate-spin text-blue-500" />
+        </div>
+      </PageLayout>
+    );
+  }
 
   // When member is selected, fetch their current Discord roles
   const handleMemberSelect = async (memberId) => {
