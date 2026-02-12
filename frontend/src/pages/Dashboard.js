@@ -1067,6 +1067,17 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
                         </DropdownMenuItem>
                       )}
                       
+                      {/* Promotions - Permission based */}
+                      {userPermissions?.ad_page_access && (
+                        <DropdownMenuItem 
+                          onSelect={(e) => { e.preventDefault(); navigate("/promotions"); }} 
+                          className="text-red-400 focus:bg-red-900/30 focus:text-red-300 cursor-pointer"
+                        >
+                          <Star className="w-4 h-4 mr-2" />
+                          Promotions
+                        </DropdownMenuItem>
+                      )}
+                      
                       {/* Reports - Permission based */}
                       {userPermissions?.view_reports && (
                         <DropdownMenuItem 
