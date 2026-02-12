@@ -16661,12 +16661,12 @@ async def get_discord_roles(current_user: dict = Depends(verify_token)):
                 
                 # Cache roles to database for offline access
                 try:
-                    await db.discord_roles_cache.update_one(
+                    result = await db.discord_roles_cache.update_one(
                         {"guild_id": str(DISCORD_GUILD_ID)},
                         {"$set": {"roles": roles, "updated_at": datetime.now(timezone.utc)}},
                         upsert=True
                     )
-                    logger.info(f"Cached {len(roles)} Discord roles to database")
+                    logger.info(f"Cached {len(roles)} Discord roles (matched={result.matched_count}, modified={result.modified_count}, upserted_id={result.upserted_id})")
                 except Exception as cache_err:
                     logger.error(f"Failed to cache Discord roles: {cache_err}")
                 
