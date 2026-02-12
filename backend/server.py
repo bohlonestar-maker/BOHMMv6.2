@@ -16699,6 +16699,43 @@ async def get_discord_roles(current_user: dict = Depends(verify_token)):
     return {"roles": [], "message": "Discord bot not connected and no cached roles available"}
 
 
+@api_router.get("/discord/debug")
+async def get_discord_debug(current_user: dict = Depends(verify_token)):
+    """Debug endpoint for Discord integration status"""
+    global discord_bot
+    
+    debug_info = {
+        "discord_bot_running": discord_bot is not None,
+        "guild_id_configured": DISCORD_GUILD_ID is not None and DISCORD_GUILD_ID != "",
+        "guild_id_value": DISCORD_GUILD_ID[:10] + "..." if DISCORD_GUILD_ID else None,
+        "bot_token_configured": DISCORD_BOT_TOKEN is not None and DISCORD_BOT_TOKEN != "",
+    }
+    
+    if discord_bot and DISCORD_GUILD_ID:
+        try:
+            guild = discord_bot.get_guild(int(DISCORD_GUILD_ID))
+            debug_info["guild_found"] = guild is not None
+            if guild:
+                debug_info["guild_name"] = guild.name
+                debug_info["guild_member_count"] = guild.member_count
+                debug_info["guild_role_count"] = len(guild.roles)
+        except Exception as e:
+            debug_info["guild_error"] = str(e)
+    
+    # Check cache
+    try:
+        if DISCORD_GUILD_ID:
+            cached = await db.discord_roles_cache.find_one({"guild_id": str(DISCORD_GUILD_ID)})
+            debug_info["cache_exists"] = cached is not None
+            if cached:
+                debug_info["cached_role_count"] = len(cached.get("roles", []))
+                debug_info["cache_updated_at"] = str(cached.get("updated_at", "unknown"))
+    except Exception as e:
+        debug_info["cache_error"] = str(e)
+    
+    return debug_info
+
+
 @api_router.get("/discord/member/{member_id}/roles")
 async def get_member_discord_roles(member_id: str, current_user: dict = Depends(verify_token)):
     """Get a member's current Discord roles"""
