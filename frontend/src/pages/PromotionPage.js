@@ -38,6 +38,7 @@ export default function PromotionPage() {
 
   // Check permission on mount
   const [userChapter, setUserChapter] = useState(null);
+  const [permissionChecked, setPermissionChecked] = useState(false);
   
   useEffect(() => {
     const checkPermission = async () => {
@@ -52,7 +53,8 @@ export default function PromotionPage() {
           return;
         }
         setHasPermission(true);
-        setUserChapter(response.data?.chapter || null);
+        setUserChapter(response.data?.chapter || 'National');
+        setPermissionChecked(true);
       } catch (error) {
         console.error('Error checking permission:', error);
         navigate('/login');
@@ -63,14 +65,14 @@ export default function PromotionPage() {
 
   // Fetch members and Discord roles on mount
   useEffect(() => {
-    if (!hasPermission) return;
+    if (!hasPermission || !permissionChecked) return;
     
     const fetchData = async () => {
       try {
-        const [membersRes, rolesRes] = await Promise.all([
-          axios.get(`${BACKEND_URL}/api/members`, { headers: { Authorization: `Bearer ${token}` } }),
-          axios.get(`${BACKEND_URL}/api/discord/roles`, { headers: { Authorization: `Bearer ${token}` } })
-        ]);
+        // Fetch members first - this is required
+        const membersRes = await axios.get(`${BACKEND_URL}/api/members`, { 
+          headers: { Authorization: `Bearer ${token}` } 
+        });
         
         let membersList = membersRes.data || [];
         
@@ -80,17 +82,28 @@ export default function PromotionPage() {
         }
         
         setMembers(membersList);
-        setDiscordRoles(rolesRes.data?.roles || []);
+        
+        // Try to fetch Discord roles - this may fail if Discord bot is not running
+        try {
+          const rolesRes = await axios.get(`${BACKEND_URL}/api/discord/roles`, { 
+            headers: { Authorization: `Bearer ${token}` } 
+          });
+          setDiscordRoles(rolesRes.data?.roles || []);
+        } catch (rolesError) {
+          console.error('Error fetching Discord roles:', rolesError);
+          // Don't fail the whole page if Discord roles can't be fetched
+          toast.error('Discord roles unavailable - Discord bot may not be running');
+        }
       } catch (error) {
-        console.error('Error fetching data:', error);
-        toast.error('Failed to load data');
+        console.error('Error fetching members:', error);
+        toast.error('Failed to load members');
       } finally {
         setLoading(false);
       }
     };
     
     fetchData();
-  }, [token, hasPermission, userChapter]);
+  }, [token, hasPermission, permissionChecked, userChapter]);
 
   // Show loading while checking permission
   if (hasPermission === null) {
