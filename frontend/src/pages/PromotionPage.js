@@ -292,6 +292,79 @@ export default function PromotionPage() {
           </Card>
         )}
 
+        {/* Chapter & Title Management */}
+        {selectedMemberId && (
+          <Card className="bg-slate-800 border-slate-700">
+            <CardHeader>
+              <CardTitle className="text-white flex items-center gap-2">
+                <UserCog className="w-5 h-5" />
+                Chapter & Title
+              </CardTitle>
+              <CardDescription>
+                Update the member's chapter and title in the system database
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-slate-300">Chapter</Label>
+                  <Select value={chapter} onValueChange={setChapter}>
+                    <SelectTrigger className="bg-slate-700 border-slate-600 text-white" data-testid="chapter-select">
+                      <SelectValue placeholder="Select chapter..." />
+                    </SelectTrigger>
+                    <SelectContent className="bg-slate-700 border-slate-600">
+                      {CHAPTERS.map(ch => (
+                        <SelectItem key={ch} value={ch} className="text-white hover:bg-slate-600">
+                          {ch}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-slate-300">Title</Label>
+                  <Select value={title} onValueChange={setTitle}>
+                    <SelectTrigger className="bg-slate-700 border-slate-600 text-white" data-testid="title-select">
+                      <SelectValue placeholder="Select title..." />
+                    </SelectTrigger>
+                    <SelectContent className="bg-slate-700 border-slate-600">
+                      {TITLES.map(t => (
+                        <SelectItem key={t} value={t} className="text-white hover:bg-slate-600">
+                          {t}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              
+              {(chapter !== selectedMember?.chapter || title !== selectedMember?.title) && (
+                <div className="mt-4 p-3 bg-amber-900/30 border border-amber-600/50 rounded-lg">
+                  <p className="text-amber-300 text-sm">
+                    Changing from <span className="font-medium">{selectedMember?.chapter} {selectedMember?.title}</span> to <span className="font-medium">{chapter} {title}</span>
+                  </p>
+                </div>
+              )}
+              
+              <div className="mt-4 flex justify-end">
+                <Button 
+                  onClick={handleUpdateMemberInfo}
+                  disabled={updatingMemberInfo || (chapter === selectedMember?.chapter && title === selectedMember?.title)}
+                  className="bg-amber-600 hover:bg-amber-700 disabled:bg-slate-600"
+                  data-testid="update-member-info-btn"
+                >
+                  {updatingMemberInfo ? (
+                    <RefreshCw className="w-4 h-4 animate-spin mr-2" />
+                  ) : (
+                    <Save className="w-4 h-4 mr-2" />
+                  )}
+                  {updatingMemberInfo ? 'Updating...' : 'Update Chapter & Title'}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Discord Roles */}
         {selectedMemberId && (
           <Card className="bg-slate-800 border-slate-700">
