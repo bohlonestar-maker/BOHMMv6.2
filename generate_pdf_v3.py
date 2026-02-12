@@ -411,4 +411,4 @@ pdf.table_row(['Gray', 'Inactive/Archived'], [50, 130])
 # Save PDF
 pdf.output('/app/frontend/public/BOH_Hub_Admin_Manual.pdf')
 print("PDF generated successfully!")
-print("Download at: https://bohnexus.preview.emergentagent.com/BOH_Hub_Admin_Manual.pdf")
+print("Download at: https://member-manager-26.preview.emergentagent.com/BOH_Hub_Admin_Manual.pdf")

@@ -31,7 +31,7 @@ from dotenv import load_dotenv
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 class DiscordAnalyticsInvestigator:
-    def __init__(self, base_url="https://bohnexus.preview.emergentagent.com/api"):
+    def __init__(self, base_url="https://member-manager-26.preview.emergentagent.com/api"):
         self.base_url = base_url
         self.token = None
         self.tests_run = 0
