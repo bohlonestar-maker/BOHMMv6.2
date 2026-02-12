@@ -3798,14 +3798,21 @@ async def delete_member(
     # Kick from Discord if requested
     discord_result = None
     if kick_from_discord:
+        member_handle = member.get("handle", "Unknown")
+        sys.stderr.write(f"🔄 [ARCHIVE] Attempting to kick Discord member: handle='{member_handle}', member_id='{member_id}'\n")
+        sys.stderr.flush()
         try:
             discord_result = await kick_discord_member(
-                member_handle=member.get("handle", "Unknown"),
+                member_handle=member_handle,
                 member_id=member_id,
-                reason=f"Member deleted: {reason}"
+                reason=f"Member archived: {reason}"
             )
+            sys.stderr.write(f"🔄 [ARCHIVE] Kick result: {discord_result}\n")
+            sys.stderr.flush()
         except Exception as e:
             discord_result = {"success": False, "message": str(e)}
+            sys.stderr.write(f"❌ [ARCHIVE] Kick exception: {e}\n")
+            sys.stderr.flush()
     
     # Cancel Square subscription if requested
     square_result = None
