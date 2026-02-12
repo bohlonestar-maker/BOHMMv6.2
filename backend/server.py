@@ -16804,7 +16804,12 @@ async def update_member_discord_nickname(
     """Update a member's Discord nickname"""
     global discord_bot
     
+    sys.stderr.write(f"[PROMO] /discord/member/{member_id}/nickname called\n")
+    sys.stderr.flush()
+    
     if not discord_bot or not DISCORD_GUILD_ID:
+        sys.stderr.write(f"[PROMO] Discord not configured - bot={discord_bot is not None}, guild_id={DISCORD_GUILD_ID}\n")
+        sys.stderr.flush()
         raise HTTPException(status_code=503, detail="Discord bot not configured")
     
     member = await db.members.find_one({"id": member_id}, {"_id": 0})
@@ -16812,6 +16817,8 @@ async def update_member_discord_nickname(
         raise HTTPException(status_code=404, detail="Member not found")
     
     member_handle = member.get("handle", "")
+    sys.stderr.write(f"[PROMO] Looking up Discord member for: {member_handle}\n")
+    sys.stderr.flush()
     
     try:
         guild = discord_bot.get_guild(int(DISCORD_GUILD_ID))
@@ -16829,12 +16836,20 @@ async def update_member_discord_nickname(
         if not discord_member:
             raise HTTPException(status_code=404, detail=f"Member '{member_handle}' not found in Discord")
         
+        sys.stderr.write(f"[PROMO] Found Discord member, updating nickname to: {request.nickname}\n")
+        sys.stderr.flush()
+        
         await discord_member.edit(nick=request.nickname, reason=f"Nickname update by {current_user.get('username')}")
+        
+        sys.stderr.write(f"[PROMO] Nickname updated successfully\n")
+        sys.stderr.flush()
         
         return {"success": True, "message": f"Nickname updated to '{request.nickname}'"}
     except HTTPException:
         raise
     except Exception as e:
+        sys.stderr.write(f"[PROMO] Error updating nickname: {e}\n")
+        sys.stderr.flush()
         raise HTTPException(status_code=500, detail=str(e))
 
 # ==================== END DISCORD PROMOTION ENDPOINTS ====================
