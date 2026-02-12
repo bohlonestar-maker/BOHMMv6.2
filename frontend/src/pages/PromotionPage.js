@@ -65,6 +65,8 @@ export default function PromotionPage() {
     setSelectedRoles([]);
     setCurrentDiscordRoles([]);
     setNickname(member?.handle || '');
+    setChapter(member?.chapter || '');
+    setTitle(member?.title || '');
     
     if (memberId) {
       try {
