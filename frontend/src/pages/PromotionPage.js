@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { Checkbox } from "../components/ui/checkbox";
 import { Badge } from "../components/ui/badge";
 import { toast } from "sonner";
-import { Users, Shield, Award, RefreshCw, Save, ArrowLeft, Building, UserCog } from "lucide-react";
+import { Users, Shield, Award, RefreshCw, Save, ArrowLeft, UserCog } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import axios from 'axios';
 import PageLayout from "../components/PageLayout";
@@ -34,121 +34,28 @@ export default function PromotionPage() {
   const [promoting, setPromoting] = useState(false);
   const [updatingNickname, setUpdatingNickname] = useState(false);
   const [updatingMemberInfo, setUpdatingMemberInfo] = useState(false);
-  const [hasPermission, setHasPermission] = useState(null);
 
-  // Check permission and get user chapter on mount
-  const [userChapter, setUserChapter] = useState('National');
-  const [errorMessage, setErrorMessage] = useState('');
-  
+  // Fetch members and Discord roles on mount
   useEffect(() => {
-    const checkPermissionAndFetch = async () => {
+    const fetchData = async () => {
       try {
-        console.log('Checking permissions...');
+        const [membersRes, rolesRes] = await Promise.all([
+          axios.get(`${BACKEND_URL}/api/members`, { headers: { Authorization: `Bearer ${token}` } }),
+          axios.get(`${BACKEND_URL}/api/discord/roles`, { headers: { Authorization: `Bearer ${token}` } })
+        ]);
         
-        // Get user info including permissions and chapter
-        const authResponse = await axios.get(`${BACKEND_URL}/api/auth/verify`, { 
-          headers: { Authorization: `Bearer ${token}` } 
-        });
-        
-        console.log('Auth response:', authResponse.data);
-        
-        const perms = authResponse.data?.permissions || {};
-        const chapter = authResponse.data?.chapter || 'National';
-        
-        console.log('Permissions:', perms);
-        console.log('Has view_promotions:', perms.view_promotions);
-        
-        // Check permission - redirect if not authorized
-        if (!perms.view_promotions) {
-          setErrorMessage('You do not have the "view_promotions" permission. Please ask an admin to enable it in the Permissions page.');
-          setLoading(false);
-          return;
-        }
-        
-        setUserChapter(chapter);
-        setHasPermission(true);
-        
-        console.log('Fetching members...');
-        
-        // Now fetch members and roles
-        const membersRes = await axios.get(`${BACKEND_URL}/api/members`, { 
-          headers: { Authorization: `Bearer ${token}` } 
-        });
-        
-        console.log('Members fetched:', membersRes.data?.length || 0);
-        
-        let membersList = membersRes.data || [];
-        
-        // Filter members by chapter if user is not National
-        if (chapter && chapter !== 'National') {
-          membersList = membersList.filter(m => m.chapter === chapter);
-        }
-        
-        setMembers(membersList);
-        
-        console.log('Fetching Discord roles...');
-        
-        // Try to fetch Discord roles
-        try {
-          const rolesRes = await axios.get(`${BACKEND_URL}/api/discord/roles`, { 
-            headers: { Authorization: `Bearer ${token}` } 
-          });
-          console.log('Discord roles fetched:', rolesRes.data?.roles?.length || 0);
-          setDiscordRoles(rolesRes.data?.roles || []);
-        } catch (rolesError) {
-          console.error('Error fetching Discord roles:', rolesError);
-          toast.error('Discord roles unavailable');
-        }
-        
+        setMembers(membersRes.data || []);
+        setDiscordRoles(rolesRes.data?.roles || []);
       } catch (error) {
-        console.error('Error:', error);
-        console.error('Error response:', error.response?.data);
-        if (error.response?.status === 401) {
-          navigate('/login');
-        } else {
-          setErrorMessage(`Failed to load page: ${error.response?.data?.detail || error.message}`);
-        }
+        console.error('Error fetching data:', error);
+        toast.error('Failed to load data');
       } finally {
         setLoading(false);
       }
     };
     
-    checkPermissionAndFetch();
-  }, [token, navigate]);
-
-  // Show error message if permission denied
-  if (errorMessage) {
-    return (
-      <PageLayout title="Member Promotion">
-        <div className="space-y-6">
-          <Button 
-            variant="outline" 
-            onClick={() => navigate('/')}
-            className="mb-4"
-          >
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Dashboard
-          </Button>
-          <Card className="bg-red-900/30 border-red-600/50">
-            <CardContent className="pt-6">
-              <p className="text-red-300">{errorMessage}</p>
-            </CardContent>
-          </Card>
-        </div>
-      </PageLayout>
-    );
-  }
-
-  // Show loading while checking permission
-  if (hasPermission === null) {
-    return (
-      <PageLayout title="Member Promotion">
-        <div className="flex items-center justify-center py-12">
-          <RefreshCw className="w-8 h-8 animate-spin text-blue-500" />
-        </div>
-      </PageLayout>
-    );
-  }
+    fetchData();
+  }, [token]);
 
   // When member is selected, fetch their current Discord roles
   const handleMemberSelect = async (memberId) => {
@@ -177,22 +84,12 @@ export default function PromotionPage() {
         }
       } catch (error) {
         console.error('Error fetching member Discord info:', error);
-        // Member might not be linked to Discord yet
       }
     }
   };
 
-  // Toggle role selection
-  const toggleRole = (roleId) => {
-    setSelectedRoles(prev => 
-      prev.includes(roleId) 
-        ? prev.filter(id => id !== roleId)
-        : [...prev, roleId]
-    );
-  };
-
-  // Promote member - update their Discord roles
-  const handlePromote = async () => {
+  // Update Discord roles
+  const handleUpdateRoles = async () => {
     if (!selectedMemberId) {
       toast.error('Please select a member');
       return;
@@ -208,7 +105,7 @@ export default function PromotionPage() {
       
       if (response.data?.success) {
         toast.success(response.data.message || 'Roles updated successfully');
-        // Refresh current roles
+        // Refresh member's roles
         handleMemberSelect(selectedMemberId);
       } else {
         toast.error(response.data?.message || 'Failed to update roles');
@@ -223,8 +120,13 @@ export default function PromotionPage() {
 
   // Update Discord nickname
   const handleUpdateNickname = async () => {
-    if (!selectedMemberId || !nickname.trim()) {
-      toast.error('Please select a member and enter a nickname');
+    if (!selectedMemberId) {
+      toast.error('Please select a member');
+      return;
+    }
+    
+    if (!nickname.trim()) {
+      toast.error('Please enter a nickname');
       return;
     }
     
@@ -271,16 +173,9 @@ export default function PromotionPage() {
       
       if (response.data) {
         toast.success(`Member updated to ${chapter} ${title}`);
-        // Update local state
         setSelectedMember(prev => ({ ...prev, chapter, title }));
-        // Refresh members list
         const membersRes = await axios.get(`${BACKEND_URL}/api/members`, { headers: { Authorization: `Bearer ${token}` } });
-        let membersList = membersRes.data || [];
-        // Re-apply chapter filter after refresh
-        if (userChapter && userChapter !== 'National') {
-          membersList = membersList.filter(m => m.chapter === userChapter);
-        }
-        setMembers(membersList);
+        setMembers(membersRes.data || []);
       }
     } catch (error) {
       console.error('Error updating member info:', error);
@@ -288,6 +183,15 @@ export default function PromotionPage() {
     } finally {
       setUpdatingMemberInfo(false);
     }
+  };
+
+  // Toggle role selection
+  const toggleRole = (roleId) => {
+    setSelectedRoles(prev => 
+      prev.includes(roleId) 
+        ? prev.filter(id => id !== roleId)
+        : [...prev, roleId]
+    );
   };
 
   // Sort roles by position (higher position = more important)
@@ -306,16 +210,6 @@ export default function PromotionPage() {
           Back to Dashboard
         </Button>
 
-        {/* Chapter Scope Indicator */}
-        {userChapter && userChapter !== 'National' && (
-          <div className="p-3 bg-blue-900/30 border border-blue-600/50 rounded-lg">
-            <p className="text-blue-300 text-sm flex items-center gap-2">
-              <Building className="w-4 h-4" />
-              You can only manage members in the <span className="font-semibold">{userChapter}</span> chapter
-            </p>
-          </div>
-        )}
-
         {/* Member Selection */}
         <Card className="bg-slate-800 border-slate-700">
           <CardHeader>
@@ -324,10 +218,7 @@ export default function PromotionPage() {
               Select Member
             </CardTitle>
             <CardDescription>
-              {userChapter === 'National' 
-                ? 'Choose a member to manage their Discord roles and nickname'
-                : `Choose a ${userChapter} member to manage their Discord roles and nickname`
-              }
+              Choose a member to manage their Discord roles and nickname
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -349,11 +240,9 @@ export default function PromotionPage() {
             </Select>
             
             {selectedMember && (
-              <div className="mt-4 p-3 bg-slate-700/50 rounded-lg">
+              <div className="mt-4 p-4 bg-slate-700/50 rounded-lg">
                 <p className="text-white font-medium">{selectedMember.handle}</p>
-                <p className="text-slate-400 text-sm">
-                  {selectedMember.chapter} - {selectedMember.title}
-                </p>
+                <p className="text-slate-400 text-sm">{selectedMember.chapter} - {selectedMember.title}</p>
                 {selectedMember.name && (
                   <p className="text-slate-400 text-sm">{selectedMember.name}</p>
                 )}
@@ -362,7 +251,7 @@ export default function PromotionPage() {
           </CardContent>
         </Card>
 
-        {/* Nickname Management */}
+        {/* Discord Nickname */}
         {selectedMemberId && (
           <Card className="bg-slate-800 border-slate-700">
             <CardHeader>
@@ -371,15 +260,15 @@ export default function PromotionPage() {
                 Discord Nickname
               </CardTitle>
               <CardDescription>
-                Update the member's display name in Discord
+                Update the member's display name on Discord
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="flex gap-3">
+              <div className="flex gap-4">
                 <Input
                   value={nickname}
                   onChange={(e) => setNickname(e.target.value)}
-                  placeholder="Enter Discord nickname..."
+                  placeholder="Enter nickname..."
                   className="bg-slate-700 border-slate-600 text-white flex-1"
                   data-testid="nickname-input"
                 />
@@ -392,10 +281,7 @@ export default function PromotionPage() {
                   {updatingNickname ? (
                     <RefreshCw className="w-4 h-4 animate-spin" />
                   ) : (
-                    <>
-                      <Save className="w-4 h-4 mr-2" />
-                      Update Nickname
-                    </>
+                    'Update Nickname'
                   )}
                 </Button>
               </div>
@@ -485,19 +371,24 @@ export default function PromotionPage() {
                 Discord Roles
               </CardTitle>
               <CardDescription>
-                Select the roles to assign to this member. Current roles are pre-selected.
+                Select the roles this member should have on Discord
               </CardDescription>
             </CardHeader>
             <CardContent>
+              {/* Current Roles */}
               {currentDiscordRoles.length > 0 && (
                 <div className="mb-4">
-                  <Label className="text-slate-400 text-sm">Current Roles:</Label>
-                  <div className="flex flex-wrap gap-2 mt-2">
+                  <Label className="text-slate-300 text-sm mb-2 block">Current Roles:</Label>
+                  <div className="flex flex-wrap gap-2">
                     {currentDiscordRoles.map(role => (
                       <Badge 
-                        key={role.id} 
-                        style={{ backgroundColor: role.color || '#5865F2' }}
-                        className="text-white"
+                        key={role.id}
+                        style={{ 
+                          backgroundColor: role.color ? `${role.color}33` : '#374151',
+                          borderColor: role.color || '#4B5563',
+                          color: role.color || '#9CA3AF'
+                        }}
+                        className="border"
                       >
                         {role.name}
                       </Badge>
@@ -505,57 +396,59 @@ export default function PromotionPage() {
                   </div>
                 </div>
               )}
-              
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 max-h-[400px] overflow-y-auto p-2">
+
+              {/* Role Selection */}
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 mt-4">
                 {sortedRoles.map(role => (
-                  <div
+                  <div 
                     key={role.id}
-                    className={`flex items-center space-x-2 p-2 rounded-lg border cursor-pointer transition-all ${
-                      selectedRoles.includes(role.id)
-                        ? 'bg-blue-900/50 border-blue-500'
-                        : 'bg-slate-700/50 border-slate-600 hover:border-slate-500'
-                    }`}
-                    onClick={() => toggleRole(role.id)}
+                    className="flex items-center space-x-2 p-2 rounded bg-slate-700/50 hover:bg-slate-700"
                   >
                     <Checkbox
+                      id={`role-${role.id}`}
                       checked={selectedRoles.includes(role.id)}
                       onCheckedChange={() => toggleRole(role.id)}
-                      className="border-slate-400"
+                      className="border-slate-500"
                     />
-                    <div className="flex items-center gap-2 flex-1 min-w-0">
-                      <div 
-                        className="w-3 h-3 rounded-full flex-shrink-0"
-                        style={{ backgroundColor: role.color || '#99AAB5' }}
+                    <label 
+                      htmlFor={`role-${role.id}`}
+                      className="text-sm cursor-pointer flex items-center gap-2"
+                      style={{ color: role.color || '#9CA3AF' }}
+                    >
+                      <span 
+                        className="w-3 h-3 rounded-full" 
+                        style={{ backgroundColor: role.color || '#4B5563' }}
                       />
-                      <span className="text-sm text-white truncate">{role.name}</span>
-                    </div>
+                      {role.name}
+                    </label>
                   </div>
                 ))}
               </div>
-              
+
+              {/* Update Button */}
               <div className="mt-6 flex justify-end">
                 <Button 
-                  onClick={handlePromote}
+                  onClick={handleUpdateRoles}
                   disabled={promoting}
                   className="bg-green-600 hover:bg-green-700"
-                  data-testid="promote-btn"
+                  data-testid="update-roles-btn"
                 >
                   {promoting ? (
                     <RefreshCw className="w-4 h-4 animate-spin mr-2" />
                   ) : (
-                    <Award className="w-4 h-4 mr-2" />
+                    <Save className="w-4 h-4 mr-2" />
                   )}
-                  {promoting ? 'Updating Roles...' : 'Update Discord Roles'}
+                  {promoting ? 'Updating...' : 'Update Discord Roles'}
                 </Button>
               </div>
             </CardContent>
           </Card>
         )}
 
+        {/* Loading State */}
         {loading && (
-          <div className="text-center py-8">
-            <RefreshCw className="w-8 h-8 animate-spin mx-auto text-blue-500" />
-            <p className="text-slate-400 mt-2">Loading...</p>
+          <div className="flex items-center justify-center py-12">
+            <RefreshCw className="w-8 h-8 animate-spin text-blue-500" />
           </div>
         )}
       </div>
