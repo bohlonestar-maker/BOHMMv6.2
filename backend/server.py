@@ -6356,6 +6356,8 @@ async def get_archived_prospects(current_user: dict = Depends(verify_admin)):
 @api_router.post("/archived/members/{member_id}/restore")
 async def restore_archived_member(member_id: str, current_user: dict = Depends(verify_admin)):
     """Restore an archived member back to active members"""
+    global discord_bot
+    
     # Get archived member
     archived_member = await db.archived_members.find_one({"id": member_id}, {"_id": 0})
     if not archived_member:
@@ -6382,7 +6384,105 @@ async def restore_archived_member(member_id: str, current_user: dict = Depends(v
         details=f"Restored member: {archived_member.get('name', 'Unknown')} ({archived_member.get('handle', 'Unknown')})"
     )
     
-    return {"message": "Member restored successfully"}
+    # Send Discord invite to the member's personal email
+    discord_invite_sent = False
+    personal_email = archived_member.get("personal_email")
+    member_name = archived_member.get("name", "Member")
+    member_handle = archived_member.get("handle", "")
+    
+    if personal_email and discord_bot and DISCORD_GUILD_ID:
+        try:
+            guild = discord_bot.get_guild(int(DISCORD_GUILD_ID))
+            if guild:
+                # Find a suitable channel to create invite from (first text channel)
+                invite_channel = None
+                for channel in guild.text_channels:
+                    # Prefer a general/welcome channel if exists
+                    if any(name in channel.name.lower() for name in ['general', 'welcome', 'lobby']):
+                        invite_channel = channel
+                        break
+                if not invite_channel and guild.text_channels:
+                    invite_channel = guild.text_channels[0]
+                
+                if invite_channel:
+                    # Create a single-use invite that expires in 7 days
+                    invite = await invite_channel.create_invite(
+                        max_age=604800,  # 7 days in seconds
+                        max_uses=1,
+                        unique=True,
+                        reason=f"Invite for restored member {member_handle}"
+                    )
+                    
+                    # Send email with the invite
+                    if ZOHO_EMAIL and ZOHO_PASSWORD:
+                        try:
+                            subject = "Welcome Back to Brothers of the Highway Discord!"
+                            
+                            text_content = f"""
+Hello {member_name},
+
+Great news! Your membership with Brothers of the Highway has been restored.
+
+You're invited to rejoin our Discord server:
+{invite.url}
+
+This invite link is valid for 7 days and can only be used once.
+
+Welcome back, Brother!
+
+- Brothers of the Highway
+"""
+                            
+                            html_content = f"""
+<html>
+<body style="font-family: Arial, sans-serif; background-color: #1a1a2e; color: #ffffff; padding: 20px;">
+    <div style="max-width: 600px; margin: 0 auto; background-color: #16213e; padding: 30px; border-radius: 10px;">
+        <h2 style="color: #e94560;">Welcome Back, {member_name}!</h2>
+        <p>Great news! Your membership with <strong>Brothers of the Highway</strong> has been restored.</p>
+        <p>You're invited to rejoin our Discord server:</p>
+        <p style="text-align: center; margin: 30px 0;">
+            <a href="{invite.url}" style="background-color: #5865F2; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-size: 18px; display: inline-block;">
+                Rejoin Discord Server
+            </a>
+        </p>
+        <p style="color: #888; font-size: 12px;">This invite link is valid for 7 days and can only be used once.</p>
+        <p style="margin-top: 30px;">Welcome back, Brother!</p>
+        <p style="color: #e94560;">- Brothers of the Highway</p>
+    </div>
+</body>
+</html>
+"""
+                            
+                            msg = MIMEMultipart('alternative')
+                            msg['Subject'] = subject
+                            msg['From'] = ZOHO_EMAIL
+                            msg['To'] = personal_email
+                            msg.attach(MIMEText(text_content, 'plain'))
+                            msg.attach(MIMEText(html_content, 'html'))
+                            
+                            with smtplib.SMTP_SSL('smtp.zoho.com', 465) as server:
+                                server.login(ZOHO_EMAIL, ZOHO_PASSWORD)
+                                server.sendmail(ZOHO_EMAIL, personal_email, msg.as_string())
+                            
+                            discord_invite_sent = True
+                            sys.stderr.write(f"✅ Discord invite sent to {personal_email} for restored member {member_handle}\n")
+                            sys.stderr.flush()
+                        except Exception as email_err:
+                            sys.stderr.write(f"⚠️ Failed to send Discord invite email: {email_err}\n")
+                            sys.stderr.flush()
+        except Exception as e:
+            sys.stderr.write(f"⚠️ Failed to create Discord invite: {e}\n")
+            sys.stderr.flush()
+    
+    response_msg = "Member restored successfully"
+    if discord_invite_sent:
+        response_msg += f". Discord invite sent to {personal_email}"
+    elif personal_email and not discord_bot:
+        response_msg += ". Discord invite not sent (bot not connected)"
+    elif not personal_email:
+        response_msg += ". No personal email on file for Discord invite"
+    
+    return {"message": response_msg, "discord_invite_sent": discord_invite_sent}
 
 @api_router.post("/archived/prospects/{prospect_id}/restore")
 async def restore_archived_prospect(prospect_id: str, current_user: dict = Depends(verify_admin)):
