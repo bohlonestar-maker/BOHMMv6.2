@@ -36,40 +36,31 @@ export default function PromotionPage() {
   const [updatingMemberInfo, setUpdatingMemberInfo] = useState(false);
   const [hasPermission, setHasPermission] = useState(null);
 
-  // Check permission on mount
-  const [userChapter, setUserChapter] = useState(null);
-  const [permissionChecked, setPermissionChecked] = useState(false);
+  // Check permission and get user chapter on mount
+  const [userChapter, setUserChapter] = useState('National');
   
   useEffect(() => {
-    const checkPermission = async () => {
+    const checkPermissionAndFetch = async () => {
       try {
-        const response = await axios.get(`${BACKEND_URL}/api/auth/verify`, { 
+        // Get user info including permissions and chapter
+        const authResponse = await axios.get(`${BACKEND_URL}/api/auth/verify`, { 
           headers: { Authorization: `Bearer ${token}` } 
         });
-        const perms = response.data?.permissions || {};
+        
+        const perms = authResponse.data?.permissions || {};
+        const chapter = authResponse.data?.chapter || 'National';
+        
+        // Check permission - redirect if not authorized
         if (!perms.view_promotions) {
           toast.error('You do not have permission to access this page');
           navigate('/');
           return;
         }
+        
+        setUserChapter(chapter);
         setHasPermission(true);
-        setUserChapter(response.data?.chapter || 'National');
-        setPermissionChecked(true);
-      } catch (error) {
-        console.error('Error checking permission:', error);
-        navigate('/login');
-      }
-    };
-    checkPermission();
-  }, [token, navigate]);
-
-  // Fetch members and Discord roles on mount
-  useEffect(() => {
-    if (!hasPermission || !permissionChecked) return;
-    
-    const fetchData = async () => {
-      try {
-        // Fetch members first - this is required
+        
+        // Now fetch members and roles
         const membersRes = await axios.get(`${BACKEND_URL}/api/members`, { 
           headers: { Authorization: `Bearer ${token}` } 
         });
@@ -77,13 +68,13 @@ export default function PromotionPage() {
         let membersList = membersRes.data || [];
         
         // Filter members by chapter if user is not National
-        if (userChapter && userChapter !== 'National') {
-          membersList = membersList.filter(m => m.chapter === userChapter);
+        if (chapter && chapter !== 'National') {
+          membersList = membersList.filter(m => m.chapter === chapter);
         }
         
         setMembers(membersList);
         
-        // Try to fetch Discord roles - this may fail if Discord bot is not running
+        // Try to fetch Discord roles
         try {
           const rolesRes = await axios.get(`${BACKEND_URL}/api/discord/roles`, { 
             headers: { Authorization: `Bearer ${token}` } 
@@ -91,19 +82,23 @@ export default function PromotionPage() {
           setDiscordRoles(rolesRes.data?.roles || []);
         } catch (rolesError) {
           console.error('Error fetching Discord roles:', rolesError);
-          // Don't fail the whole page if Discord roles can't be fetched
-          toast.error('Discord roles unavailable - Discord bot may not be running');
+          toast.error('Discord roles unavailable');
         }
+        
       } catch (error) {
-        console.error('Error fetching members:', error);
-        toast.error('Failed to load members');
+        console.error('Error:', error);
+        if (error.response?.status === 401) {
+          navigate('/login');
+        } else {
+          toast.error('Failed to load page');
+        }
       } finally {
         setLoading(false);
       }
     };
     
-    fetchData();
-  }, [token, hasPermission, permissionChecked, userChapter]);
+    checkPermissionAndFetch();
+  }, [token, navigate]);
 
   // Show loading while checking permission
   if (hasPermission === null) {
