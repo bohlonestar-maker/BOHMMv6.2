@@ -16643,60 +16643,28 @@ async def get_discord_roles(current_user: dict = Depends(verify_token)):
     """Get all Discord roles from the server"""
     global discord_bot
     
-    # Log debug info
-    logger.info(f"Discord roles requested - bot_connected={discord_bot is not None}, guild_id={DISCORD_GUILD_ID}")
+    if not discord_bot or not DISCORD_GUILD_ID:
+        return {"roles": [], "message": "Discord bot not configured"}
     
-    # Try to get live roles from Discord bot first
-    if discord_bot and DISCORD_GUILD_ID:
-        try:
-            guild = discord_bot.get_guild(int(DISCORD_GUILD_ID))
-            if guild:
-                roles = []
-                for role in guild.roles:
-                    if role.name != "@everyone" and not role.is_bot_managed():
-                        roles.append({
-                            "id": str(role.id),
-                            "name": role.name,
-                            "color": f"#{role.color.value:06x}" if role.color.value else None,
-                            "position": role.position,
-                            "permissions": str(role.permissions.value)
-                        })
-                
-                logger.info(f"Fetched {len(roles)} live Discord roles")
-                
-                # Cache roles to database for offline access
-                try:
-                    result = await db.discord_roles_cache.update_one(
-                        {"guild_id": str(DISCORD_GUILD_ID)},
-                        {"$set": {"roles": roles, "updated_at": datetime.now(timezone.utc)}},
-                        upsert=True
-                    )
-                    logger.info(f"Cached Discord roles (matched={result.matched_count}, modified={result.modified_count})")
-                except Exception as cache_err:
-                    logger.error(f"Failed to cache Discord roles: {cache_err}")
-                
-                return {"roles": roles}
-            else:
-                logger.warning(f"Guild not found with ID: {DISCORD_GUILD_ID}")
-        except Exception as e:
-            logger.error(f"Error fetching live Discord roles: {e}")
-    else:
-        logger.info(f"Discord bot not available - bot={discord_bot is not None}, guild_id={DISCORD_GUILD_ID}")
-    
-    # Fallback: Try to get cached roles from database
-    if DISCORD_GUILD_ID:
-        try:
-            cached = await db.discord_roles_cache.find_one({"guild_id": str(DISCORD_GUILD_ID)}, {"_id": 0})
-            if cached and cached.get("roles"):
-                logger.info(f"Returning {len(cached['roles'])} cached Discord roles")
-                return {"roles": cached["roles"], "cached": True}
-            else:
-                logger.info("No cached roles found in database")
-        except Exception as e:
-            logger.error(f"Error fetching cached roles: {e}")
-    
-    # No bot and no cache - return empty with message
-    return {"roles": [], "message": "Discord bot not connected and no cached roles available"}
+    try:
+        guild = discord_bot.get_guild(int(DISCORD_GUILD_ID))
+        if not guild:
+            return {"roles": [], "message": "Guild not found"}
+        
+        roles = []
+        for role in guild.roles:
+            if role.name != "@everyone" and not role.is_bot_managed():
+                roles.append({
+                    "id": str(role.id),
+                    "name": role.name,
+                    "color": f"#{role.color.value:06x}" if role.color.value else None,
+                    "position": role.position,
+                    "permissions": str(role.permissions.value)
+                })
+        
+        return {"roles": roles}
+    except Exception as e:
+        return {"roles": [], "message": str(e)}
 
 
 @api_router.get("/discord/debug")
