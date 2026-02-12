@@ -34,9 +34,34 @@ export default function PromotionPage() {
   const [promoting, setPromoting] = useState(false);
   const [updatingNickname, setUpdatingNickname] = useState(false);
   const [updatingMemberInfo, setUpdatingMemberInfo] = useState(false);
+  const [hasPermission, setHasPermission] = useState(null);
+
+  // Check permission on mount
+  useEffect(() => {
+    const checkPermission = async () => {
+      try {
+        const response = await axios.get(`${BACKEND_URL}/api/auth/verify`, { 
+          headers: { Authorization: `Bearer ${token}` } 
+        });
+        const perms = response.data?.permissions || {};
+        if (!perms.view_promotions) {
+          toast.error('You do not have permission to access this page');
+          navigate('/');
+          return;
+        }
+        setHasPermission(true);
+      } catch (error) {
+        console.error('Error checking permission:', error);
+        navigate('/login');
+      }
+    };
+    checkPermission();
+  }, [token, navigate]);
 
   // Fetch members and Discord roles on mount
   useEffect(() => {
+    if (!hasPermission) return;
+    
     const fetchData = async () => {
       try {
         const [membersRes, rolesRes] = await Promise.all([
