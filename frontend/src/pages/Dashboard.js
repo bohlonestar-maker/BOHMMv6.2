@@ -1067,8 +1067,8 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
                         </DropdownMenuItem>
                       )}
                       
-                      {/* Promotions - Available to all admins */}
-                      {userPermissions?.ad_page_access && (
+                      {/* Promotions - National officers only */}
+                      {userChapter === 'National' && ['Prez', 'VP', 'S@A', 'ENF', 'T', 'SEC'].includes(userTitle) && (
                         <DropdownMenuItem 
                           onSelect={(e) => { e.preventDefault(); navigate("/promotions"); }} 
                           className="text-red-400 focus:bg-red-900/30 focus:text-red-300 cursor-pointer"
