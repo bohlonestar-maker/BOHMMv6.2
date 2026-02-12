@@ -1054,10 +1054,17 @@ async def kick_discord_member(member_handle: str, member_id: str, reason: str = 
     """
     global discord_bot
     
+    sys.stderr.write(f"🔍 [KICK] Starting kick process for handle='{member_handle}', member_id='{member_id}'\n")
+    sys.stderr.flush()
+    
     if not discord_bot:
+        sys.stderr.write(f"❌ [KICK] Discord bot not running\n")
+        sys.stderr.flush()
         return {"success": False, "message": "Discord bot not running"}
     
     if not DISCORD_GUILD_ID:
+        sys.stderr.write(f"❌ [KICK] DISCORD_GUILD_ID not configured\n")
+        sys.stderr.flush()
         return {"success": False, "message": "Discord guild ID not configured"}
     
     try:
