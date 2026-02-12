@@ -56,6 +56,25 @@ Build a member management application with attendance tracking, dues management,
 
 ### What's Been Implemented
 
+#### February 12, 2026 - Promotion Page (Discord Role Management)
+- [x] **Backend API Endpoints:**
+  - `GET /api/discord/roles` - Get all Discord server roles (33 roles)
+  - `GET /api/discord/member/{member_id}/roles` - Get member's current Discord roles
+  - `POST /api/discord/member/{member_id}/roles` - Update member's Discord roles
+  - `POST /api/discord/member/{member_id}/nickname` - Update member's Discord nickname
+- [x] **Frontend UI (PromotionPage.js):**
+  - Member selection dropdown showing all members
+  - Discord Nickname section with input and "Update Nickname" button
+  - Discord Roles section with:
+    - Current roles displayed as colored badges
+    - Grid of 33 role checkboxes with Discord color indicators
+    - Pre-selected checkboxes for member's current roles
+    - "Update Discord Roles" button
+- [x] **Navigation:**
+  - "Promotions" link added to Admin menu (requires `ad_page_access` permission)
+  - Route `/promotions` configured in App.js
+- [x] **Bug Fix:** Moved Discord promotion endpoints before `app.include_router()` to register routes properly
+
 #### February 3, 2026 - Personal Email Visibility & Permissions
 - [x] **Backend:** Added `view_private_personal_email` permission to AVAILABLE_PERMISSIONS
 - [x] **Frontend:** Added Personal Email column to main dashboard member table
