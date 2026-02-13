@@ -480,7 +480,7 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
     const categoryLabels = {
       voluntary: "Voluntarily Removed Self",
       dues_nonpayment: "Not Paying Dues Over 30 Days",
-      national_board: "Removed by National Board for Infraction",
+      member_vote: "Removed by Member Vote",
       inactive: "Inactive / No Contact",
       deceased: "Deceased",
       other: "Other"
