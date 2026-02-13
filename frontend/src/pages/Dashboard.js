@@ -487,7 +487,7 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
       other: "Other"
     };
     
-    // Combine category and details into full reason
+    // Combine category and details into full reason for database record
     const fullReason = deleteReason.trim() 
       ? `${categoryLabels[deleteReasonCategory]}: ${deleteReason.trim()}`
       : categoryLabels[deleteReasonCategory];
@@ -498,6 +498,7 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
         params: { 
           reason: fullReason,
           reason_category: deleteReasonCategory,
+          additional_details: deleteReason.trim() || null,
           kick_from_discord: kickFromDiscord,
           cancel_square_subscription: cancelSquareSubscription
         },
