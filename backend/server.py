@@ -1248,13 +1248,16 @@ async def kick_discord_member(member_handle: str, member_id: str, reason: str = 
             if webhook_url:
                 import aiohttp
                 async with aiohttp.ClientSession() as session:
+                    # Build fields list
+                    fields = []
+                    if additional_details and additional_details.strip():
+                        fields.append({"name": "Comments", "value": additional_details.strip(), "inline": False})
+                    
                     embed = {
                         "title": notification_info["title"],
                         "description": notification_info["description"],
                         "color": notification_info["color"],
-                        "fields": [
-                            {"name": "Reason", "value": reason, "inline": True}
-                        ],
+                        "fields": fields,
                         "timestamp": datetime.now(timezone.utc).isoformat()
                     }
                     await session.post(webhook_url, json={"embeds": [embed]})
