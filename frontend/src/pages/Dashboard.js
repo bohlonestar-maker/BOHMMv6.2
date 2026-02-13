@@ -117,6 +117,7 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [memberToDelete, setMemberToDelete] = useState(null);
   const [deleteReason, setDeleteReason] = useState("");
+  const [deleteReasonCategory, setDeleteReasonCategory] = useState("");
   const [kickFromDiscord, setKickFromDiscord] = useState(false);
   const [cancelSquareSubscription, setCancelSquareSubscription] = useState(true);
   const [selectedMember, setSelectedMember] = useState(null);
