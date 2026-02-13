@@ -1170,9 +1170,9 @@ async def kick_discord_member(member_handle: str, member_id: str, reason: str = 
         
         # Map category to notification title and description
         category_notifications = {
-            "voluntary": {
-                "title": "👋 Member Voluntarily Left",
-                "description": f"**{member_handle}** has voluntarily removed themselves from the club.",
+            "resigned": {
+                "title": "📧 Member Resigned",
+                "description": f"**{member_handle}** has resigned via email notification.",
                 "color": 7506394  # Blue-gray
             },
             "dues_nonpayment": {
@@ -1183,6 +1183,11 @@ async def kick_discord_member(member_handle: str, member_id: str, reason: str = 
             "member_vote": {
                 "title": "⚖️ Member Removed - Member Vote",
                 "description": f"**{member_handle}** has been removed from the Discord server by member vote.",
+                "color": 8388608  # Maroon
+            },
+            "national_board": {
+                "title": "🏛️ Member Removed - National Board Vote",
+                "description": f"**{member_handle}** has been removed from the Discord server by National Board vote.",
                 "color": 8388608  # Maroon
             },
             "inactive": {
