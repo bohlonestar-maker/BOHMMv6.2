@@ -3871,6 +3871,7 @@ async def delete_member(
     member_id: str, 
     reason: str,
     reason_category: str = None,
+    additional_details: str = None,
     kick_from_discord: bool = False,
     cancel_square_subscription: bool = True,
     current_user: dict = Depends(verify_token)
@@ -3900,7 +3901,8 @@ async def delete_member(
                 member_handle=member_handle,
                 member_id=member_id,
                 reason=reason,
-                reason_category=reason_category
+                reason_category=reason_category,
+                additional_details=additional_details
             )
             sys.stderr.write(f"🔄 [ARCHIVE] Kick result: {discord_result}\n")
             sys.stderr.flush()
