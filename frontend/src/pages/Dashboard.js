@@ -2722,7 +2722,7 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
                       <option value="">Select a reason...</option>
                       <option value="voluntary">Voluntarily Removed Self</option>
                       <option value="dues_nonpayment">Not Paying Dues Over 30 Days</option>
-                      <option value="national_board">Removed by National Board for Infraction</option>
+                      <option value="member_vote">Removed by Member Vote</option>
                       <option value="inactive">Inactive / No Contact</option>
                       <option value="deceased">Deceased</option>
                       <option value="other">Other</option>
