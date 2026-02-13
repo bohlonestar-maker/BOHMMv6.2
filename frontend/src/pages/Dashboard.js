@@ -478,9 +478,10 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
 
     // Map category to display text for the reason
     const categoryLabels = {
-      voluntary: "Voluntarily Removed Self",
+      resigned: "Resigned by Email Notification",
       dues_nonpayment: "Not Paying Dues Over 30 Days",
       member_vote: "Removed by Member Vote",
+      national_board: "Removed by National Board Vote",
       inactive: "Inactive / No Contact",
       deceased: "Deceased",
       other: "Other"
