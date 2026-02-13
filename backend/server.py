@@ -1180,9 +1180,9 @@ async def kick_discord_member(member_handle: str, member_id: str, reason: str = 
                 "description": f"**{member_handle}** has been removed from the Discord server due to 30+ days of unpaid dues.",
                 "color": 10038562  # Dark red
             },
-            "national_board": {
-                "title": "⚖️ Member Removed - National Board Decision",
-                "description": f"**{member_handle}** has been removed from the Discord server by decision of the National Board.",
+            "member_vote": {
+                "title": "⚖️ Member Removed - Member Vote",
+                "description": f"**{member_handle}** has been removed from the Discord server by member vote.",
                 "color": 8388608  # Maroon
             },
             "inactive": {
