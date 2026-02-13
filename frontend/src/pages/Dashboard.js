@@ -2720,9 +2720,10 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
                       className="w-full p-2 text-sm bg-slate-700 border border-slate-600 rounded text-white"
                     >
                       <option value="">Select a reason...</option>
-                      <option value="voluntary">Voluntarily Removed Self</option>
+                      <option value="resigned">Resigned by Email Notification</option>
                       <option value="dues_nonpayment">Not Paying Dues Over 30 Days</option>
                       <option value="member_vote">Removed by Member Vote</option>
+                      <option value="national_board">Removed by National Board Vote</option>
                       <option value="inactive">Inactive / No Contact</option>
                       <option value="deceased">Deceased</option>
                       <option value="other">Other</option>
