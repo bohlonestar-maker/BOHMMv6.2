@@ -2734,12 +2734,12 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
                   
                   <div>
                     <label className="block text-sm text-slate-300 mb-2">
-                      Additional Details {deleteReasonCategory === 'other' ? '*' : '(Optional)'}
+                      Comments {deleteReasonCategory === 'other' ? '*' : '(Optional - will be posted to Officers on Discord)'}
                     </label>
                     <textarea
                       value={deleteReason}
                       onChange={(e) => setDeleteReason(e.target.value)}
-                      placeholder="Enter additional details..."
+                      placeholder="Enter comments for Discord notification..."
                       rows={2}
                       required={deleteReasonCategory === 'other'}
                       className="w-full p-2 text-sm bg-slate-700 border border-slate-600 rounded text-white placeholder:text-slate-400"
