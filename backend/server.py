@@ -3827,6 +3827,7 @@ async def cancel_member_square_subscription(member_id: str, member_handle: str):
 async def delete_member(
     member_id: str, 
     reason: str,
+    reason_category: str = None,
     kick_from_discord: bool = False,
     cancel_square_subscription: bool = True,
     current_user: dict = Depends(verify_token)
@@ -3855,7 +3856,8 @@ async def delete_member(
             discord_result = await kick_discord_member(
                 member_handle=member_handle,
                 member_id=member_id,
-                reason=f"Member archived: {reason}"
+                reason=reason,
+                reason_category=reason_category
             )
             sys.stderr.write(f"🔄 [ARCHIVE] Kick result: {discord_result}\n")
             sys.stderr.flush()
@@ -3879,6 +3881,7 @@ async def delete_member(
     archived_member = {
         **member,
         "deletion_reason": reason,
+        "deletion_reason_category": reason_category,
         "deleted_by": current_user["username"],
         "deleted_at": datetime.now(timezone.utc).isoformat(),
         "kicked_from_discord": kick_from_discord,
