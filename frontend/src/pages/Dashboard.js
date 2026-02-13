@@ -2687,16 +2687,37 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
                     This action will move the member to the archived records.
                   </p>
                   
+                  {/* Removal Reason Category Dropdown */}
                   <div>
                     <label className="block text-sm text-slate-300 mb-2">
-                      Reason for Archiving *
+                      Reason Category *
+                    </label>
+                    <select
+                      value={deleteReasonCategory}
+                      onChange={(e) => setDeleteReasonCategory(e.target.value)}
+                      required
+                      className="w-full p-2 text-sm bg-slate-700 border border-slate-600 rounded text-white"
+                    >
+                      <option value="">Select a reason...</option>
+                      <option value="voluntary">Voluntarily Removed Self</option>
+                      <option value="dues_nonpayment">Not Paying Dues Over 30 Days</option>
+                      <option value="national_board">Removed by National Board for Infraction</option>
+                      <option value="inactive">Inactive / No Contact</option>
+                      <option value="deceased">Deceased</option>
+                      <option value="other">Other</option>
+                    </select>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm text-slate-300 mb-2">
+                      Additional Details {deleteReasonCategory === 'other' ? '*' : '(Optional)'}
                     </label>
                     <textarea
                       value={deleteReason}
                       onChange={(e) => setDeleteReason(e.target.value)}
-                      placeholder="Enter reason..."
+                      placeholder="Enter additional details..."
                       rows={2}
-                      required
+                      required={deleteReasonCategory === 'other'}
                       className="w-full p-2 text-sm bg-slate-700 border border-slate-600 rounded text-white placeholder:text-slate-400"
                     />
                   </div>
@@ -2740,7 +2761,8 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
                     </button>
                     <button
                       onClick={handleConfirmDelete}
-                      className="px-4 py-2 text-sm bg-red-600 hover:bg-red-700 text-white rounded"
+                      disabled={!deleteReasonCategory || (deleteReasonCategory === 'other' && !deleteReason.trim())}
+                      className="px-4 py-2 text-sm bg-red-600 hover:bg-red-700 text-white rounded disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {kickFromDiscord ? "Archive & Kick" : "Archive Member"}
                     </button>
