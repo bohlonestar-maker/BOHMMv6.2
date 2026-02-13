@@ -467,16 +467,36 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
   };
 
   const handleConfirmDelete = async () => {
-    if (!deleteReason.trim()) {
-      toast.error("Please provide a reason for archiving");
+    if (!deleteReasonCategory) {
+      toast.error("Please select a reason category");
       return;
     }
+    if (deleteReasonCategory === 'other' && !deleteReason.trim()) {
+      toast.error("Please provide details for 'Other' reason");
+      return;
+    }
+
+    // Map category to display text for the reason
+    const categoryLabels = {
+      voluntary: "Voluntarily Removed Self",
+      dues_nonpayment: "Not Paying Dues Over 30 Days",
+      national_board: "Removed by National Board for Infraction",
+      inactive: "Inactive / No Contact",
+      deceased: "Deceased",
+      other: "Other"
+    };
+    
+    // Combine category and details into full reason
+    const fullReason = deleteReason.trim() 
+      ? `${categoryLabels[deleteReasonCategory]}: ${deleteReason.trim()}`
+      : categoryLabels[deleteReasonCategory];
 
     const token = localStorage.getItem("token");
     try {
       const response = await axios.delete(`${API}/members/${memberToDelete.id}`, {
         params: { 
-          reason: deleteReason, 
+          reason: fullReason,
+          reason_category: deleteReasonCategory,
           kick_from_discord: kickFromDiscord,
           cancel_square_subscription: cancelSquareSubscription
         },
@@ -510,6 +530,7 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
       setDeleteDialogOpen(false);
       setMemberToDelete(null);
       setDeleteReason("");
+      setDeleteReasonCategory("");
       setKickFromDiscord(false);
       setCancelSquareSubscription(true);
       fetchMembers();
