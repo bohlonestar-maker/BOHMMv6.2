@@ -16905,7 +16905,12 @@ async def update_member_discord_roles(
     """Update a member's Discord roles"""
     global discord_bot
     
+    sys.stderr.write(f"[PROMO] /discord/member/{member_id}/roles POST called\n")
+    sys.stderr.flush()
+    
     if not discord_bot or not DISCORD_GUILD_ID:
+        sys.stderr.write(f"[PROMO] Discord not configured - bot={discord_bot is not None}, guild_id={DISCORD_GUILD_ID}\n")
+        sys.stderr.flush()
         raise HTTPException(status_code=503, detail="Discord bot not configured")
     
     member = await db.members.find_one({"id": member_id}, {"_id": 0})
@@ -16913,21 +16918,35 @@ async def update_member_discord_roles(
         raise HTTPException(status_code=404, detail="Member not found")
     
     member_handle = member.get("handle", "")
+    sys.stderr.write(f"[PROMO] Looking up Discord member for: {member_handle}\n")
+    sys.stderr.flush()
     
     try:
         guild = discord_bot.get_guild(int(DISCORD_GUILD_ID))
         if not guild:
             raise HTTPException(status_code=404, detail="Guild not found")
         
-        # Find Discord member by handle
+        # Find Discord member by handle (with space normalization for matching)
         discord_member = None
+        handle_lower = member_handle.lower()
+        handle_no_space = handle_lower.replace(" ", "")
         for dm in guild.members:
             display_name = dm.nick or dm.display_name or dm.name
-            if display_name.lower() == member_handle.lower() or member_handle.lower() in display_name.lower():
+            display_lower = display_name.lower()
+            display_no_space = display_lower.replace(" ", "")
+            if (display_lower == handle_lower or 
+                handle_lower in display_lower or 
+                display_lower in handle_lower or
+                handle_no_space in display_no_space or
+                display_no_space in handle_no_space):
                 discord_member = dm
+                sys.stderr.write(f"[PROMO] Matched handle '{member_handle}' to Discord '{display_name}'\n")
+                sys.stderr.flush()
                 break
         
         if not discord_member:
+            sys.stderr.write(f"[PROMO] Could not find Discord member for handle '{member_handle}'\n")
+            sys.stderr.flush()
             raise HTTPException(status_code=404, detail=f"Member '{member_handle}' not found in Discord")
         
         # Get current roles and requested roles
@@ -16955,10 +16974,15 @@ async def update_member_discord_roles(
                 await discord_member.remove_roles(role, reason=f"Role update by {current_user.get('username')}")
                 removed += 1
         
+        sys.stderr.write(f"[PROMO] Roles updated: {added} added, {removed} removed\n")
+        sys.stderr.flush()
+        
         return {"success": True, "message": f"Updated roles: {added} added, {removed} removed", "added": added, "removed": removed}
     except HTTPException:
         raise
     except Exception as e:
+        sys.stderr.write(f"[PROMO] Error updating roles: {e}\n")
+        sys.stderr.flush()
         raise HTTPException(status_code=500, detail=str(e))
 
 
