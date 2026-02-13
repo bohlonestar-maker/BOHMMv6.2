@@ -1040,7 +1040,7 @@ async def restore_discord_member(member_id: str) -> dict:
         return {"success": False, "message": str(e)}
 
 
-async def kick_discord_member(member_handle: str, member_id: str, reason: str = "Dues non-payment - 30 days overdue", reason_category: str = None) -> dict:
+async def kick_discord_member(member_handle: str, member_id: str, reason: str = "Dues non-payment - 30 days overdue", reason_category: str = None, additional_details: str = None) -> dict:
     """
     Kick/remove a member from the Discord server.
     
@@ -1048,7 +1048,8 @@ async def kick_discord_member(member_handle: str, member_id: str, reason: str = 
         member_handle: The member's handle/nickname in the system
         member_id: The member's ID in our system
         reason: Full reason text for the kick
-        reason_category: Category code (voluntary, dues_nonpayment, national_board, inactive, deceased, other)
+        reason_category: Category code (resigned, dues_nonpayment, member_vote, national_board, inactive, deceased, other)
+        additional_details: Optional comments/details to include in Discord notification
         
     Returns:
         dict with success status and message
