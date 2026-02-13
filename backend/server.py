@@ -1164,8 +1164,45 @@ async def kick_discord_member(member_handle: str, member_id: str, reason: str = 
             "discord_user_id": discord_user_id,
             "discord_display_name": discord_member.display_name,
             "removed_at": datetime.now(timezone.utc).isoformat(),
-            "reason": reason
+            "reason": reason,
+            "reason_category": reason_category
         })
+        
+        # Map category to notification title and description
+        category_notifications = {
+            "voluntary": {
+                "title": "👋 Member Voluntarily Left",
+                "description": f"**{member_handle}** has voluntarily removed themselves from the club.",
+                "color": 7506394  # Blue-gray
+            },
+            "dues_nonpayment": {
+                "title": "🚫 Member Removed - Dues Non-Payment",
+                "description": f"**{member_handle}** has been removed from the Discord server due to 30+ days of unpaid dues.",
+                "color": 10038562  # Dark red
+            },
+            "national_board": {
+                "title": "⚖️ Member Removed - National Board Decision",
+                "description": f"**{member_handle}** has been removed from the Discord server by decision of the National Board.",
+                "color": 8388608  # Maroon
+            },
+            "inactive": {
+                "title": "💤 Member Removed - Inactive",
+                "description": f"**{member_handle}** has been removed due to inactivity / no contact.",
+                "color": 8421504  # Gray
+            },
+            "deceased": {
+                "title": "🕊️ Member Passed Away",
+                "description": f"**{member_handle}** has passed away. Rest in peace, Brother.",
+                "color": 0  # Black
+            },
+            "other": {
+                "title": "📋 Member Removed",
+                "description": f"**{member_handle}** has been removed from the Discord server.",
+                "color": 10038562  # Dark red
+            }
+        }
+        
+        notification_info = category_notifications.get(reason_category, category_notifications["other"])
         
         # Kick the member from the server
         try:
@@ -1185,7 +1222,7 @@ async def kick_discord_member(member_handle: str, member_id: str, reason: str = 
                     async with aiohttp.ClientSession() as session:
                         embed = {
                             "title": "⚠️ Manual Action Required - Member Removal",
-                            "description": f"**{member_handle}** needs to be removed from the server for 30-day dues non-payment, but the bot couldn't kick them automatically.\n\n**Please manually remove this member.**",
+                            "description": f"**{member_handle}** needs to be removed from the server, but the bot couldn't kick them automatically.\n\n**Please manually remove this member.**",
                             "color": 15105570,  # Orange
                             "fields": [
                                 {"name": "Reason", "value": reason, "inline": True},
@@ -1206,9 +1243,9 @@ async def kick_discord_member(member_handle: str, member_id: str, reason: str = 
                 import aiohttp
                 async with aiohttp.ClientSession() as session:
                     embed = {
-                        "title": "🚫 Member Removed - 30 Day Non-Payment",
-                        "description": f"**{member_handle}** has been kicked from the Discord server due to 30+ days of unpaid dues.",
-                        "color": 10038562,  # Dark red
+                        "title": notification_info["title"],
+                        "description": notification_info["description"],
+                        "color": notification_info["color"],
                         "fields": [
                             {"name": "Reason", "value": reason, "inline": True}
                         ],
