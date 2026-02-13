@@ -16992,15 +16992,27 @@ async def update_member_discord_nickname(
         if not guild:
             raise HTTPException(status_code=404, detail="Guild not found")
         
-        # Find Discord member by handle
+        # Find Discord member by handle (with space normalization for matching)
         discord_member = None
+        handle_lower = member_handle.lower()
+        handle_no_space = handle_lower.replace(" ", "")
         for dm in guild.members:
             display_name = dm.nick or dm.display_name or dm.name
-            if display_name.lower() == member_handle.lower() or member_handle.lower() in display_name.lower():
+            display_lower = display_name.lower()
+            display_no_space = display_lower.replace(" ", "")
+            if (display_lower == handle_lower or 
+                handle_lower in display_lower or 
+                display_lower in handle_lower or
+                handle_no_space in display_no_space or
+                display_no_space in handle_no_space):
                 discord_member = dm
+                sys.stderr.write(f"[PROMO] Matched handle '{member_handle}' to Discord '{display_name}'\n")
+                sys.stderr.flush()
                 break
         
         if not discord_member:
+            sys.stderr.write(f"[PROMO] Could not find Discord member for handle '{member_handle}'\n")
+            sys.stderr.flush()
             raise HTTPException(status_code=404, detail=f"Member '{member_handle}' not found in Discord")
         
         sys.stderr.write(f"[PROMO] Found Discord member, updating nickname to: {request.nickname}\n")
