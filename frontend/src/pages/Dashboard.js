@@ -616,6 +616,8 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
         template_id: selectedTemplate,
         member_id: selectedMember.id,
         recipient_email: selectedEmail,
+        role_name: selectedRole?.name || null,
+        role_id: selectedRole?.id || null,
         message: docMessage
       }, { headers: { Authorization: `Bearer ${token}` } });
       
@@ -623,11 +625,19 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
       setSendDocDialogOpen(false);
       setSelectedTemplate("");
       setSelectedEmail("");
+      setSelectedRole(null);
       setDocMessage("");
       fetchMemberDocuments(selectedMember.id);
     } catch (error) {
       toast.error(error.response?.data?.detail || "Failed to send document");
     }
+  };
+
+  // Get available roles for selected template
+  const getTemplateRoles = () => {
+    if (!selectedTemplate) return [];
+    const template = signnowTemplates.find(t => t.id === selectedTemplate);
+    return template?.roles || [];
   };
 
   const getDocumentStatusBadge = (status) => {
