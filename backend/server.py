@@ -17303,6 +17303,398 @@ async def update_member_discord_nickname(
 # ==================== END DISCORD PROMOTION ENDPOINTS ====================
 
 
+# ==================== SIGNNOW INTEGRATION ENDPOINTS ====================
+
+class SignNowClient:
+    """Client for SignNow API interactions"""
+    def __init__(self):
+        self.client_id = SIGNNOW_CLIENT_ID
+        self.client_secret = SIGNNOW_CLIENT_SECRET
+        self.base_url = "https://api.signnow.com" if SIGNNOW_ENVIRONMENT == "production" else "https://api-eval.signnow.com"
+        self.access_token = None
+        self.token_expiry = None
+    
+    async def get_access_token(self) -> str:
+        """Obtain access token using client credentials"""
+        if self.access_token and self.token_expiry and self.token_expiry > datetime.now(timezone.utc):
+            return self.access_token
+        
+        token_url = f"{self.base_url}/oauth2/token"
+        
+        # SignNow uses Basic Auth with client_id:client_secret
+        import base64
+        credentials = base64.b64encode(f"{self.client_id}:{self.client_secret}".encode()).decode()
+        
+        headers = {
+            "Authorization": f"Basic {credentials}",
+            "Content-Type": "application/x-www-form-urlencoded"
+        }
+        
+        payload = {
+            "grant_type": "client_credentials",
+            "scope": "*"
+        }
+        
+        async with httpx.AsyncClient() as client:
+            response = await client.post(token_url, data=payload, headers=headers)
+            
+            if response.status_code != 200:
+                sys.stderr.write(f"❌ [SIGNNOW] Token error: {response.status_code} - {response.text}\n")
+                sys.stderr.flush()
+                raise HTTPException(status_code=500, detail=f"Failed to authenticate with SignNow: {response.text}")
+            
+            token_data = response.json()
+            self.access_token = token_data.get("access_token")
+            expires_in = token_data.get("expires_in", 3600)
+            self.token_expiry = datetime.now(timezone.utc) + timedelta(seconds=expires_in - 60)
+            
+            sys.stderr.write(f"✅ [SIGNNOW] Access token obtained, expires in {expires_in}s\n")
+            sys.stderr.flush()
+            return self.access_token
+    
+    async def get_templates(self) -> list:
+        """Retrieve list of available templates from user's account"""
+        token = await self.get_access_token()
+        headers = {"Authorization": f"Bearer {token}"}
+        
+        async with httpx.AsyncClient() as client:
+            # First get user's documents that are templates
+            response = await client.get(
+                f"{self.base_url}/user/documentsv2",
+                headers=headers
+            )
+            
+            if response.status_code != 200:
+                sys.stderr.write(f"❌ [SIGNNOW] Failed to get templates: {response.status_code} - {response.text}\n")
+                sys.stderr.flush()
+                return []
+            
+            data = response.json()
+            templates = []
+            
+            # Filter for templates
+            for doc in data:
+                if doc.get("template", False):
+                    templates.append({
+                        "id": doc.get("id"),
+                        "name": doc.get("document_name") or doc.get("original_filename", "Unnamed Template"),
+                        "created_at": doc.get("created"),
+                        "updated_at": doc.get("updated"),
+                        "page_count": doc.get("page_count", 1)
+                    })
+            
+            sys.stderr.write(f"✅ [SIGNNOW] Retrieved {len(templates)} templates\n")
+            sys.stderr.flush()
+            return templates
+    
+    async def send_document(self, template_id: str, recipient_email: str, recipient_name: str, document_name: str, message: str = "") -> dict:
+        """Create document from template and send to recipient for signing"""
+        token = await self.get_access_token()
+        headers = {
+            "Authorization": f"Bearer {token}",
+            "Content-Type": "application/json"
+        }
+        
+        async with httpx.AsyncClient() as client:
+            # Create a copy of the template
+            copy_response = await client.post(
+                f"{self.base_url}/template/{template_id}/copy",
+                json={"document_name": document_name},
+                headers=headers
+            )
+            
+            if copy_response.status_code != 200:
+                sys.stderr.write(f"❌ [SIGNNOW] Failed to copy template: {copy_response.status_code} - {copy_response.text}\n")
+                sys.stderr.flush()
+                raise HTTPException(status_code=500, detail=f"Failed to create document from template: {copy_response.text}")
+            
+            copy_data = copy_response.json()
+            document_id = copy_data.get("id")
+            
+            sys.stderr.write(f"✅ [SIGNNOW] Created document {document_id} from template {template_id}\n")
+            sys.stderr.flush()
+            
+            # Send invite to sign
+            invite_payload = {
+                "to": [{
+                    "email": recipient_email,
+                    "role": "Signer 1",
+                    "role_id": "",
+                    "order": 1
+                }],
+                "from": SIGNNOW_FROM_EMAIL or "noreply@signnow.com",
+                "subject": f"Please sign: {document_name}",
+                "message": message or "Please review and sign the attached document."
+            }
+            
+            invite_response = await client.post(
+                f"{self.base_url}/document/{document_id}/invite",
+                json=invite_payload,
+                headers=headers
+            )
+            
+            if invite_response.status_code not in [200, 201]:
+                sys.stderr.write(f"❌ [SIGNNOW] Failed to send invite: {invite_response.status_code} - {invite_response.text}\n")
+                sys.stderr.flush()
+                raise HTTPException(status_code=500, detail=f"Failed to send document for signing: {invite_response.text}")
+            
+            sys.stderr.write(f"✅ [SIGNNOW] Sent document {document_id} to {recipient_email}\n")
+            sys.stderr.flush()
+            
+            return {
+                "document_id": document_id,
+                "status": "sent",
+                "recipient_email": recipient_email
+            }
+    
+    async def get_document_status(self, document_id: str) -> dict:
+        """Check the current status of a document"""
+        token = await self.get_access_token()
+        headers = {"Authorization": f"Bearer {token}"}
+        
+        async with httpx.AsyncClient() as client:
+            response = await client.get(
+                f"{self.base_url}/document/{document_id}",
+                headers=headers
+            )
+            
+            if response.status_code != 200:
+                return {"status": "unknown", "error": response.text}
+            
+            data = response.json()
+            
+            # Determine status from signatures
+            signatures = data.get("signatures", [])
+            field_invites = data.get("field_invites", [])
+            
+            status = "pending"
+            signed_at = None
+            
+            if signatures and len(signatures) > 0:
+                # Check if all signatures are complete
+                all_signed = all(sig.get("signed") for sig in signatures)
+                if all_signed:
+                    status = "completed"
+                    # Get the latest signature time
+                    for sig in signatures:
+                        if sig.get("created"):
+                            signed_at = sig.get("created")
+                else:
+                    status = "partially_signed"
+            elif field_invites:
+                # Check field invite status
+                for invite in field_invites:
+                    if invite.get("status") == "fulfilled":
+                        status = "completed"
+                        signed_at = invite.get("updated")
+                    elif invite.get("status") == "declined":
+                        status = "declined"
+            
+            return {
+                "document_id": document_id,
+                "status": status,
+                "name": data.get("document_name"),
+                "created": data.get("created"),
+                "signed_at": signed_at
+            }
+
+# Initialize SignNow client
+signnow_client = SignNowClient() if signnow_configured else None
+
+
+class SendDocumentRequest(BaseModel):
+    template_id: str
+    member_id: str
+    message: Optional[str] = ""
+
+
+@api_router.get("/signnow/templates")
+async def get_signnow_templates(current_user: dict = Depends(verify_token)):
+    """Get available SignNow templates"""
+    if not signnow_configured or not signnow_client:
+        raise HTTPException(status_code=503, detail="SignNow integration not configured")
+    
+    # Check permission
+    has_permission = await check_permission(current_user, "send_documents")
+    if not has_permission and current_user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="You don't have permission to send documents")
+    
+    try:
+        templates = await signnow_client.get_templates()
+        return {"templates": templates}
+    except Exception as e:
+        sys.stderr.write(f"❌ [SIGNNOW] Error getting templates: {e}\n")
+        sys.stderr.flush()
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.post("/signnow/send")
+async def send_signnow_document(
+    request: SendDocumentRequest,
+    current_user: dict = Depends(verify_token)
+):
+    """Send a SignNow document to a member for signing"""
+    if not signnow_configured or not signnow_client:
+        raise HTTPException(status_code=503, detail="SignNow integration not configured")
+    
+    # Check permission
+    has_permission = await check_permission(current_user, "send_documents")
+    if not has_permission and current_user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="You don't have permission to send documents")
+    
+    # Get member info
+    member = await db.members.find_one({"id": request.member_id}, {"_id": 0})
+    if not member:
+        raise HTTPException(status_code=404, detail="Member not found")
+    
+    # Get member's email (prefer personal_email, fall back to email)
+    recipient_email = member.get("personal_email") or member.get("email")
+    if not recipient_email:
+        raise HTTPException(status_code=400, detail="Member has no email address configured")
+    
+    recipient_name = member.get("name") or member.get("handle", "Member")
+    
+    # Get template name
+    templates = await signnow_client.get_templates()
+    template_name = "Document"
+    for t in templates:
+        if t["id"] == request.template_id:
+            template_name = t["name"]
+            break
+    
+    document_name = f"{template_name} - {recipient_name} - {datetime.now(timezone.utc).strftime('%Y-%m-%d')}"
+    
+    try:
+        result = await signnow_client.send_document(
+            template_id=request.template_id,
+            recipient_email=recipient_email,
+            recipient_name=recipient_name,
+            document_name=document_name,
+            message=request.message
+        )
+        
+        # Store document record in database
+        document_record = {
+            "id": str(uuid.uuid4()),
+            "signnow_document_id": result["document_id"],
+            "template_id": request.template_id,
+            "template_name": template_name,
+            "member_id": request.member_id,
+            "member_handle": member.get("handle"),
+            "member_email": recipient_email,
+            "status": "sent",
+            "sent_at": datetime.now(timezone.utc).isoformat(),
+            "sent_by": current_user.get("username"),
+            "signed_at": None,
+            "message": request.message
+        }
+        
+        await db.signnow_documents.insert_one(document_record)
+        
+        # Log activity
+        await log_activity(
+            username=current_user.get("username"),
+            action="document_sent",
+            details=f"Sent '{template_name}' to {member.get('handle')} ({recipient_email})"
+        )
+        
+        return {
+            "success": True,
+            "message": f"Document sent to {recipient_email}",
+            "document_id": document_record["id"],
+            "signnow_document_id": result["document_id"]
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        sys.stderr.write(f"❌ [SIGNNOW] Error sending document: {e}\n")
+        sys.stderr.flush()
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.get("/signnow/documents/{member_id}")
+async def get_member_signnow_documents(
+    member_id: str,
+    current_user: dict = Depends(verify_token)
+):
+    """Get all SignNow documents sent to a specific member"""
+    if not signnow_configured:
+        return {"documents": [], "message": "SignNow not configured"}
+    
+    # Get documents from database
+    documents = await db.signnow_documents.find(
+        {"member_id": member_id},
+        {"_id": 0}
+    ).sort("sent_at", -1).to_list(100)
+    
+    # Update status for pending documents
+    for doc in documents:
+        if doc.get("status") in ["sent", "pending"] and signnow_client:
+            try:
+                status_info = await signnow_client.get_document_status(doc["signnow_document_id"])
+                if status_info.get("status") != doc.get("status"):
+                    # Update in database
+                    update_data = {"status": status_info["status"]}
+                    if status_info.get("signed_at"):
+                        update_data["signed_at"] = status_info["signed_at"]
+                    
+                    await db.signnow_documents.update_one(
+                        {"id": doc["id"]},
+                        {"$set": update_data}
+                    )
+                    doc["status"] = status_info["status"]
+                    if status_info.get("signed_at"):
+                        doc["signed_at"] = status_info["signed_at"]
+            except Exception as e:
+                sys.stderr.write(f"⚠️ [SIGNNOW] Failed to get status for {doc['id']}: {e}\n")
+    
+    return {"documents": documents}
+
+
+@api_router.get("/signnow/document/{document_id}/status")
+async def get_signnow_document_status(
+    document_id: str,
+    current_user: dict = Depends(verify_token)
+):
+    """Get current status of a SignNow document"""
+    if not signnow_configured or not signnow_client:
+        raise HTTPException(status_code=503, detail="SignNow integration not configured")
+    
+    # Get document from database
+    doc = await db.signnow_documents.find_one({"id": document_id}, {"_id": 0})
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document not found")
+    
+    try:
+        status_info = await signnow_client.get_document_status(doc["signnow_document_id"])
+        
+        # Update database if status changed
+        if status_info.get("status") != doc.get("status"):
+            update_data = {"status": status_info["status"]}
+            if status_info.get("signed_at"):
+                update_data["signed_at"] = status_info["signed_at"]
+            
+            await db.signnow_documents.update_one(
+                {"id": document_id},
+                {"$set": update_data}
+            )
+        
+        return {
+            "document_id": document_id,
+            "signnow_document_id": doc["signnow_document_id"],
+            "status": status_info["status"],
+            "template_name": doc.get("template_name"),
+            "member_handle": doc.get("member_handle"),
+            "sent_at": doc.get("sent_at"),
+            "signed_at": status_info.get("signed_at") or doc.get("signed_at")
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ==================== END SIGNNOW INTEGRATION ====================
+
+
 # Include the router in the main app
 app.include_router(api_router)
 
