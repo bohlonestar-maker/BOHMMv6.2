@@ -17379,15 +17379,52 @@ class SignNowClient:
             data = response.json()
             templates = []
             
-            # Filter for templates
+            # Filter for templates and get their roles
             for doc in data:
                 if doc.get("template", False):
+                    template_id = doc.get("id")
+                    
+                    # Get detailed template info to extract roles
+                    roles = []
+                    try:
+                        detail_response = await client.get(
+                            f"{self.base_url}/document/{template_id}",
+                            headers=headers
+                        )
+                        if detail_response.status_code == 200:
+                            detail_data = detail_response.json()
+                            # Get roles from template
+                            template_roles = detail_data.get("roles", [])
+                            for role in template_roles:
+                                roles.append({
+                                    "id": role.get("unique_id", ""),
+                                    "name": role.get("name", "Signer"),
+                                    "signing_order": role.get("signing_order", 1)
+                                })
+                            
+                            # If no roles found, check field_invites
+                            if not roles:
+                                field_invites = detail_data.get("field_invites", [])
+                                seen_roles = set()
+                                for fi in field_invites:
+                                    role_name = fi.get("role", "Signer")
+                                    if role_name not in seen_roles:
+                                        roles.append({
+                                            "id": fi.get("role_id", ""),
+                                            "name": role_name,
+                                            "signing_order": fi.get("order", 1)
+                                        })
+                                        seen_roles.add(role_name)
+                    except Exception as e:
+                        sys.stderr.write(f"⚠️ [SIGNNOW] Failed to get roles for template {template_id}: {e}\n")
+                    
                     templates.append({
-                        "id": doc.get("id"),
+                        "id": template_id,
                         "name": doc.get("document_name") or doc.get("original_filename", "Unnamed Template"),
                         "created_at": doc.get("created"),
                         "updated_at": doc.get("updated"),
-                        "page_count": doc.get("page_count", 1)
+                        "page_count": doc.get("page_count", 1),
+                        "roles": roles
                     })
             
             sys.stderr.write(f"✅ [SIGNNOW] Retrieved {len(templates)} templates\n")
