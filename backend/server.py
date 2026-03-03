@@ -17312,18 +17312,20 @@ class SignNowClient:
     def __init__(self):
         self.client_id = SIGNNOW_CLIENT_ID
         self.client_secret = SIGNNOW_CLIENT_SECRET
+        self.username = SIGNNOW_USERNAME
+        self.password = SIGNNOW_PASSWORD
         self.base_url = "https://api.signnow.com" if SIGNNOW_ENVIRONMENT == "production" else "https://api-eval.signnow.com"
         self.access_token = None
         self.token_expiry = None
     
     async def get_access_token(self) -> str:
-        """Obtain access token using client credentials"""
+        """Obtain access token using password grant flow"""
         if self.access_token and self.token_expiry and self.token_expiry > datetime.now(timezone.utc):
             return self.access_token
         
         token_url = f"{self.base_url}/oauth2/token"
         
-        # SignNow uses Basic Auth with client_id:client_secret
+        # SignNow uses Basic Auth with client_id:client_secret for the Authorization header
         import base64
         credentials = base64.b64encode(f"{self.client_id}:{self.client_secret}".encode()).decode()
         
@@ -17332,8 +17334,11 @@ class SignNowClient:
             "Content-Type": "application/x-www-form-urlencoded"
         }
         
+        # Use password grant type with user credentials
         payload = {
-            "grant_type": "client_credentials",
+            "grant_type": "password",
+            "username": self.username,
+            "password": self.password,
             "scope": "*"
         }
         
