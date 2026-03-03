@@ -4059,7 +4059,7 @@ async def export_members_csv(current_user: dict = Depends(verify_token)):
     
     # Define sort order
     CHAPTERS = ["National", "AD", "HA", "HS"]
-    TITLES = ["Prez", "VP", "S@A", "ENF", "SEC", "T", "CD", "CC", "CCLC", "MD", "PM"]
+    TITLES = ["Prez", "VP", "COO", "S@A", "ENF", "SEC", "T", "CD", "CC", "CCLC", "MD", "PM"]
     
     # Sort members by chapter and title
     def sort_key(member):
