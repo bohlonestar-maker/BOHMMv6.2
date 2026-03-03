@@ -2403,7 +2403,7 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
                     {hasPermission('address') && <TableHead className="text-white">Address</TableHead>}
                     {hasPermission('dues_tracking') && <TableHead className="text-white">Dues</TableHead>}
                     {hasPermission('meeting_attendance') && <TableHead className="text-white">Attendance</TableHead>}
-                    {hasPermission('admin_actions') && <TableHead className="text-right text-white">Actions</TableHead>}
+                    {(hasPermission('admin_actions') || userRole === 'admin') && <TableHead className="text-right text-white">Actions</TableHead>}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
