@@ -17555,6 +17555,7 @@ signnow_client = SignNowClient() if signnow_configured else None
 class SendDocumentRequest(BaseModel):
     template_id: str
     member_id: str
+    recipient_email: Optional[str] = None
     message: Optional[str] = ""
 
 
@@ -17597,10 +17598,12 @@ async def send_signnow_document(
     if not member:
         raise HTTPException(status_code=404, detail="Member not found")
     
-    # Get member's email (prefer personal_email, fall back to email)
-    recipient_email = member.get("personal_email") or member.get("email")
+    # Use provided email or fall back to member's emails
+    recipient_email = request.recipient_email
     if not recipient_email:
-        raise HTTPException(status_code=400, detail="Member has no email address configured")
+        recipient_email = member.get("personal_email") or member.get("email")
+    if not recipient_email:
+        raise HTTPException(status_code=400, detail="No email address provided or configured for member")
     
     recipient_name = member.get("name") or member.get("handle", "Member")
     
