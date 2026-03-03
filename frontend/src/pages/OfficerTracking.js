@@ -1616,7 +1616,136 @@ function OfficerTracking() {
           </div>
           <DialogFooter className="flex-col-reverse sm:flex-row gap-2 pt-4">
             <Button variant="outline" onClick={() => setDuesDialog(false)} className="w-full sm:w-auto border-slate-600 text-slate-300">Cancel</Button>
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setDuesDialog(false);
+                openBulkCorrectionDialog(selectedMember);
+              }} 
+              className="w-full sm:w-auto border-amber-600 text-amber-300 hover:bg-amber-900/30"
+              data-testid="correct-dues-btn"
+            >
+              Correct Dues Range
+            </Button>
             <Button onClick={handleDuesSubmit} className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700">Save</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Bulk Dues Correction Dialog */}
+      <Dialog open={bulkCorrectionDialog} onOpenChange={setBulkCorrectionDialog}>
+        <DialogContent className="bg-slate-800 border-slate-700 max-w-[95vw] sm:max-w-lg mx-2 sm:mx-auto p-4 sm:p-6">
+          <DialogHeader className="pb-2">
+            <DialogTitle className="text-white text-lg">Correct Dues Range</DialogTitle>
+            <DialogDescription className="text-sm">
+              Set dues status for {selectedMember?.handle} across a date range.
+              <span className="block mt-1 text-amber-400">
+                Useful for annual dues or correcting mistakes.
+              </span>
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            {/* Date Range */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label className="text-slate-300 text-sm">From</Label>
+                <div className="flex gap-2">
+                  <select
+                    value={bulkCorrectionForm.startMonth}
+                    onChange={(e) => setBulkCorrectionForm({...bulkCorrectionForm, startMonth: e.target.value})}
+                    className="flex-1 p-2 text-sm bg-slate-700 border border-slate-600 rounded text-white"
+                  >
+                    <option value="">Month</option>
+                    {['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].map(m => (
+                      <option key={m} value={m}>{m}</option>
+                    ))}
+                  </select>
+                  <select
+                    value={bulkCorrectionForm.startYear}
+                    onChange={(e) => setBulkCorrectionForm({...bulkCorrectionForm, startYear: e.target.value})}
+                    className="w-24 p-2 text-sm bg-slate-700 border border-slate-600 rounded text-white"
+                  >
+                    {[2024, 2025, 2026, 2027, 2028].map(y => (
+                      <option key={y} value={y.toString()}>{y}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-slate-300 text-sm">To</Label>
+                <div className="flex gap-2">
+                  <select
+                    value={bulkCorrectionForm.endMonth}
+                    onChange={(e) => setBulkCorrectionForm({...bulkCorrectionForm, endMonth: e.target.value})}
+                    className="flex-1 p-2 text-sm bg-slate-700 border border-slate-600 rounded text-white"
+                  >
+                    <option value="">Month</option>
+                    {['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].map(m => (
+                      <option key={m} value={m}>{m}</option>
+                    ))}
+                  </select>
+                  <select
+                    value={bulkCorrectionForm.endYear}
+                    onChange={(e) => setBulkCorrectionForm({...bulkCorrectionForm, endYear: e.target.value})}
+                    className="w-24 p-2 text-sm bg-slate-700 border border-slate-600 rounded text-white"
+                  >
+                    {[2024, 2025, 2026, 2027, 2028].map(y => (
+                      <option key={y} value={y.toString()}>{y}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            {/* Status Selection */}
+            <div className="space-y-2">
+              <Label className="text-slate-300 text-sm">Set Status To</Label>
+              <select
+                value={bulkCorrectionForm.status}
+                onChange={(e) => setBulkCorrectionForm({...bulkCorrectionForm, status: e.target.value})}
+                className="w-full p-2 text-sm bg-slate-700 border border-slate-600 rounded text-white"
+              >
+                <option value="paid">✅ Paid</option>
+                <option value="unpaid">❌ Unpaid</option>
+                <option value="late">⚠️ Late</option>
+              </select>
+            </div>
+
+            {/* Note */}
+            <div className="space-y-2">
+              <Label className="text-slate-300 text-sm">Note (Optional)</Label>
+              <Textarea 
+                value={bulkCorrectionForm.note}
+                onChange={(e) => setBulkCorrectionForm({...bulkCorrectionForm, note: e.target.value})}
+                placeholder="e.g., Annual dues paid, Correction for billing error..."
+                className="bg-slate-700 border-slate-600 text-white text-sm min-h-[60px]"
+              />
+            </div>
+
+            {/* Revoke Extension Checkbox */}
+            <div className="flex items-center space-x-2 p-3 bg-slate-700/30 rounded-lg border border-slate-600">
+              <Checkbox
+                id="revoke-extension"
+                checked={bulkCorrectionForm.revokeExtension}
+                onCheckedChange={(checked) => setBulkCorrectionForm({...bulkCorrectionForm, revokeExtension: checked})}
+              />
+              <label htmlFor="revoke-extension" className="text-sm text-slate-300 cursor-pointer">
+                Also revoke any existing extension
+              </label>
+            </div>
+          </div>
+          <DialogFooter className="flex-col-reverse sm:flex-row gap-2 pt-4">
+            <Button variant="outline" onClick={() => setBulkCorrectionDialog(false)} className="w-full sm:w-auto border-slate-600 text-slate-300">
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleBulkCorrectionSubmit} 
+              className="w-full sm:w-auto bg-amber-600 hover:bg-amber-700"
+              disabled={!bulkCorrectionForm.startMonth || !bulkCorrectionForm.endMonth}
+              data-testid="submit-bulk-correction-btn"
+            >
+              Apply Correction
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
