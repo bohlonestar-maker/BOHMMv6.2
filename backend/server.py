@@ -1735,9 +1735,16 @@ def is_national_admin(user: dict) -> bool:
     """Check if user is a National chapter admin"""
     return user.get("role") == "admin" and user.get("chapter") == "National"
 
-def can_view_national_ad(user: dict) -> bool:
+async def can_view_national_ad_async(user: dict) -> bool:
     """Check if user can view National chapter's Attendance & Dues.
-    Only National Prez, VP, SEC, and T can see National A&D data.
+    Now controlled by 'view_national_ad' permission in Permission Panel.
+    """
+    return await check_permission(user, "view_national_ad")
+
+def can_view_national_ad(user: dict) -> bool:
+    """DEPRECATED: Synchronous version for backwards compatibility.
+    Check if user can view National chapter's Attendance & Dues.
+    Only National Prez, VP, SEC, and T can see National A&D data by default.
     """
     user_chapter = user.get("chapter", "")
     user_title = user.get("title", "")
@@ -1751,9 +1758,9 @@ def can_view_national_ad(user: dict) -> bool:
     if user_role == "admin":
         return True
     
-    # Only specific National titles can view National A&D
-    # Prez, VP, SEC, T (these are the executive officers)
-    national_ad_titles = ["Prez", "VP", "SEC", "T"]
+    # Only specific National titles can view National A&D (legacy fallback)
+    # Prez, VP, COO, SEC, T (these are the executive officers)
+    national_ad_titles = ["Prez", "VP", "COO", "SEC", "T"]
     return user_title in national_ad_titles
 
 def can_view_prospects(user: dict) -> bool:
