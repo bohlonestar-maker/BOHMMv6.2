@@ -17403,6 +17403,33 @@ class SignNowClient:
         }
         
         async with httpx.AsyncClient() as client:
+            # First, get the template details to find the correct role
+            template_response = await client.get(
+                f"{self.base_url}/document/{template_id}",
+                headers=headers
+            )
+            
+            role_name = "Signer 1"  # Default
+            role_id = ""
+            
+            if template_response.status_code == 200:
+                template_data = template_response.json()
+                # Check for roles in the template
+                roles = template_data.get("roles", [])
+                if roles:
+                    role_name = roles[0].get("name", "Signer 1")
+                    role_id = roles[0].get("unique_id", "")
+                    sys.stderr.write(f"✅ [SIGNNOW] Found role: {role_name} (id: {role_id})\n")
+                
+                # Also check field_invites for role info
+                field_invites = template_data.get("field_invites", [])
+                if field_invites and not role_id:
+                    role_name = field_invites[0].get("role", "Signer 1")
+                    role_id = field_invites[0].get("role_id", "")
+                    sys.stderr.write(f"✅ [SIGNNOW] Found field_invite role: {role_name} (id: {role_id})\n")
+                
+                sys.stderr.flush()
+            
             # Create a copy of the template
             copy_response = await client.post(
                 f"{self.base_url}/template/{template_id}/copy",
@@ -17421,17 +17448,34 @@ class SignNowClient:
             sys.stderr.write(f"✅ [SIGNNOW] Created document {document_id} from template {template_id}\n")
             sys.stderr.flush()
             
-            # Send invite to sign - use minimal payload for basic SignNow plans
-            # Custom subject/message requires upgraded subscription
+            # Get the new document's roles
+            doc_response = await client.get(
+                f"{self.base_url}/document/{document_id}",
+                headers=headers
+            )
+            
+            if doc_response.status_code == 200:
+                doc_data = doc_response.json()
+                doc_roles = doc_data.get("roles", [])
+                if doc_roles:
+                    role_name = doc_roles[0].get("name", role_name)
+                    role_id = doc_roles[0].get("unique_id", role_id)
+                    sys.stderr.write(f"✅ [SIGNNOW] Document role: {role_name} (id: {role_id})\n")
+                    sys.stderr.flush()
+            
+            # Send invite to sign using the correct role
             invite_payload = {
                 "to": [{
                     "email": recipient_email,
-                    "role": "Signer 1",
-                    "role_id": "",
+                    "role": role_name,
+                    "role_id": role_id,
                     "order": 1
                 }],
                 "from": SIGNNOW_FROM_EMAIL or "noreply@signnow.com"
             }
+            
+            sys.stderr.write(f"🔄 [SIGNNOW] Sending invite with role '{role_name}' to {recipient_email}\n")
+            sys.stderr.flush()
             
             invite_response = await client.post(
                 f"{self.base_url}/document/{document_id}/invite",
