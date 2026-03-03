@@ -156,6 +156,7 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
   const [sendDocDialogOpen, setSendDocDialogOpen] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState("");
   const [selectedEmail, setSelectedEmail] = useState("");
+  const [selectedRole, setSelectedRole] = useState(null);
   const [docMessage, setDocMessage] = useState("");
   const [loadingDocuments, setLoadingDocuments] = useState(false);
   
