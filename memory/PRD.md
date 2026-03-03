@@ -61,6 +61,10 @@ Build a member management application with attendance tracking, dues management,
   - Removed Signer Role dropdown (not needed per user)
   - Dialog now shows: Email selection, Template selection, Optional message
   - Backend auto-detects signer role from template
+- [x] **Delete Document Records:**
+  - Added DELETE endpoint `/api/signnow/documents/{document_id}`
+  - Added trash icon button in Document History to remove records from app
+  - Handles cases where documents are deleted in SignNow but still showing in app
 
 #### February 12, 2026 - Promotion Page (Discord Role Management)
 - [x] **Backend API Endpoints:**

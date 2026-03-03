@@ -17803,6 +17803,38 @@ async def get_signnow_document_status(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@api_router.delete("/signnow/documents/{document_id}")
+async def delete_signnow_document_record(
+    document_id: str,
+    current_user: dict = Depends(verify_token)
+):
+    """Delete a SignNow document record from the app database"""
+    # Check permission
+    has_permission = await check_permission(current_user, "send_documents")
+    if not has_permission and current_user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="You don't have permission to delete document records")
+    
+    # Get document from database
+    doc = await db.signnow_documents.find_one({"id": document_id}, {"_id": 0})
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document not found")
+    
+    # Delete the record
+    result = await db.signnow_documents.delete_one({"id": document_id})
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=500, detail="Failed to delete document record")
+    
+    # Log activity
+    await log_activity(
+        username=current_user.get("username"),
+        action="document_deleted",
+        details=f"Deleted document record '{doc.get('template_name')}' for {doc.get('member_handle')}"
+    )
+    
+    return {"success": True, "message": "Document record deleted"}
+
+
 # ==================== END SIGNNOW INTEGRATION ====================
 
 

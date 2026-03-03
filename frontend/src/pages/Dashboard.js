@@ -629,6 +629,23 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
     }
   };
 
+  const handleDeleteDocumentRecord = async (docId) => {
+    if (!window.confirm("Are you sure you want to remove this document record from the app?")) {
+      return;
+    }
+    
+    const token = localStorage.getItem("token");
+    try {
+      await axios.delete(`${API}/signnow/documents/${docId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      toast.success("Document record removed");
+      fetchMemberDocuments(selectedMember.id);
+    } catch (error) {
+      toast.error(error.response?.data?.detail || "Failed to delete document record");
+    }
+  };
+
   const getDocumentStatusBadge = (status) => {
     const statusMap = {
       sent: { label: "Pending", className: "bg-yellow-600 text-yellow-100" },
@@ -3011,7 +3028,7 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
                   <div className="space-y-2">
                     {memberDocuments.map((doc) => (
                       <div key={doc.id} className="p-3 bg-slate-700/50 rounded-lg border border-slate-600 flex justify-between items-center">
-                        <div>
+                        <div className="flex-1">
                           <div className="font-medium text-white text-sm">{doc.template_name}</div>
                           <div className="text-xs text-slate-400">
                             Sent {new Date(doc.sent_at).toLocaleDateString()} by {doc.sent_by}
@@ -3022,7 +3039,16 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
                             </div>
                           )}
                         </div>
-                        {getDocumentStatusBadge(doc.status)}
+                        <div className="flex items-center gap-2">
+                          {getDocumentStatusBadge(doc.status)}
+                          <button
+                            onClick={() => handleDeleteDocumentRecord(doc.id)}
+                            className="p-1 text-slate-400 hover:text-red-400 transition-colors"
+                            title="Remove from app"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
                       </div>
                     ))}
                   </div>
