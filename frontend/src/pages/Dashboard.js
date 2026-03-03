@@ -2611,10 +2611,10 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
                                   variant="ghost"
                                   className="text-purple-500 hover:text-purple-600 hover:bg-purple-950/50 h-8 w-8 p-0"
                                   onClick={() => handleOpenDocuments(member)}
-                                  title="Documents"
+                                  title="Send Documents"
                                   data-testid={`documents-member-${member.id}`}
                                 >
-                                  <i className="fas fa-file-signature w-4 h-4 text-sm"></i>
+                                  <Send className="w-4 h-4" />
                                 </Button>
                                 <Button
                                   size="sm"
