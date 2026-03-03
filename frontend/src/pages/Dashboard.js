@@ -3042,10 +3042,30 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
             <DialogHeader>
               <DialogTitle>Send Document for Signing</DialogTitle>
               <DialogDescription>
-                Select a document to send to {selectedMember?.handle} ({selectedMember?.personal_email || selectedMember?.email})
+                Select a document and email for {selectedMember?.handle}
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-4">
+              <div>
+                <Label className="text-slate-200">Send To Email</Label>
+                <select
+                  value={selectedEmail}
+                  onChange={(e) => setSelectedEmail(e.target.value)}
+                  className="w-full mt-1 p-2 bg-slate-700 border border-slate-600 rounded text-white"
+                >
+                  <option value="">Select email address...</option>
+                  {selectedMember?.personal_email && (
+                    <option value={selectedMember.personal_email}>
+                      {selectedMember.personal_email} (Personal)
+                    </option>
+                  )}
+                  {selectedMember?.email && selectedMember.email !== selectedMember?.personal_email && (
+                    <option value={selectedMember.email}>
+                      {selectedMember.email} (Primary)
+                    </option>
+                  )}
+                </select>
+              </div>
               <div>
                 <Label className="text-slate-200">Document Template</Label>
                 <select
@@ -3078,10 +3098,10 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
               </Button>
               <Button 
                 onClick={handleSendDocument}
-                disabled={!selectedTemplate}
+                disabled={!selectedTemplate || !selectedEmail}
                 className="bg-purple-600 hover:bg-purple-700"
               >
-                <i className="fas fa-paper-plane mr-2"></i>
+                <Send className="w-4 h-4 mr-2" />
                 Send
               </Button>
             </DialogFooter>
