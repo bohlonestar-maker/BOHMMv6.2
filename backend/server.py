@@ -17421,7 +17421,8 @@ class SignNowClient:
             sys.stderr.write(f"✅ [SIGNNOW] Created document {document_id} from template {template_id}\n")
             sys.stderr.flush()
             
-            # Send invite to sign
+            # Send invite to sign - use minimal payload for basic SignNow plans
+            # Custom subject/message requires upgraded subscription
             invite_payload = {
                 "to": [{
                     "email": recipient_email,
@@ -17429,9 +17430,7 @@ class SignNowClient:
                     "role_id": "",
                     "order": 1
                 }],
-                "from": SIGNNOW_FROM_EMAIL or "noreply@signnow.com",
-                "subject": f"Please sign: {document_name}",
-                "message": message or "Please review and sign the attached document."
+                "from": SIGNNOW_FROM_EMAIL or "noreply@signnow.com"
             }
             
             invite_response = await client.post(
