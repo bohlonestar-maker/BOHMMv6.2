@@ -156,7 +156,6 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
   const [sendDocDialogOpen, setSendDocDialogOpen] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState("");
   const [selectedEmail, setSelectedEmail] = useState("");
-  const [selectedRole, setSelectedRole] = useState(null);
   const [docMessage, setDocMessage] = useState("");
   const [loadingDocuments, setLoadingDocuments] = useState(false);
   
@@ -616,8 +615,6 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
         template_id: selectedTemplate,
         member_id: selectedMember.id,
         recipient_email: selectedEmail,
-        role_name: selectedRole?.name || null,
-        role_id: selectedRole?.id || null,
         message: docMessage
       }, { headers: { Authorization: `Bearer ${token}` } });
       
@@ -625,19 +622,11 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
       setSendDocDialogOpen(false);
       setSelectedTemplate("");
       setSelectedEmail("");
-      setSelectedRole(null);
       setDocMessage("");
       fetchMemberDocuments(selectedMember.id);
     } catch (error) {
       toast.error(error.response?.data?.detail || "Failed to send document");
     }
-  };
-
-  // Get available roles for selected template
-  const getTemplateRoles = () => {
-    if (!selectedTemplate) return [];
-    const template = signnowTemplates.find(t => t.id === selectedTemplate);
-    return template?.roles || [];
   };
 
   const getDocumentStatusBadge = (status) => {
@@ -3053,7 +3042,7 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
             <DialogHeader>
               <DialogTitle>Send Document for Signing</DialogTitle>
               <DialogDescription>
-                Select a document and signer for {selectedMember?.handle}
+                Select a document to send to {selectedMember?.handle}
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-4">
@@ -3081,10 +3070,7 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
                 <Label className="text-slate-200">Document Template</Label>
                 <select
                   value={selectedTemplate}
-                  onChange={(e) => {
-                    setSelectedTemplate(e.target.value);
-                    setSelectedRole(null); // Reset role when template changes
-                  }}
+                  onChange={(e) => setSelectedTemplate(e.target.value)}
                   className="w-full mt-1 p-2 bg-slate-700 border border-slate-600 rounded text-white"
                 >
                   <option value="">Select a template...</option>
@@ -3095,23 +3081,6 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
                   ))}
                 </select>
               </div>
-              {selectedTemplate && getTemplateRoles().length > 0 && (
-                <div>
-                  <Label className="text-slate-200">Signer Role</Label>
-                  <select
-                    value={selectedRole ? JSON.stringify(selectedRole) : ""}
-                    onChange={(e) => setSelectedRole(e.target.value ? JSON.parse(e.target.value) : null)}
-                    className="w-full mt-1 p-2 bg-slate-700 border border-slate-600 rounded text-white"
-                  >
-                    <option value="">Select signer role...</option>
-                    {getTemplateRoles().map((role, idx) => (
-                      <option key={idx} value={JSON.stringify(role)}>
-                        {role.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
               <div>
                 <Label className="text-slate-200">Message (Optional)</Label>
                 <textarea

@@ -1,85 +1,97 @@
 <analysis>**original_problem_statement:**
-The user's primary goal for this session was to build and deploy a Promotion Page for managing members' Discord roles and nicknames. This involved several iterations:
-- Initial implementation and bug fixing.
-- Adding the ability to update a member's Chapter and Title from the same page.
-- Implementing a flexible permission system (), which was later reverted at the user's request.
-- Implementing chapter-based filtering, allowing officers to only manage members within their own chapter.
-- Hard-coding permissions to restrict page access to specific National officer titles.
-- Extensive debugging of issues occurring in the user's Digital Ocean production environment, which were not present in the development environment. This led to the discovery that the  environment variable was missing in production.
-- Implementing Discord role caching to make the frontend more resilient if the Discord bot is disconnected.
+The user's initial problem was to debug and fix features in their production environment, specifically the un-archive member sends Discord invite and archive member kicks from Discord functionalities.
 
-Additionally, the user requested two other features:
-- When a member is un-archived, the system should automatically send them a new Discord server invite via email.
-- The invite email should be sent from , requiring a new set of Zoho SMTP credentials to be configured.
+Throughout the session, the user requested several new features and enhancements:
+1.  **Archive Reason Dropdown**: Implement a dropdown for selecting the reason for archiving a member, which then customizes the Discord notification.
+2.  **Add 'COO' Role**: Add a new Chief Operating Officer (COO) role throughout the application, including user management and permission systems.
+3.  **Refactor A&D Permissions**: Move hardcoded permissions for viewing and editing the Attendance & Dues (A&D) page to the database-driven permission system.
+4.  **Bulk Dues Correction**: Add a feature to correct a member's dues status over a specific date range to fix mistakes or handle special cases.
+5.  **SignNow Integration**: Integrate the SignNow API to allow authorized users to send documents (from existing templates) for electronic signature directly from a member's profile. This included selecting the recipient's email and the specific signer role from the template.
 
 **User's preferred language**: English
 
 **what currently exists?**
-The application is a full-stack solution with a React frontend and a monolithic FastAPI backend (). The Promotion Page is fully implemented and functional within the development environment. It includes member selection, Discord nickname updates, Discord role management, and Chapter/Title updates. Access is hard-coded to specific National officer titles (, , , , , ). Non-National officers are restricted to managing members within their own chapter.
+The application is a full-stack solution with a React frontend and a large FastAPI backend (). All user requests from this session have been implemented in the development environment.
 
-The backend now caches Discord roles in the database, making the Promotion Page more resilient to Discord bot connectivity issues. A new feature has been added to the un-archive member flow, which now sends a Discord invite link to the member's personal email using newly configured Zoho SMTP credentials for .
-
-The primary unresolved issue is the verification of the fix for the production environment. The root cause of the Promotion Page failure on Digital Ocean was identified as a missing  environment variable, but the user has not confirmed that adding it solved the problem.
+-   The Discord invite and kick functionalities have been debugged and fixed with more robust name-matching logic.
+-   When archiving a member, a dialog now presents a dropdown of removal reasons, and the resulting Discord notification is customized with a specific title, color, and optional comments.
+-   The 'COO' role has been added to all relevant title lists in the backend and user management dropdowns in the frontend.
+-   Permissions for the Attendance & Dues (A&D) page are now controlled via the Permissions Panel ( and ), removing the previous hardcoded logic.
+-   A Correct Dues Range feature is available in the A&D page, allowing admins to bulk-update a member's dues status for a given period.
+-   A full integration with the SignNow API is complete. From the member list on the dashboard, an authorized user can open a Documents dialog, select from available SignNow templates, choose the recipient's email, select the correct signer role for that template, and send the document for signature.
 
 **Last working item**:
-    - Last item agent was working: The agent finished configuring the application to use a new set of Zoho SMTP credentials ( and ) for sending Discord invite emails from  when a member is unarchived.
+    - Last item agent was working: Implementing a dropdown menu in the Send Document dialog to allow the user to select the specific signer role from the chosen SignNow template. This required fetching template roles from the SignNow API and passing the selected role when sending the document.
     - Status: USER VERIFICATION PENDING
-    - Agent Testing Done: Y
-    - Which testing method agent to use? manual testing by curl
+    - Agent Testing Done: N
+    - Which testing method agent to use? frontend testing agent
     - User Testing Done: N
 
 **All Pending/In progress Issue list**:
-  Issue 1:  (P0) Promotion Page functionality on Digital Ocean production environment is not confirmed.
+  Issue 1:  (P0) Kicking a member from Discord upon archival is still not working in the production environment.
   
   Issues Detail:
   - Issue 1: 
-     - **Description**: The user reported that the Promotion Page was not loading Discord roles or allowing nickname changes in their Digital Ocean deployment. After extensive debugging, the root cause was identified as a missing  environment variable in the production setting.
-     - **Attempted fixes**: Added robust error handling and logging to backend endpoints, which helped pinpoint the missing environment variable. The agent instructed the user on how to add the variable in the Digital Ocean App Platform settings.
+     - **Description**: The user reported that after all the fixes, archiving a member with the kick from Discord option checked still does not remove the user from the Discord server in the production environment (Message 202, 204). The agent started to investigate but was diverted by a new feature request (adding the COO role).
+     - **Attempted fixes**: The agent added extensive logging () to the  function in  to trace the execution and diagnose the name-matching logic. This confirmed the fix worked in the local dev environment, but the production issue persists.
      - **Next debug checklist**: 
-        1. Confirm with the user if they have added the  environment variable to their Digital Ocean app settings.
-        2. Ask the user to test the Promotion Page again in their production environment ().
-        3. If it still fails, ask the user to provide the new, more detailed logs from their production environment (containing  tags).
-     - **Why fix this issue and what will be achieved with the fix?** This is the final step to complete the main feature of this session and make it usable for administrators.
-     - **Status**:  USER VERIFICATION PENDING
+        1. Ask the user to try archiving a member with the kick option enabled in production again.
+        2. Immediately ask the user to provide the production logs, specifically looking for lines starting with .
+        3. Analyze the logs to see if the member is being found, what names are being compared (), and where the process is failing.
+        4. The issue is likely related to Discord Gateway Intents and the bot's member cache in the production environment not being fully populated. The fix might require explicitly fetching the member from the guild by ID or name instead of relying on the cache.
+     - **Why fix this issue and what will be achieved with the fix?** This is a core administrative function that is failing in the user's live environment. Fixing it is critical for member management.
+     - **Status**:  IN PROGRESS
      - **Is recurring issue?** Y
-     - **Should Test frontend/backend/both after fix?** Backend (via production logs/user feedback)
+     - **Should Test frontend/backend/both after fix?** Backend (via production logs and user confirmation)
      - **Blocked on other issue**: None
 
 **In progress Task List**:
-  - None.
+  - Task 1:  (P0) Verify the Signer Role selection for SignNow documents.
+  
+ Task Detail:
+  - Task 1: 
+     - **Where to resume**: The user needs to test the final implementation of the SignNow Send Document dialog, specifically confirming that after selecting a template, the Signer Role dropdown appears with the correct roles from that template and that sending the document works.
+     - **What will be achieved with this?**: This will complete the SignNow integration feature, making it fully usable.
+     - **Status**:  USER VERIFICATION PENDING
+     - **Should Test frontend/backend/both after fix?** Frontend
+     - **Blocked on something**: None
 
 **Upcoming and Future Tasks**
     Upcoming Tasks:
     - (P1) **Add More Dues Options**: Add quarterly, bi-yearly, and yearly dues options to the Member Store.
     
     Future Tasks:
-    - (P0) **Refactor Large Files**: **URGENT**. , , and  are critically oversized and have accumulated more logic, making them difficult to maintain and debug.
+    - (P0) **Refactor Large Files**: **URGENT**. , , and  have grown even larger and more complex, making them extremely difficult to maintain. This technical debt is critical to address.
+    - (P1) **Extension to Paid Conversion**: When a member with a dues extension pays, the extended months should automatically be marked as paid.
     - (P2) **Suggestion Box Replies**: Add a feature for officers to reply to suggestions.
     - (P2) **Link Discord Members to System Members**: Create a UI to definitively link system members to their Discord accounts.
 
 **Completed work in this session**
-- **Promotion Page Feature (Complete)**:
-    - Created a new page at  for managing member Discord roles and nicknames.
-    - Implemented backend endpoints (, , ) and fixed a critical bug where they were not being registered by FastAPI's router.
-    - Added functionality to update a member's  and  in the database from the same page.
-    - Added a navigation link to the Admin menu in .
-    - Implemented chapter-based filtering: non-National officers see a banner and can only manage members from their own chapter.
-    - Implemented hardcoded permission checks in the frontend ( and ) to restrict access to specific National officer titles, as requested by the user.
-- **Production Debugging & Hardening**:
-    - Identified that  was missing in the production environment, causing Discord API calls to fail.
-    - Added a Discord roles caching mechanism to the database ( collection) to allow the page to function even if the Discord bot is disconnected.
-    - Added extensive logging () and more robust  checks to all Discord-related endpoints in  to prevent crashes and aid future debugging.
-- **Discord Invite on Un-archive**:
-    - Modified the  function in  to trigger sending an email.
-    - The email contains a newly generated, single-use Discord invite link.
-    - The email is sent to the member's .
-- **Zoho SMTP Configuration**:
-    - Added new environment variables (, ) to  for a  account.
-    - Updated the email-sending logic to use these new credentials for the Discord invite email.
-- **Bug Fix**: Fixed a Back to Dashboard button on the Promotion Page that navigated to the wrong URL ( instead of ).
+- **Production Bug Fixes**:
+  - Fixed a crash in the un-archive email feature by adding a missing  in .
+  - Implemented robust, space-normalizing name-matching logic to fix Discord member lookups for both the kick function and the Promotion Page endpoints.
+- **Archive Reason Feature**:
+  - Added a dropdown to the archive dialog to select a reason for removal ().
+  - The backend () now generates a dynamic Discord notification with custom titles, colors, and an optional Comments field based on the selected reason.
+- **COO Role Addition**:
+  - Added COO to all relevant title constants and permission arrays in .
+  - Added COO to the title selection dropdowns in .
+- **A&D Permissions Refactor**:
+  - Created a new  permission.
+  - Refactored  in  to check the database permission instead of a hardcoded title list.
+  - Updated all dues-related endpoints (extensions, suspend, forgive) to accept either  or  permission.
+- **Bulk Dues Correction Feature**:
+  - Created a  endpoint in .
+  - Added a Correct Dues Range button and dialog to the A&D page () to allow admins to set dues status for a range of months.
+- **SignNow Integration (Complete)**:
+  - Successfully troubleshot and configured SignNow API authentication using OAuth2 password grant.
+  - Created backend endpoints in  to handle SignNow API calls ().
+  - Installed  dependency.
+  - Added a Documents button to the member list in .
+  - Implemented a Send Document dialog that allows selecting a member's email, choosing a template, and selecting the specific signer role for that template.
 
 **Earlier issues found/mentioned but not fixed**
-   - None. The primary issue from this session (Promotion Page in production) has been diagnosed, and the fix is pending user action and verification.
+   - The primary issue of the Discord kick failing in production was raised but not resolved, as the agent was diverted to other feature requests. See **All Pending/In progress Issue list**.
 
 **Known issue recurrence from previous fork**
   - **Issue recurrence:** Prospect Channel Analytics page showing duplicate users.
@@ -90,59 +102,66 @@ The primary unresolved issue is the verification of the fix for the production e
 
 
 **Key Technical Concepts**
-- **Environment Variable Discrepancy**: A critical bug was caused by a missing  in the production  file, highlighting the importance of synchronizing configurations between environments.
-- **API Resilience**: Implemented a caching layer ( collection) for Discord roles so the frontend can remain partially functional even if the live Discord API call fails.
-- **Hardcoded Permissions**: Shifted from a dynamic, database-driven permission model to a simpler, hardcoded check in the frontend based on user  and  for the Promotion Page, per user request for simplicity.
-- **SMTP Configuration**: Managed and utilized multiple sets of SMTP credentials within the same application for different email sender identities.
+- **3rd Party API Integration**: Extensive work integrating the SignNow API, including complex OAuth2 password grant authentication, error handling for subscription limitations, and dynamic API calls based on template data (fetching roles).
+- **Environment Variable Management**: Correctly identified the need for and managed numerous new secrets for the SignNow integration (, , , ).
+- **Permission System Refactoring**: Successfully migrated hardcoded business logic (who can view National A&D) into the existing database-driven permission system, making it more flexible.
+- **Stateful UI**: Implemented several new multi-step dialogs in React, managing state for user selections (template, email, role) to build a dynamic API request.
+- **Robust Debugging**: Traced a recurring production bug () by adding detailed logging and analyzing logs, although the final fix is still pending.
 
 **key DB schema**
-  - **** (New Collection): Stores a cached list of Discord roles. Document structure: .
+  - No new collections were added.
+  - The  collection was utilized for new permissions like  and .
 
 **changes in tech stack**
-  - None.
+  - New backend dependency: .
 
 **All files of reference**
 - 
 - 
 - 
 - 
+- 
 
 **Areas that need refactoring**:
-- ****, ****, ****: These files remain **URGENT/CRITICAL** refactoring targets. Their size and complexity continue to grow, making maintenance and debugging difficult.
-- The hardcoded permissions in  should ideally be migrated to the database-driven permission system in the future for better maintainability.
+- **CRITICAL**:  is now over 17,800 lines long and  is over 3,000 lines. The complexity is unsustainable. The top priority after fixing the outstanding bug should be to break  into a modular structure (e.g., , , ) and to break  into smaller, reusable components.
 
 **key api endpoints**
-- ****: (Modified) Fetches all Discord roles, now with caching and improved error handling.
-- ****: (Modified) Gets a member's current roles, with improved error handling.
-- ****: (Modified) Updates a member's roles, with improved error handling.
-- ****: (Modified) Updates a member's nickname, with improved error handling.
-- ****: New endpoint to update a member's chapter and title.
-- ****: (Modified) Now triggers sending a Discord invite email upon successful restoration.
+- ****: New endpoint to update dues status for a member over a date range.
+- ****: New endpoint to list available SignNow templates and their roles.
+- ****: New endpoint to send a document for signing.
+- ****: New endpoint to get a member's document history.
+- ****: (Modified) Now accepts  and  to customize Discord notifications.
+- **Multiple Dues Endpoints**: , ,  were all updated to check for  permission.
 
 **Critical Info for New Agent**
-- **PRODUCTION ISSUE**: The highest priority is to follow up with the user about the Promotion Page on their Digital Ocean server. They were instructed to add  to their environment variables. You must confirm if this was done and if it fixed the issue. Do not assume it is fixed.
-- **HARDCODED PERMISSIONS**: Be aware that the permissions for the Promotion Page are intentionally hardcoded in  and  at the user's request. Do not attempt to fix this by reimplementing the database permission check without user consent.
-- **REFACTORING**: The  file is extremely large. After confirming the production fix, you should strongly advocate for refactoring it as the next major task.
+- **TOP PRIORITY**: The user has repeatedly reported that kicking a member from Discord on archive **does not work in production**. You must investigate this first. Ask for the  logs from their Digital Ocean environment to diagnose the failure. Do not get sidetracked by other requests until this is addressed.
+- **SignNow Production Setup**: To deploy the SignNow integration, the user must add 6 new environment variables to their **backend component** in Digital Ocean. The agent correctly instructed the user that these are already in the  file and will be deployed, but it's important to be ready to help if the user has deployment issues. The credentials are:
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+- **Technical Debt**: The  and  files are critically oversized. After fixing the blocking production bug, you must strongly advocate for and plan a refactoring task to break these files down.
 
 **documents and test reports created in this job**
-  - 
-  -  (updated)
+  - None.
 
 **Last 10 User Messages and any pending HUMAN messages** 
-- **10. Heres the password qnyfVkQs3RFg"**: User provides the password for the `support@boh2158.org` Zoho account.
-- **9. "There should be support@boh2158.org credentials for Zoho already in this app"**: User believes the support credentials should exist. The agent confirms they do not.
-- **8. "I want to use the support@boh2158.org instead of payments@boh2158.org"**: User requests to change the sender email for the Discord invite.
-- **7. "How do I set zoho email credentials"**: User asks how to configure email credentials.
-- **6. "If a member that is removed is unarchived have the discord bot send that member a invitation back to the server."**: User requests the new feature for sending Discord invites upon un-archiving.
-- **5. "[PROMO] /discord/roles called - bot=True, guild_id=None..."**: User provides the production log, which confirms `DISCORD_GUILD_ID` is `None`. **(This is the key diagnostic information)**.
-- **4. "Even after forcing a rebuild and deployment its not showing up in the logs**: User reports that the new logging is not appearing, indicating a deployment issue.
-- **3. [PROMO] isnt in the logs"**: User confirms the new logging is not in their production logs.
-- **2. "How would I view these logs? I cant find them**: User asks for instructions on viewing logs in Digital Ocean.
-- **1. Still not functioning. Cant change nickname and roles arent loading.**: User confirms the issue persists in production even after code changes.
+ - **10. I need to select the signers for the documents that are sent.**: User requested a dropdown to select the signer role from the SignNow template. (Implemented)
+ - **9. Can we change it where we can select the email to send signnow documents to if the member has multiple emails?**: User requested an email selection dropdown for SignNow. (Implemented)
+ - **8. *[Toast Message: Role does not exist]***: User reported an error with SignNow roles. (Fix Attempted)
+ - **7. *[Toast Message: Invite subject and message cant be set"]***: User reported an error due to SignNow subscription limits. (Fixed)
+ - **6. "Can we just add these to the env file?"**: User asked if SignNow credentials can be in the `.env` file instead of manually added to Digital Ocean. (Agent Confirmed Yes)
+ - **5. "South the env variables go in the app level environment variables or the backend environment variables?"**: User asked for clarification on where to put environment variables. (Agent Answered)
+ - **4. *[Image showing no document icon]***: User reported the SignNow button was not visible. (Agent debugged and fixed icon, but it was an off-screen issue).
+ - **3. "Theres no button for the signnow function**: User stated the button wasn't there.
+ - **2. Do these go in the backend environment?**: User asked where to put SignNow env vars.
+ - **1. *[Image of error toast Role does not exist on document]***: This is a duplicate of #8, likely a resubmission.
 
 **Project Health Check:**
 - **Broken**:
-    - None. The  feature from the previous fork was fixed. The new  is working in dev, and the production issue has been diagnosed with a clear fix proposed.
+    - The  feature is confirmed broken in the user's production environment, though it works in development.
 - **Mocked**:
     - None.
 
@@ -150,19 +169,21 @@ The primary unresolved issue is the verification of the fix for the production e
  - **Square**: Dues payments. Requires User API Key.
  - **Discord**: Notifications, role management, activity tracking. Requires User Bot Token and .
  - **OpenAI**: Chatbot feature. Requires User API Key.
- - **Zoho SMTP**: Application emails. Now configured with two sets of credentials: one for  and a new one for .
+ - **Zoho SMTP**: Application emails (configured for two different sender accounts).
+ - **SignNow**: (New) Electronic signatures. Requires User API Key/Secret and User account credentials for OAuth2 Password Grant.
 
 **Testing status**
-  - Testing agent used after significant changes: YES, the agent used the testing agent to validate the Promotion Page before the permission changes.
+  - Testing agent used after significant changes: NO
   - Troubleshoot agent used after agent stuck in loop: NO
   - Test files created: None
-  - Known regressions: None
+  - Known regressions: The  feature has regressed or was never fully fixed in production.
 
 **Credentials to test flow:**
 - **Admin:**  / 
 - **National President:**  / 
-- **HA Prez:**  /  (Password was reset in this session)
+- **HA Prez:**  / 
+- **SignNow User:**  / 
 
 **What agent forgot to execute**
-- The agent initially spent a significant amount of time debugging code logic for the production issue, rather than first suspecting a simpler environmental difference (like a missing  variable). This led to a prolonged debugging cycle.
-- The agent implemented a complex permission system for the Promotion Page which the user did not want, requiring the work to be reverted in favor of a simpler hardcoded solution. This highlights a need to confirm complex implementation details before coding.</analysis>
+- The agent did not follow through on debugging the recurring production issue where kicking a member from Discord fails. It started the investigation (asking for logs) but was immediately diverted by the user's request to add the COO role and did not return to the critical production bug.
+- The agent moved on to implement new SignNow features (email select, role select) before getting explicit user confirmation that the previous SignNow bug fix (Role does not exist) had worked.</analysis>

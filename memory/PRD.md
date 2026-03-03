@@ -56,6 +56,12 @@ Build a member management application with attendance tracking, dues management,
 
 ### What's Been Implemented
 
+#### March 3, 2026 - SignNow Integration Simplified
+- [x] **Simplified Send Document Dialog:**
+  - Removed Signer Role dropdown (not needed per user)
+  - Dialog now shows: Email selection, Template selection, Optional message
+  - Backend auto-detects signer role from template
+
 #### February 12, 2026 - Promotion Page (Discord Role Management)
 - [x] **Backend API Endpoints:**
   - `GET /api/discord/roles` - Get all Discord server roles (33 roles)
@@ -273,6 +279,7 @@ Build a member management application with attendance tracking, dues management,
 
 #### P1 - High Priority
 - [x] ~~Square one-time payment sync bug~~ (Completed Jan 29 - fixed + admin reapply endpoint)
+- [x] ~~SignNow Integration~~ (Completed Mar 3, 2026 - Send documents for signature from member profiles)
 - [ ] Triple birthday notification fix (distributed lock not working across containers)
 - [ ] "Update Dues" dialog mobile responsiveness
 - [ ] Add quarterly/bi-yearly/yearly dues subscription options
@@ -291,6 +298,7 @@ Build a member management application with attendance tracking, dues management,
 - **Discord:** Automated notifications
 - **OpenAI:** AI chatbot feature
 - **Email:** MOCKED (logged to console, not actually sent)
+- **SignNow:** Electronic document signing (OAuth2 integration)
 
 ### Important Notes
 - **Email sending is MOCKED** - Emails are logged to console and recorded in `dues_reminder_sent` collection, but not actually sent via SMTP. Actual email integration would require a service like SendGrid or SES.
