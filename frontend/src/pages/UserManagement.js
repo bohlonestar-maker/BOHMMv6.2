@@ -827,6 +827,7 @@ export default function UserManagement({ onLogout }) {
                         <SelectContent>
                           <SelectItem value="Prez">Prez - President</SelectItem>
                           <SelectItem value="VP">VP - Vice President</SelectItem>
+                          <SelectItem value="COO">COO - Chief Operating Officer</SelectItem>
                           <SelectItem value="S@A">S@A - Sergeant at Arms</SelectItem>
                           <SelectItem value="ENF">ENF - Enforcer</SelectItem>
                           <SelectItem value="SEC">SEC - Secretary</SelectItem>
