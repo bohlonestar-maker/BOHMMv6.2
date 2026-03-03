@@ -636,7 +636,9 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
       completed: { label: "Signed", className: "bg-green-600 text-green-100" },
       signed: { label: "Signed", className: "bg-green-600 text-green-100" },
       declined: { label: "Declined", className: "bg-red-600 text-red-100" },
-      partially_signed: { label: "Partial", className: "bg-blue-600 text-blue-100" }
+      partially_signed: { label: "Partial", className: "bg-blue-600 text-blue-100" },
+      deleted: { label: "Deleted", className: "bg-gray-600 text-gray-100" },
+      unknown: { label: "Unknown", className: "bg-slate-600 text-slate-100" }
     };
     const info = statusMap[status] || { label: status, className: "bg-slate-600 text-slate-100" };
     return <span className={`px-2 py-1 rounded text-xs ${info.className}`}>{info.label}</span>;

@@ -17553,7 +17553,15 @@ class SignNowClient:
                 headers=headers
             )
             
+            if response.status_code == 404:
+                # Document was deleted in SignNow
+                return {"status": "deleted", "error": "Document no longer exists in SignNow"}
+            
             if response.status_code != 200:
+                # Check if error indicates document doesn't exist
+                error_text = response.text.lower()
+                if "not found" in error_text or "does not exist" in error_text or "deleted" in error_text:
+                    return {"status": "deleted", "error": response.text}
                 return {"status": "unknown", "error": response.text}
             
             data = response.json()
