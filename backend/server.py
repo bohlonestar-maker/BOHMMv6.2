@@ -8124,11 +8124,32 @@ async def get_voice_hours_analytics(
             }
         }, {"_id": 0}).to_list(None)
         
-        # Aggregate by user and day
+        # Deduplicate records - the Discord bot sometimes inserts duplicate records
+        # with timestamps just milliseconds apart. Use user_id + rounded joined_at as key
+        seen_sessions = set()
+        deduplicated_activity = []
+        
+        for record in voice_activity:
+            user_id = record.get("discord_user_id")
+            joined_at = record.get("joined_at")
+            
+            # Create a unique key by rounding joined_at to nearest second
+            if joined_at:
+                # Round to nearest second by truncating microseconds
+                joined_key = joined_at.replace(microsecond=0) if hasattr(joined_at, 'replace') else str(joined_at)[:19]
+                session_key = f"{user_id}_{joined_key}"
+                
+                if session_key in seen_sessions:
+                    continue  # Skip duplicate
+                seen_sessions.add(session_key)
+            
+            deduplicated_activity.append(record)
+        
+        # Aggregate by user and day using deduplicated data
         user_daily_stats = {}  # {discord_id: {date: total_seconds}}
         user_monthly_totals = {}  # {discord_id: total_seconds}
         
-        for record in voice_activity:
+        for record in deduplicated_activity:
             user_id = record.get("discord_user_id")
             date = record.get("date")
             duration = record.get("duration_seconds", 0)
