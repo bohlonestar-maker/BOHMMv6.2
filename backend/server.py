@@ -17325,22 +17325,22 @@ class SignNowClient:
         
         token_url = f"{self.base_url}/oauth2/token"
         
-        # SignNow uses Basic Auth with client_id:client_secret for the Authorization header
-        import base64
-        credentials = base64.b64encode(f"{self.client_id}:{self.client_secret}".encode()).decode()
-        
         headers = {
-            "Authorization": f"Basic {credentials}",
             "Content-Type": "application/x-www-form-urlencoded"
         }
         
-        # Use password grant type with user credentials
+        # Include client credentials in the body along with user credentials
         payload = {
             "grant_type": "password",
+            "client_id": self.client_id,
+            "client_secret": self.client_secret,
             "username": self.username,
             "password": self.password,
             "scope": "*"
         }
+        
+        sys.stderr.write(f"🔄 [SIGNNOW] Attempting auth with client_id={self.client_id[:8]}..., user={self.username}\n")
+        sys.stderr.flush()
         
         async with httpx.AsyncClient() as client:
             response = await client.post(token_url, data=payload, headers=headers)
