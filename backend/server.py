@@ -10434,6 +10434,7 @@ AVAILABLE_PERMISSIONS = [
     {"key": "manage_events", "label": "Manage Events", "description": "Can add/edit events"},
     {"key": "manage_system_users", "label": "Manage System Users", "description": "Can add/edit system user accounts"},
     {"key": "manage_dues_reminders", "label": "Manage Dues Reminders", "description": "Can view/edit dues reminder emails and run checks"},
+    {"key": "send_documents", "label": "Send Documents", "description": "Can send SignNow documents for signing to members"},
 ]
 
 # All manageable titles
