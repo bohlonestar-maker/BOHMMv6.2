@@ -17670,6 +17670,8 @@ async def send_signnow_document(
             recipient_email=recipient_email,
             recipient_name=recipient_name,
             document_name=document_name,
+            role_name=request.role_name,
+            role_id=request.role_id,
             message=request.message
         )
         
@@ -17682,6 +17684,7 @@ async def send_signnow_document(
             "member_id": request.member_id,
             "member_handle": member.get("handle"),
             "member_email": recipient_email,
+            "role_name": request.role_name,
             "status": "sent",
             "sent_at": datetime.now(timezone.utc).isoformat(),
             "sent_by": current_user.get("username"),
