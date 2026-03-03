@@ -10930,8 +10930,10 @@ async def create_dues_extension(
     current_user: dict = Depends(verify_token)
 ):
     """Grant a dues payment extension to a member"""
-    has_access = await check_permission(current_user, "manage_dues_reminders")
-    if not has_access:
+    # Allow if user has manage_dues_reminders OR edit_dues permission
+    has_manage_reminders = await check_permission(current_user, "manage_dues_reminders")
+    has_edit_dues = await check_permission(current_user, "edit_dues")
+    if not has_manage_reminders and not has_edit_dues:
         raise HTTPException(status_code=403, detail="You don't have permission to grant extensions")
     
     # Verify member exists
