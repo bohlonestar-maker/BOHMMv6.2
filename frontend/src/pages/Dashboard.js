@@ -2960,6 +2960,124 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
             </div>
           </DialogContent>
         </Dialog>
+
+        {/* Documents Dialog */}
+        <Dialog open={documentsDialogOpen} onOpenChange={setDocumentsDialogOpen}>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <i className="fas fa-file-signature text-purple-400"></i>
+                Documents - {selectedMember?.handle}
+              </DialogTitle>
+              <DialogDescription>
+                View and send SignNow documents for signing
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="space-y-4">
+              {/* Send New Document Button */}
+              {permissions?.send_documents && signnowTemplates.length > 0 && (
+                <Button 
+                  onClick={() => setSendDocDialogOpen(true)}
+                  className="w-full bg-purple-600 hover:bg-purple-700"
+                  data-testid="send-new-document-btn"
+                >
+                  <i className="fas fa-paper-plane mr-2"></i>
+                  Send New Document
+                </Button>
+              )}
+              
+              {/* Documents List */}
+              <div className="space-y-2">
+                <h4 className="text-sm font-medium text-slate-300">Document History</h4>
+                {loadingDocuments ? (
+                  <div className="text-center py-4 text-slate-400">Loading...</div>
+                ) : memberDocuments.length === 0 ? (
+                  <div className="text-center py-4 text-slate-400 text-sm">
+                    No documents sent to this member yet
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {memberDocuments.map((doc) => (
+                      <div key={doc.id} className="p-3 bg-slate-700/50 rounded-lg border border-slate-600 flex justify-between items-center">
+                        <div>
+                          <div className="font-medium text-white text-sm">{doc.template_name}</div>
+                          <div className="text-xs text-slate-400">
+                            Sent {new Date(doc.sent_at).toLocaleDateString()} by {doc.sent_by}
+                          </div>
+                          {doc.signed_at && (
+                            <div className="text-xs text-green-400">
+                              Signed {new Date(doc.signed_at).toLocaleDateString()}
+                            </div>
+                          )}
+                        </div>
+                        {getDocumentStatusBadge(doc.status)}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+            
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setDocumentsDialogOpen(false)}>
+                Close
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Send Document Dialog */}
+        <Dialog open={sendDocDialogOpen} onOpenChange={setSendDocDialogOpen}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Send Document for Signing</DialogTitle>
+              <DialogDescription>
+                Select a document to send to {selectedMember?.handle} ({selectedMember?.personal_email || selectedMember?.email})
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div>
+                <Label className="text-slate-200">Document Template</Label>
+                <select
+                  value={selectedTemplate}
+                  onChange={(e) => setSelectedTemplate(e.target.value)}
+                  className="w-full mt-1 p-2 bg-slate-700 border border-slate-600 rounded text-white"
+                >
+                  <option value="">Select a template...</option>
+                  {signnowTemplates.map((template) => (
+                    <option key={template.id} value={template.id}>
+                      {template.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <Label className="text-slate-200">Message (Optional)</Label>
+                <textarea
+                  value={docMessage}
+                  onChange={(e) => setDocMessage(e.target.value)}
+                  placeholder="Add a personal message..."
+                  rows={3}
+                  className="w-full mt-1 p-2 bg-slate-700 border border-slate-600 rounded text-white placeholder:text-slate-400"
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setSendDocDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button 
+                onClick={handleSendDocument}
+                disabled={!selectedTemplate}
+                className="bg-purple-600 hover:bg-purple-700"
+              >
+                <i className="fas fa-paper-plane mr-2"></i>
+                Send
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
