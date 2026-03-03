@@ -557,6 +557,82 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
     setActionsDialogOpen(true);
   };
 
+  // SignNow Document Functions
+  const fetchSignnowTemplates = async () => {
+    const token = localStorage.getItem("token");
+    try {
+      const response = await axios.get(`${API}/signnow/templates`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setSignnowTemplates(response.data.templates || []);
+    } catch (error) {
+      console.log("SignNow not available or no permission");
+      setSignnowTemplates([]);
+    }
+  };
+
+  const fetchMemberDocuments = async (memberId) => {
+    const token = localStorage.getItem("token");
+    setLoadingDocuments(true);
+    try {
+      const response = await axios.get(`${API}/signnow/documents/${memberId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setMemberDocuments(response.data.documents || []);
+    } catch (error) {
+      console.log("Error fetching documents:", error);
+      setMemberDocuments([]);
+    } finally {
+      setLoadingDocuments(false);
+    }
+  };
+
+  const handleOpenDocuments = async (member) => {
+    setSelectedMember(member);
+    setDocumentsDialogOpen(true);
+    await Promise.all([
+      fetchSignnowTemplates(),
+      fetchMemberDocuments(member.id)
+    ]);
+  };
+
+  const handleSendDocument = async () => {
+    if (!selectedTemplate) {
+      toast.error("Please select a document template");
+      return;
+    }
+    
+    const token = localStorage.getItem("token");
+    try {
+      const response = await axios.post(`${API}/signnow/send`, {
+        template_id: selectedTemplate,
+        member_id: selectedMember.id,
+        message: docMessage
+      }, { headers: { Authorization: `Bearer ${token}` } });
+      
+      toast.success(response.data.message || "Document sent successfully");
+      setSendDocDialogOpen(false);
+      setSelectedTemplate("");
+      setDocMessage("");
+      fetchMemberDocuments(selectedMember.id);
+    } catch (error) {
+      toast.error(error.response?.data?.detail || "Failed to send document");
+    }
+  };
+
+  const getDocumentStatusBadge = (status) => {
+    const statusMap = {
+      sent: { label: "Pending", className: "bg-yellow-600 text-yellow-100" },
+      pending: { label: "Pending", className: "bg-yellow-600 text-yellow-100" },
+      completed: { label: "Signed", className: "bg-green-600 text-green-100" },
+      signed: { label: "Signed", className: "bg-green-600 text-green-100" },
+      declined: { label: "Declined", className: "bg-red-600 text-red-100" },
+      partially_signed: { label: "Partial", className: "bg-blue-600 text-blue-100" }
+    };
+    const info = statusMap[status] || { label: status, className: "bg-slate-600 text-slate-100" };
+    return <span className={`px-2 py-1 rounded text-xs ${info.className}`}>{info.label}</span>;
+  };
+
   const handleAddAction = async (e) => {
     e.preventDefault();
     if (!actionForm.description.trim()) {
