@@ -109,6 +109,18 @@ function OfficerTracking() {
   });
   const [memberExtension, setMemberExtension] = useState(null);
   
+  // Bulk Dues Correction Dialog
+  const [bulkCorrectionDialog, setBulkCorrectionDialog] = useState(false);
+  const [bulkCorrectionForm, setBulkCorrectionForm] = useState({
+    startMonth: '',
+    startYear: new Date().getFullYear().toString(),
+    endMonth: '',
+    endYear: new Date().getFullYear().toString(),
+    status: 'paid',
+    note: '',
+    revokeExtension: true
+  });
+  
   const token = localStorage.getItem('token');
   const userTitle = localStorage.getItem('title');
   const userRole = localStorage.getItem('role');
