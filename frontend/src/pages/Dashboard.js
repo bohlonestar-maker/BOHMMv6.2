@@ -2607,6 +2607,16 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
                                 <Button
                                   size="sm"
                                   variant="ghost"
+                                  className="text-purple-500 hover:text-purple-600 hover:bg-purple-950/50 h-8 w-8 p-0"
+                                  onClick={() => handleOpenDocuments(member)}
+                                  title="Documents"
+                                  data-testid={`documents-member-${member.id}`}
+                                >
+                                  <i className="fas fa-file-signature w-4 h-4 text-sm"></i>
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
                                   className="text-slate-300 hover:text-white hover:bg-slate-600 h-8 w-8 p-0"
                                   onClick={() => handleEdit(member)}
                                   data-testid={`edit-member-${member.id}`}
