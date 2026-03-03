@@ -4340,7 +4340,7 @@ async def get_attendance_quarterly_report(
     
     # Sort by chapter and title
     CHAPTERS = ["National", "AD", "HA", "HS"]
-    TITLES = ["Prez", "VP", "S@A", "ENF", "SEC", "T", "CD", "CC", "CCLC", "MD", "PM", "Member", "Honorary"]
+    TITLES = ["Prez", "VP", "COO", "S@A", "ENF", "SEC", "T", "CD", "CC", "CCLC", "MD", "PM", "Member", "Honorary"]
     
     def sort_key(member):
         ch_idx = CHAPTERS.index(member.get('chapter', '')) if member.get('chapter', '') in CHAPTERS else 999
@@ -4470,7 +4470,7 @@ async def get_dues_quarterly_report(
     
     # Sort by chapter and title
     CHAPTERS = ["National", "AD", "HA", "HS"]
-    TITLES = ["Prez", "VP", "S@A", "ENF", "SEC", "T", "CD", "CC", "CCLC", "MD", "PM", "Member", "Honorary"]
+    TITLES = ["Prez", "VP", "COO", "S@A", "ENF", "SEC", "T", "CD", "CC", "CCLC", "MD", "PM", "Member", "Honorary"]
     
     def sort_key(member):
         ch_idx = CHAPTERS.index(member.get('chapter', '')) if member.get('chapter', '') in CHAPTERS else 999
