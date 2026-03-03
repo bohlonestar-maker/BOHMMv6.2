@@ -131,6 +131,19 @@ if support_smtp_configured:
     sys.stderr.write(f"✅ [INIT] Support SMTP configured: {SUPPORT_SMTP_USERNAME}\n")
 sys.stderr.flush()
 
+# SignNow configuration
+SIGNNOW_CLIENT_ID = os.environ.get('SIGNNOW_CLIENT_ID')
+SIGNNOW_CLIENT_SECRET = os.environ.get('SIGNNOW_CLIENT_SECRET')
+SIGNNOW_FROM_EMAIL = os.environ.get('SIGNNOW_FROM_EMAIL')
+SIGNNOW_ENVIRONMENT = os.environ.get('SIGNNOW_ENVIRONMENT', 'production')
+signnow_configured = all([SIGNNOW_CLIENT_ID, SIGNNOW_CLIENT_SECRET])
+
+if signnow_configured:
+    sys.stderr.write(f"✅ [INIT] SignNow configured (env: {SIGNNOW_ENVIRONMENT})\n")
+else:
+    sys.stderr.write("⚠️ [INIT] SignNow not configured (missing SIGNNOW_CLIENT_ID or SIGNNOW_CLIENT_SECRET)\n")
+sys.stderr.flush()
+
 # Discord configuration
 sys.stderr.write("🔧 [INIT] Setting up Discord...\n")
 sys.stderr.flush()
