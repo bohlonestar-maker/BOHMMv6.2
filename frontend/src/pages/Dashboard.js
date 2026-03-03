@@ -604,18 +604,24 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
       toast.error("Please select a document template");
       return;
     }
+    if (!selectedEmail) {
+      toast.error("Please select an email address");
+      return;
+    }
     
     const token = localStorage.getItem("token");
     try {
       const response = await axios.post(`${API}/signnow/send`, {
         template_id: selectedTemplate,
         member_id: selectedMember.id,
+        recipient_email: selectedEmail,
         message: docMessage
       }, { headers: { Authorization: `Bearer ${token}` } });
       
       toast.success(response.data.message || "Document sent successfully");
       setSendDocDialogOpen(false);
       setSelectedTemplate("");
+      setSelectedEmail("");
       setDocMessage("");
       fetchMemberDocuments(selectedMember.id);
     } catch (error) {
