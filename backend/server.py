@@ -17431,7 +17431,7 @@ class SignNowClient:
             sys.stderr.flush()
             return templates
     
-    async def send_document(self, template_id: str, recipient_email: str, recipient_name: str, document_name: str, message: str = "") -> dict:
+    async def send_document(self, template_id: str, recipient_email: str, recipient_name: str, document_name: str, role_name: str = None, role_id: str = None, message: str = "") -> dict:
         """Create document from template and send to recipient for signing"""
         token = await self.get_access_token()
         headers = {
@@ -17440,32 +17440,31 @@ class SignNowClient:
         }
         
         async with httpx.AsyncClient() as client:
-            # First, get the template details to find the correct role
-            template_response = await client.get(
-                f"{self.base_url}/document/{template_id}",
-                headers=headers
-            )
-            
-            role_name = "Signer 1"  # Default
-            role_id = ""
-            
-            if template_response.status_code == 200:
-                template_data = template_response.json()
-                # Check for roles in the template
-                roles = template_data.get("roles", [])
-                if roles:
-                    role_name = roles[0].get("name", "Signer 1")
-                    role_id = roles[0].get("unique_id", "")
-                    sys.stderr.write(f"✅ [SIGNNOW] Found role: {role_name} (id: {role_id})\n")
+            # If no role specified, get it from template
+            if not role_name:
+                template_response = await client.get(
+                    f"{self.base_url}/document/{template_id}",
+                    headers=headers
+                )
                 
-                # Also check field_invites for role info
-                field_invites = template_data.get("field_invites", [])
-                if field_invites and not role_id:
-                    role_name = field_invites[0].get("role", "Signer 1")
-                    role_id = field_invites[0].get("role_id", "")
-                    sys.stderr.write(f"✅ [SIGNNOW] Found field_invite role: {role_name} (id: {role_id})\n")
+                role_name = "Signer 1"  # Default
+                role_id = role_id or ""
                 
-                sys.stderr.flush()
+                if template_response.status_code == 200:
+                    template_data = template_response.json()
+                    roles = template_data.get("roles", [])
+                    if roles:
+                        role_name = roles[0].get("name", "Signer 1")
+                        role_id = roles[0].get("unique_id", "")
+                        sys.stderr.write(f"✅ [SIGNNOW] Found role: {role_name} (id: {role_id})\n")
+                    
+                    field_invites = template_data.get("field_invites", [])
+                    if field_invites and not role_id:
+                        role_name = field_invites[0].get("role", "Signer 1")
+                        role_id = field_invites[0].get("role_id", "")
+                        sys.stderr.write(f"✅ [SIGNNOW] Found field_invite role: {role_name} (id: {role_id})\n")
+                    
+                    sys.stderr.flush()
             
             # Create a copy of the template
             copy_response = await client.post(
@@ -17485,7 +17484,7 @@ class SignNowClient:
             sys.stderr.write(f"✅ [SIGNNOW] Created document {document_id} from template {template_id}\n")
             sys.stderr.flush()
             
-            # Get the new document's roles
+            # Get the new document's roles to use the correct role info
             doc_response = await client.get(
                 f"{self.base_url}/document/{document_id}",
                 headers=headers
@@ -17494,10 +17493,19 @@ class SignNowClient:
             if doc_response.status_code == 200:
                 doc_data = doc_response.json()
                 doc_roles = doc_data.get("roles", [])
-                if doc_roles:
-                    role_name = doc_roles[0].get("name", role_name)
-                    role_id = doc_roles[0].get("unique_id", role_id)
-                    sys.stderr.write(f"✅ [SIGNNOW] Document role: {role_name} (id: {role_id})\n")
+                
+                # Find matching role by name if provided
+                if role_name and doc_roles:
+                    for r in doc_roles:
+                        if r.get("name") == role_name:
+                            role_id = r.get("unique_id", role_id)
+                            sys.stderr.write(f"✅ [SIGNNOW] Matched document role: {role_name} (id: {role_id})\n")
+                            break
+                    else:
+                        # If no match, use first role
+                        role_name = doc_roles[0].get("name", role_name)
+                        role_id = doc_roles[0].get("unique_id", role_id)
+                        sys.stderr.write(f"✅ [SIGNNOW] Using first document role: {role_name} (id: {role_id})\n")
                     sys.stderr.flush()
             
             # Send invite to sign using the correct role
@@ -17505,7 +17513,7 @@ class SignNowClient:
                 "to": [{
                     "email": recipient_email,
                     "role": role_name,
-                    "role_id": role_id,
+                    "role_id": role_id or "",
                     "order": 1
                 }],
                 "from": SIGNNOW_FROM_EMAIL or "noreply@signnow.com"
