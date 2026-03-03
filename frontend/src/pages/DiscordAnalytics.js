@@ -330,6 +330,15 @@ export default function DiscordAnalytics() {
                 <Users className="w-4 h-4" />
                 <span>{importing ? "Importing..." : "Import & Link"}</span>
               </Button>
+              <Button
+                onClick={() => navigate("/voice-hours-analytics")}
+                variant="default"
+                size="sm"
+                className="flex items-center gap-2 w-full sm:w-auto justify-center bg-purple-600 hover:bg-purple-700 mt-1 sm:mt-0"
+              >
+                <Clock className="w-4 h-4" />
+                <span>Voice Hours</span>
+              </Button>
             </div>
           </div>
 

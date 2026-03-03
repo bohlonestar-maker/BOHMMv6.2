@@ -68,6 +68,14 @@ Build a member management application with attendance tracking, dues management,
 - [x] **Added COO to Member Edit Titles:**
   - Added "COO" to TITLES array in Dashboard.js
   - Added "COO" to officer title checks
+- [x] **Voice Hours Analytics Page:**
+  - New standalone page at `/voice-hours-analytics`
+  - Shows daily and monthly voice activity for ALL members
+  - Summary cards: Total Hours, Active Members, Days in Month
+  - Expandable daily breakdown for each member
+  - Month/Year selector to view historical data
+  - Search and sort functionality
+  - Accessible via "Voice Hours" button on Discord Analytics page
 
 #### February 12, 2026 - Promotion Page (Discord Role Management)
 - [x] **Backend API Endpoints:**

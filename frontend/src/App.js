@@ -17,6 +17,7 @@ import CSVExportView from "@/pages/CSVExportView";
 import ArchivedMembers from "@/pages/ArchivedMembers";
 import ArchivedProspects from "@/pages/ArchivedProspects";
 import DiscordAnalytics from "@/pages/DiscordAnalytics";
+import VoiceHoursAnalytics from "@/pages/VoiceHoursAnalytics";
 import WallOfHonor from "@/pages/WallOfHonor";
 import Store from "@/pages/Store";
 import SupporterStore from "@/pages/SupporterStore";
@@ -429,6 +430,16 @@ function App() {
             element={
               isAuthenticated && (userRole === 'admin' || userPermissions?.admin_actions) ? (
                 <DiscordAnalytics />
+              ) : (
+                <Navigate to="/" replace />
+              )
+            }
+          />
+          <Route
+            path="/voice-hours-analytics"
+            element={
+              isAuthenticated && (userRole === 'admin' || userPermissions?.admin_actions) ? (
+                <VoiceHoursAnalytics />
               ) : (
                 <Navigate to="/" replace />
               )

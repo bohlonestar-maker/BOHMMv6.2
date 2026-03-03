@@ -8090,6 +8090,109 @@ async def get_discord_analytics(days: int = 90, current_user: dict = Depends(ver
         raise HTTPException(status_code=500, detail=f"Analytics error: {str(e)}")
 
 
+# ==================== VOICE HOURS ANALYTICS ====================
+
+@api_router.get("/discord/voice-hours")
+async def get_voice_hours_analytics(
+    month: int = None,
+    year: int = None,
+    current_user: dict = Depends(verify_admin)
+):
+    """Get voice hours analytics for all members - daily and monthly breakdown"""
+    try:
+        # Default to current month/year
+        now = datetime.now(timezone.utc)
+        target_month = month if month else now.month
+        target_year = year if year else now.year
+        
+        # Calculate date range for the month
+        start_date = datetime(target_year, target_month, 1, tzinfo=timezone.utc)
+        if target_month == 12:
+            end_date = datetime(target_year + 1, 1, 1, tzinfo=timezone.utc)
+        else:
+            end_date = datetime(target_year, target_month + 1, 1, tzinfo=timezone.utc)
+        
+        # Get all Discord members
+        all_members = await db.discord_members.find({}, {"_id": 0}).to_list(None)
+        member_map = {m["discord_id"]: m for m in all_members}
+        
+        # Get all voice activity for the month
+        voice_activity = await db.discord_voice_activity.find({
+            "date": {
+                "$gte": start_date.date().isoformat(),
+                "$lt": end_date.date().isoformat()
+            }
+        }, {"_id": 0}).to_list(None)
+        
+        # Aggregate by user and day
+        user_daily_stats = {}  # {discord_id: {date: total_seconds}}
+        user_monthly_totals = {}  # {discord_id: total_seconds}
+        
+        for record in voice_activity:
+            user_id = record.get("discord_user_id")
+            date = record.get("date")
+            duration = record.get("duration_seconds", 0)
+            
+            if user_id not in user_daily_stats:
+                user_daily_stats[user_id] = {}
+                user_monthly_totals[user_id] = 0
+            
+            if date not in user_daily_stats[user_id]:
+                user_daily_stats[user_id][date] = 0
+            
+            user_daily_stats[user_id][date] += duration
+            user_monthly_totals[user_id] += duration
+        
+        # Build response with member details
+        members_data = []
+        for discord_id, monthly_total in user_monthly_totals.items():
+            member_info = member_map.get(discord_id, {})
+            
+            # Skip bots
+            if member_info.get("is_bot", False):
+                continue
+            
+            daily_breakdown = []
+            for date, seconds in sorted(user_daily_stats.get(discord_id, {}).items()):
+                daily_breakdown.append({
+                    "date": date,
+                    "seconds": seconds,
+                    "hours": round(seconds / 3600, 2)
+                })
+            
+            members_data.append({
+                "discord_id": discord_id,
+                "username": member_info.get("username", "Unknown"),
+                "display_name": member_info.get("display_name") or member_info.get("username", "Unknown"),
+                "linked_member_id": member_info.get("linked_member_id"),
+                "linked_member_handle": member_info.get("linked_member_handle"),
+                "monthly_total_seconds": monthly_total,
+                "monthly_total_hours": round(monthly_total / 3600, 2),
+                "daily_breakdown": daily_breakdown,
+                "days_active": len(daily_breakdown)
+            })
+        
+        # Sort by monthly hours descending
+        members_data.sort(key=lambda x: x["monthly_total_hours"], reverse=True)
+        
+        # Get days in month for context
+        import calendar
+        days_in_month = calendar.monthrange(target_year, target_month)[1]
+        
+        return {
+            "month": target_month,
+            "year": target_year,
+            "days_in_month": days_in_month,
+            "total_members_with_activity": len(members_data),
+            "members": members_data
+        }
+        
+    except Exception as e:
+        sys.stderr.write(f"❌ [VOICE-HOURS] Error: {e}\n")
+        sys.stderr.flush()
+        raise HTTPException(status_code=500, detail=f"Voice hours analytics error: {str(e)}")
+
+
 # ==================== PROSPECT CHANNEL ANALYTICS ====================
 
 def can_view_prospect_analytics(user: dict) -> bool:
