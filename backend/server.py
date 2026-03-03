@@ -9289,7 +9289,7 @@ SANCTIONS (Progressive Discipline):
 
 # ==================== OFFICER TRACKING (Attendance & Dues) ====================
 
-OFFICER_TITLES = ['Prez', 'VP', 'S@A', 'Enf', 'SEC', 'CD', 'T', 'ENF', 'PM', 'CC', 'CMD', 'CCLC', 'NVP', 'NPrez']
+OFFICER_TITLES = ['Prez', 'VP', 'COO', 'S@A', 'Enf', 'SEC', 'CD', 'T', 'ENF', 'PM', 'CC', 'CMD', 'CCLC', 'NVP', 'NPrez']
 # Note: A&D editing is now controlled by edit_dues permission, not hardcoded titles
 AD_EDIT_TITLES = ['SEC', 'NVP', 'NPrez', 'Prez', 'VP', 'T']  # Fallback list - actual control via permissions
 CHAPTERS = ['National', 'AD', 'HA', 'HS']
