@@ -147,6 +147,15 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
   const [myDuesLoading, setMyDuesLoading] = useState(true);
   const [myDuesExpanded, setMyDuesExpanded] = useState(false);
   
+  // SignNow Documents State
+  const [documentsDialogOpen, setDocumentsDialogOpen] = useState(false);
+  const [signnowTemplates, setSignnowTemplates] = useState([]);
+  const [memberDocuments, setMemberDocuments] = useState([]);
+  const [sendDocDialogOpen, setSendDocDialogOpen] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] = useState("");
+  const [docMessage, setDocMessage] = useState("");
+  const [loadingDocuments, setLoadingDocuments] = useState(false);
+  
   const navigate = useNavigate();
 
   // Check if user is National Admin
