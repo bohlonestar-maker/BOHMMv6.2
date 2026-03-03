@@ -9438,8 +9438,8 @@ async def get_officers_by_chapter(current_user: dict = Depends(verify_token)):
     if not await check_ad_access(current_user):
         raise HTTPException(status_code=403, detail="You don't have permission to access this page")
     
-    # Check if user can view National chapter A&D
-    can_view_national = can_view_national_ad(current_user)
+    # Check if user can view National chapter A&D (permission-based)
+    can_view_national = await can_view_national_ad_async(current_user)
     
     result = {}
     for chapter in CHAPTERS:
