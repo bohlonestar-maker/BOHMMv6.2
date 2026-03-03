@@ -51,7 +51,7 @@ const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
 const CHAPTERS = ["National", "AD", "HA", "HS"];
-const TITLES = ["Prez", "VP", "S@A", "ENF", "SEC", "T", "CD", "CC", "CCLC", "MD", "PM", "(pm)", "Brother", "Honorary"];
+const TITLES = ["Prez", "VP", "S@A", "ENF", "SEC", "T", "CD", "CC", "CCLC", "MD", "PM", "(pm)", "COO", "Brother", "Honorary"];
 
 // Helper function to get the Nth occurrence of a weekday in a month
 const getNthWeekdayOfMonth = (year, month, weekday, n) => {
@@ -202,13 +202,13 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
 
   // Check if a member is an officer (has a title that's not Brother or Honorary)
   const isOfficer = (member) => {
-    const officerTitles = ['Prez', 'VP', 'S@A', 'ENF', 'CD', 'T', 'SEC', 'NPrez', 'NVP', 'CC', 'CCLC', 'MD', 'PM'];
+    const officerTitles = ['Prez', 'VP', 'S@A', 'ENF', 'CD', 'T', 'SEC', 'NPrez', 'NVP', 'CC', 'CCLC', 'MD', 'PM', 'COO'];
     return officerTitles.includes(member?.title);
   };
 
   // Check if current user is a chapter officer (AD, HA, HS, or National)
   const isCurrentUserOfficer = () => {
-    const officerTitles = ['Prez', 'VP', 'S@A', 'ENF', 'CD', 'T', 'SEC', 'NPrez', 'NVP', 'CC', 'CCLC', 'MD', 'PM'];
+    const officerTitles = ['Prez', 'VP', 'S@A', 'ENF', 'CD', 'T', 'SEC', 'NPrez', 'NVP', 'CC', 'CCLC', 'MD', 'PM', 'COO'];
     return officerTitles.includes(userTitle);
   };
 

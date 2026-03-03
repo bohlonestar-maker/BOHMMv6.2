@@ -65,6 +65,9 @@ Build a member management application with attendance tracking, dues management,
   - Added DELETE endpoint `/api/signnow/documents/{document_id}`
   - Added trash icon button in Document History to remove records from app
   - Handles cases where documents are deleted in SignNow but still showing in app
+- [x] **Added COO to Member Edit Titles:**
+  - Added "COO" to TITLES array in Dashboard.js
+  - Added "COO" to officer title checks
 
 #### February 12, 2026 - Promotion Page (Discord Role Management)
 - [x] **Backend API Endpoints:**
