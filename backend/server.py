@@ -62,6 +62,7 @@ sys.stderr.write("  [INIT] Importing aiosmtplib...\n")
 sys.stderr.flush()
 import aiosmtplib
 import smtplib
+import httpx
 sys.stderr.write("  [INIT] Importing email MIME...\n")
 sys.stderr.flush()
 from email.mime.text import MIMEText
