@@ -2978,7 +2978,7 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
             
             <div className="space-y-4">
               {/* Send New Document Button */}
-              {permissions?.send_documents && signnowTemplates.length > 0 && (
+              {userPermissions?.send_documents && signnowTemplates.length > 0 && (
                 <Button 
                   onClick={() => setSendDocDialogOpen(true)}
                   className="w-full bg-purple-600 hover:bg-purple-700"
