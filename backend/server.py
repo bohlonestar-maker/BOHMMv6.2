@@ -11249,7 +11249,149 @@ async def forgive_dues(
     }
 
 
-async def has_active_extension(member_id: str) -> bool:
+class BulkDuesCorrectionRequest(BaseModel):
+    member_id: str
+    start_month: str  # Format: "Jan_2026"
+    end_month: str    # Format: "May_2026"
+    status: str = "paid"  # paid, unpaid, late
+    note: str = ""
+    revoke_extension: bool = True  # Also revoke any existing extension
+
+
+@api_router.post("/dues-reminders/bulk-correction")
+async def bulk_dues_correction(
+    request: BulkDuesCorrectionRequest,
+    current_user: dict = Depends(verify_token)
+):
+    """Bulk correct dues status for a date range - useful for annual dues or corrections"""
+    # Allow if user has manage_dues_reminders OR edit_dues permission
+    has_manage_reminders = await check_permission(current_user, "manage_dues_reminders")
+    has_edit_dues = await check_permission(current_user, "edit_dues")
+    if not has_manage_reminders and not has_edit_dues:
+        raise HTTPException(status_code=403, detail="You don't have permission to correct dues")
+    
+    # Get member info
+    member = await db.members.find_one({"id": request.member_id}, {"_id": 0})
+    if not member:
+        raise HTTPException(status_code=404, detail="Member not found")
+    
+    month_names = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+    month_map = {name: idx for idx, name in enumerate(month_names)}
+    
+    # Parse start and end months
+    try:
+        start_abbr, start_year = request.start_month.split('_')
+        end_abbr, end_year = request.end_month.split('_')
+        start_year = int(start_year)
+        end_year = int(end_year)
+        start_month_idx = month_map[start_abbr]
+        end_month_idx = month_map[end_abbr]
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Invalid month format. Use 'Mon_YYYY' (e.g., 'Jan_2026'): {str(e)}")
+    
+    # Validate date range
+    start_date = datetime(start_year, start_month_idx + 1, 1)
+    end_date = datetime(end_year, end_month_idx + 1, 1)
+    if end_date < start_date:
+        raise HTTPException(status_code=400, detail="End month must be after or equal to start month")
+    
+    # Get current dues structure
+    dues = member.get("dues", {})
+    now = datetime.now(timezone.utc)
+    
+    # Iterate through all months in range and update
+    months_updated = []
+    current_year = start_year
+    current_month = start_month_idx
+    
+    while True:
+        year_str = str(current_year)
+        
+        # Initialize year if needed
+        if year_str not in dues:
+            dues[year_str] = [{"status": "unpaid", "note": ""} for _ in range(12)]
+        
+        # Ensure it's a list with 12 entries
+        if not isinstance(dues[year_str], list) or len(dues[year_str]) < 12:
+            dues[year_str] = [{"status": "unpaid", "note": ""} for _ in range(12)]
+        
+        # Ensure each entry is a dict
+        for i in range(12):
+            if not isinstance(dues[year_str][i], dict):
+                dues[year_str][i] = {"status": "unpaid", "note": ""}
+        
+        # Update the month
+        dues[year_str][current_month] = {
+            "status": request.status,
+            "note": request.note or f"Bulk correction by {current_user.get('username')}",
+            "corrected_by": current_user.get("username"),
+            "corrected_at": now.isoformat()
+        }
+        
+        month_key = f"{month_names[current_month]}_{current_year}"
+        months_updated.append(month_key)
+        
+        # Also update officer_dues collection for consistency
+        await db.officer_dues.update_one(
+            {"member_id": request.member_id, "month": month_key},
+            {"$set": {
+                "id": str(uuid.uuid4()),
+                "member_id": request.member_id,
+                "month": month_key,
+                "status": request.status,
+                "notes": request.note or f"Bulk correction by {current_user.get('username')}",
+                "updated_at": now.isoformat(),
+                "updated_by": current_user.get('username')
+            }},
+            upsert=True
+        )
+        
+        # Check if we've reached the end
+        if current_year == end_year and current_month == end_month_idx:
+            break
+        
+        # Move to next month
+        current_month += 1
+        if current_month > 11:
+            current_month = 0
+            current_year += 1
+    
+    # Update member record
+    update_data = {
+        "dues": dues,
+        "updated_at": now.isoformat()
+    }
+    
+    # If marking as paid, clear any suspension
+    if request.status == "paid":
+        update_data["dues_suspended"] = False
+        update_data["dues_suspended_at"] = None
+    
+    await db.members.update_one(
+        {"id": request.member_id},
+        {"$set": update_data}
+    )
+    
+    # Revoke extension if requested
+    extension_revoked = False
+    if request.revoke_extension:
+        result = await db.dues_extensions.delete_one({"member_id": request.member_id})
+        extension_revoked = result.deleted_count > 0
+    
+    # Restore Discord if was suspended and now paid
+    discord_result = None
+    if request.status == "paid" and member.get("dues_suspended"):
+        discord_result = await restore_discord_member(request.member_id)
+    
+    logger.info(f"Bulk dues correction for {member.get('handle')}: {len(months_updated)} months set to '{request.status}' by {current_user.get('username')}")
+    
+    return {
+        "success": True,
+        "message": f"Updated {len(months_updated)} months for {member.get('handle')} to '{request.status}'",
+        "months_updated": months_updated,
+        "extension_revoked": extension_revoked,
+        "discord_restored": discord_result.get("success") if discord_result else None
+    }
     """Check if a member has an active dues extension"""
     extension = await db.dues_extensions.find_one({"member_id": member_id})
     if not extension:
