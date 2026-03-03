@@ -2591,7 +2591,7 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
                           </div>
                         </TableCell>
                       )}
-                      {hasPermission('admin_actions') && (
+                      {(hasPermission('admin_actions') || userRole === 'admin') && (
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-1.5">
                             {/* Info/View Group - only show if user can edit this member */}
