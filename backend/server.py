@@ -135,14 +135,16 @@ sys.stderr.flush()
 # SignNow configuration
 SIGNNOW_CLIENT_ID = os.environ.get('SIGNNOW_CLIENT_ID')
 SIGNNOW_CLIENT_SECRET = os.environ.get('SIGNNOW_CLIENT_SECRET')
+SIGNNOW_USERNAME = os.environ.get('SIGNNOW_USERNAME')
+SIGNNOW_PASSWORD = os.environ.get('SIGNNOW_PASSWORD')
 SIGNNOW_FROM_EMAIL = os.environ.get('SIGNNOW_FROM_EMAIL')
 SIGNNOW_ENVIRONMENT = os.environ.get('SIGNNOW_ENVIRONMENT', 'production')
-signnow_configured = all([SIGNNOW_CLIENT_ID, SIGNNOW_CLIENT_SECRET])
+signnow_configured = all([SIGNNOW_CLIENT_ID, SIGNNOW_CLIENT_SECRET, SIGNNOW_USERNAME, SIGNNOW_PASSWORD])
 
 if signnow_configured:
-    sys.stderr.write(f"✅ [INIT] SignNow configured (env: {SIGNNOW_ENVIRONMENT})\n")
+    sys.stderr.write(f"✅ [INIT] SignNow configured (env: {SIGNNOW_ENVIRONMENT}, user: {SIGNNOW_USERNAME})\n")
 else:
-    sys.stderr.write("⚠️ [INIT] SignNow not configured (missing SIGNNOW_CLIENT_ID or SIGNNOW_CLIENT_SECRET)\n")
+    sys.stderr.write("⚠️ [INIT] SignNow not configured (missing credentials)\n")
 sys.stderr.flush()
 
 # Discord configuration
