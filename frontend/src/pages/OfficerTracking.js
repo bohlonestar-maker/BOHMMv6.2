@@ -643,6 +643,48 @@ function OfficerTracking() {
     }
   };
 
+  // Open bulk correction dialog for a member
+  const openBulkCorrectionDialog = (member) => {
+    setSelectedMember(member);
+    const now = new Date();
+    const currentMonth = now.toLocaleString('en-US', { month: 'short' });
+    const currentYear = now.getFullYear().toString();
+    
+    setBulkCorrectionForm({
+      startMonth: currentMonth,
+      startYear: currentYear,
+      endMonth: currentMonth,
+      endYear: currentYear,
+      status: 'paid',
+      note: '',
+      revokeExtension: true
+    });
+    setBulkCorrectionDialog(true);
+  };
+
+  // Handle bulk dues correction submission
+  const handleBulkCorrectionSubmit = async () => {
+    try {
+      const startMonthKey = `${bulkCorrectionForm.startMonth}_${bulkCorrectionForm.startYear}`;
+      const endMonthKey = `${bulkCorrectionForm.endMonth}_${bulkCorrectionForm.endYear}`;
+      
+      const response = await axios.post(`${BACKEND_URL}/api/dues-reminders/bulk-correction`, {
+        member_id: selectedMember.id,
+        start_month: startMonthKey,
+        end_month: endMonthKey,
+        status: bulkCorrectionForm.status,
+        note: bulkCorrectionForm.note,
+        revoke_extension: bulkCorrectionForm.revokeExtension
+      }, { headers: { Authorization: `Bearer ${token}` } });
+      
+      toast.success(response.data.message || "Dues corrected successfully");
+      setBulkCorrectionDialog(false);
+      fetchData();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || "Failed to correct dues");
+    }
+  };
+
   // Delete attendance record (syncs to member's meeting_attendance)
   const handleDeleteAttendance = async (recordId) => {
     if (!confirm("Are you sure you want to delete this attendance record?")) return;
