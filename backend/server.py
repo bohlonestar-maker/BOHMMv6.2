@@ -10429,7 +10429,7 @@ AVAILABLE_PERMISSIONS = [
 ]
 
 # All manageable titles
-MANAGEABLE_TITLES = ["Prez", "VP", "S@A", "ENF", "SEC", "T", "CD", "CC", "CCLC", "MD", "PM", "(pm)", "Brother", "Honorary"]
+MANAGEABLE_TITLES = ["Prez", "VP", "COO", "S@A", "ENF", "SEC", "T", "CD", "CC", "CCLC", "MD", "PM", "(pm)", "Brother", "Honorary"]
 
 def can_manage_permissions(user: dict) -> bool:
     """Check if user can manage role permissions - National Prez, VP, SEC, T only"""
