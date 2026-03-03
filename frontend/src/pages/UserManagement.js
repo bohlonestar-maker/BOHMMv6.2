@@ -1060,6 +1060,7 @@ export default function UserManagement({ onLogout }) {
                       <SelectContent className="bg-slate-800 text-white border-slate-700">
                         <SelectItem value="Prez" className="text-white hover:bg-slate-700">Prez - President</SelectItem>
                         <SelectItem value="VP" className="text-white hover:bg-slate-700">VP - Vice President</SelectItem>
+                        <SelectItem value="COO" className="text-white hover:bg-slate-700">COO - Chief Operating Officer</SelectItem>
                         <SelectItem value="S@A" className="text-white hover:bg-slate-700">S@A - Sergeant at Arms</SelectItem>
                         <SelectItem value="ENF" className="text-white hover:bg-slate-700">ENF - Enforcer</SelectItem>
                         <SelectItem value="SEC" className="text-white hover:bg-slate-700">SEC - Secretary</SelectItem>
