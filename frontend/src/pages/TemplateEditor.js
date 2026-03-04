@@ -53,6 +53,7 @@ export default function TemplateEditor() {
   const [newItemConfig, setNewItemConfig] = useState({});
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showElementsPanel, setShowElementsPanel] = useState(false);
+  const mobileScrollRef = useRef(null);
   
   // Image dimensions
   const [imageDimensions, setImageDimensions] = useState({ width: 0, height: 0 });
@@ -260,7 +261,7 @@ export default function TemplateEditor() {
   const totalElements = fieldPlacements.length + signaturePlacements.length;
 
   // Tools Panel Content (shared between mobile sheet and desktop sidebar)
-  const ToolsPanel = () => (
+  const ToolsPanel = ({ scrollContainerRef }) => (
     <div className="space-y-4">
       {/* Add Elements */}
       <div className="space-y-2">
@@ -336,7 +337,15 @@ export default function TemplateEditor() {
                   ? 'bg-purple-600/30 border border-purple-500'
                   : 'bg-slate-700/50 hover:bg-slate-600/50'
               }`}
-              onClick={() => setSelectedItem({ type: 'field', id: field.id })}
+              onClick={() => {
+                setSelectedItem({ type: 'field', id: field.id });
+                // Scroll to properties section on mobile
+                setTimeout(() => {
+                  if (scrollContainerRef?.current) {
+                    scrollContainerRef.current.scrollTo({ top: scrollContainerRef.current.scrollHeight, behavior: 'smooth' });
+                  }
+                }, 100);
+              }}
             >
               <div className="flex items-center justify-between">
                 <span className="text-white truncate flex-1">{field.label}</span>
@@ -358,7 +367,15 @@ export default function TemplateEditor() {
                   ? 'bg-orange-600/30 border border-orange-500'
                   : 'bg-slate-700/50 hover:bg-slate-600/50'
               }`}
-              onClick={() => setSelectedItem({ type: 'signature', id: sig.id })}
+              onClick={() => {
+                setSelectedItem({ type: 'signature', id: sig.id });
+                // Scroll to properties section on mobile
+                setTimeout(() => {
+                  if (scrollContainerRef?.current) {
+                    scrollContainerRef.current.scrollTo({ top: scrollContainerRef.current.scrollHeight, behavior: 'smooth' });
+                  }
+                }, 100);
+              }}
             >
               <div className="flex items-center justify-between">
                 <span className="text-white truncate flex-1">{sig.label}</span>
@@ -612,11 +629,13 @@ export default function TemplateEditor() {
                   <span className="ml-1 text-xs">{totalElements}</span>
                 </Button>
               </SheetTrigger>
-              <SheetContent side="left" className="w-80 bg-slate-800 border-slate-700 p-4">
-                <SheetHeader className="mb-4">
+              <SheetContent side="left" className="w-80 bg-slate-800 border-slate-700 p-0 flex flex-col h-full">
+                <SheetHeader className="p-4 pb-2 flex-shrink-0">
                   <SheetTitle className="text-white">Tools</SheetTitle>
                 </SheetHeader>
-                <ToolsPanel />
+                <div ref={mobileScrollRef} className="flex-1 overflow-y-auto p-4 pt-0">
+                  <ToolsPanel scrollContainerRef={mobileScrollRef} />
+                </div>
               </SheetContent>
             </Sheet>
             
@@ -678,7 +697,7 @@ export default function TemplateEditor() {
       <div className="flex-1 flex">
         {/* Desktop Left Panel */}
         <div className="hidden lg:block w-64 flex-shrink-0 bg-slate-800/50 border-r border-slate-700 p-4 overflow-y-auto">
-          <ToolsPanel />
+          <ToolsPanel scrollContainerRef={null} />
         </div>
 
         {/* Main Canvas Area */}
