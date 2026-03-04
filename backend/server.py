@@ -150,6 +150,13 @@ from auth import hash_password, verify_password
 sys.stderr.write("✅ [INIT] Auth package imported\n")
 sys.stderr.flush()
 
+# Import document signing routes
+sys.stderr.write("  [INIT] Importing documents routes...\n")
+sys.stderr.flush()
+from routes.documents import router as documents_router
+sys.stderr.write("✅ [INIT] Documents routes imported\n")
+sys.stderr.flush()
+
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
@@ -2140,7 +2147,12 @@ async def log_activity(username: str, action: str, details: str, ip_address: str
 #   - models/ai.py: AI/Chat models
 #   - models/suggestions.py: Suggestion models
 #   - models/signnow.py: SignNow models
+#   - models/documents.py: In-house document signing models
 # ==================== END PYDANTIC MODELS ====================
+
+# Initialize documents router with dependencies
+from routes.documents import init_router as init_documents_router
+init_documents_router(db, verify_token, verify_admin)
 
 # Initialize default admin user
 @app.on_event("startup")
@@ -10151,7 +10163,7 @@ AVAILABLE_PERMISSIONS = [
     {"key": "manage_events", "label": "Manage Events", "description": "Can add/edit events"},
     {"key": "manage_system_users", "label": "Manage System Users", "description": "Can add/edit system user accounts"},
     {"key": "manage_dues_reminders", "label": "Manage Dues Reminders", "description": "Can view/edit dues reminder emails and run checks"},
-    {"key": "send_documents", "label": "Send Documents", "description": "Can send SignNow documents for signing to members"},
+    {"key": "send_documents", "label": "Send Documents", "description": "Can send documents for e-signature and manage document templates"},
 ]
 
 # All manageable titles
@@ -17563,6 +17575,9 @@ async def delete_signnow_document_record(
 
 # Include the router in the main app
 app.include_router(api_router)
+
+# Include documents router under /api prefix
+app.include_router(documents_router, prefix="/api")
 
 # Mount static files for uploaded images
 app.mount("/uploads", StaticFiles(directory=str(UPLOAD_DIR)), name="uploads")

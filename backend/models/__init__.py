@@ -39,3 +39,8 @@ from .permissions import PermissionUpdate, BulkPermissionUpdate
 from .ai import ChatMessage, AIKnowledgeEntry, AIKnowledgeUpdate
 from .suggestions import SuggestionCreate, SuggestionStatusUpdate, SuggestionVote
 from .signnow import SendDocumentRequest
+from .documents import (
+    DocumentTemplateCreate, DocumentTemplateUpdate, DocumentTemplateResponse,
+    SigningRequestCreate, SigningRequestResponse,
+    SignatureSubmit, SignatureAuditTrail, SignedDocumentResponse
+)

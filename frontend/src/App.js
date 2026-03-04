@@ -29,6 +29,8 @@ import PermissionPanel from "@/pages/PermissionPanel";
 import DuesReminders from "@/pages/DuesReminders";
 import Forms from "@/pages/Forms";
 import PromotionPage from "@/pages/PromotionPage";
+import DocumentTemplates from "@/pages/DocumentTemplates";
+import SignDocument from "@/pages/SignDocument";
 import ChatBot from "@/components/ChatBot";
 import { Toaster } from "@/components/ui/sonner";
 
@@ -534,6 +536,20 @@ function App() {
                 <Navigate to="/" replace />
               )
             }
+          />
+          <Route
+            path="/document-templates"
+            element={
+              isAuthenticated ? (
+                <DocumentTemplates />
+              ) : (
+                <Navigate to="/" replace />
+              )
+            }
+          />
+          <Route
+            path="/sign/:signingToken"
+            element={<SignDocument />}
           />
         </Routes>
         <KeepAlive />

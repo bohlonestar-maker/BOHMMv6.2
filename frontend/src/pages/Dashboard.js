@@ -149,9 +149,9 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
   const [myDuesLoading, setMyDuesLoading] = useState(true);
   const [myDuesExpanded, setMyDuesExpanded] = useState(false);
   
-  // SignNow Documents State
+  // Document Signing State (In-house system)
   const [documentsDialogOpen, setDocumentsDialogOpen] = useState(false);
-  const [signnowTemplates, setSignnowTemplates] = useState([]);
+  const [documentTemplates, setDocumentTemplates] = useState([]);
   const [memberDocuments, setMemberDocuments] = useState([]);
   const [sendDocDialogOpen, setSendDocDialogOpen] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState("");
@@ -560,17 +560,17 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
     setActionsDialogOpen(true);
   };
 
-  // SignNow Document Functions
-  const fetchSignnowTemplates = async () => {
+  // Document Signing Functions (In-house system)
+  const fetchDocumentTemplates = async () => {
     const token = localStorage.getItem("token");
     try {
-      const response = await axios.get(`${API}/signnow/templates`, {
+      const response = await axios.get(`${API}/documents/templates`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setSignnowTemplates(response.data.templates || []);
+      setDocumentTemplates(response.data || []);
     } catch (error) {
-      console.log("SignNow not available or no permission");
-      setSignnowTemplates([]);
+      console.log("Documents not available or no permission");
+      setDocumentTemplates([]);
     }
   };
 
@@ -578,10 +578,11 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
     const token = localStorage.getItem("token");
     setLoadingDocuments(true);
     try {
-      const response = await axios.get(`${API}/signnow/documents/${memberId}`, {
+      const response = await axios.get(`${API}/documents/requests`, {
+        params: { member_id: memberId },
         headers: { Authorization: `Bearer ${token}` }
       });
-      setMemberDocuments(response.data.documents || []);
+      setMemberDocuments(response.data || []);
     } catch (error) {
       console.log("Error fetching documents:", error);
       setMemberDocuments([]);
@@ -594,7 +595,7 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
     setSelectedMember(member);
     setDocumentsDialogOpen(true);
     await Promise.all([
-      fetchSignnowTemplates(),
+      fetchDocumentTemplates(),
       fetchMemberDocuments(member.id)
     ]);
   };
@@ -611,14 +612,21 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
     
     const token = localStorage.getItem("token");
     try {
-      const response = await axios.post(`${API}/signnow/send`, {
-        template_id: selectedTemplate,
-        member_id: selectedMember.id,
-        recipient_email: selectedEmail,
-        message: docMessage
-      }, { headers: { Authorization: `Bearer ${token}` } });
+      const formData = new FormData();
+      formData.append('template_id', selectedTemplate);
+      formData.append('member_id', selectedMember.id);
+      formData.append('recipient_email', selectedEmail);
+      formData.append('recipient_name', selectedMember.handle || selectedMember.first_name);
+      formData.append('message', docMessage || '');
       
-      toast.success(response.data.message || "Document sent successfully");
+      await axios.post(`${API}/documents/send`, formData, { 
+        headers: { 
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'multipart/form-data'
+        } 
+      });
+      
+      toast.success("Document sent successfully");
       setSendDocDialogOpen(false);
       setSelectedTemplate("");
       setSelectedEmail("");
@@ -630,19 +638,19 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
   };
 
   const handleDeleteDocumentRecord = async (docId) => {
-    if (!window.confirm("Are you sure you want to remove this document record from the app?")) {
+    if (!window.confirm("Are you sure you want to cancel this document request?")) {
       return;
     }
     
     const token = localStorage.getItem("token");
     try {
-      await axios.delete(`${API}/signnow/documents/${docId}`, {
+      await axios.delete(`${API}/documents/requests/${docId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      toast.success("Document record removed");
+      toast.success("Document request cancelled");
       fetchMemberDocuments(selectedMember.id);
     } catch (error) {
-      toast.error(error.response?.data?.detail || "Failed to delete document record");
+      toast.error(error.response?.data?.detail || "Failed to cancel document request");
     }
   };
 
@@ -1223,6 +1231,17 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
                         >
                           <FileText className="w-4 h-4 mr-2" />
                           Reports
+                        </DropdownMenuItem>
+                      )}
+                      
+                      {/* Document Templates - send_documents permission or admin */}
+                      {(userPermissions?.send_documents || userRole === 'admin') && (
+                        <DropdownMenuItem 
+                          onSelect={(e) => { e.preventDefault(); navigate("/document-templates"); }} 
+                          className="text-red-400 focus:bg-red-900/30 focus:text-red-300 cursor-pointer"
+                        >
+                          <FileText className="w-4 h-4 mr-2" />
+                          Document Templates
                         </DropdownMenuItem>
                       )}
                       
@@ -2998,13 +3017,13 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
                 Documents - {selectedMember?.handle}
               </DialogTitle>
               <DialogDescription>
-                View and send SignNow documents for signing
+                Send and track documents for signing
               </DialogDescription>
             </DialogHeader>
             
             <div className="space-y-4">
               {/* Send New Document Button */}
-              {(userPermissions?.send_documents || userRole === 'admin') && signnowTemplates.length > 0 && (
+              {(userPermissions?.send_documents || userRole === 'admin') && documentTemplates.length > 0 && (
                 <Button 
                   onClick={() => setSendDocDialogOpen(true)}
                   className="w-full bg-purple-600 hover:bg-purple-700"
@@ -3102,7 +3121,7 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
                   className="w-full mt-1 p-2 bg-slate-700 border border-slate-600 rounded text-white"
                 >
                   <option value="">Select a template...</option>
-                  {signnowTemplates.map((template) => (
+                  {documentTemplates.map((template) => (
                     <option key={template.id} value={template.id}>
                       {template.name}
                     </option>
