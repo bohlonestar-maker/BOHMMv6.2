@@ -62,10 +62,9 @@ NATIONAL_OFFICERS = [
     {"role": "national_secretary", "title": "SEC", "display_title": "National Secretary", "order": 1},
     {"role": "national_treasurer", "title": "T", "display_title": "National Treasurer", "order": 2},
     {"role": "national_sergeant_at_arms", "title": "S@A", "display_title": "National Sergeant at Arms", "order": 3},
-    {"role": "national_road_captain", "title": "RC", "display_title": "National Road Captain", "order": 4},
-    {"role": "national_vice_president", "title": "VP", "display_title": "National Vice President", "order": 5},
-    {"role": "coo", "title": "COO", "display_title": "COO", "order": 6},
-    {"role": "national_president", "title": "Prez", "display_title": "National President", "order": 7},
+    {"role": "national_vice_president", "title": "VP", "display_title": "National Vice President", "order": 4},
+    {"role": "coo", "title": "COO", "display_title": "COO", "order": 5},
+    {"role": "national_president", "title": "Prez", "display_title": "National President", "order": 6},
 ]
 
 # Will be populated when router is included in main app
