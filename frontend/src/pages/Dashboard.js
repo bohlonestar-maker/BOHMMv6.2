@@ -43,7 +43,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { LogOut, Plus, Pencil, Trash2, Download, Users, Mail, Phone, MapPin, MessageCircle, Clock, LifeBuoy, FileText, Calendar, Star, DollarSign, Headphones, Settings, Menu, Key, Database, Lightbulb, Shield, Send, ChevronUp, ChevronDown, X } from "lucide-react";
+import { LogOut, Plus, Pencil, Trash2, Download, Users, Mail, Phone, MapPin, MessageCircle, Clock, LifeBuoy, FileText, Calendar, Star, DollarSign, Headphones, Settings, Menu, Key, Database, Lightbulb, Shield, Send, ChevronUp, ChevronDown, X, Eye } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 
@@ -160,6 +160,8 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
   const [loadingDocuments, setLoadingDocuments] = useState(false);
   const [nationalOfficers, setNationalOfficers] = useState([]);
   const [selectedApprovers, setSelectedApprovers] = useState([]);
+  const [viewDocDetailsOpen, setViewDocDetailsOpen] = useState(false);
+  const [selectedDocDetails, setSelectedDocDetails] = useState(null);
   
   const navigate = useNavigate();
 
@@ -685,6 +687,35 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
       [newArr[index], newArr[index + 1]] = [newArr[index + 1], newArr[index]];
       return newArr;
     });
+  };
+
+  const handleViewDocDetails = (doc) => {
+    setSelectedDocDetails(doc);
+    setViewDocDetailsOpen(true);
+  };
+
+  const handleDownloadSignedDoc = async (requestId) => {
+    const token = localStorage.getItem("token");
+    try {
+      const response = await axios.get(`${API}/documents/signed/${requestId}/download`, {
+        headers: { Authorization: `Bearer ${token}` },
+        responseType: 'blob'
+      });
+      
+      // Create download link
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `signed_document_${requestId}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+      
+      toast.success("Document downloaded");
+    } catch (error) {
+      toast.error(error.response?.data?.detail || "Failed to download document");
+    }
   };
 
   const handleDeleteDocumentRecord = async (docId) => {
@@ -3098,28 +3129,76 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
                     No documents sent to this member yet
                   </div>
                 ) : (
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     {memberDocuments.map((doc) => (
-                      <div key={doc.id} className="p-3 bg-slate-700/50 rounded-lg border border-slate-600 flex justify-between items-center">
-                        <div className="flex-1">
-                          <div className="font-medium text-white text-sm">{doc.template_name}</div>
-                          <div className="text-xs text-slate-400">
-                            Sent {new Date(doc.sent_at).toLocaleDateString()} by {doc.sent_by}
-                          </div>
-                          {doc.signed_at && (
-                            <div className="text-xs text-green-400">
-                              Signed {new Date(doc.signed_at).toLocaleDateString()}
+                      <div key={doc.id} className="p-3 bg-slate-700/50 rounded-lg border border-slate-600">
+                        <div className="flex justify-between items-start">
+                          <div className="flex-1">
+                            <div className="font-medium text-white text-sm">{doc.template_name}</div>
+                            <div className="text-xs text-slate-400">
+                              Sent {new Date(doc.sent_at).toLocaleDateString()} by {doc.sent_by}
                             </div>
-                          )}
+                            {doc.signed_at && (
+                              <div className="text-xs text-green-400">
+                                Recipient signed {new Date(doc.signed_at).toLocaleDateString()}
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {getDocumentStatusBadge(doc)}
+                          </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                          {getDocumentStatusBadge(doc)}
+                        
+                        {/* Approval Chain Progress */}
+                        {doc.approval_chain && doc.approval_chain.length > 0 && (
+                          <div className="mt-3 pt-3 border-t border-slate-600">
+                            <div className="text-xs text-slate-400 mb-2">Approval Chain:</div>
+                            <div className="flex flex-wrap gap-2">
+                              {doc.approval_chain.map((approver, idx) => (
+                                <div 
+                                  key={idx} 
+                                  className={`px-2 py-1 rounded text-xs flex items-center gap-1 ${
+                                    approver.status === 'approved' ? 'bg-green-600/30 text-green-300' :
+                                    approver.status === 'denied' ? 'bg-red-600/30 text-red-300' :
+                                    approver.status === 'pending' && idx === (doc.current_approver_index - 1) ? 'bg-orange-600/30 text-orange-300 animate-pulse' :
+                                    'bg-slate-600/30 text-slate-400'
+                                  }`}
+                                >
+                                  {approver.status === 'approved' && <i className="fas fa-check"></i>}
+                                  {approver.status === 'denied' && <i className="fas fa-times"></i>}
+                                  {approver.status === 'pending' && idx === (doc.current_approver_index - 1) && <i className="fas fa-clock"></i>}
+                                  {approver.status === 'pending' && idx !== (doc.current_approver_index - 1) && <i className="fas fa-hourglass-half"></i>}
+                                  <span>{approver.title}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        
+                        {/* Action Buttons */}
+                        <div className="mt-3 pt-3 border-t border-slate-600 flex gap-2">
+                          <button
+                            onClick={() => handleViewDocDetails(doc)}
+                            className="flex-1 px-3 py-1.5 text-xs bg-slate-600 hover:bg-slate-500 text-white rounded transition-colors flex items-center justify-center gap-1"
+                          >
+                            <Eye className="w-3 h-3" />
+                            View Details
+                          </button>
+                          {(doc.status === 'completed' || doc.status === 'signed') && (
+                            <button
+                              onClick={() => handleDownloadSignedDoc(doc.id)}
+                              className="flex-1 px-3 py-1.5 text-xs bg-green-600 hover:bg-green-500 text-white rounded transition-colors flex items-center justify-center gap-1"
+                            >
+                              <Download className="w-3 h-3" />
+                              Download Signed
+                            </button>
+                          )}
                           <button
                             onClick={() => handleDeleteDocumentRecord(doc.id)}
-                            className="p-1 text-slate-400 hover:text-red-400 transition-colors"
-                            title="Remove from app"
+                            className="px-3 py-1.5 text-xs bg-red-600/30 hover:bg-red-600/50 text-red-300 rounded transition-colors"
+                            title="Cancel request"
                           >
-                            <Trash2 className="w-4 h-4" />
+                            <Trash2 className="w-3 h-3" />
                           </button>
                         </div>
                       </div>
@@ -3293,6 +3372,177 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
               >
                 <Send className="w-4 h-4 mr-2" />
                 Send{selectedApprovers.length > 0 ? ` (${selectedApprovers.length} approvers)` : ''}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* View Document Details Dialog */}
+        <Dialog open={viewDocDetailsOpen} onOpenChange={setViewDocDetailsOpen}>
+          <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <FileText className="w-5 h-5 text-purple-400" />
+                Document Details
+              </DialogTitle>
+              <DialogDescription>
+                {selectedDocDetails?.template_name}
+              </DialogDescription>
+            </DialogHeader>
+            
+            {selectedDocDetails && (
+              <div className="space-y-4">
+                {/* Status Badge */}
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-400 text-sm">Status:</span>
+                  {getDocumentStatusBadge(selectedDocDetails)}
+                </div>
+                
+                {/* Basic Info */}
+                <div className="bg-slate-700/50 rounded-lg p-4 space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-slate-400">Recipient:</span>
+                    <span className="text-white">{selectedDocDetails.recipient_name}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-slate-400">Email:</span>
+                    <span className="text-white text-xs">{selectedDocDetails.recipient_email}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-slate-400">Sent:</span>
+                    <span className="text-white">{new Date(selectedDocDetails.sent_at).toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-slate-400">Sent by:</span>
+                    <span className="text-white">{selectedDocDetails.sent_by}</span>
+                  </div>
+                  {selectedDocDetails.signed_at && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-slate-400">Recipient Signed:</span>
+                      <span className="text-green-400">{new Date(selectedDocDetails.signed_at).toLocaleString()}</span>
+                    </div>
+                  )}
+                </div>
+                
+                {/* Recipient Audit Trail */}
+                {selectedDocDetails.audit_trail && (
+                  <div className="bg-slate-700/50 rounded-lg p-4">
+                    <div className="text-sm font-medium text-white mb-2">Recipient Signature</div>
+                    <div className="space-y-1 text-xs">
+                      <div className="flex justify-between">
+                        <span className="text-slate-400">Signer:</span>
+                        <span className="text-white">{selectedDocDetails.audit_trail.signer_name}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-slate-400">Type:</span>
+                        <span className="text-white">{selectedDocDetails.audit_trail.signature_type}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-slate-400">IP:</span>
+                        <span className="text-white">{selectedDocDetails.audit_trail.ip_address}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-slate-400">Signed:</span>
+                        <span className="text-white">{new Date(selectedDocDetails.audit_trail.signed_at).toLocaleString()}</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
+                {/* Approval Chain Details */}
+                {selectedDocDetails.approval_chain && selectedDocDetails.approval_chain.length > 0 && (
+                  <div className="bg-slate-700/50 rounded-lg p-4">
+                    <div className="text-sm font-medium text-white mb-3">Approval Chain</div>
+                    <div className="space-y-3">
+                      {selectedDocDetails.approval_chain.map((approver, idx) => (
+                        <div 
+                          key={idx} 
+                          className={`p-3 rounded-lg border ${
+                            approver.status === 'approved' ? 'border-green-600 bg-green-600/10' :
+                            approver.status === 'denied' ? 'border-red-600 bg-red-600/10' :
+                            'border-slate-600 bg-slate-800/50'
+                          }`}
+                        >
+                          <div className="flex justify-between items-center mb-2">
+                            <div className="flex items-center gap-2">
+                              <span className="w-6 h-6 rounded-full bg-purple-600 text-white text-xs flex items-center justify-center">
+                                {idx + 1}
+                              </span>
+                              <span className="text-white font-medium text-sm">{approver.title}</span>
+                            </div>
+                            <span className={`px-2 py-0.5 rounded text-xs ${
+                              approver.status === 'approved' ? 'bg-green-600 text-white' :
+                              approver.status === 'denied' ? 'bg-red-600 text-white' :
+                              'bg-slate-600 text-slate-300'
+                            }`}>
+                              {approver.status === 'approved' ? 'Approved' : 
+                               approver.status === 'denied' ? 'Denied' : 'Pending'}
+                            </span>
+                          </div>
+                          
+                          {approver.username && (
+                            <div className="text-xs text-slate-400 mb-1">
+                              Assigned to: {approver.username}
+                            </div>
+                          )}
+                          
+                          {approver.signed_at && (
+                            <div className="text-xs text-slate-400">
+                              Signed: {new Date(approver.signed_at).toLocaleString()}
+                            </div>
+                          )}
+                          
+                          {approver.typed_name && (
+                            <div className="text-xs text-slate-400">
+                              Signature: {approver.typed_name}
+                            </div>
+                          )}
+                          
+                          {approver.notes && (
+                            <div className="mt-2 p-2 bg-slate-800/50 rounded text-xs">
+                              <span className="text-slate-400">Notes: </span>
+                              <span className="text-white">{approver.notes}</span>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                {/* Final Decision */}
+                {selectedDocDetails.final_decision && (
+                  <div className={`p-4 rounded-lg ${
+                    selectedDocDetails.final_decision === 'approved' ? 'bg-green-600/20 border border-green-600' : 'bg-red-600/20 border border-red-600'
+                  }`}>
+                    <div className="flex items-center gap-2">
+                      <i className={`fas fa-${selectedDocDetails.final_decision === 'approved' ? 'check-circle text-green-400' : 'times-circle text-red-400'} text-xl`}></i>
+                      <div>
+                        <div className={`font-medium ${selectedDocDetails.final_decision === 'approved' ? 'text-green-400' : 'text-red-400'}`}>
+                          Final Decision: {selectedDocDetails.final_decision.toUpperCase()}
+                        </div>
+                        {selectedDocDetails.final_notes && (
+                          <div className="text-sm text-slate-300 mt-1">{selectedDocDetails.final_notes}</div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+            
+            <DialogFooter className="flex gap-2">
+              {selectedDocDetails && (selectedDocDetails.status === 'completed' || selectedDocDetails.status === 'signed') && (
+                <Button 
+                  onClick={() => handleDownloadSignedDoc(selectedDocDetails.id)}
+                  className="bg-green-600 hover:bg-green-700"
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Download Signed PDF
+                </Button>
+              )}
+              <Button variant="outline" onClick={() => setViewDocDetailsOpen(false)}>
+                Close
               </Button>
             </DialogFooter>
           </DialogContent>
