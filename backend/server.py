@@ -8116,12 +8116,15 @@ async def get_voice_hours_analytics(
         all_members = await db.discord_members.find({}, {"_id": 0}).to_list(None)
         member_map = {m["discord_id"]: m for m in all_members}
         
-        # Get all voice activity for the month
+        # Get voice activity that overlaps with target month
+        # Include sessions that started before or during the month
         voice_activity = await db.discord_voice_activity.find({
-            "date": {
-                "$gte": start_date.date().isoformat(),
-                "$lt": end_date.date().isoformat()
-            }
+            "$or": [
+                # Sessions with date in target month
+                {"date": {"$gte": start_date.date().isoformat(), "$lt": end_date.date().isoformat()}},
+                # Sessions that started in prior month but might extend into target month
+                {"joined_at": {"$lt": end_date, "$gte": start_date - timedelta(days=1)}}
+            ]
         }, {"_id": 0}).to_list(None)
         
         # Deduplicate records - the Discord bot sometimes inserts duplicate records
@@ -8145,24 +8148,54 @@ async def get_voice_hours_analytics(
             
             deduplicated_activity.append(record)
         
-        # Aggregate by user and day using deduplicated data
+        # Aggregate by user and day, properly splitting sessions at midnight
         user_daily_stats = {}  # {discord_id: {date: total_seconds}}
         user_monthly_totals = {}  # {discord_id: total_seconds}
         
         for record in deduplicated_activity:
             user_id = record.get("discord_user_id")
-            date = record.get("date")
+            joined_at = record.get("joined_at")
+            left_at = record.get("left_at")
             duration = record.get("duration_seconds", 0)
             
             if user_id not in user_daily_stats:
                 user_daily_stats[user_id] = {}
                 user_monthly_totals[user_id] = 0
             
-            if date not in user_daily_stats[user_id]:
-                user_daily_stats[user_id][date] = 0
-            
-            user_daily_stats[user_id][date] += duration
-            user_monthly_totals[user_id] += duration
+            # If we have joined_at and left_at, calculate per-day properly
+            if joined_at and left_at:
+                # Handle sessions that span multiple days
+                current_time = joined_at if hasattr(joined_at, 'date') else datetime.fromisoformat(str(joined_at))
+                end_time = left_at if hasattr(left_at, 'date') else datetime.fromisoformat(str(left_at))
+                
+                while current_time < end_time:
+                    # Calculate end of current day (midnight)
+                    current_date = current_time.date() if hasattr(current_time, 'date') else datetime.fromisoformat(str(current_time)[:10]).date()
+                    next_midnight = datetime(current_date.year, current_date.month, current_date.day, tzinfo=current_time.tzinfo) + timedelta(days=1)
+                    
+                    # How much time until midnight or end of session
+                    day_end = min(next_midnight, end_time)
+                    day_seconds = (day_end - current_time).total_seconds()
+                    
+                    if day_seconds > 0:
+                        date_str = current_date.isoformat()
+                        
+                        # Only count if date is in target month
+                        if start_date.date().isoformat() <= date_str < end_date.date().isoformat():
+                            if date_str not in user_daily_stats[user_id]:
+                                user_daily_stats[user_id][date_str] = 0
+                            user_daily_stats[user_id][date_str] += day_seconds
+                            user_monthly_totals[user_id] += day_seconds
+                    
+                    current_time = next_midnight
+            else:
+                # Fallback: use the date field if no timestamps
+                date = record.get("date")
+                if date and start_date.date().isoformat() <= date < end_date.date().isoformat():
+                    if date not in user_daily_stats[user_id]:
+                        user_daily_stats[user_id][date] = 0
+                    user_daily_stats[user_id][date] += duration
+                    user_monthly_totals[user_id] += duration
         
         # Build response with member details
         members_data = []
