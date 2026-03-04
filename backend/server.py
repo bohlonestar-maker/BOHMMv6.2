@@ -143,6 +143,13 @@ from utils.sanitization import sanitize_search_query
 sys.stderr.write("✅ [INIT] Utils package imported\n")
 sys.stderr.flush()
 
+# Import auth utilities
+sys.stderr.write("  [INIT] Importing auth package...\n")
+sys.stderr.flush()
+from auth import hash_password, verify_password
+sys.stderr.write("✅ [INIT] Auth package imported\n")
+sys.stderr.flush()
+
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
@@ -1582,8 +1589,7 @@ def decrypt_data(encrypted_data: str) -> str:
 
 # hash_for_duplicate_detection imported from utils package
 
-# Security
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+# Security - pwd_context now in auth/password.py
 security = HTTPBearer()
 SECRET_KEY = os.environ.get('SECRET_KEY', 'brothers-highway-secret-key-change-in-production')
 ALGORITHM = "HS256"
@@ -1835,12 +1841,7 @@ async def ping():
     """Simple ping endpoint for keep-alive requests"""
     return {"pong": True, "timestamp": datetime.now(timezone.utc).isoformat()}
 
-# Password hashing
-def hash_password(password: str) -> str:
-    return pwd_context.hash(password)
-
-def verify_password(plain_password: str, hashed_password: str) -> bool:
-    return pwd_context.verify(plain_password, hashed_password)
+# hash_password and verify_password imported from auth package
 
 # JWT token creation
 def create_access_token(data: dict) -> str:
