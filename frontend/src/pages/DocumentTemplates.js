@@ -352,58 +352,56 @@ export default function DocumentTemplates() {
                     <span className="hidden sm:inline"> by {template.created_by}</span>
                   </div>
                   
-                  {/* Action Buttons - Stack on mobile, row on tablet+ */}
-                  <div className="flex flex-col sm:flex-row gap-2">
+                  {/* Action Buttons - Better responsive layout */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                     <Button
                       size="sm"
                       variant="outline"
                       onClick={() => handleView(template)}
-                      className="flex-1 text-xs sm:text-sm"
+                      className="text-xs"
                       data-testid={`view-template-${template.id}`}
                     >
-                      <Eye className="w-3 h-3 mr-1" />
-                      View
+                      <Eye className="w-3 h-3 sm:mr-1" />
+                      <span className="hidden sm:inline">View</span>
                     </Button>
                     <Button
                       size="sm"
                       variant="outline"
                       onClick={() => handleEdit(template)}
-                      className="flex-1 text-xs sm:text-sm"
+                      className="text-xs"
                       data-testid={`edit-template-${template.id}`}
                     >
-                      <Edit2 className="w-3 h-3 mr-1" />
-                      Edit
+                      <Edit2 className="w-3 h-3 sm:mr-1" />
+                      <span className="hidden sm:inline">Edit</span>
                     </Button>
                     {template.template_type === 'pdf' && (
                       <Button
                         size="sm"
                         variant="outline"
                         onClick={() => navigate(`/document-templates/${template.id}/edit`)}
-                        className="flex-1 text-xs sm:text-sm text-purple-400 hover:text-purple-300"
+                        className="text-xs text-purple-400 hover:text-purple-300"
                         data-testid={`configure-template-${template.id}`}
                       >
-                        <i className="fas fa-pen-to-square w-3 h-3 mr-1"></i>
-                        Fields
+                        <i className="fas fa-pen-to-square w-3 h-3 sm:mr-1"></i>
+                        <span className="hidden sm:inline">Fields</span>
                       </Button>
                     )}
                     <Button
                       size="sm"
                       variant="outline"
                       onClick={() => handleToggleActive(template)}
-                      className={`flex-1 text-xs sm:text-sm ${template.is_active ? 'text-red-400 hover:text-red-300' : 'text-green-400 hover:text-green-300'}`}
+                      className={`text-xs ${template.is_active ? 'text-red-400 hover:text-red-300' : 'text-green-400 hover:text-green-300'}`}
                       data-testid={`toggle-template-${template.id}`}
                     >
                       {template.is_active ? (
                         <>
-                          <EyeOff className="w-3 h-3 mr-1" />
-                          <span className="hidden sm:inline">Deactivate</span>
-                          <span className="sm:hidden">Off</span>
+                          <EyeOff className="w-3 h-3 sm:mr-1" />
+                          <span className="hidden sm:inline">Off</span>
                         </>
                       ) : (
                         <>
-                          <Eye className="w-3 h-3 mr-1" />
-                          <span className="hidden sm:inline">Activate</span>
-                          <span className="sm:hidden">On</span>
+                          <Eye className="w-3 h-3 sm:mr-1" />
+                          <span className="hidden sm:inline">On</span>
                         </>
                       )}
                     </Button>
