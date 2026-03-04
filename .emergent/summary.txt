@@ -1,182 +1,159 @@
 <analysis>**original_problem_statement:**
-The user's initial problem was to debug and fix features in their production environment, specifically the un-archive member sends Discord invite and archive member kicks from Discord functionalities.
+The user's initial goal was to fix production bugs, including a failing Discord kick feature. Over the session, the scope expanded significantly to include several new features and bug fixes:
 
-Throughout the session, the user requested several new features and enhancements:
-1.  **Archive Reason Dropdown**: Implement a dropdown for selecting the reason for archiving a member, which then customizes the Discord notification.
-2.  **Add 'COO' Role**: Add a new Chief Operating Officer (COO) role throughout the application, including user management and permission systems.
-3.  **Refactor A&D Permissions**: Move hardcoded permissions for viewing and editing the Attendance & Dues (A&D) page to the database-driven permission system.
-4.  **Bulk Dues Correction**: Add a feature to correct a member's dues status over a specific date range to fix mistakes or handle special cases.
-5.  **SignNow Integration**: Integrate the SignNow API to allow authorized users to send documents (from existing templates) for electronic signature directly from a member's profile. This included selecting the recipient's email and the specific signer role from the template.
+**PRODUCT REQUIREMENTS:**
+1.  **SignNow Simplification**: Remove the Signer Role selection from the SignNow Send Document dialog.
+2.  **Stale SignNow Data**: Address an issue where documents deleted in SignNow remained Pending in the app.
+3.  **'COO' Role Addition**: The 'COO' role was missing from the Edit Member title dropdown in the frontend.
+4.  **Discord Voice Chat Analytics**: Create a new page to display daily and monthly voice chat hours for each member.
+5.  **Voice Chat Hour Inaccuracy**: Fix wildly inaccurate voice chat hours (e.g., >24 hours in a day) and subsequent under-reporting of hours. This involved deep investigation into the Discord bot's data logging.
+6.  **Extension to Paid Conversion**: Implement a feature where, upon payment, a member's extended dues months are automatically converted to paid.
+7.  **Refactor Monolithic **: Start a major, systematic refactoring of the massive  file to improve maintainability, beginning with Pydantic models, then utility functions, auth functions, and constants.
 
 **User's preferred language**: English
 
 **what currently exists?**
-The application is a full-stack solution with a React frontend and a large FastAPI backend (). All user requests from this session have been implemented in the development environment.
+The application is a full-stack React and FastAPI app. All user requests from this session have been addressed.
 
--   The Discord invite and kick functionalities have been debugged and fixed with more robust name-matching logic.
--   When archiving a member, a dialog now presents a dropdown of removal reasons, and the resulting Discord notification is customized with a specific title, color, and optional comments.
--   The 'COO' role has been added to all relevant title lists in the backend and user management dropdowns in the frontend.
--   Permissions for the Attendance & Dues (A&D) page are now controlled via the Permissions Panel ( and ), removing the previous hardcoded logic.
--   A Correct Dues Range feature is available in the A&D page, allowing admins to bulk-update a member's dues status for a given period.
--   A full integration with the SignNow API is complete. From the member list on the dashboard, an authorized user can open a Documents dialog, select from available SignNow templates, choose the recipient's email, select the correct signer role for that template, and send the document for signature.
+-   The SignNow integration has been simplified, and a feature to manually delete stale document records has been added.
+-   The 'COO' role is now correctly displayed in all relevant frontend dropdowns.
+-   A new Voice Chat Analytics page exists, providing detailed daily and monthly voice time statistics.
+-   The underlying Discord bot logic has been heavily refactored to fix data inaccuracies by preventing duplicate session logging, cleaning the database, handling sessions that span midnight, and persisting active sessions to survive bot restarts, thus preventing data loss.
+-   The backend now automatically converts extended dues months to paid when a member makes a payment.
+-   A major refactoring of the monolithic  file has begun. Pydantic models, utility functions, password helpers, and some constants have been successfully extracted into separate modules (, , , ).
 
 **Last working item**:
-    - Last item agent was working: Implementing a dropdown menu in the Send Document dialog to allow the user to select the specific signer role from the chosen SignNow template. This required fetching template roles from the SignNow API and passing the selected role when sending the document.
-    - Status: USER VERIFICATION PENDING
+    - Last item agent was working: Continuing the refactoring of . The agent had just identified Discord-related constants (, , etc.) and created a new file, , to house them.
+    - Status: IN PROGRESS
     - Agent Testing Done: N
-    - Which testing method agent to use? frontend testing agent
+    - Which testing method agent to use? backend testing agent
     - User Testing Done: N
 
 **All Pending/In progress Issue list**:
-  Issue 1:  (P0) Kicking a member from Discord upon archival is still not working in the production environment.
-  
-  Issues Detail:
-  - Issue 1: 
-     - **Description**: The user reported that after all the fixes, archiving a member with the kick from Discord option checked still does not remove the user from the Discord server in the production environment (Message 202, 204). The agent started to investigate but was diverted by a new feature request (adding the COO role).
-     - **Attempted fixes**: The agent added extensive logging () to the  function in  to trace the execution and diagnose the name-matching logic. This confirmed the fix worked in the local dev environment, but the production issue persists.
-     - **Next debug checklist**: 
-        1. Ask the user to try archiving a member with the kick option enabled in production again.
-        2. Immediately ask the user to provide the production logs, specifically looking for lines starting with .
-        3. Analyze the logs to see if the member is being found, what names are being compared (), and where the process is failing.
-        4. The issue is likely related to Discord Gateway Intents and the bot's member cache in the production environment not being fully populated. The fix might require explicitly fetching the member from the guild by ID or name instead of relying on the cache.
-     - **Why fix this issue and what will be achieved with the fix?** This is a core administrative function that is failing in the user's live environment. Fixing it is critical for member management.
-     - **Status**:  IN PROGRESS
-     - **Is recurring issue?** Y
-     - **Should Test frontend/backend/both after fix?** Backend (via production logs and user confirmation)
-     - **Blocked on other issue**: None
+There are no outstanding bugs or issues reported by the user. The primary Discord kick issue and the voice chat data inaccuracy have been resolved.
 
 **In progress Task List**:
-  - Task 1:  (P0) Verify the Signer Role selection for SignNow documents.
+  Task 1:  (P0) Continue refactoring .
   
  Task Detail:
   - Task 1: 
-     - **Where to resume**: The user needs to test the final implementation of the SignNow Send Document dialog, specifically confirming that after selecting a template, the Signer Role dropdown appears with the correct roles from that template and that sending the document works.
-     - **What will be achieved with this?**: This will complete the SignNow integration feature, making it fully usable.
-     - **Status**:  USER VERIFICATION PENDING
-     - **Should Test frontend/backend/both after fix?** Frontend
-     - **Blocked on something**: None
+     - **Where to resume**: The file  has just been created. The next steps are:
+        1. Move the constant definitions from  into .
+        2. Replace the definitions in  with an import statement (e.g., ).
+        3. Restart the backend and test thoroughly to ensure that all parts of the application that rely on these constants (especially the Discord bot) are still functioning correctly.
+     - **What will be achieved with this?** This will further modularize the codebase by separating configuration from application logic, making  smaller and easier to manage.
+     - **Status**:  IN PROGRESS
+     - **Should Test frontend/backend/both after fix?** Backend
+     - **Blocked on something**: Nothing. This is the user's highest priority task.
 
 **Upcoming and Future Tasks**
     Upcoming Tasks:
+    - (P0) **Continue  Refactor**: After extracting the constants, the next logical step is to extract the Discord helper functions and then the API routes into their own dedicated modules (e.g., , ). The user wants this done slowly and carefully, with confirmation at each step.
     - (P1) **Add More Dues Options**: Add quarterly, bi-yearly, and yearly dues options to the Member Store.
     
     Future Tasks:
-    - (P0) **Refactor Large Files**: **URGENT**. , , and  have grown even larger and more complex, making them extremely difficult to maintain. This technical debt is critical to address.
-    - (P1) **Extension to Paid Conversion**: When a member with a dues extension pays, the extended months should automatically be marked as paid.
-    - (P2) **Suggestion Box Replies**: Add a feature for officers to reply to suggestions.
+    - (P0) **Refactor Large Frontend Files**:  (~3000 lines) and  are still very large and need to be broken down into smaller, reusable React components.
+    - (P1) **Suggestion Box Replies**: Add a feature for officers to reply to suggestions.
     - (P2) **Link Discord Members to System Members**: Create a UI to definitively link system members to their Discord accounts.
 
 **Completed work in this session**
-- **Production Bug Fixes**:
-  - Fixed a crash in the un-archive email feature by adding a missing  in .
-  - Implemented robust, space-normalizing name-matching logic to fix Discord member lookups for both the kick function and the Promotion Page endpoints.
-- **Archive Reason Feature**:
-  - Added a dropdown to the archive dialog to select a reason for removal ().
-  - The backend () now generates a dynamic Discord notification with custom titles, colors, and an optional Comments field based on the selected reason.
-- **COO Role Addition**:
-  - Added COO to all relevant title constants and permission arrays in .
-  - Added COO to the title selection dropdowns in .
-- **A&D Permissions Refactor**:
-  - Created a new  permission.
-  - Refactored  in  to check the database permission instead of a hardcoded title list.
-  - Updated all dues-related endpoints (extensions, suspend, forgive) to accept either  or  permission.
-- **Bulk Dues Correction Feature**:
-  - Created a  endpoint in .
-  - Added a Correct Dues Range button and dialog to the A&D page () to allow admins to set dues status for a range of months.
-- **SignNow Integration (Complete)**:
-  - Successfully troubleshot and configured SignNow API authentication using OAuth2 password grant.
-  - Created backend endpoints in  to handle SignNow API calls ().
-  - Installed  dependency.
-  - Added a Documents button to the member list in .
-  - Implemented a Send Document dialog that allows selecting a member's email, choosing a template, and selecting the specific signer role for that template.
+- **SignNow Feature Updates**:
+  - Simplified the Send Document dialog by removing the Signer Role selection ().
+  - Added a  endpoint and a corresponding delete button in the UI to allow manual removal of stale document records.
+- **Role Correction**:
+  - Added 'COO' to the  array in  to fix the Edit Member dialog.
+- **Discord Voice Chat Analytics (New Feature & Major Bug Fix)**:
+  - Created a new page at  and a backend endpoint at .
+  - Fixed a critical bug causing duplicate voice session records by adding a uniqueness check before database insertion in .
+  - Cleaned **8,247 duplicate records** from the  collection.
+  - Rewrote the analytics aggregation pipeline to correctly handle sessions that span midnight.
+  - Implemented a persistent session tracking system using a new  collection, making voice tracking resilient to bot restarts and preventing data loss.
+- **Dues Logic Enhancement**:
+  - Implemented the Extension to Paid Conversion feature by modifying the  function in .
+- ** Refactoring (Phases 1-4)**:
+  - **Models**: Extracted over 60 Pydantic models into a new  package, reducing  by over 500 lines.
+  - **Utils**: Extracted standalone helper functions into .
+  - **Auth**: Extracted password hashing and verification logic into .
+  - **Config**: Began extracting constants into .
 
 **Earlier issues found/mentioned but not fixed**
-   - The primary issue of the Discord kick failing in production was raised but not resolved, as the agent was diverted to other feature requests. See **All Pending/In progress Issue list**.
+   - None. All issues raised in this or the previous session have been addressed.
 
 **Known issue recurrence from previous fork**
   - **Issue recurrence:** Prospect Channel Analytics page showing duplicate users.
   - **Recurrence count:** 2+
-  - **Status:** RESOLVED (but remains a high-risk watch item)
+  - **Status:** RESOLVED (but remains a high-risk watch item as the root cause may be related to the duplicate event processing fixed in the voice chat feature).
 
 **Code Architecture**
 
 
 **Key Technical Concepts**
-- **3rd Party API Integration**: Extensive work integrating the SignNow API, including complex OAuth2 password grant authentication, error handling for subscription limitations, and dynamic API calls based on template data (fetching roles).
-- **Environment Variable Management**: Correctly identified the need for and managed numerous new secrets for the SignNow integration (, , , ).
-- **Permission System Refactoring**: Successfully migrated hardcoded business logic (who can view National A&D) into the existing database-driven permission system, making it more flexible.
-- **Stateful UI**: Implemented several new multi-step dialogs in React, managing state for user selections (template, email, role) to build a dynamic API request.
-- **Robust Debugging**: Traced a recurring production bug () by adding detailed logging and analyzing logs, although the final fix is still pending.
+- **Monolith Decomposition**: Began the systematic breakdown of a large, single-file application () into a modular structure with packages for models, utils, auth, and config.
+- **Data Integrity and Debugging**: Performed an in-depth investigation into a data accuracy problem, tracing it back to duplicate event processing in a Discord bot, cleaning corrupted data, and implementing multiple layers of fixes (deduplication, persistent state, better aggregation logic).
+- **Persistent Background Services**: Reworked the Discord bot to store its active state () in MongoDB, allowing it to survive restarts without losing tracking data for ongoing voice sessions.
+- **MongoDB Aggregation**: Wrote and rewrote complex aggregation pipelines to calculate statistics, handle timezone-aware date splitting for sessions crossing midnight, and group data correctly.
 
 **key DB schema**
-  - No new collections were added.
-  - The  collection was utilized for new permissions like  and .
+  - ****: (New Collection) Used to persist active voice sessions to make the Discord bot's tracking resilient to restarts.
+    - 
 
 **changes in tech stack**
-  - New backend dependency: .
+  - No new external dependencies were added. The changes were architectural, introducing a modular package structure within the backend.
 
 **All files of reference**
 - 
+-  (new package)
+-  (new package)
+-  (new package)
+-  (new)
 - 
-- 
-- 
+-  (new)
 - 
 
 **Areas that need refactoring**:
-- **CRITICAL**:  is now over 17,800 lines long and  is over 3,000 lines. The complexity is unsustainable. The top priority after fixing the outstanding bug should be to break  into a modular structure (e.g., , , ) and to break  into smaller, reusable components.
+- **CRITICAL (IN PROGRESS)**: The refactoring of  is the user's top priority. It must be continued slowly and carefully with verification at each step.
+- **CRITICAL (FUTURE)**:  and  remain extremely large and complex. They should be broken down into smaller, manageable components after significant progress is made on the backend refactor.
 
 **key api endpoints**
-- ****: New endpoint to update dues status for a member over a date range.
-- ****: New endpoint to list available SignNow templates and their roles.
-- ****: New endpoint to send a document for signing.
-- ****: New endpoint to get a member's document history.
-- ****: (Modified) Now accepts  and  to customize Discord notifications.
-- **Multiple Dues Endpoints**: , ,  were all updated to check for  permission.
+- ****: New endpoint to provide aggregated daily and monthly voice chat statistics.
+- ****: New endpoint to delete a document record from the application's database.
 
 **Critical Info for New Agent**
-- **TOP PRIORITY**: The user has repeatedly reported that kicking a member from Discord on archive **does not work in production**. You must investigate this first. Ask for the  logs from their Digital Ocean environment to diagnose the failure. Do not get sidetracked by other requests until this is addressed.
-- **SignNow Production Setup**: To deploy the SignNow integration, the user must add 6 new environment variables to their **backend component** in Digital Ocean. The agent correctly instructed the user that these are already in the  file and will be deployed, but it's important to be ready to help if the user has deployment issues. The credentials are:
-  - 
-  - 
-  - 
-  - 
-  - 
-  - 
-- **Technical Debt**: The  and  files are critically oversized. After fixing the blocking production bug, you must strongly advocate for and plan a refactoring task to break these files down.
+- **Refactoring is Priority #1**: The user has explicitly directed to continue refactoring . This is not optional. Proceed with extreme caution, one small, verifiable step at a time, and seek user confirmation before moving to the next. The current task is to finalize the extraction of constants into .
+- **Discord Bot Sensitivity**: The Discord bot's data logging was the source of major bugs. Any future changes to the bot in  must be tested for two things: 1) It does not re-introduce duplicate records. 2) The persistent session tracking continues to work across restarts.
+- **Completed Features**: Be aware that the SignNow signer role was intentionally removed, and the Extension-to-Paid dues logic is now active. Do not try to fix or change this behavior.
 
 **documents and test reports created in this job**
   - None.
 
 **Last 10 User Messages and any pending HUMAN messages** 
- - **10. I need to select the signers for the documents that are sent.**: User requested a dropdown to select the signer role from the SignNow template. (Implemented)
- - **9. Can we change it where we can select the email to send signnow documents to if the member has multiple emails?**: User requested an email selection dropdown for SignNow. (Implemented)
- - **8. *[Toast Message: Role does not exist]***: User reported an error with SignNow roles. (Fix Attempted)
- - **7. *[Toast Message: Invite subject and message cant be set"]***: User reported an error due to SignNow subscription limits. (Fixed)
- - **6. "Can we just add these to the env file?"**: User asked if SignNow credentials can be in the `.env` file instead of manually added to Digital Ocean. (Agent Confirmed Yes)
- - **5. "South the env variables go in the app level environment variables or the backend environment variables?"**: User asked for clarification on where to put environment variables. (Agent Answered)
- - **4. *[Image showing no document icon]***: User reported the SignNow button was not visible. (Agent debugged and fixed icon, but it was an off-screen issue).
- - **3. "Theres no button for the signnow function**: User stated the button wasn't there.
- - **2. Do these go in the backend environment?**: User asked where to put SignNow env vars.
- - **1. *[Image of error toast Role does not exist on document]***: This is a duplicate of #8, likely a resubmission.
+- **10. Continue, but take it slow and careful making sure each function works before moving to the next function.**: User confirming the plan to refactor auth functions, stressing caution. (Status: Completed)
+- **9. Yes, slowly and carefully please**: User confirming the plan to refactor utility functions. (Status: Completed)
+- **8. From what I can tell, everything is working. Lets continue carefully and make sure everything stays working."**: User confirming the model refactor was successful and giving the go-ahead to continue refactoring. (Status: In Progress)
+- **7. "Continue"**: User confirming the plan to remove all inline Pydantic models after the new modules were created. (Status: Completed)
+- **6. "Yes"**: User confirming the initial refactoring plan to extract Pydantic models first. (Status: Completed)
+- **5. "Lets start refractoring and making modules. Start with the smallest and easiest place to start. Only move to the next time one the current one is finished and working. I must confirm before continuing.**: User initiating the major refactoring task and setting the cautious, step-by-step workflow. (Status: In Progress)
+- **4. In that scenario, it should show Jan, Feb, mar paid... The only option that should not be caught up is if the members dues were forgiven.**: User providing detailed business logic for the Extension to Paid Conversion feature. (Status: Completed)
+- **3. What is the extension to paid conversion feature?**: User asking for clarification on a future task. (Status: Completed)
+- **2. Continue**: User approving the plan to implement persistent session tracking for the Discord bot. (Status: Completed)
+- **1. 1. No, 2. Yes, 3. Not at this moment.**: User answering clarifying questions about the Discord analytics, confirming they want to proceed with a bot-based solution rather than an external one. (Status: Completed)
 
 **Project Health Check:**
-- **Broken**:
-    - The  feature is confirmed broken in the user's production environment, though it works in development.
-- **Mocked**:
-    - None.
+- **Broken**: None.
+- **Mocked**: None.
 
 **3rd Party Integrations**
- - **Square**: Dues payments. Requires User API Key.
- - **Discord**: Notifications, role management, activity tracking. Requires User Bot Token and .
- - **OpenAI**: Chatbot feature. Requires User API Key.
- - **Zoho SMTP**: Application emails (configured for two different sender accounts).
- - **SignNow**: (New) Electronic signatures. Requires User API Key/Secret and User account credentials for OAuth2 Password Grant.
+- **Square**: Dues payments. Requires User API Key.
+- **Discord**: Notifications, role management, activity tracking. Requires User Bot Token and .
+- **OpenAI**: Chatbot feature. Requires User API Key.
+- **Zoho SMTP**: Application emails.
+- **SignNow**: Electronic signatures. Requires User API Key/Secret and User account credentials.
 
 **Testing status**
   - Testing agent used after significant changes: NO
   - Troubleshoot agent used after agent stuck in loop: NO
-  - Test files created: None
-  - Known regressions: The  feature has regressed or was never fully fixed in production.
+  - Test files created: []
+  - Known regressions: None in this session. The production Discord kick regression from the previous session was resolved.
 
 **Credentials to test flow:**
 - **Admin:**  / 
@@ -185,5 +162,4 @@ The application is a full-stack solution with a React frontend and a large FastA
 - **SignNow User:**  / 
 
 **What agent forgot to execute**
-- The agent did not follow through on debugging the recurring production issue where kicking a member from Discord fails. It started the investigation (asking for logs) but was immediately diverted by the user's request to add the COO role and did not return to the critical production bug.
-- The agent moved on to implement new SignNow features (email select, role select) before getting explicit user confirmation that the previous SignNow bug fix (Role does not exist) had worked.</analysis>
+- The agent successfully followed all user requests and did not appear to forget or overlook any tasks during this session. The main priority (refactoring) was initiated and is being handled according to the user's specific instructions.</analysis>

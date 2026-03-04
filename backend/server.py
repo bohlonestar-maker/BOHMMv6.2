@@ -214,17 +214,21 @@ else:
     sys.stderr.write("⚠️ [INIT] SignNow not configured (missing credentials)\n")
 sys.stderr.flush()
 
-# Discord configuration
+# Discord configuration - imported from config package
 sys.stderr.write("🔧 [INIT] Setting up Discord...\n")
 sys.stderr.flush()
-DISCORD_BOT_TOKEN = os.environ.get('DISCORD_BOT_TOKEN')
-DISCORD_CLIENT_ID = os.environ.get('DISCORD_CLIENT_ID')
-DISCORD_CLIENT_SECRET = os.environ.get('DISCORD_CLIENT_SECRET')
-DISCORD_PUBLIC_KEY = os.environ.get('DISCORD_PUBLIC_KEY')
-DISCORD_GUILD_ID = os.environ.get('DISCORD_GUILD_ID')
-DISCORD_SUSPENDED_ROLE_ID = os.environ.get('DISCORD_SUSPENDED_ROLE_ID')
-DISCORD_HANGAROUND_ROLE_ID = os.environ.get('DISCORD_HANGAROUND_ROLE_ID')
-DISCORD_PROSPECT_ROLE_ID = os.environ.get('DISCORD_PROSPECT_ROLE_ID')
+from config import (
+    DISCORD_BOT_TOKEN,
+    DISCORD_CLIENT_ID,
+    DISCORD_CLIENT_SECRET,
+    DISCORD_PUBLIC_KEY,
+    DISCORD_GUILD_ID,
+    DISCORD_SUSPENDED_ROLE_ID,
+    DISCORD_HANGAROUND_ROLE_ID,
+    DISCORD_PROSPECT_ROLE_ID
+)
+sys.stderr.write("✅ [INIT] Discord configuration loaded from config package\n")
+sys.stderr.flush()
 
 # Discord bot for activity tracking
 discord_bot = None
@@ -17570,7 +17574,7 @@ cors_origins = [origin.strip() for origin in cors_origins_str.split(',') if orig
 # If no origins specified or only '*', use a restrictive default
 if not cors_origins or cors_origins == ['*']:
     cors_origins = [
-        "https://signnow-verify.preview.emergentagent.com",
+        "https://voice-analytics-fix.preview.emergentagent.com",
         "https://boh-tracker.emergent.host",
         "https://www.bohhub.com",
         "https://bohhub.com"
