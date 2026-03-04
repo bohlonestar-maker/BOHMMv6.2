@@ -83,6 +83,52 @@ import re  # For regex escaping (security)
 sys.stderr.write("✅ [INIT] All imports completed successfully\n")
 sys.stderr.flush()
 
+# Import Pydantic models from models package
+sys.stderr.write("  [INIT] Importing models package...\n")
+sys.stderr.flush()
+from models import (
+    # User models
+    User, UserCreate, UserUpdate, UserResponse,
+    Invite, InviteCreate, InviteAccept,
+    LoginRequest, LoginResponse,
+    PasswordResetRequest, PasswordResetConfirm,
+    PasswordChange, OwnPasswordChange, AuditLog,
+    # Member models
+    Member, MemberCreate, MemberUpdate,
+    Hangaround, HangaroundCreate, HangaroundUpdate,
+    Prospect, ProspectCreate, ProspectUpdate,
+    HangaroundToProspectPromotion,
+    FallenMember, FallenMemberCreate, FallenMemberUpdate,
+    # Event models
+    Event, EventCreate, EventUpdate,
+    # Meeting models
+    Meeting, MeetingCreate, MeetingAttendanceRecord,
+    # Message models
+    PrivateMessage, PrivateMessageCreate,
+    SupportMessage, SupportMessageCreate, SupportReply,
+    SupportRequest,
+    # Discord models
+    DiscordLinkRequest, UpdateRolesRequest, UpdateNicknameRequest,
+    # Store models
+    StoreProduct, StoreProductCreate, StoreProductUpdate,
+    CartItem, ShoppingCart, StoreOrder, PaymentRequest,
+    StoreAdmin, StoreAdminCreate, SupporterCheckoutRequest,
+    # Dues models
+    AttendanceRecord, DuesRecord, DuesExtensionCreate, DuesExtensionUpdate,
+    SuspendMemberRequest, ForgiveDuesRequest, BulkDuesCorrectionRequest,
+    DuesEmailTemplateUpdate, LinkSubscriptionRequest,
+    # Permission models
+    PermissionUpdate, BulkPermissionUpdate,
+    # AI models
+    ChatMessage, AIKnowledgeEntry, AIKnowledgeUpdate,
+    # Suggestion models
+    SuggestionCreate, SuggestionStatusUpdate, SuggestionVote,
+    # SignNow models
+    SendDocumentRequest
+)
+sys.stderr.write("✅ [INIT] Models package imported\n")
+sys.stderr.flush()
+
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
@@ -2107,107 +2153,6 @@ async def log_activity(username: str, action: str, details: str, ip_address: str
         logger.error(f"Failed to log activity: {str(e)}")
 
 # Models
-class User(BaseModel):
-    model_config = ConfigDict(extra="ignore")
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    username: str
-    email: str  # Changed from EmailStr to allow "Private" for hidden emails  # Required email field
-    password_hash: str
-    role: str = "member"  # admin, member, or prospect
-    chapter: Optional[str] = None  # National, AD, HA, HS
-    title: Optional[str] = None  # Prez, VP, S@A, Member, etc.
-    permissions: dict = Field(default_factory=lambda: {
-        "basic_info": True,        # Chapter, Title, Handle, Name
-        "email": False,            # Email access
-        "phone": False,            # Phone access
-        "address": False,          # Address access
-        "dues_tracking": False,    # View dues
-        "meeting_attendance": False, # View/manage meeting attendance
-        "admin_actions": False     # Add/Edit/Delete, Export CSV, User Management
-    })
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-
-class UserCreate(BaseModel):
-    username: str
-    email: str  # Changed from EmailStr to allow "Private" for hidden emails  # Required email field
-    password: str
-    role: str = "member"
-    chapter: Optional[str] = None
-    title: Optional[str] = None
-    permissions: Optional[dict] = None
-
-class UserUpdate(BaseModel):
-    email: Optional[str] = None  # Allow email updates - Changed from EmailStr to allow "Private"
-    password: Optional[str] = None
-    role: Optional[str] = None
-    chapter: Optional[str] = None
-    title: Optional[str] = None
-    permissions: Optional[dict] = None
-
-class UserResponse(BaseModel):
-    id: str
-    username: str
-    email: Optional[str] = None  # Optional for backward compatibility
-    role: str
-    chapter: Optional[str] = None
-    title: Optional[str] = None
-    permissions: dict
-    created_at: datetime
-
-class Invite(BaseModel):
-    model_config = ConfigDict(extra="ignore")
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    email: str  # Changed from EmailStr to allow "Private" for hidden emails
-    role: str
-    chapter: Optional[str] = None
-    title: Optional[str] = None
-    permissions: dict
-    token: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    expires_at: datetime
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    used: bool = False
-
-class InviteCreate(BaseModel):
-    email: str  # Changed from EmailStr to allow "Private" for hidden emails
-    role: str
-    chapter: Optional[str] = None
-    title: Optional[str] = None
-    permissions: dict
-
-class InviteAccept(BaseModel):
-    token: str
-    username: str
-    password: str
-
-class LoginRequest(BaseModel):
-    username: str
-    password: str
-
-class LoginResponse(BaseModel):
-    token: str
-    username: str
-    role: str
-    chapter: Optional[str] = None
-    title: Optional[str] = None
-    permissions: Optional[dict] = None
-
-class PasswordResetRequest(BaseModel):
-    email: str
-
-class PasswordResetConfirm(BaseModel):
-    email: str
-    code: str
-    new_password: str
-
-class AuditLog(BaseModel):
-    model_config = ConfigDict(extra="ignore")
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    username: str
-    action: str  # e.g., "login", "member_create", "member_update", "user_delete"
-    details: str  # Additional information about the action
-    ip_address: Optional[str] = None
-
 class Event(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
