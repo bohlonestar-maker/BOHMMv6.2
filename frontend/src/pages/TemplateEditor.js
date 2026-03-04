@@ -424,6 +424,60 @@ export default function TemplateEditor() {
                     </SelectContent>
                   </Select>
                 </div>
+                {/* Position Controls */}
+                <div className="border-t border-slate-600 pt-3 mt-3">
+                  <Label className="text-xs text-slate-400 mb-2 block">Position (%)</Label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <Label className="text-[10px] text-slate-500">X (Left)</Label>
+                      <Input
+                        type="number"
+                        min="0"
+                        max="100"
+                        step="0.5"
+                        value={field.x}
+                        onChange={(e) => handleUpdateItem('field', field.id, { x: parseFloat(e.target.value) || 0 })}
+                        className="h-7 text-xs bg-slate-700 border-slate-600"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-[10px] text-slate-500">Y (Top)</Label>
+                      <Input
+                        type="number"
+                        min="0"
+                        max="100"
+                        step="0.5"
+                        value={field.y}
+                        onChange={(e) => handleUpdateItem('field', field.id, { y: parseFloat(e.target.value) || 0 })}
+                        className="h-7 text-xs bg-slate-700 border-slate-600"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-[10px] text-slate-500">Width</Label>
+                      <Input
+                        type="number"
+                        min="1"
+                        max="100"
+                        step="0.5"
+                        value={field.width}
+                        onChange={(e) => handleUpdateItem('field', field.id, { width: parseFloat(e.target.value) || 1 })}
+                        className="h-7 text-xs bg-slate-700 border-slate-600"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-[10px] text-slate-500">Height</Label>
+                      <Input
+                        type="number"
+                        min="1"
+                        max="100"
+                        step="0.5"
+                        value={field.height}
+                        onChange={(e) => handleUpdateItem('field', field.id, { height: parseFloat(e.target.value) || 1 })}
+                        className="h-7 text-xs bg-slate-700 border-slate-600"
+                      />
+                    </div>
+                  </div>
+                </div>
               </div>
             );
           })()}
@@ -455,6 +509,60 @@ export default function TemplateEditor() {
                       ))}
                     </SelectContent>
                   </Select>
+                </div>
+                {/* Position Controls */}
+                <div className="border-t border-slate-600 pt-3 mt-3">
+                  <Label className="text-xs text-slate-400 mb-2 block">Position (%)</Label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <Label className="text-[10px] text-slate-500">X (Left)</Label>
+                      <Input
+                        type="number"
+                        min="0"
+                        max="100"
+                        step="0.5"
+                        value={sig.x}
+                        onChange={(e) => handleUpdateItem('signature', sig.id, { x: parseFloat(e.target.value) || 0 })}
+                        className="h-7 text-xs bg-slate-700 border-slate-600"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-[10px] text-slate-500">Y (Top)</Label>
+                      <Input
+                        type="number"
+                        min="0"
+                        max="100"
+                        step="0.5"
+                        value={sig.y}
+                        onChange={(e) => handleUpdateItem('signature', sig.id, { y: parseFloat(e.target.value) || 0 })}
+                        className="h-7 text-xs bg-slate-700 border-slate-600"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-[10px] text-slate-500">Width</Label>
+                      <Input
+                        type="number"
+                        min="1"
+                        max="100"
+                        step="0.5"
+                        value={sig.width}
+                        onChange={(e) => handleUpdateItem('signature', sig.id, { width: parseFloat(e.target.value) || 1 })}
+                        className="h-7 text-xs bg-slate-700 border-slate-600"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-[10px] text-slate-500">Height</Label>
+                      <Input
+                        type="number"
+                        min="1"
+                        max="100"
+                        step="0.5"
+                        value={sig.height}
+                        onChange={(e) => handleUpdateItem('signature', sig.id, { height: parseFloat(e.target.value) || 1 })}
+                        className="h-7 text-xs bg-slate-700 border-slate-600"
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
             );
