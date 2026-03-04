@@ -907,11 +907,13 @@ async def send_signing_email(
         from email.mime.text import MIMEText
         from email.mime.multipart import MIMEMultipart
         
+        # Use SUPPORT SMTP credentials for document signing emails
         smtp_host = os.environ.get('SMTP_HOST')
         smtp_port = int(os.environ.get('SMTP_PORT', 465))
-        smtp_username = os.environ.get('SMTP_USERNAME')
-        smtp_password = os.environ.get('SMTP_PASSWORD')
-        smtp_from = os.environ.get('SMTP_FROM_EMAIL')
+        # Use support credentials for document signing
+        smtp_username = os.environ.get('SUPPORT_SMTP_USERNAME', os.environ.get('SMTP_USERNAME'))
+        smtp_password = os.environ.get('SUPPORT_SMTP_PASSWORD', os.environ.get('SMTP_PASSWORD'))
+        smtp_from = os.environ.get('SUPPORT_SMTP_USERNAME', os.environ.get('SMTP_FROM_EMAIL'))
         
         if not all([smtp_host, smtp_username, smtp_password, smtp_from]):
             sys.stderr.write("[DOCS] SMTP not configured, skipping email\n")
