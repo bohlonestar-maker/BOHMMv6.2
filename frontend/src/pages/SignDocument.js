@@ -383,13 +383,33 @@ export default function SignDocument() {
             <CardTitle className="text-white text-base sm:text-lg">Document Content</CardTitle>
           </CardHeader>
           <CardContent className="p-4 sm:p-6 pt-0">
-            {documentData?.template_type === 'pdf' ? (
-              <div className="bg-white rounded-lg overflow-hidden" style={{ height: '300px', maxHeight: '50vh' }}>
-                <iframe
-                  src={`${API}/documents/sign/${signingToken}/pdf`}
-                  className="w-full h-full"
-                  title="Document PDF"
-                />
+            {documentData?.template_type === 'pdf' || documentData?.has_pdf ? (
+              <div className="space-y-3">
+                {/* PDF Viewer with fallback */}
+                <div className="bg-white rounded-lg overflow-hidden relative" style={{ height: '300px', maxHeight: '50vh' }}>
+                  <iframe
+                    src={`${API}/documents/sign/${signingToken}/pdf`}
+                    className="w-full h-full"
+                    title="Document PDF"
+                    onError={() => console.log('PDF iframe error')}
+                  />
+                </div>
+                {/* Fallback download button for blocked iframes */}
+                <div className="flex items-center justify-center gap-3 p-3 bg-slate-700/50 rounded-lg">
+                  <p className="text-slate-400 text-sm">
+                    <i className="fas fa-info-circle mr-2"></i>
+                    Can't see the document?
+                  </p>
+                  <a
+                    href={`${API}/documents/sign/${signingToken}/pdf`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm transition-colors"
+                  >
+                    <i className="fas fa-external-link-alt"></i>
+                    Open PDF
+                  </a>
+                </div>
               </div>
             ) : (
               <div className="bg-slate-700/50 rounded-lg p-4 sm:p-6 max-h-64 sm:max-h-96 overflow-y-auto">

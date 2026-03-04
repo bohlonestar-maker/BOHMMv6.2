@@ -597,12 +597,19 @@ async def get_signing_pdf(signing_token: str):
     """Get the PDF document for display (public endpoint)"""
     db = get_db()
     
+    # Check if this is a recipient token or an approver token
     signing_request = await db.signing_requests.find_one({"signing_token": signing_token})
+    
+    if not signing_request:
+        # Check if this is an approver's token
+        signing_request = await db.signing_requests.find_one({
+            "approval_chain.signing_token": signing_token
+        })
     
     if not signing_request:
         raise HTTPException(status_code=404, detail="Invalid signing link")
     
-    if signing_request["status"] in ["signed", "cancelled", "expired"]:
+    if signing_request["status"] in ["completed", "cancelled", "expired"]:
         raise HTTPException(status_code=400, detail="Document not available")
     
     template = await db.document_templates.find_one({"id": signing_request["template_id"]})
@@ -614,7 +621,11 @@ async def get_signing_pdf(signing_token: str):
     return StreamingResponse(
         BytesIO(pdf_bytes),
         media_type="application/pdf",
-        headers={"Content-Disposition": f"inline; filename={template.get('pdf_filename', 'document.pdf')}"}
+        headers={
+            "Content-Disposition": f"inline; filename={template.get('pdf_filename', 'document.pdf')}",
+            "X-Frame-Options": "ALLOWALL",
+            "Content-Security-Policy": "frame-ancestors *"
+        }
     )
 
 
