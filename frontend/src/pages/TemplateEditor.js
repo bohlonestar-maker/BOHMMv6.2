@@ -7,8 +7,9 @@ import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../components/ui/dialog';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '../components/ui/sheet';
 import { toast } from 'sonner';
-import { ChevronLeft, ChevronRight, Plus, Trash2, Save, Type, PenLine, Calendar, FileText, CheckSquare } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, Trash2, Save, Type, PenLine, Calendar, FileText, CheckSquare, Menu, X, Settings, Layers } from 'lucide-react';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -22,7 +23,7 @@ const FIELD_TYPES = [
 
 const SIGNER_TYPES = [
   { value: 'recipient', label: 'Recipient (Applicant)' },
-  { value: 'approver_0', label: 'Approver 1 (e.g., Committee Officer)' },
+  { value: 'approver_0', label: 'Approver 1 (Committee)' },
   { value: 'approver_1', label: 'Approver 2' },
   { value: 'approver_2', label: 'Approver 3' },
   { value: 'approver_3', label: 'Approver 4' },
@@ -46,12 +47,14 @@ export default function TemplateEditor() {
   const [signaturePlacements, setSignaturePlacements] = useState([]);
   
   // UI state
-  const [selectedItem, setSelectedItem] = useState(null); // { type: 'field' | 'signature', id: string }
-  const [addMode, setAddMode] = useState(null); // 'field' | 'signature' | null
+  const [selectedItem, setSelectedItem] = useState(null);
+  const [addMode, setAddMode] = useState(null);
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [newItemConfig, setNewItemConfig] = useState({});
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [showElementsPanel, setShowElementsPanel] = useState(false);
   
-  // Image dimensions for coordinate calculation
+  // Image dimensions
   const [imageDimensions, setImageDimensions] = useState({ width: 0, height: 0 });
 
   useEffect(() => {
@@ -67,13 +70,11 @@ export default function TemplateEditor() {
   const fetchTemplateData = async () => {
     const token = localStorage.getItem('token');
     try {
-      // Get template info
       const templateRes = await axios.get(`${API}/documents/templates/${templateId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setTemplate(templateRes.data);
       
-      // Get pages info
       const pagesRes = await axios.get(`${API}/documents/templates/${templateId}/pages`, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -119,19 +120,47 @@ export default function TemplateEditor() {
   const handleCanvasClick = useCallback((e) => {
     if (!addMode || !containerRef.current) return;
     
-    const rect = containerRef.current.getBoundingClientRect();
     const img = containerRef.current.querySelector('img');
     if (!img) return;
     
     const imgRect = img.getBoundingClientRect();
     
-    // Calculate click position relative to image as percentage
     const x = ((e.clientX - imgRect.left) / imgRect.width) * 100;
     const y = ((e.clientY - imgRect.top) / imgRect.height) * 100;
     
     if (x < 0 || x > 100 || y < 0 || y > 100) return;
     
-    // Open dialog to configure the new item
+    setNewItemConfig({
+      x: Math.round(x * 10) / 10,
+      y: Math.round(y * 10) / 10,
+      page: currentPage,
+      width: addMode === 'signature' ? 20 : 15,
+      height: addMode === 'signature' ? 5 : 3,
+      field_type: 'text',
+      signer_type: 'recipient',
+      label: '',
+      required: true,
+      include_date: true,
+    });
+    setShowAddDialog(true);
+  }, [addMode, currentPage]);
+
+  // Touch support for mobile
+  const handleCanvasTouch = useCallback((e) => {
+    if (!addMode || !containerRef.current) return;
+    e.preventDefault();
+    
+    const touch = e.touches[0];
+    const img = containerRef.current.querySelector('img');
+    if (!img) return;
+    
+    const imgRect = img.getBoundingClientRect();
+    
+    const x = ((touch.clientX - imgRect.left) / imgRect.width) * 100;
+    const y = ((touch.clientY - imgRect.top) / imgRect.height) * 100;
+    
+    if (x < 0 || x > 100 || y < 0 || y > 100) return;
+    
     setNewItemConfig({
       x: Math.round(x * 10) / 10,
       y: Math.round(y * 10) / 10,
@@ -226,9 +255,214 @@ export default function TemplateEditor() {
     }
   };
 
-  // Get items for current page
   const currentPageFields = fieldPlacements.filter(f => f.page === currentPage);
   const currentPageSignatures = signaturePlacements.filter(s => s.page === currentPage);
+  const totalElements = fieldPlacements.length + signaturePlacements.length;
+
+  // Tools Panel Content (shared between mobile sheet and desktop sidebar)
+  const ToolsPanel = () => (
+    <div className="space-y-4">
+      {/* Add Elements */}
+      <div className="space-y-2">
+        <h3 className="text-sm font-medium text-white">Add Elements</h3>
+        <Button
+          variant={addMode === 'field' ? 'default' : 'outline'}
+          className="w-full justify-start text-sm"
+          onClick={() => { setAddMode(addMode === 'field' ? null : 'field'); setMobileMenuOpen(false); }}
+        >
+          <Type className="w-4 h-4 mr-2" />
+          Add Form Field
+        </Button>
+        <Button
+          variant={addMode === 'signature' ? 'default' : 'outline'}
+          className="w-full justify-start text-sm"
+          onClick={() => { setAddMode(addMode === 'signature' ? null : 'signature'); setMobileMenuOpen(false); }}
+        >
+          <PenLine className="w-4 h-4 mr-2" />
+          Add Signature
+        </Button>
+        {addMode && (
+          <p className="text-xs text-purple-400 p-2 bg-purple-500/10 rounded">
+            Tap on the PDF to place the {addMode}
+          </p>
+        )}
+      </div>
+
+      {/* Page Navigation */}
+      <div className="space-y-2">
+        <h3 className="text-sm font-medium text-white">Pages</h3>
+        <div className="flex items-center justify-between bg-slate-700/50 rounded-lg p-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            disabled={currentPage <= 1}
+            onClick={() => setCurrentPage(p => p - 1)}
+            className="h-8 w-8 p-0"
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </Button>
+          <span className="text-white text-sm">
+            {currentPage} / {pagesInfo.length}
+          </span>
+          <Button
+            variant="ghost"
+            size="sm"
+            disabled={currentPage >= pagesInfo.length}
+            onClick={() => setCurrentPage(p => p + 1)}
+            className="h-8 w-8 p-0"
+          >
+            <ChevronRight className="w-4 h-4" />
+          </Button>
+        </div>
+      </div>
+
+      {/* Elements List */}
+      <div className="space-y-2">
+        <h3 className="text-sm font-medium text-white">
+          Elements on Page {currentPage}
+          <span className="ml-2 text-xs text-slate-400">
+            ({currentPageFields.length + currentPageSignatures.length})
+          </span>
+        </h3>
+        <div className="space-y-1 max-h-48 overflow-y-auto">
+          {currentPageFields.length === 0 && currentPageSignatures.length === 0 && (
+            <p className="text-xs text-slate-500 p-2">No elements on this page</p>
+          )}
+          {currentPageFields.map(field => (
+            <div
+              key={field.id}
+              className={`p-2 rounded text-xs cursor-pointer transition-colors ${
+                selectedItem?.id === field.id
+                  ? 'bg-purple-600/30 border border-purple-500'
+                  : 'bg-slate-700/50 hover:bg-slate-600/50'
+              }`}
+              onClick={() => setSelectedItem({ type: 'field', id: field.id })}
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-white truncate flex-1">{field.label}</span>
+                <button
+                  onClick={(e) => { e.stopPropagation(); handleDeleteItem('field', field.id); }}
+                  className="text-red-400 hover:text-red-300 ml-2 p-1"
+                >
+                  <Trash2 className="w-3 h-3" />
+                </button>
+              </div>
+              <span className="text-slate-400 text-[10px]">{field.field_type} • {field.signer_type.replace('_', ' ')}</span>
+            </div>
+          ))}
+          {currentPageSignatures.map(sig => (
+            <div
+              key={sig.id}
+              className={`p-2 rounded text-xs cursor-pointer transition-colors ${
+                selectedItem?.id === sig.id
+                  ? 'bg-orange-600/30 border border-orange-500'
+                  : 'bg-slate-700/50 hover:bg-slate-600/50'
+              }`}
+              onClick={() => setSelectedItem({ type: 'signature', id: sig.id })}
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-white truncate flex-1">{sig.label}</span>
+                <button
+                  onClick={(e) => { e.stopPropagation(); handleDeleteItem('signature', sig.id); }}
+                  className="text-red-400 hover:text-red-300 ml-2 p-1"
+                >
+                  <Trash2 className="w-3 h-3" />
+                </button>
+              </div>
+              <span className="text-slate-400 text-[10px]">signature • {sig.signer_type.replace('_', ' ')}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Selected Item Properties */}
+      {selectedItem && (
+        <div className="space-y-2 border-t border-slate-700 pt-4">
+          <h3 className="text-sm font-medium text-white">Properties</h3>
+          {selectedItem.type === 'field' && (() => {
+            const field = fieldPlacements.find(f => f.id === selectedItem.id);
+            if (!field) return null;
+            return (
+              <div className="space-y-3">
+                <div>
+                  <Label className="text-xs text-slate-400">Label</Label>
+                  <Input
+                    value={field.label}
+                    onChange={(e) => handleUpdateItem('field', field.id, { label: e.target.value })}
+                    className="h-8 text-sm bg-slate-700 border-slate-600"
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs text-slate-400">Field Type</Label>
+                  <Select
+                    value={field.field_type}
+                    onValueChange={(v) => handleUpdateItem('field', field.id, { field_type: v })}
+                  >
+                    <SelectTrigger className="h-8 text-sm bg-slate-700 border-slate-600">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {FIELD_TYPES.map(ft => (
+                        <SelectItem key={ft.value} value={ft.value}>{ft.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label className="text-xs text-slate-400">Signer</Label>
+                  <Select
+                    value={field.signer_type}
+                    onValueChange={(v) => handleUpdateItem('field', field.id, { signer_type: v })}
+                  >
+                    <SelectTrigger className="h-8 text-sm bg-slate-700 border-slate-600">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {SIGNER_TYPES.map(st => (
+                        <SelectItem key={st.value} value={st.value}>{st.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            );
+          })()}
+          {selectedItem.type === 'signature' && (() => {
+            const sig = signaturePlacements.find(s => s.id === selectedItem.id);
+            if (!sig) return null;
+            return (
+              <div className="space-y-3">
+                <div>
+                  <Label className="text-xs text-slate-400">Label</Label>
+                  <Input
+                    value={sig.label}
+                    onChange={(e) => handleUpdateItem('signature', sig.id, { label: e.target.value })}
+                    className="h-8 text-sm bg-slate-700 border-slate-600"
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs text-slate-400">Signer</Label>
+                  <Select
+                    value={sig.signer_type}
+                    onValueChange={(v) => handleUpdateItem('signature', sig.id, { signer_type: v })}
+                  >
+                    <SelectTrigger className="h-8 text-sm bg-slate-700 border-slate-600">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {SIGNER_TYPES.map(st => (
+                        <SelectItem key={st.value} value={st.value}>{st.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            );
+          })()}
+        </div>
+      )}
+    </div>
+  );
 
   if (loading) {
     return (
@@ -242,329 +476,275 @@ export default function TemplateEditor() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-900">
-      {/* Header */}
-      <div className="bg-slate-800 border-b border-slate-700 px-4 py-3">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" onClick={() => navigate('/document-templates')}>
-              <ChevronLeft className="w-4 h-4 mr-1" /> Back
+    <div className="min-h-screen bg-slate-900 flex flex-col">
+      {/* Header - Responsive */}
+      <div className="bg-slate-800 border-b border-slate-700 px-3 sm:px-4 py-2 sm:py-3 sticky top-0 z-20">
+        <div className="max-w-7xl mx-auto flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 sm:gap-4 min-w-0">
+            <Button 
+              variant="ghost" 
+              size="sm"
+              onClick={() => navigate('/document-templates')}
+              className="flex-shrink-0 h-8 sm:h-9 px-2 sm:px-3"
+            >
+              <ChevronLeft className="w-4 h-4" />
+              <span className="hidden sm:inline ml-1">Back</span>
             </Button>
-            <div>
-              <h1 className="text-lg font-semibold text-white">{template?.name}</h1>
-              <p className="text-sm text-slate-400">Configure form fields and signature placements</p>
+            <div className="min-w-0">
+              <h1 className="text-sm sm:text-lg font-semibold text-white truncate">{template?.name}</h1>
+              <p className="text-xs text-slate-400 hidden sm:block">Configure form fields and signature placements</p>
             </div>
           </div>
-          <Button onClick={handleSave} disabled={saving} className="bg-purple-600 hover:bg-purple-700">
-            <Save className="w-4 h-4 mr-2" />
-            {saving ? 'Saving...' : 'Save Placements'}
-          </Button>
+          <div className="flex items-center gap-2">
+            {/* Mobile Menu Button */}
+            <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+              <SheetTrigger asChild>
+                <Button variant="outline" size="sm" className="lg:hidden h-8 sm:h-9">
+                  <Menu className="w-4 h-4" />
+                  <span className="ml-1 text-xs">{totalElements}</span>
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="left" className="w-80 bg-slate-800 border-slate-700 p-4">
+                <SheetHeader className="mb-4">
+                  <SheetTitle className="text-white">Tools</SheetTitle>
+                </SheetHeader>
+                <ToolsPanel />
+              </SheetContent>
+            </Sheet>
+            
+            <Button 
+              onClick={handleSave} 
+              disabled={saving} 
+              size="sm"
+              className="bg-purple-600 hover:bg-purple-700 h-8 sm:h-9 px-2 sm:px-4"
+            >
+              <Save className="w-4 h-4" />
+              <span className="hidden sm:inline ml-2">{saving ? 'Saving...' : 'Save'}</span>
+            </Button>
+          </div>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto p-4 flex gap-4">
-        {/* Left Panel - Tools */}
-        <div className="w-64 flex-shrink-0 space-y-4">
-          <Card className="bg-slate-800 border-slate-700">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm text-white">Add Elements</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <Button
-                variant={addMode === 'field' ? 'default' : 'outline'}
-                className="w-full justify-start"
-                onClick={() => setAddMode(addMode === 'field' ? null : 'field')}
-              >
-                <Type className="w-4 h-4 mr-2" />
-                Add Form Field
-              </Button>
-              <Button
-                variant={addMode === 'signature' ? 'default' : 'outline'}
-                className="w-full justify-start"
-                onClick={() => setAddMode(addMode === 'signature' ? null : 'signature')}
-              >
-                <PenLine className="w-4 h-4 mr-2" />
-                Add Signature
-              </Button>
-              {addMode && (
-                <p className="text-xs text-purple-400 mt-2">
-                  Click on the PDF to place the {addMode}
-                </p>
-              )}
-            </CardContent>
-          </Card>
+      {/* Mobile Add Mode Indicator */}
+      {addMode && (
+        <div className="lg:hidden bg-purple-600 text-white text-center py-2 px-4 text-sm flex items-center justify-between">
+          <span>Tap on PDF to place {addMode}</span>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={() => setAddMode(null)}
+            className="h-6 px-2 text-white hover:bg-purple-700"
+          >
+            <X className="w-4 h-4" />
+          </Button>
+        </div>
+      )}
 
-          {/* Page Navigation */}
-          <Card className="bg-slate-800 border-slate-700">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm text-white">Pages</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center justify-between">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={currentPage <= 1}
-                  onClick={() => setCurrentPage(p => p - 1)}
-                >
-                  <ChevronLeft className="w-4 h-4" />
-                </Button>
-                <span className="text-white text-sm">
-                  Page {currentPage} of {pagesInfo.length}
-                </span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={currentPage >= pagesInfo.length}
-                  onClick={() => setCurrentPage(p => p + 1)}
-                >
-                  <ChevronRight className="w-4 h-4" />
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+      {/* Mobile Page Navigation */}
+      <div className="lg:hidden bg-slate-800/50 border-b border-slate-700 px-3 py-2 flex items-center justify-between">
+        <Button
+          variant="ghost"
+          size="sm"
+          disabled={currentPage <= 1}
+          onClick={() => setCurrentPage(p => p - 1)}
+          className="h-8"
+        >
+          <ChevronLeft className="w-4 h-4 mr-1" />
+          Prev
+        </Button>
+        <span className="text-white text-sm font-medium">
+          Page {currentPage} of {pagesInfo.length}
+        </span>
+        <Button
+          variant="ghost"
+          size="sm"
+          disabled={currentPage >= pagesInfo.length}
+          onClick={() => setCurrentPage(p => p + 1)}
+          className="h-8"
+        >
+          Next
+          <ChevronRight className="w-4 h-4 ml-1" />
+        </Button>
+      </div>
 
-          {/* Elements on Current Page */}
-          <Card className="bg-slate-800 border-slate-700">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm text-white">
-                Elements on Page {currentPage}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2 max-h-64 overflow-y-auto">
-              {currentPageFields.length === 0 && currentPageSignatures.length === 0 && (
-                <p className="text-xs text-slate-500">No elements on this page</p>
-              )}
-              {currentPageFields.map(field => (
-                <div
-                  key={field.id}
-                  className={`p-2 rounded text-xs cursor-pointer transition-colors ${
-                    selectedItem?.id === field.id
-                      ? 'bg-purple-600/30 border border-purple-500'
-                      : 'bg-slate-700 hover:bg-slate-600'
-                  }`}
-                  onClick={() => setSelectedItem({ type: 'field', id: field.id })}
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="text-white truncate">{field.label}</span>
-                    <button
-                      onClick={(e) => { e.stopPropagation(); handleDeleteItem('field', field.id); }}
-                      className="text-red-400 hover:text-red-300"
-                    >
-                      <Trash2 className="w-3 h-3" />
-                    </button>
-                  </div>
-                  <span className="text-slate-400">{field.field_type} • {field.signer_type}</span>
-                </div>
-              ))}
-              {currentPageSignatures.map(sig => (
-                <div
-                  key={sig.id}
-                  className={`p-2 rounded text-xs cursor-pointer transition-colors ${
-                    selectedItem?.id === sig.id
-                      ? 'bg-orange-600/30 border border-orange-500'
-                      : 'bg-slate-700 hover:bg-slate-600'
-                  }`}
-                  onClick={() => setSelectedItem({ type: 'signature', id: sig.id })}
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="text-white truncate">{sig.label}</span>
-                    <button
-                      onClick={(e) => { e.stopPropagation(); handleDeleteItem('signature', sig.id); }}
-                      className="text-red-400 hover:text-red-300"
-                    >
-                      <Trash2 className="w-3 h-3" />
-                    </button>
-                  </div>
-                  <span className="text-slate-400">signature • {sig.signer_type}</span>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-
-          {/* Selected Item Properties */}
-          {selectedItem && (
-            <Card className="bg-slate-800 border-slate-700">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm text-white">Properties</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {selectedItem.type === 'field' && (() => {
-                  const field = fieldPlacements.find(f => f.id === selectedItem.id);
-                  if (!field) return null;
-                  return (
-                    <>
-                      <div>
-                        <Label className="text-xs text-slate-400">Label</Label>
-                        <Input
-                          value={field.label}
-                          onChange={(e) => handleUpdateItem('field', field.id, { label: e.target.value })}
-                          className="h-8 text-sm bg-slate-700 border-slate-600"
-                        />
-                      </div>
-                      <div>
-                        <Label className="text-xs text-slate-400">Field Type</Label>
-                        <Select
-                          value={field.field_type}
-                          onValueChange={(v) => handleUpdateItem('field', field.id, { field_type: v })}
-                        >
-                          <SelectTrigger className="h-8 text-sm bg-slate-700 border-slate-600">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {FIELD_TYPES.map(ft => (
-                              <SelectItem key={ft.value} value={ft.value}>{ft.label}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div>
-                        <Label className="text-xs text-slate-400">Signer</Label>
-                        <Select
-                          value={field.signer_type}
-                          onValueChange={(v) => handleUpdateItem('field', field.id, { signer_type: v })}
-                        >
-                          <SelectTrigger className="h-8 text-sm bg-slate-700 border-slate-600">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {SIGNER_TYPES.map(st => (
-                              <SelectItem key={st.value} value={st.value}>{st.label}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </>
-                  );
-                })()}
-                {selectedItem.type === 'signature' && (() => {
-                  const sig = signaturePlacements.find(s => s.id === selectedItem.id);
-                  if (!sig) return null;
-                  return (
-                    <>
-                      <div>
-                        <Label className="text-xs text-slate-400">Label</Label>
-                        <Input
-                          value={sig.label}
-                          onChange={(e) => handleUpdateItem('signature', sig.id, { label: e.target.value })}
-                          className="h-8 text-sm bg-slate-700 border-slate-600"
-                        />
-                      </div>
-                      <div>
-                        <Label className="text-xs text-slate-400">Signer</Label>
-                        <Select
-                          value={sig.signer_type}
-                          onValueChange={(v) => handleUpdateItem('signature', sig.id, { signer_type: v })}
-                        >
-                          <SelectTrigger className="h-8 text-sm bg-slate-700 border-slate-600">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {SIGNER_TYPES.map(st => (
-                              <SelectItem key={st.value} value={st.value}>{st.label}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </>
-                  );
-                })()}
-              </CardContent>
-            </Card>
-          )}
+      <div className="flex-1 flex">
+        {/* Desktop Left Panel */}
+        <div className="hidden lg:block w-64 flex-shrink-0 bg-slate-800/50 border-r border-slate-700 p-4 overflow-y-auto">
+          <ToolsPanel />
         </div>
 
         {/* Main Canvas Area */}
-        <div className="flex-1">
-          <Card className="bg-slate-800 border-slate-700">
-            <CardContent className="p-4">
-              <div
-                ref={containerRef}
-                className={`relative bg-white rounded-lg overflow-hidden ${addMode ? 'cursor-crosshair' : ''}`}
-                onClick={handleCanvasClick}
-                style={{ minHeight: '600px' }}
-              >
-                {loadingPage ? (
-                  <div className="absolute inset-0 flex items-center justify-center bg-slate-200">
-                    <i className="fas fa-spinner fa-spin text-2xl text-slate-500"></i>
-                  </div>
-                ) : pageImage ? (
-                  <>
-                    <img
-                      src={pageImage}
-                      alt={`Page ${currentPage}`}
-                      className="w-full h-auto"
-                      onLoad={handleImageLoad}
-                      draggable={false}
-                    />
-                    {/* Render field overlays */}
-                    {currentPageFields.map(field => (
-                      <div
-                        key={field.id}
-                        className={`absolute border-2 rounded transition-colors ${
-                          selectedItem?.id === field.id
-                            ? 'border-purple-500 bg-purple-500/20'
-                            : 'border-blue-500 bg-blue-500/10 hover:bg-blue-500/20'
-                        }`}
-                        style={{
-                          left: `${field.x}%`,
-                          top: `${field.y}%`,
-                          width: `${field.width}%`,
-                          height: `${field.height}%`,
-                        }}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (!addMode) setSelectedItem({ type: 'field', id: field.id });
-                        }}
-                      >
-                        <span className="absolute -top-5 left-0 text-xs bg-blue-600 text-white px-1 rounded whitespace-nowrap">
-                          {field.label}
-                        </span>
-                      </div>
-                    ))}
-                    {/* Render signature overlays */}
-                    {currentPageSignatures.map(sig => (
-                      <div
-                        key={sig.id}
-                        className={`absolute border-2 rounded transition-colors ${
-                          selectedItem?.id === sig.id
-                            ? 'border-orange-500 bg-orange-500/20'
-                            : 'border-orange-400 bg-orange-400/10 hover:bg-orange-400/20'
-                        }`}
-                        style={{
-                          left: `${sig.x}%`,
-                          top: `${sig.y}%`,
-                          width: `${sig.width}%`,
-                          height: `${sig.height}%`,
-                        }}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (!addMode) setSelectedItem({ type: 'signature', id: sig.id });
-                        }}
-                      >
-                        <span className="absolute -top-5 left-0 text-xs bg-orange-600 text-white px-1 rounded whitespace-nowrap">
-                          {sig.label}
-                        </span>
-                      </div>
-                    ))}
-                  </>
-                ) : (
-                  <div className="absolute inset-0 flex items-center justify-center text-slate-500">
-                    No page to display
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
+        <div className="flex-1 p-2 sm:p-4 overflow-auto">
+          <div className="max-w-4xl mx-auto">
+            <div
+              ref={containerRef}
+              className={`relative bg-white rounded-lg overflow-hidden shadow-xl ${addMode ? 'cursor-crosshair ring-2 ring-purple-500' : ''}`}
+              onClick={handleCanvasClick}
+              onTouchStart={handleCanvasTouch}
+            >
+              {loadingPage ? (
+                <div className="flex items-center justify-center bg-slate-200 min-h-[400px] sm:min-h-[600px]">
+                  <i className="fas fa-spinner fa-spin text-2xl text-slate-500"></i>
+                </div>
+              ) : pageImage ? (
+                <>
+                  <img
+                    src={pageImage}
+                    alt={`Page ${currentPage}`}
+                    className="w-full h-auto"
+                    onLoad={handleImageLoad}
+                    draggable={false}
+                  />
+                  {/* Field overlays */}
+                  {currentPageFields.map(field => (
+                    <div
+                      key={field.id}
+                      className={`absolute border-2 rounded transition-all ${
+                        selectedItem?.id === field.id
+                          ? 'border-purple-500 bg-purple-500/30 z-10'
+                          : 'border-blue-500 bg-blue-500/20 hover:bg-blue-500/30'
+                      }`}
+                      style={{
+                        left: `${field.x}%`,
+                        top: `${field.y}%`,
+                        width: `${field.width}%`,
+                        height: `${field.height}%`,
+                        minWidth: '20px',
+                        minHeight: '12px',
+                      }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (!addMode) setSelectedItem({ type: 'field', id: field.id });
+                      }}
+                    >
+                      <span className="absolute -top-5 left-0 text-[10px] sm:text-xs bg-blue-600 text-white px-1 rounded whitespace-nowrap max-w-[100px] sm:max-w-none truncate">
+                        {field.label}
+                      </span>
+                    </div>
+                  ))}
+                  {/* Signature overlays */}
+                  {currentPageSignatures.map(sig => (
+                    <div
+                      key={sig.id}
+                      className={`absolute border-2 rounded transition-all ${
+                        selectedItem?.id === sig.id
+                          ? 'border-orange-500 bg-orange-500/30 z-10'
+                          : 'border-orange-400 bg-orange-400/20 hover:bg-orange-400/30'
+                      }`}
+                      style={{
+                        left: `${sig.x}%`,
+                        top: `${sig.y}%`,
+                        width: `${sig.width}%`,
+                        height: `${sig.height}%`,
+                        minWidth: '30px',
+                        minHeight: '15px',
+                      }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (!addMode) setSelectedItem({ type: 'signature', id: sig.id });
+                      }}
+                    >
+                      <span className="absolute -top-5 left-0 text-[10px] sm:text-xs bg-orange-600 text-white px-1 rounded whitespace-nowrap max-w-[100px] sm:max-w-none truncate">
+                        {sig.label}
+                      </span>
+                    </div>
+                  ))}
+                </>
+              ) : (
+                <div className="flex items-center justify-center text-slate-500 min-h-[400px] sm:min-h-[600px]">
+                  No page to display
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       </div>
 
+      {/* Mobile Bottom Bar - Quick Actions */}
+      <div className="lg:hidden bg-slate-800 border-t border-slate-700 px-3 py-2 flex items-center justify-around gap-2 safe-area-inset-bottom">
+        <Button
+          variant={addMode === 'field' ? 'default' : 'outline'}
+          size="sm"
+          className={`flex-1 h-10 ${addMode === 'field' ? 'bg-purple-600' : ''}`}
+          onClick={() => setAddMode(addMode === 'field' ? null : 'field')}
+        >
+          <Type className="w-4 h-4 mr-1" />
+          <span className="text-xs">Field</span>
+        </Button>
+        <Button
+          variant={addMode === 'signature' ? 'default' : 'outline'}
+          size="sm"
+          className={`flex-1 h-10 ${addMode === 'signature' ? 'bg-orange-600' : ''}`}
+          onClick={() => setAddMode(addMode === 'signature' ? null : 'signature')}
+        >
+          <PenLine className="w-4 h-4 mr-1" />
+          <span className="text-xs">Sign</span>
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          className="flex-1 h-10"
+          onClick={() => setShowElementsPanel(true)}
+        >
+          <Layers className="w-4 h-4 mr-1" />
+          <span className="text-xs">{currentPageFields.length + currentPageSignatures.length}</span>
+        </Button>
+      </div>
+
+      {/* Mobile Elements Panel */}
+      <Sheet open={showElementsPanel} onOpenChange={setShowElementsPanel}>
+        <SheetContent side="bottom" className="bg-slate-800 border-slate-700 h-[60vh] rounded-t-xl">
+          <SheetHeader className="mb-4">
+            <SheetTitle className="text-white">Elements on Page {currentPage}</SheetTitle>
+          </SheetHeader>
+          <div className="space-y-2 overflow-y-auto max-h-[calc(60vh-100px)]">
+            {currentPageFields.length === 0 && currentPageSignatures.length === 0 && (
+              <p className="text-slate-500 text-sm text-center py-8">No elements on this page. Tap "Field" or "Sign" to add.</p>
+            )}
+            {currentPageFields.map(field => (
+              <div
+                key={field.id}
+                className="p-3 bg-slate-700/50 rounded-lg flex items-center justify-between"
+              >
+                <div className="flex-1 min-w-0">
+                  <p className="text-white text-sm font-medium truncate">{field.label}</p>
+                  <p className="text-slate-400 text-xs">{field.field_type} • {field.signer_type.replace('_', ' ')}</p>
+                </div>
+                <button
+                  onClick={() => handleDeleteItem('field', field.id)}
+                  className="p-2 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+            ))}
+            {currentPageSignatures.map(sig => (
+              <div
+                key={sig.id}
+                className="p-3 bg-slate-700/50 rounded-lg flex items-center justify-between"
+              >
+                <div className="flex-1 min-w-0">
+                  <p className="text-white text-sm font-medium truncate">{sig.label}</p>
+                  <p className="text-slate-400 text-xs">signature • {sig.signer_type.replace('_', ' ')}</p>
+                </div>
+                <button
+                  onClick={() => handleDeleteItem('signature', sig.id)}
+                  className="p-2 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+            ))}
+          </div>
+        </SheetContent>
+      </Sheet>
+
       {/* Add Item Dialog */}
       <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="w-[95vw] max-w-md mx-auto rounded-lg">
           <DialogHeader>
             <DialogTitle>
-              Add {addMode === 'field' ? 'Form Field' : 'Signature Placement'}
+              Add {addMode === 'field' ? 'Form Field' : 'Signature'}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
@@ -574,6 +754,7 @@ export default function TemplateEditor() {
                 value={newItemConfig.label || ''}
                 onChange={(e) => setNewItemConfig(prev => ({ ...prev, label: e.target.value }))}
                 placeholder={addMode === 'field' ? 'e.g., First Name' : 'e.g., Applicant Signature'}
+                className="mt-1"
               />
             </div>
             {addMode === 'field' && (
@@ -583,7 +764,7 @@ export default function TemplateEditor() {
                   value={newItemConfig.field_type}
                   onValueChange={(v) => setNewItemConfig(prev => ({ ...prev, field_type: v }))}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="mt-1">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -600,7 +781,7 @@ export default function TemplateEditor() {
                 value={newItemConfig.signer_type}
                 onValueChange={(v) => setNewItemConfig(prev => ({ ...prev, signer_type: v }))}
               >
-                <SelectTrigger>
+                <SelectTrigger className="mt-1">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -619,6 +800,7 @@ export default function TemplateEditor() {
                   max="50"
                   value={newItemConfig.width || 15}
                   onChange={(e) => setNewItemConfig(prev => ({ ...prev, width: parseFloat(e.target.value) }))}
+                  className="mt-1"
                 />
               </div>
               <div>
@@ -629,15 +811,16 @@ export default function TemplateEditor() {
                   max="20"
                   value={newItemConfig.height || 3}
                   onChange={(e) => setNewItemConfig(prev => ({ ...prev, height: parseFloat(e.target.value) }))}
+                  className="mt-1"
                 />
               </div>
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => { setShowAddDialog(false); setAddMode(null); }}>
+          <DialogFooter className="flex-col sm:flex-row gap-2">
+            <Button variant="outline" onClick={() => { setShowAddDialog(false); setAddMode(null); }} className="w-full sm:w-auto">
               Cancel
             </Button>
-            <Button onClick={handleAddItem} className="bg-purple-600 hover:bg-purple-700">
+            <Button onClick={handleAddItem} className="w-full sm:w-auto bg-purple-600 hover:bg-purple-700">
               Add {addMode === 'field' ? 'Field' : 'Signature'}
             </Button>
           </DialogFooter>
