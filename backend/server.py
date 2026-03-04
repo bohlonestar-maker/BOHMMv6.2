@@ -129,6 +129,20 @@ from models import (
 sys.stderr.write("✅ [INIT] Models package imported\n")
 sys.stderr.flush()
 
+# Import utility functions from utils package
+sys.stderr.write("  [INIT] Importing utils package...\n")
+sys.stderr.flush()
+from utils import (
+    format_phone_number,
+    sanitize_for_regex,
+    sanitize_string_input,
+    hash_for_duplicate_detection
+)
+from utils.formatting import normalize_name, fuzzy_name_match
+from utils.sanitization import sanitize_search_query
+sys.stderr.write("✅ [INIT] Utils package imported\n")
+sys.stderr.flush()
+
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
@@ -1566,15 +1580,7 @@ def decrypt_data(encrypted_data: str) -> str:
         return encrypted_data
 
 
-def hash_for_duplicate_detection(data: str) -> str:
-    """Create a deterministic hash for duplicate detection of encrypted fields"""
-    if not data:
-        return ""
-    # Use SHA-256 hash for deterministic duplicate detection
-    # Lowercase email before hashing for case-insensitive duplicate detection
-    normalized_data = data.lower().strip()
-    return hashlib.sha256(normalized_data.encode()).hexdigest()
-
+# hash_for_duplicate_detection imported from utils package
 
 # Security
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -1605,42 +1611,7 @@ def encrypt_member_sensitive_data(member_data: dict) -> dict:
     
     return encrypted
 
-def format_phone_number(phone: str) -> str:
-    """Format phone number to (xxx) xxx-xxxx format"""
-    if not phone:
-        return phone
-    
-    # Remove all non-digit characters
-    digits = ''.join(c for c in phone if c.isdigit())
-    
-    # Format if we have 10 digits
-    if len(digits) == 10:
-        return f"({digits[:3]}) {digits[3:6]}-{digits[6:]}"
-    
-    # Return original if not 10 digits
-    return phone
-
-def sanitize_for_regex(input_str: str) -> str:
-    """
-    Sanitize user input for safe use in MongoDB regex queries.
-    Escapes all regex special characters to prevent ReDoS and injection attacks.
-    """
-    if not isinstance(input_str, str):
-        return ""
-    # Escape all regex metacharacters
-    return re.escape(input_str)
-
-def sanitize_string_input(input_val) -> str:
-    """
-    Ensure input is a plain string - prevents NoSQL injection via object injection.
-    If input is not a string, convert it or return empty string.
-    """
-    if input_val is None:
-        return ""
-    if isinstance(input_val, str):
-        return input_val
-    # If someone tries to pass {"$ne": ""} or similar, convert to string representation
-    return str(input_val)
+# format_phone_number, sanitize_for_regex, sanitize_string_input imported from utils package
 
 def decrypt_member_sensitive_data(member_data: dict) -> dict:
     """Decrypt sensitive member fields"""
