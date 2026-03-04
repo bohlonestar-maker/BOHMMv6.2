@@ -56,6 +56,36 @@ Build a member management application with attendance tracking, dues management,
 
 ### What's Been Implemented
 
+#### March 4, 2026 - In-House Document Signing System (Replaces SignNow)
+- [x] **Complete E-Signature Solution:**
+  - Document template management (PDF upload or text-based templates)
+  - Send documents to members for e-signature
+  - Public signing page (no login required)
+  - Draw-your-signature canvas OR typed signature options
+  - Legal consent checkbox with audit trail
+- [x] **Backend Implementation (`/app/backend/routes/documents.py`):**
+  - `GET /api/documents/templates` - List all templates
+  - `POST /api/documents/templates` - Create new template (PDF or text)
+  - `PUT /api/documents/templates/{id}` - Update template
+  - `DELETE /api/documents/templates/{id}` - Deactivate template
+  - `POST /api/documents/send` - Send document for signing
+  - `GET /api/documents/requests` - List signing requests
+  - `GET /api/documents/sign/{token}` - Public signing page data
+  - `POST /api/documents/sign/{token}/submit` - Submit signature
+  - `GET /api/documents/signed/{id}/download` - Download signed PDF
+- [x] **Frontend Implementation:**
+  - `/document-templates` - Admin page for template management
+  - `/sign/:signingToken` - Public signing experience
+  - Updated Dashboard documents dialog to use new system
+- [x] **Legal Audit Trail Captures:**
+  - Signer name and email
+  - IP address and browser info
+  - Timestamp (UTC)
+  - Consent agreement text
+  - Document hash (SHA-256) for integrity verification
+- [x] **Template Categories:** Financial Hardship, Honorary Application, Bylaws, SOPs
+- [x] **Permission:** Uses existing `send_documents` permission
+
 #### March 3, 2026 - SignNow Integration Simplified
 - [x] **Simplified Send Document Dialog:**
   - Removed Signer Role dropdown (not needed per user)
@@ -175,14 +205,26 @@ Build a member management application with attendance tracking, dues management,
 ```
 /app/
 ├── backend/
-│   └── server.py          # All backend logic (11K+ lines)
-│       ├── Lines 8163-8470 - Dues Reminder endpoints
-│       └── Lines 7380-7540 - Suggestion Box endpoints
+│   ├── server.py          # Main backend logic (17K+ lines)
+│   │   ├── Lines 8163-8470 - Dues Reminder endpoints
+│   │   └── Lines 7380-7540 - Suggestion Box endpoints
+│   ├── routes/
+│   │   └── documents.py   # In-house document signing API
+│   ├── models/
+│   │   └── documents.py   # Document signing Pydantic models
+│   ├── auth/
+│   │   └── password.py    # Password hashing utilities
+│   ├── utils/
+│   │   └── helpers.py     # Utility functions
+│   └── config/
+│       └── constants.py   # Discord config, chapters, titles
 └── frontend/
     └── src/
-        ├── App.js             # Routes (DuesReminders at /dues-reminders)
+        ├── App.js             # Routes (DuesReminders, DocumentTemplates, SignDocument)
         └── pages/
-            ├── Dashboard.js       # Main dashboard with My Dues, Suggestion Box
+            ├── Dashboard.js       # Main dashboard with My Dues, Suggestion Box, Documents
+            ├── DocumentTemplates.js # Template management for e-signatures
+            ├── SignDocument.js    # Public signing page
             ├── DuesReminders.js   # Email template management
             ├── PermissionPanel.js # Dynamic permission management
             └── OfficerTracking.js # A&D page
@@ -279,6 +321,9 @@ Build a member management application with attendance tracking, dues management,
 - `PUT /api/permissions/bulk-update` - Update permissions for a title
 
 ### Database Collections
+- `document_templates` - Document templates for e-signature (name, description, template_type, category, text_content/pdf_data)
+- `signing_requests` - Document signing requests (template_id, member_id, recipient_email, status, signing_token, audit_trail)
+- `signatures` - Captured signatures (signing_request_id, signature_type, typed_name, signature_image)
 - `hangarounds` - Entry-level members (handle, name, meeting_attendance, actions, status: 'hangaround')
 - `archived_hangarounds` - Archived/promoted hangarounds
 - `prospects` - Full prospects with contact info (status: 'prospect' or 'archived')
@@ -306,6 +351,7 @@ Build a member management application with attendance tracking, dues management,
 #### P1 - High Priority
 - [x] ~~Square one-time payment sync bug~~ (Completed Jan 29 - fixed + admin reapply endpoint)
 - [x] ~~SignNow Integration~~ (Completed Mar 3, 2026 - Send documents for signature from member profiles)
+- [x] ~~In-House Document Signing~~ (Completed Mar 4, 2026 - Replaced SignNow with custom e-signature system)
 - [ ] Triple birthday notification fix (distributed lock not working across containers)
 - [ ] "Update Dues" dialog mobile responsiveness
 - [ ] Add quarterly/bi-yearly/yearly dues subscription options
@@ -323,8 +369,8 @@ Build a member management application with attendance tracking, dues management,
 - **Square:** Payment processing and subscription management
 - **Discord:** Automated notifications
 - **OpenAI:** AI chatbot feature
-- **Email:** MOCKED (logged to console, not actually sent)
-- **SignNow:** Electronic document signing (OAuth2 integration)
+- **Email:** SMTP via Zoho for document signing emails
+- **~~SignNow:~~** Replaced with in-house document signing system (Mar 4, 2026)
 
 ### Important Notes
 - **Email sending is MOCKED** - Emails are logged to console and recorded in `dues_reminder_sent` collection, but not actually sent via SMTP. Actual email integration would require a service like SendGrid or SES.
