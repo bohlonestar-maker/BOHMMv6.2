@@ -4,6 +4,7 @@ Document Signing Routes - In-house e-signature system
 This module provides a complete document signing solution:
 - Document template management (PDF upload and text-based templates)
 - Signing request creation and tracking
+- Multi-signer approval workflow (sequential National Officer approvals)
 - Signature capture (drawn and typed)
 - Legal audit trails
 - Signed PDF generation
@@ -13,8 +14,9 @@ import sys
 import uuid
 import hashlib
 import base64
+import json
 from datetime import datetime, timezone, timedelta
-from typing import Optional
+from typing import Optional, List
 from io import BytesIO
 
 from fastapi import APIRouter, HTTPException, Depends, Request, UploadFile, File, Form
@@ -23,6 +25,18 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
 router = APIRouter(prefix="/documents", tags=["documents"])
 security = HTTPBearer()
+
+# National Officers who can be selected as approvers (in order of typical hierarchy)
+# These match the abbreviated titles used in the database for chapter="National"
+NATIONAL_OFFICERS = [
+    {"role": "national_secretary", "title": "SEC", "display_title": "National Secretary", "order": 1},
+    {"role": "national_treasurer", "title": "T", "display_title": "National Treasurer", "order": 2},
+    {"role": "national_sergeant_at_arms", "title": "S@A", "display_title": "National Sergeant at Arms", "order": 3},
+    {"role": "national_road_captain", "title": "RC", "display_title": "National Road Captain", "order": 4},
+    {"role": "national_vice_president", "title": "VP", "display_title": "National Vice President", "order": 5},
+    {"role": "coo", "title": "COO", "display_title": "COO", "order": 6},
+    {"role": "national_president", "title": "Prez", "display_title": "National President", "order": 7},
+]
 
 # Will be populated when router is included in main app
 _db = None
@@ -60,6 +74,36 @@ def generate_signing_token():
 def hash_document(content: bytes) -> str:
     """Generate SHA-256 hash of document content for integrity verification"""
     return hashlib.sha256(content).hexdigest()
+
+
+# =============================================================================
+# NATIONAL OFFICERS ENDPOINT
+# =============================================================================
+
+@router.get("/national-officers")
+async def get_national_officers(current_user: dict = Depends(get_current_user)):
+    """Get list of National Officers available as document approvers"""
+    db = get_db()
+    
+    # Get actual users who hold these positions (chapter = National)
+    officers_with_users = []
+    
+    for officer in NATIONAL_OFFICERS:
+        # Find user with this title AND chapter = National
+        user = await db.users.find_one(
+            {"title": officer["title"], "chapter": "National"},
+            {"_id": 0, "id": 1, "username": 1, "title": 1, "email": 1, "first_name": 1, "last_name": 1, "chapter": 1}
+        )
+        
+        officers_with_users.append({
+            "role": officer["role"],
+            "title": officer["title"],
+            "display_title": officer["display_title"],
+            "order": officer["order"],
+            "user": user  # May be None if no one holds this position
+        })
+    
+    return officers_with_users
 
 
 # =============================================================================
@@ -257,9 +301,10 @@ async def send_document_for_signing(
     recipient_name: str = Form(...),
     message: str = Form(None),
     expires_days: int = Form(30),
+    approvers: str = Form(None),  # JSON array of approver roles in order
     current_user: dict = Depends(get_current_user)
 ):
-    """Send a document to a member for signing"""
+    """Send a document to a member for signing with optional approval chain"""
     db = get_db()
     
     # Check permission
@@ -277,6 +322,40 @@ async def send_document_for_signing(
     if not member:
         raise HTTPException(status_code=404, detail="Member not found")
     
+    # Parse approvers if provided
+    approval_chain = []
+    if approvers:
+        try:
+            approver_roles = json.loads(approvers)
+            for i, role in enumerate(approver_roles[:5]):  # Max 5 approvers
+                # Find the officer info
+                officer_info = next((o for o in NATIONAL_OFFICERS if o["role"] == role), None)
+                if officer_info:
+                    # Find the user who holds this position (chapter = National)
+                    user = await db.users.find_one(
+                        {"title": officer_info["title"], "chapter": "National"},
+                        {"_id": 0, "id": 1, "username": 1, "title": 1, "email": 1, "first_name": 1, "last_name": 1}
+                    )
+                    
+                    approval_chain.append({
+                        "order": i + 1,
+                        "role": role,
+                        "title": officer_info["display_title"],  # Use display title for UI
+                        "user_id": user.get("id") if user else None,
+                        "username": user.get("username") if user else None,
+                        "email": user.get("email") if user else None,
+                        "status": "pending",  # pending, approved, denied
+                        "decision": None,  # Will be "approved" or "denied"
+                        "notes": None,  # Approver's comments
+                        "signing_token": generate_signing_token(),
+                        "signed_at": None,
+                        "signature_type": None,
+                        "typed_name": None,
+                        "signature_image": None
+                    })
+        except json.JSONDecodeError:
+            pass
+    
     # Create signing request
     now = datetime.now(timezone.utc)
     signing_token = generate_signing_token()
@@ -291,32 +370,46 @@ async def send_document_for_signing(
         "recipient_email": recipient_email,
         "recipient_name": recipient_name,
         "message": message,
-        "status": "pending",
+        "status": "pending_recipient",  # pending_recipient, pending_approval, approved, denied, completed
         "signing_token": signing_token,
         "sent_at": now.isoformat(),
         "sent_by": current_user.get("username", "unknown"),
         "viewed_at": None,
         "signed_at": None,
         "expires_at": (now + timedelta(days=expires_days)).isoformat(),
-        "audit_trail": None
+        "audit_trail": None,
+        # Multi-signer fields
+        "approval_chain": approval_chain,
+        "current_approver_index": 0,  # Which approver is currently active (0 = recipient hasn't signed yet)
+        "recipient_fields": None,  # Fields filled by recipient
+        "final_decision": None,  # Overall final decision
+        "final_notes": None  # Final approver's notes
     }
     
     await db.signing_requests.insert_one(signing_request)
     
-    # Send email notification
+    # Send email notification to primary recipient
     await send_signing_email(
         recipient_email=recipient_email,
         recipient_name=recipient_name,
         template_name=template["name"],
         message=message,
         signing_token=signing_token,
-        sender_name=current_user.get("username", "unknown")
+        sender_name=current_user.get("username", "unknown"),
+        is_approver=False
     )
     
-    sys.stderr.write(f"[DOCS] Sent '{template['name']}' to {recipient_email} by {current_user.get('username')}\n")
+    approver_count = len(approval_chain)
+    sys.stderr.write(f"[DOCS] Sent '{template['name']}' to {recipient_email} with {approver_count} approvers by {current_user.get('username')}\n")
     
     # Return without sensitive data
     response = {k: v for k, v in signing_request.items() if k not in ["_id", "signing_token"]}
+    # Also remove signing tokens from approval chain in response
+    if response.get("approval_chain"):
+        response["approval_chain"] = [
+            {k: v for k, v in approver.items() if k != "signing_token"}
+            for approver in response["approval_chain"]
+        ]
     
     return response
 
@@ -396,7 +489,25 @@ async def get_signing_page(signing_token: str, request: Request):
     """Get the document for signing (public endpoint - no auth)"""
     db = get_db()
     
+    # Check if this is a recipient token or an approver token
     signing_request = await db.signing_requests.find_one({"signing_token": signing_token})
+    is_approver = False
+    approver_info = None
+    approver_index = -1
+    
+    if not signing_request:
+        # Check if this is an approver's token
+        signing_request = await db.signing_requests.find_one({
+            "approval_chain.signing_token": signing_token
+        })
+        if signing_request:
+            is_approver = True
+            # Find which approver this is
+            for i, approver in enumerate(signing_request.get("approval_chain", [])):
+                if approver.get("signing_token") == signing_token:
+                    approver_info = approver
+                    approver_index = i
+                    break
     
     if not signing_request:
         raise HTTPException(status_code=404, detail="Invalid or expired signing link")
@@ -405,31 +516,41 @@ async def get_signing_page(signing_token: str, request: Request):
     expires_at = datetime.fromisoformat(signing_request["expires_at"].replace('Z', '+00:00'))
     if datetime.now(timezone.utc) > expires_at:
         await db.signing_requests.update_one(
-            {"signing_token": signing_token},
+            {"id": signing_request["id"]},
             {"$set": {"status": "expired"}}
         )
         raise HTTPException(status_code=410, detail="This signing link has expired")
     
-    if signing_request["status"] == "signed":
-        raise HTTPException(status_code=400, detail="This document has already been signed")
+    if signing_request["status"] in ["completed", "cancelled", "expired"]:
+        raise HTTPException(status_code=400, detail="This signing request is no longer active")
     
-    if signing_request["status"] == "cancelled":
-        raise HTTPException(status_code=400, detail="This signing request was cancelled")
-    
-    # Mark as viewed if first time
-    if signing_request["status"] == "pending":
-        await db.signing_requests.update_one(
-            {"signing_token": signing_token},
-            {"$set": {"status": "viewed", "viewed_at": datetime.now(timezone.utc).isoformat()}}
-        )
+    if is_approver:
+        # Verify this approver is the current one in the chain
+        current_index = signing_request.get("current_approver_index", 0)
+        if approver_index != current_index - 1:
+            raise HTTPException(status_code=400, detail="It is not your turn to review this document yet")
+        
+        if approver_info.get("status") != "pending":
+            raise HTTPException(status_code=400, detail="You have already reviewed this document")
+    else:
+        # Recipient signing
+        if signing_request["status"] not in ["pending_recipient", "pending", "viewed"]:
+            raise HTTPException(status_code=400, detail="This document has already been signed by the recipient")
+        
+        # Mark as viewed if first time
+        if signing_request["status"] in ["pending", "pending_recipient"]:
+            await db.signing_requests.update_one(
+                {"signing_token": signing_token},
+                {"$set": {"status": "viewed", "viewed_at": datetime.now(timezone.utc).isoformat()}}
+            )
     
     # Get template
     template = await db.document_templates.find_one({"id": signing_request["template_id"]})
     if not template:
         raise HTTPException(status_code=404, detail="Document template not found")
     
-    # Return signing page data
-    return {
+    # Build response
+    response = {
         "template_name": template["name"],
         "template_type": template["template_type"],
         "text_content": template.get("text_content"),
@@ -438,8 +559,37 @@ async def get_signing_page(signing_token: str, request: Request):
         "recipient_email": signing_request["recipient_email"],
         "message": signing_request.get("message"),
         "sent_by": signing_request["sent_by"],
-        "sent_at": signing_request["sent_at"]
+        "sent_at": signing_request["sent_at"],
+        "is_approver": is_approver,
+        "requires_decision": is_approver,  # Approvers must approve/deny
     }
+    
+    if is_approver:
+        response["approver_title"] = approver_info.get("title")
+        response["approver_order"] = approver_index + 1
+        response["total_approvers"] = len(signing_request.get("approval_chain", []))
+        # Include previous approvals for context
+        previous_approvals = []
+        for i, approver in enumerate(signing_request.get("approval_chain", [])):
+            if i < approver_index and approver.get("status") != "pending":
+                previous_approvals.append({
+                    "title": approver.get("title"),
+                    "decision": approver.get("decision"),
+                    "notes": approver.get("notes"),
+                    "signed_at": approver.get("signed_at")
+                })
+        response["previous_approvals"] = previous_approvals
+        # Include recipient info
+        response["recipient_signed_at"] = signing_request.get("signed_at")
+        response["recipient_fields"] = signing_request.get("recipient_fields")
+    else:
+        # For recipient, show if there will be approvers
+        approval_chain = signing_request.get("approval_chain", [])
+        response["has_approvers"] = len(approval_chain) > 0
+        if approval_chain:
+            response["approver_titles"] = [a.get("title") for a in approval_chain]
+    
+    return response
 
 
 @router.get("/sign/{signing_token}/pdf")
@@ -475,30 +625,47 @@ async def submit_signature(
     signature_type: str = Form(...),  # 'drawn' or 'typed'
     typed_name: str = Form(...),
     signature_image: str = Form(None),  # Base64 encoded image for drawn signatures
-    consent_agreed: bool = Form(...)
+    consent_agreed: bool = Form(...),
+    recipient_fields: str = Form(None),  # JSON object with fields filled by recipient
+    decision: str = Form(None),  # 'approved' or 'denied' (for approvers only)
+    approver_notes: str = Form(None)  # Notes from approver
 ):
-    """Submit a signature for a document"""
+    """Submit a signature for a document (handles both recipient and approver signatures)"""
     db = get_db()
     
     if not consent_agreed:
         raise HTTPException(status_code=400, detail="You must agree to the consent statement")
     
+    # First check if this is a recipient signing or an approver signing
     signing_request = await db.signing_requests.find_one({"signing_token": signing_token})
+    is_approver = False
+    approver_index = -1
+    
+    if not signing_request:
+        # Check if this is an approver's token
+        signing_request = await db.signing_requests.find_one({
+            "approval_chain.signing_token": signing_token
+        })
+        if signing_request:
+            is_approver = True
+            # Find which approver this is
+            for i, approver in enumerate(signing_request.get("approval_chain", [])):
+                if approver.get("signing_token") == signing_token:
+                    approver_index = i
+                    break
     
     if not signing_request:
         raise HTTPException(status_code=404, detail="Invalid signing link")
     
-    if signing_request["status"] == "signed":
-        raise HTTPException(status_code=400, detail="This document has already been signed")
-    
-    if signing_request["status"] in ["cancelled", "expired"]:
-        raise HTTPException(status_code=400, detail="This signing request is no longer valid")
+    # Check various status conditions
+    if signing_request["status"] in ["cancelled", "expired", "completed"]:
+        raise HTTPException(status_code=400, detail="This signing request is no longer active")
     
     # Check expiration
     expires_at = datetime.fromisoformat(signing_request["expires_at"].replace('Z', '+00:00'))
     if datetime.now(timezone.utc) > expires_at:
         await db.signing_requests.update_one(
-            {"signing_token": signing_token},
+            {"id": signing_request["id"]},
             {"$set": {"status": "expired"}}
         )
         raise HTTPException(status_code=410, detail="This signing link has expired")
@@ -515,49 +682,171 @@ async def submit_signature(
     
     consent_text = "I agree that this electronic signature is my legal signature and I intend to sign this document."
     
-    audit_trail = {
-        "signer_name": typed_name,
-        "signer_email": signing_request["recipient_email"],
-        "signature_type": signature_type,
-        "ip_address": client_ip,
-        "user_agent": user_agent,
-        "consent_text": consent_text,
-        "consent_agreed": True,
-        "signed_at": now.isoformat(),
-        "document_hash": template.get("pdf_hash", "")
-    }
-    
-    # Store signature data
-    signature_record = {
-        "id": str(uuid.uuid4()),
-        "signing_request_id": signing_request["id"],
-        "signature_type": signature_type,
-        "typed_name": typed_name,
-        "signature_image": signature_image if signature_type == "drawn" else None,
-        "created_at": now.isoformat()
-    }
-    
-    await db.signatures.insert_one(signature_record)
-    
-    # Update signing request
-    await db.signing_requests.update_one(
-        {"signing_token": signing_token},
-        {
-            "$set": {
-                "status": "signed",
-                "signed_at": now.isoformat(),
-                "audit_trail": audit_trail
+    if is_approver:
+        # APPROVER SIGNING
+        approval_chain = signing_request.get("approval_chain", [])
+        
+        # Verify this approver is the current one in the chain
+        current_index = signing_request.get("current_approver_index", 0)
+        if approver_index != current_index - 1:  # current_approver_index is 1-based after recipient signs
+            raise HTTPException(status_code=400, detail="It is not your turn to approve this document")
+        
+        # Validate approver has made a decision
+        if decision not in ["approved", "denied"]:
+            raise HTTPException(status_code=400, detail="You must approve or deny this document")
+        
+        # Update the approver in the chain
+        approval_chain[approver_index]["status"] = decision
+        approval_chain[approver_index]["decision"] = decision
+        approval_chain[approver_index]["notes"] = approver_notes
+        approval_chain[approver_index]["signed_at"] = now.isoformat()
+        approval_chain[approver_index]["signature_type"] = signature_type
+        approval_chain[approver_index]["typed_name"] = typed_name
+        approval_chain[approver_index]["signature_image"] = signature_image if signature_type == "drawn" else None
+        approval_chain[approver_index]["ip_address"] = client_ip
+        approval_chain[approver_index]["user_agent"] = user_agent
+        
+        # Determine next steps
+        next_approver_index = approver_index + 1
+        is_last_approver = next_approver_index >= len(approval_chain)
+        
+        if is_last_approver:
+            # This was the final approver
+            new_status = "completed"
+            final_decision = decision
+            update_data = {
+                "status": new_status,
+                "approval_chain": approval_chain,
+                "current_approver_index": next_approver_index + 1,
+                "final_decision": final_decision,
+                "final_notes": approver_notes
             }
+        else:
+            # Move to next approver
+            new_status = "pending_approval"
+            update_data = {
+                "status": new_status,
+                "approval_chain": approval_chain,
+                "current_approver_index": next_approver_index + 1
+            }
+            
+            # Send email to next approver
+            next_approver = approval_chain[next_approver_index]
+            if next_approver.get("email"):
+                await send_signing_email(
+                    recipient_email=next_approver["email"],
+                    recipient_name=next_approver.get("username") or next_approver["title"],
+                    template_name=template["name"],
+                    message=f"Document from {signing_request['recipient_name']} requires your approval.",
+                    signing_token=next_approver["signing_token"],
+                    sender_name=signing_request["sent_by"],
+                    is_approver=True
+                )
+        
+        await db.signing_requests.update_one(
+            {"id": signing_request["id"]},
+            {"$set": update_data}
+        )
+        
+        sys.stderr.write(f"[DOCS] Document {decision} by {typed_name} (Approver {approver_index + 1})\n")
+        
+        return {
+            "success": True,
+            "message": f"Document {decision} successfully",
+            "decision": decision,
+            "is_final": is_last_approver,
+            "signed_at": now.isoformat()
         }
-    )
     
-    sys.stderr.write(f"[DOCS] Document signed by {typed_name} ({signing_request['recipient_email']})\n")
-    
-    return {
-        "success": True,
-        "message": "Document signed successfully",
-        "signed_at": now.isoformat()
-    }
+    else:
+        # RECIPIENT SIGNING
+        if signing_request["status"] not in ["pending_recipient", "pending", "viewed"]:
+            raise HTTPException(status_code=400, detail="This document has already been signed by the recipient")
+        
+        audit_trail = {
+            "signer_name": typed_name,
+            "signer_email": signing_request["recipient_email"],
+            "signature_type": signature_type,
+            "ip_address": client_ip,
+            "user_agent": user_agent,
+            "consent_text": consent_text,
+            "consent_agreed": True,
+            "signed_at": now.isoformat(),
+            "document_hash": template.get("pdf_hash", "")
+        }
+        
+        # Store signature data
+        signature_record = {
+            "id": str(uuid.uuid4()),
+            "signing_request_id": signing_request["id"],
+            "signer_type": "recipient",
+            "signature_type": signature_type,
+            "typed_name": typed_name,
+            "signature_image": signature_image if signature_type == "drawn" else None,
+            "created_at": now.isoformat()
+        }
+        
+        await db.signatures.insert_one(signature_record)
+        
+        # Parse recipient fields if provided
+        parsed_recipient_fields = None
+        if recipient_fields:
+            try:
+                parsed_recipient_fields = json.loads(recipient_fields)
+            except json.JSONDecodeError:
+                pass
+        
+        # Check if there are approvers
+        approval_chain = signing_request.get("approval_chain", [])
+        
+        if approval_chain:
+            # Has approvers - move to pending approval
+            new_status = "pending_approval"
+            
+            # Send email to first approver
+            first_approver = approval_chain[0]
+            if first_approver.get("email"):
+                await send_signing_email(
+                    recipient_email=first_approver["email"],
+                    recipient_name=first_approver.get("username") or first_approver["title"],
+                    template_name=template["name"],
+                    message=f"Document from {signing_request['recipient_name']} requires your approval.",
+                    signing_token=first_approver["signing_token"],
+                    sender_name=signing_request["sent_by"],
+                    is_approver=True
+                )
+            
+            update_data = {
+                "status": new_status,
+                "signed_at": now.isoformat(),
+                "audit_trail": audit_trail,
+                "recipient_fields": parsed_recipient_fields,
+                "current_approver_index": 1  # First approver
+            }
+        else:
+            # No approvers - mark as completed
+            new_status = "completed"
+            update_data = {
+                "status": new_status,
+                "signed_at": now.isoformat(),
+                "audit_trail": audit_trail,
+                "recipient_fields": parsed_recipient_fields,
+                "final_decision": "approved"  # Auto-approved if no approval chain
+            }
+        
+        await db.signing_requests.update_one(
+            {"signing_token": signing_token},
+            {"$set": update_data}
+        )
+        
+        sys.stderr.write(f"[DOCS] Document signed by {typed_name} ({signing_request['recipient_email']})\n")
+        
+        return {
+            "success": True,
+            "message": "Document signed successfully" + (" - Sent for approval" if approval_chain else ""),
+            "has_approvers": len(approval_chain) > 0,
+            "signed_at": now.isoformat()
+        }
 
 
 # =============================================================================
@@ -609,7 +898,8 @@ async def send_signing_email(
     template_name: str,
     message: str,
     signing_token: str,
-    sender_name: str
+    sender_name: str,
+    is_approver: bool = False
 ):
     """Send email notification with signing link"""
     try:
@@ -635,7 +925,18 @@ async def send_signing_email(
         signing_url = f"{frontend_url}/sign/{signing_token}"
         
         msg = MIMEMultipart('alternative')
-        msg['Subject'] = f"Document Ready for Signature: {template_name}"
+        
+        if is_approver:
+            msg['Subject'] = f"Approval Required: {template_name}"
+            action_text = "approval"
+            button_text = "Review & Approve"
+            header_text = "Document Requires Your Approval"
+        else:
+            msg['Subject'] = f"Document Ready for Signature: {template_name}"
+            action_text = "signature"
+            button_text = "Review & Sign Document"
+            header_text = "Document Ready for Signature"
+        
         msg['From'] = smtp_from
         msg['To'] = recipient_email
         
@@ -643,11 +944,11 @@ async def send_signing_email(
         text_content = f"""
 Hello {recipient_name},
 
-{sender_name} has sent you a document "{template_name}" that requires your signature.
+{sender_name if not is_approver else "A document"} {"has sent you" if not is_approver else "requires your"} {"a document" if not is_approver else "approval"} "{template_name}" that requires your {action_text}.
 
 {f"Message: {message}" if message else ""}
 
-Click the link below to review and sign the document:
+Click the link below to review and {"sign" if not is_approver else "approve/deny"} the document:
 {signing_url}
 
 This link will expire in 30 days.
@@ -664,24 +965,24 @@ BOH Document System
     <style>
         body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
         .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
-        .header {{ background: #1e293b; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }}
+        .header {{ background: {"#dc2626" if is_approver else "#1e293b"}; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }}
         .content {{ background: #f8fafc; padding: 30px; border: 1px solid #e2e8f0; }}
-        .button {{ display: inline-block; background: #7c3aed; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; margin: 20px 0; }}
+        .button {{ display: inline-block; background: {"#dc2626" if is_approver else "#7c3aed"}; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; margin: 20px 0; }}
         .footer {{ text-align: center; padding: 20px; color: #64748b; font-size: 12px; }}
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>Document Ready for Signature</h1>
+            <h1>{header_text}</h1>
         </div>
         <div class="content">
             <p>Hello <strong>{recipient_name}</strong>,</p>
-            <p><strong>{sender_name}</strong> has sent you a document that requires your signature:</p>
-            <p style="font-size: 18px; color: #7c3aed;"><strong>{template_name}</strong></p>
+            <p>{"<strong>" + sender_name + "</strong> has sent you a document" if not is_approver else "A document"} that requires your {action_text}:</p>
+            <p style="font-size: 18px; color: {"#dc2626" if is_approver else "#7c3aed"};"><strong>{template_name}</strong></p>
             {f"<p><em>{message}</em></p>" if message else ""}
             <p style="text-align: center;">
-                <a href="{signing_url}" class="button">Review & Sign Document</a>
+                <a href="{signing_url}" class="button">{button_text}</a>
             </p>
             <p style="font-size: 12px; color: #64748b;">This link will expire in 30 days.</p>
         </div>
@@ -705,7 +1006,7 @@ BOH Document System
             use_tls=True
         )
         
-        sys.stderr.write(f"[DOCS] Signing email sent to {recipient_email}\n")
+        sys.stderr.write(f"[DOCS] {'Approval' if is_approver else 'Signing'} email sent to {recipient_email}\n")
         
     except Exception as e:
         sys.stderr.write(f"[DOCS] Failed to send signing email: {e}\n")

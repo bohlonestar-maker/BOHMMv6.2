@@ -43,7 +43,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { LogOut, Plus, Pencil, Trash2, Download, Users, Mail, Phone, MapPin, MessageCircle, Clock, LifeBuoy, FileText, Calendar, Star, DollarSign, Headphones, Settings, Menu, Key, Database, Lightbulb, Shield, Send } from "lucide-react";
+import { LogOut, Plus, Pencil, Trash2, Download, Users, Mail, Phone, MapPin, MessageCircle, Clock, LifeBuoy, FileText, Calendar, Star, DollarSign, Headphones, Settings, Menu, Key, Database, Lightbulb, Shield, Send, ChevronUp, ChevronDown, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 
@@ -158,6 +158,8 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
   const [selectedEmail, setSelectedEmail] = useState("");
   const [docMessage, setDocMessage] = useState("");
   const [loadingDocuments, setLoadingDocuments] = useState(false);
+  const [nationalOfficers, setNationalOfficers] = useState([]);
+  const [selectedApprovers, setSelectedApprovers] = useState([]);
   
   const navigate = useNavigate();
 
@@ -574,6 +576,19 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
     }
   };
 
+  const fetchNationalOfficers = async () => {
+    const token = localStorage.getItem("token");
+    try {
+      const response = await axios.get(`${API}/documents/national-officers`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setNationalOfficers(response.data || []);
+    } catch (error) {
+      console.log("Error fetching national officers:", error);
+      setNationalOfficers([]);
+    }
+  };
+
   const fetchMemberDocuments = async (memberId) => {
     const token = localStorage.getItem("token");
     setLoadingDocuments(true);
@@ -596,6 +611,7 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
     setDocumentsDialogOpen(true);
     await Promise.all([
       fetchDocumentTemplates(),
+      fetchNationalOfficers(),
       fetchMemberDocuments(member.id)
     ]);
   };
@@ -619,6 +635,11 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
       formData.append('recipient_name', selectedMember.handle || selectedMember.first_name);
       formData.append('message', docMessage || '');
       
+      // Add approvers if selected
+      if (selectedApprovers.length > 0) {
+        formData.append('approvers', JSON.stringify(selectedApprovers));
+      }
+      
       await axios.post(`${API}/documents/send`, formData, { 
         headers: { 
           Authorization: `Bearer ${token}`,
@@ -626,15 +647,44 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
         } 
       });
       
-      toast.success("Document sent successfully");
+      toast.success("Document sent successfully" + (selectedApprovers.length > 0 ? ` with ${selectedApprovers.length} approver(s)` : ""));
       setSendDocDialogOpen(false);
       setSelectedTemplate("");
       setSelectedEmail("");
       setDocMessage("");
+      setSelectedApprovers([]);
       fetchMemberDocuments(selectedMember.id);
     } catch (error) {
       toast.error(error.response?.data?.detail || "Failed to send document");
     }
+  };
+
+  const toggleApprover = (role) => {
+    setSelectedApprovers(prev => {
+      if (prev.includes(role)) {
+        return prev.filter(r => r !== role);
+      } else {
+        return [...prev, role];
+      }
+    });
+  };
+
+  const moveApproverUp = (index) => {
+    if (index === 0) return;
+    setSelectedApprovers(prev => {
+      const newArr = [...prev];
+      [newArr[index - 1], newArr[index]] = [newArr[index], newArr[index - 1]];
+      return newArr;
+    });
+  };
+
+  const moveApproverDown = (index) => {
+    if (index === selectedApprovers.length - 1) return;
+    setSelectedApprovers(prev => {
+      const newArr = [...prev];
+      [newArr[index], newArr[index + 1]] = [newArr[index + 1], newArr[index]];
+      return newArr;
+    });
   };
 
   const handleDeleteDocumentRecord = async (docId) => {
@@ -654,15 +704,19 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
     }
   };
 
-  const getDocumentStatusBadge = (status) => {
+  const getDocumentStatusBadge = (doc) => {
+    const status = doc.status;
     const statusMap = {
       sent: { label: "Pending", className: "bg-yellow-600 text-yellow-100" },
       pending: { label: "Pending", className: "bg-yellow-600 text-yellow-100" },
-      completed: { label: "Signed", className: "bg-green-600 text-green-100" },
+      pending_recipient: { label: "Awaiting Signature", className: "bg-yellow-600 text-yellow-100" },
+      viewed: { label: "Viewed", className: "bg-blue-600 text-blue-100" },
+      pending_approval: { label: "Awaiting Approval", className: "bg-orange-600 text-orange-100" },
+      completed: { label: doc.final_decision === "denied" ? "Denied" : "Approved", className: doc.final_decision === "denied" ? "bg-red-600 text-red-100" : "bg-green-600 text-green-100" },
       signed: { label: "Signed", className: "bg-green-600 text-green-100" },
       declined: { label: "Declined", className: "bg-red-600 text-red-100" },
-      partially_signed: { label: "Partial", className: "bg-blue-600 text-blue-100" },
-      deleted: { label: "Deleted", className: "bg-gray-600 text-gray-100" },
+      cancelled: { label: "Cancelled", className: "bg-gray-600 text-gray-100" },
+      expired: { label: "Expired", className: "bg-gray-600 text-gray-100" },
       unknown: { label: "Unknown", className: "bg-slate-600 text-slate-100" }
     };
     const info = statusMap[status] || { label: status, className: "bg-slate-600 text-slate-100" };
@@ -3059,7 +3113,7 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
                           )}
                         </div>
                         <div className="flex items-center gap-2">
-                          {getDocumentStatusBadge(doc.status)}
+                          {getDocumentStatusBadge(doc)}
                           <button
                             onClick={() => handleDeleteDocumentRecord(doc.id)}
                             className="p-1 text-slate-400 hover:text-red-400 transition-colors"
@@ -3085,7 +3139,7 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
 
         {/* Send Document Dialog */}
         <Dialog open={sendDocDialogOpen} onOpenChange={setSendDocDialogOpen}>
-          <DialogContent className="sm:max-w-md">
+          <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Send Document for Signing</DialogTitle>
               <DialogDescription>
@@ -3098,7 +3152,7 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
                 <select
                   value={selectedEmail}
                   onChange={(e) => setSelectedEmail(e.target.value)}
-                  className="w-full mt-1 p-2 bg-slate-700 border border-slate-600 rounded text-white"
+                  className="w-full mt-1 p-2 bg-slate-700 border border-slate-600 rounded text-white text-sm"
                 >
                   <option value="">Select email address...</option>
                   {selectedMember?.personal_email && (
@@ -3118,7 +3172,7 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
                 <select
                   value={selectedTemplate}
                   onChange={(e) => setSelectedTemplate(e.target.value)}
-                  className="w-full mt-1 p-2 bg-slate-700 border border-slate-600 rounded text-white"
+                  className="w-full mt-1 p-2 bg-slate-700 border border-slate-600 rounded text-white text-sm"
                 >
                   <option value="">Select a template...</option>
                   {documentTemplates.map((template) => (
@@ -3134,13 +3188,102 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
                   value={docMessage}
                   onChange={(e) => setDocMessage(e.target.value)}
                   placeholder="Add a personal message..."
-                  rows={3}
-                  className="w-full mt-1 p-2 bg-slate-700 border border-slate-600 rounded text-white placeholder:text-slate-400"
+                  rows={2}
+                  className="w-full mt-1 p-2 bg-slate-700 border border-slate-600 rounded text-white placeholder:text-slate-400 text-sm"
                 />
+              </div>
+              
+              {/* Approval Chain Section */}
+              <div className="border-t border-slate-700 pt-4">
+                <Label className="text-slate-200 flex items-center gap-2">
+                  <i className="fas fa-user-check text-purple-400"></i>
+                  Approval Chain (Optional)
+                </Label>
+                <p className="text-xs text-slate-400 mt-1 mb-3">
+                  Select National Officers who must approve this document after the recipient signs.
+                  Order matters - click arrows to reorder.
+                </p>
+                
+                {/* Available Officers */}
+                <div className="grid grid-cols-2 gap-2 mb-3">
+                  {nationalOfficers.map((officer) => {
+                    const isSelected = selectedApprovers.includes(officer.role);
+                    const hasUser = officer.user !== null;
+                    
+                    return (
+                      <button
+                        key={officer.role}
+                        type="button"
+                        disabled={!hasUser}
+                        onClick={() => toggleApprover(officer.role)}
+                        className={`p-2 rounded text-left text-xs transition-all ${
+                          !hasUser 
+                            ? 'bg-slate-800 text-slate-500 cursor-not-allowed' 
+                            : isSelected 
+                              ? 'bg-purple-600 text-white' 
+                              : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                        }`}
+                      >
+                        <div className="font-medium truncate">{officer.display_title}</div>
+                        <div className="text-xs opacity-70 truncate">
+                          {hasUser ? officer.user.username : '(No officer assigned)'}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+                
+                {/* Selected Approvers Order */}
+                {selectedApprovers.length > 0 && (
+                  <div className="bg-slate-800 rounded-lg p-3">
+                    <div className="text-xs text-slate-400 mb-2">Approval Order:</div>
+                    <div className="space-y-1">
+                      {selectedApprovers.map((role, index) => {
+                        const officer = nationalOfficers.find(o => o.role === role);
+                        return (
+                          <div key={role} className="flex items-center gap-2 bg-slate-700/50 rounded p-2">
+                            <span className="w-5 h-5 rounded-full bg-purple-600 text-white text-xs flex items-center justify-center">
+                              {index + 1}
+                            </span>
+                            <span className="flex-1 text-sm text-slate-200">{officer?.display_title}</span>
+                            <div className="flex gap-1">
+                              <button
+                                type="button"
+                                onClick={() => moveApproverUp(index)}
+                                disabled={index === 0}
+                                className="p-1 text-slate-400 hover:text-white disabled:opacity-30"
+                              >
+                                <ChevronUp className="w-4 h-4" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => moveApproverDown(index)}
+                                disabled={index === selectedApprovers.length - 1}
+                                className="p-1 text-slate-400 hover:text-white disabled:opacity-30"
+                              >
+                                <ChevronDown className="w-4 h-4" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => toggleApprover(role)}
+                                className="p-1 text-slate-400 hover:text-red-400"
+                              >
+                                <X className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    <p className="text-xs text-slate-400 mt-2">
+                      After recipient signs, document will go to each approver in order.
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setSendDocDialogOpen(false)}>
+              <Button variant="outline" onClick={() => { setSendDocDialogOpen(false); setSelectedApprovers([]); }}>
                 Cancel
               </Button>
               <Button 
@@ -3149,7 +3292,7 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
                 className="bg-purple-600 hover:bg-purple-700"
               >
                 <Send className="w-4 h-4 mr-2" />
-                Send
+                Send{selectedApprovers.length > 0 ? ` (${selectedApprovers.length} approvers)` : ''}
               </Button>
             </DialogFooter>
           </DialogContent>

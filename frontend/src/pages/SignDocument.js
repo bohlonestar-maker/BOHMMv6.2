@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../co
 import { Checkbox } from '../components/ui/checkbox';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
+import { Textarea } from '../components/ui/textarea';
 import { toast } from 'sonner';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
@@ -20,6 +21,10 @@ export default function SignDocument() {
   const [consentAgreed, setConsentAgreed] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [signed, setSigned] = useState(false);
+  
+  // Approver-specific state
+  const [decision, setDecision] = useState('');  // 'approved' or 'denied'
+  const [approverNotes, setApproverNotes] = useState('');
   
   // Canvas for drawn signature
   const canvasRef = useRef(null);
@@ -160,6 +165,12 @@ export default function SignDocument() {
       return;
     }
     
+    // For approvers, require a decision
+    if (documentData?.is_approver && !decision) {
+      toast.error('Please select Approve or Deny');
+      return;
+    }
+    
     setSubmitting(true);
     
     try {
@@ -172,9 +183,23 @@ export default function SignDocument() {
         formData.append('signature_image', getSignatureImage());
       }
       
-      await axios.post(`${API}/documents/sign/${signingToken}/submit`, formData);
+      // Approver-specific fields
+      if (documentData?.is_approver) {
+        formData.append('decision', decision);
+        if (approverNotes) {
+          formData.append('approver_notes', approverNotes);
+        }
+      }
       
-      toast.success('Document signed successfully!');
+      const response = await axios.post(`${API}/documents/sign/${signingToken}/submit`, formData);
+      
+      if (documentData?.is_approver) {
+        toast.success(`Document ${decision} successfully!`);
+      } else if (response.data?.has_approvers) {
+        toast.success('Document signed! It has been sent for approval.');
+      } else {
+        toast.success('Document signed successfully!');
+      }
       setSigned(true);
     } catch (err) {
       console.error('Error submitting signature:', err);
@@ -217,21 +242,33 @@ export default function SignDocument() {
 
   // Success State
   if (signed) {
+    const isApprover = documentData?.is_approver;
     return (
       <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
         <Card className="max-w-md w-full bg-slate-800 border-slate-700">
           <CardHeader>
-            <CardTitle className="text-green-400 flex items-center gap-2 text-lg sm:text-xl">
-              <i className="fas fa-check-circle"></i>
-              Document Signed!
+            <CardTitle className={`${decision === 'denied' ? 'text-red-400' : 'text-green-400'} flex items-center gap-2 text-lg sm:text-xl`}>
+              <i className={`fas fa-${decision === 'denied' ? 'times' : 'check'}-circle`}></i>
+              {isApprover 
+                ? (decision === 'approved' ? 'Document Approved!' : 'Document Denied')
+                : 'Document Signed!'
+              }
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-slate-300 text-sm sm:text-base">
-              Thank you! You have successfully signed "{documentData?.template_name}".
+              {isApprover 
+                ? `You have ${decision} the document "${documentData?.template_name}".`
+                : `Thank you! You have successfully signed "${documentData?.template_name}".`
+              }
             </p>
+            {documentData?.has_approvers && !isApprover && (
+              <p className="text-purple-400 text-sm">
+                <i className="fas fa-info-circle mr-1"></i>
+                This document has been sent for approval.
+              </p>
+            )}
             <p className="text-slate-400 text-xs sm:text-sm">
-              A copy of the signed document will be available to the sender.
               You may close this window.
             </p>
           </CardContent>
@@ -241,16 +278,62 @@ export default function SignDocument() {
   }
 
   // Main Signing View
+  const isApprover = documentData?.is_approver;
+  
   return (
     <div className="min-h-screen bg-slate-900 py-4 sm:py-8 px-4">
       <div className="max-w-3xl mx-auto">
         {/* Header */}
         <div className="text-center mb-6 sm:mb-8">
-          <h1 className="text-2xl sm:text-3xl font-bold text-white mb-2">Document Signing</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-white mb-2">
+            {isApprover ? 'Document Approval' : 'Document Signing'}
+          </h1>
           <p className="text-slate-400 text-sm sm:text-base">
-            Please review and sign the document below
+            {isApprover 
+              ? `Review and ${documentData?.approver_title ? `approve as ${documentData.approver_title}` : 'approve'}`
+              : 'Please review and sign the document below'
+            }
           </p>
         </div>
+
+        {/* Approver Info Banner */}
+        {isApprover && (
+          <Card className="bg-orange-900/30 border-orange-700 mb-4 sm:mb-6">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-orange-600 flex items-center justify-center text-white font-bold">
+                  {documentData?.approver_order}
+                </div>
+                <div>
+                  <p className="text-orange-200 font-medium">
+                    You are approver {documentData?.approver_order} of {documentData?.total_approvers}
+                  </p>
+                  <p className="text-orange-300/70 text-sm">
+                    {documentData?.approver_title}
+                  </p>
+                </div>
+              </div>
+              
+              {/* Previous approvals */}
+              {documentData?.previous_approvals?.length > 0 && (
+                <div className="mt-3 pt-3 border-t border-orange-700/50">
+                  <p className="text-xs text-orange-300/70 mb-2">Previous approvals:</p>
+                  <div className="space-y-1">
+                    {documentData.previous_approvals.map((approval, i) => (
+                      <div key={i} className="flex items-center gap-2 text-sm">
+                        <i className={`fas fa-${approval.decision === 'approved' ? 'check text-green-400' : 'times text-red-400'}`}></i>
+                        <span className="text-slate-300">{approval.title}</span>
+                        <span className={approval.decision === 'approved' ? 'text-green-400' : 'text-red-400'}>
+                          ({approval.decision})
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
         {/* Document Info */}
         <Card className="bg-slate-800 border-slate-700 mb-4 sm:mb-6">
@@ -260,7 +343,10 @@ export default function SignDocument() {
               <span className="truncate">{documentData?.template_name}</span>
             </CardTitle>
             <CardDescription className="text-xs sm:text-sm">
-              Sent by {documentData?.sent_by} on {new Date(documentData?.sent_at).toLocaleDateString()}
+              {isApprover 
+                ? `From: ${documentData?.recipient_name} | Sent by: ${documentData?.sent_by}`
+                : `Sent by ${documentData?.sent_by} on ${new Date(documentData?.sent_at).toLocaleDateString()}`
+              }
             </CardDescription>
           </CardHeader>
           {documentData?.message && (
@@ -271,6 +357,25 @@ export default function SignDocument() {
             </CardContent>
           )}
         </Card>
+
+        {/* Approval Chain Info for Recipient */}
+        {!isApprover && documentData?.has_approvers && (
+          <Card className="bg-purple-900/20 border-purple-700 mb-4 sm:mb-6">
+            <CardContent className="p-4">
+              <p className="text-purple-200 text-sm mb-2">
+                <i className="fas fa-info-circle mr-2"></i>
+                After you sign, this document will be sent for approval to:
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {documentData.approver_titles?.map((title, i) => (
+                  <span key={i} className="px-2 py-1 bg-purple-600/30 rounded text-xs text-purple-200">
+                    {i + 1}. {title}
+                  </span>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Document Content */}
         <Card className="bg-slate-800 border-slate-700 mb-4 sm:mb-6">
@@ -411,17 +516,71 @@ export default function SignDocument() {
                 </div>
               </div>
 
+              {/* Approver Decision Section */}
+              {isApprover && (
+                <div className="border-t border-slate-700 pt-4 space-y-4">
+                  <div>
+                    <Label className="text-slate-200 text-sm mb-3 block">Your Decision *</Label>
+                    <div className="grid grid-cols-2 gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setDecision('approved')}
+                        className={`p-4 rounded-lg border-2 transition-all ${
+                          decision === 'approved' 
+                            ? 'border-green-500 bg-green-600/20' 
+                            : 'border-slate-600 hover:border-green-500/50'
+                        }`}
+                      >
+                        <i className={`fas fa-check-circle text-2xl mb-2 ${decision === 'approved' ? 'text-green-400' : 'text-slate-400'}`}></i>
+                        <p className={`font-medium ${decision === 'approved' ? 'text-green-400' : 'text-slate-300'}`}>Approve</p>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setDecision('denied')}
+                        className={`p-4 rounded-lg border-2 transition-all ${
+                          decision === 'denied' 
+                            ? 'border-red-500 bg-red-600/20' 
+                            : 'border-slate-600 hover:border-red-500/50'
+                        }`}
+                      >
+                        <i className={`fas fa-times-circle text-2xl mb-2 ${decision === 'denied' ? 'text-red-400' : 'text-slate-400'}`}></i>
+                        <p className={`font-medium ${decision === 'denied' ? 'text-red-400' : 'text-slate-300'}`}>Deny</p>
+                      </button>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <Label className="text-slate-200 text-sm">Notes / Comments (Optional)</Label>
+                    <Textarea
+                      value={approverNotes}
+                      onChange={(e) => setApproverNotes(e.target.value)}
+                      placeholder={decision === 'denied' ? 'Please provide reason for denial...' : 'Add any notes or conditions...'}
+                      className="bg-slate-700 border-slate-600 text-white mt-1 min-h-[80px]"
+                    />
+                  </div>
+                </div>
+              )}
+
               {/* Submit Button */}
               <Button
                 type="submit"
-                disabled={submitting || !consentAgreed || !typedName.trim()}
-                className="w-full bg-purple-600 hover:bg-purple-700 py-5 sm:py-6 text-base sm:text-lg"
+                disabled={submitting || !consentAgreed || !typedName.trim() || (isApprover && !decision)}
+                className={`w-full py-5 sm:py-6 text-base sm:text-lg ${
+                  decision === 'denied' 
+                    ? 'bg-red-600 hover:bg-red-700' 
+                    : 'bg-purple-600 hover:bg-purple-700'
+                }`}
                 data-testid="submit-signature-btn"
               >
                 {submitting ? (
                   <>
                     <i className="fas fa-spinner fa-spin mr-2"></i>
-                    Signing...
+                    {isApprover ? 'Submitting...' : 'Signing...'}
+                  </>
+                ) : isApprover ? (
+                  <>
+                    <i className={`fas fa-${decision === 'denied' ? 'times' : 'check'}-circle mr-2`}></i>
+                    {decision ? (decision === 'approved' ? 'Approve & Sign' : 'Deny & Sign') : 'Select Decision'}
                   </>
                 ) : (
                   <>
