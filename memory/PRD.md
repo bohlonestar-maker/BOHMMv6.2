@@ -82,6 +82,11 @@ Build a member management application with attendance tracking, dues management,
   - Implemented persistent session tracking that survives bot restarts
   - Sessions now resume with original join time on bot restart
   - Added midnight-split calculation for sessions spanning multiple days
+- [x] **Extension to Paid Conversion:**
+  - When a member with dues extension makes a payment, extended months auto-convert to "paid"
+  - Forgiven months are preserved (never auto-converted)
+  - Extension is automatically revoked after payment
+  - Works with all payment types (monthly, quarterly, annual)
 
 #### February 12, 2026 - Promotion Page (Discord Role Management)
 - [x] **Backend API Endpoints:**

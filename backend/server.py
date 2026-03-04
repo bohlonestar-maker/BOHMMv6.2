@@ -266,7 +266,10 @@ async def start_discord_bot():
                     if user_id not in current_voice_users:
                         # User is no longer in voice - save their session with estimated end time
                         # Use "now" as the end time (conservative estimate)
-                        duration = (now - session['joined_at']).total_seconds()
+                        joined_at = session['joined_at']
+                        if joined_at.tzinfo is None:
+                            joined_at = joined_at.replace(tzinfo=timezone.utc)
+                        duration = (now - joined_at).total_seconds()
                         
                         if duration >= 1:
                             voice_activity = {
@@ -15329,30 +15332,109 @@ async def update_member_dues_from_webhook(dues_info: dict):
             return
         
         dues = member.get("dues", {})
+        now = datetime.now(timezone.utc)
+        payment_note = f"Paid via Square on {now.strftime('%Y-%m-%d')}"
         
         # Initialize year if not exists
         if year not in dues:
             dues[year] = [{"status": "unpaid", "note": ""} for _ in range(12)]
         
-        # Update the specific month to paid
-        payment_note = f"Paid via Square on {datetime.now(timezone.utc).strftime('%Y-%m-%d')}"
+        # Check for active extension for this member
+        extension = await db.dues_extensions.find_one({"member_id": member_id})
+        extended_months = []
+        
+        if extension:
+            try:
+                ext_date = datetime.fromisoformat(extension.get("extension_until", "").replace("Z", "+00:00"))
+                if ext_date > now:
+                    # Calculate which months are covered by the extension
+                    ext_start = extension.get("granted_at")
+                    if ext_start:
+                        ext_start_dt = datetime.fromisoformat(ext_start.replace("Z", "+00:00"))
+                    else:
+                        ext_start_dt = now
+                    
+                    # Find months between extension start and extension end
+                    current = ext_start_dt.replace(day=1)
+                    while current <= ext_date:
+                        month_year = str(current.year)
+                        month_idx = current.month - 1
+                        extended_months.append((month_year, month_idx))
+                        # Move to next month
+                        if current.month == 12:
+                            current = current.replace(year=current.year + 1, month=1)
+                        else:
+                            current = current.replace(month=current.month + 1)
+                    
+                    logger.info(f"Member {member_id} has extension covering {len(extended_months)} months")
+            except Exception as e:
+                logger.warning(f"Error processing extension for member {member_id}: {e}")
+        
+        # Convert extended months to paid (but not forgiven months)
+        months_converted = []
+        for ext_year, ext_month in extended_months:
+            if ext_year not in dues:
+                dues[ext_year] = [{"status": "unpaid", "note": ""} for _ in range(12)]
+            
+            if isinstance(dues[ext_year], list) and len(dues[ext_year]) > ext_month:
+                month_data = dues[ext_year][ext_month]
+                
+                # Check if this month is forgiven - if so, skip it
+                if isinstance(month_data, dict) and month_data.get("forgiven"):
+                    logger.info(f"Skipping forgiven month {month_names[ext_month]} {ext_year} for member {member_id}")
+                    continue
+                
+                # Convert extended/unpaid to paid
+                dues[ext_year][ext_month] = {
+                    "status": "paid",
+                    "note": f"{payment_note} (converted from extension)"
+                }
+                months_converted.append(f"{month_names[ext_month]} {ext_year}")
+                
+                # Also update officer_dues collection
+                month_str = f"{month_names[ext_month]}_{ext_year}"
+                await update_officer_dues_record(member_id, month_str, "paid", 
+                    f"{payment_note} (converted from extension)", "square_webhook")
+        
+        if months_converted:
+            logger.info(f"Converted extension months to paid for {member_id}: {', '.join(months_converted)}")
+            
+            # Revoke the extension since they've paid
+            await db.dues_extensions.delete_one({"member_id": member_id})
+            logger.info(f"Extension revoked for member {member_id} after payment")
+        
+        # Update the specific month that was paid (the original payment)
         if isinstance(dues[year], list) and len(dues[year]) > month:
-            dues[year][month] = {
-                "status": "paid",
-                "note": payment_note
-            }
+            month_data = dues[year][month]
+            # Don't overwrite if it's forgiven
+            if not (isinstance(month_data, dict) and month_data.get("forgiven")):
+                dues[year][month] = {
+                    "status": "paid",
+                    "note": payment_note
+                }
         
         # Update member record
         await db.members.update_one(
             {"id": member_id},
             {"$set": {
                 "dues": dues,
-                "updated_at": datetime.now(timezone.utc).isoformat()
+                "updated_at": now.isoformat()
             }}
         )
         
-        # Also update officer_dues collection (for A & D page sync)
-        month_str = f"{month_names[month]}_{year}"  # e.g., "Jan_2026"
+        # Also update officer_dues collection for the main payment month
+        month_str = f"{month_names[month]}_{year}"
+        await update_officer_dues_record(member_id, month_str, "paid", payment_note, "square_webhook")
+        
+        logger.info(f"Member {member_id} dues updated for {year}-{int(month)+1:02d} via webhook (synced to A&D)")
+        
+    except Exception as e:
+        logger.error(f"Error updating member dues from webhook: {str(e)}")
+
+
+async def update_officer_dues_record(member_id: str, month_str: str, status: str, notes: str, updated_by: str):
+    """Helper to update or create officer_dues record"""
+    try:
         existing = await db.officer_dues.find_one({
             "member_id": member_id,
             "month": month_str
@@ -15362,10 +15444,10 @@ async def update_member_dues_from_webhook(dues_info: dict):
             "id": existing.get("id") if existing else str(uuid.uuid4()),
             "member_id": member_id,
             "month": month_str,
-            "status": "paid",
-            "notes": payment_note,
+            "status": status,
+            "notes": notes,
             "updated_at": datetime.now(timezone.utc).isoformat(),
-            "updated_by": "square_webhook"
+            "updated_by": updated_by
         }
         
         if existing:
@@ -15375,13 +15457,10 @@ async def update_member_dues_from_webhook(dues_info: dict):
             )
         else:
             dues_record["created_at"] = datetime.now(timezone.utc).isoformat()
-            dues_record["created_by"] = "square_webhook"
+            dues_record["created_by"] = updated_by
             await db.officer_dues.insert_one(dues_record)
-        
-        logger.info(f"Member {member_id} dues updated for {year}-{int(month)+1:02d} via webhook (synced to A&D)")
-        
     except Exception as e:
-        logger.error(f"Error updating member dues from webhook: {str(e)}")
+        logger.error(f"Error updating officer_dues record: {e}")
 
 @api_router.get("/webhooks/square/info")
 async def get_square_webhook_info(current_user: dict = Depends(verify_token)):
