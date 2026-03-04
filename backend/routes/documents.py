@@ -22,6 +22,36 @@ from io import BytesIO
 from fastapi import APIRouter, HTTPException, Depends, Request, UploadFile, File, Form
 from fastapi.responses import StreamingResponse
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from cryptography.fernet import Fernet
+
+# Set up encryption for decrypting member emails
+_cipher_suite = None
+
+def get_cipher():
+    """Get or initialize cipher suite for email decryption"""
+    global _cipher_suite
+    if _cipher_suite is None:
+        encryption_key = os.environ.get('ENCRYPTION_KEY', '').strip('"')
+        if encryption_key:
+            try:
+                _cipher_suite = Fernet(encryption_key.encode())
+            except Exception as e:
+                sys.stderr.write(f"[DOCS] Warning: Encryption setup failed: {e}\n")
+    return _cipher_suite
+
+def decrypt_email(encrypted_data: str) -> str:
+    """Decrypt email data"""
+    if not encrypted_data:
+        return encrypted_data
+    cipher = get_cipher()
+    if not cipher:
+        return encrypted_data
+    try:
+        decrypted = cipher.decrypt(encrypted_data.encode()).decode()
+        return decrypted
+    except Exception as e:
+        # If decryption fails, data might not be encrypted (already plaintext)
+        return encrypted_data
 
 router = APIRouter(prefix="/documents", tags=["documents"])
 security = HTTPBearer()
@@ -337,13 +367,23 @@ async def send_document_for_signing(
                         {"_id": 0, "id": 1, "username": 1, "title": 1, "email": 1, "first_name": 1, "last_name": 1}
                     )
                     
+                    # Get the BOH email from members table (email field, not personal_email)
+                    boh_email = None
+                    if user:
+                        member = await db.members.find_one(
+                            {"handle": user.get("username")},
+                            {"_id": 0, "email": 1}
+                        )
+                        if member and member.get("email"):
+                            boh_email = decrypt_email(member.get("email"))  # Decrypt the BOH email
+                    
                     approval_chain.append({
                         "order": i + 1,
                         "role": role,
                         "title": officer_info["display_title"],  # Use display title for UI
                         "user_id": user.get("id") if user else None,
                         "username": user.get("username") if user else None,
-                        "email": user.get("email") if user else None,
+                        "email": boh_email or (user.get("email") if user else None),  # Prefer BOH email
                         "status": "pending",  # pending, approved, denied
                         "decision": None,  # Will be "approved" or "denied"
                         "notes": None,  # Approver's comments
