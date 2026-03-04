@@ -342,9 +342,20 @@ async def start_discord_bot():
                                     'date': now.date().isoformat()
                                 }
                                 
-                                await db.discord_voice_activity.insert_one(voice_activity)
-                                sys.stderr.write(f"💾 [DISCORD] Saved {member.display_name} voice session: {duration/60:.1f} min in {session['channel_name']}\n")
-                                sys.stderr.flush()
+                                # Check for recent duplicate (within 5 seconds) to prevent double inserts
+                                recent_dup = await db.discord_voice_activity.find_one({
+                                    'discord_user_id': user_id,
+                                    'duration_seconds': int(duration),
+                                    'left_at': {'$gte': now - timedelta(seconds=5)}
+                                })
+                                
+                                if recent_dup:
+                                    sys.stderr.write(f"⏭️ [DISCORD] Skipping duplicate session for {member.display_name}\n")
+                                    sys.stderr.flush()
+                                else:
+                                    await db.discord_voice_activity.insert_one(voice_activity)
+                                    sys.stderr.write(f"💾 [DISCORD] Saved {member.display_name} voice session: {duration/60:.1f} min in {session['channel_name']}\n")
+                                    sys.stderr.flush()
                                 
                                 # Track Prospect channel activity separately if enabled
                                 await self.track_prospect_channel_activity(
@@ -388,7 +399,15 @@ async def start_discord_bot():
                                 'date': now.date().isoformat()
                             }
                             
-                            await db.discord_voice_activity.insert_one(voice_activity)
+                            # Check for recent duplicate (within 5 seconds) to prevent double inserts
+                            recent_dup = await db.discord_voice_activity.find_one({
+                                'discord_user_id': user_id,
+                                'duration_seconds': int(duration),
+                                'left_at': {'$gte': now - timedelta(seconds=5)}
+                            })
+                            
+                            if not recent_dup:
+                                await db.discord_voice_activity.insert_one(voice_activity)
                             
                             # Track prospect channel activity for the previous channel
                             await self.track_prospect_channel_activity(
