@@ -76,6 +76,12 @@ Build a member management application with attendance tracking, dues management,
   - Month/Year selector to view historical data
   - Search and sort functionality
   - Accessible via "Voice Hours" button on Discord Analytics page
+- [x] **Voice Tracking Accuracy Improvements:**
+  - Cleaned up 8,247 duplicate voice session records (51% of data was duplicated)
+  - Added duplicate prevention in Discord bot code
+  - Implemented persistent session tracking that survives bot restarts
+  - Sessions now resume with original join time on bot restart
+  - Added midnight-split calculation for sessions spanning multiple days
 
 #### February 12, 2026 - Promotion Page (Discord Role Management)
 - [x] **Backend API Endpoints:**

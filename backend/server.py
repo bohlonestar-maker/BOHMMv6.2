@@ -235,41 +235,115 @@ async def start_discord_bot():
                 # Clear stale active prospect sessions from previous runs
                 await db.prospect_channel_active_sessions.delete_many({})
                 
+                # Load persisted voice sessions and reconcile with current state
+                await self.reconcile_voice_sessions()
+                
+                sys.stderr.write(f"✅ [DISCORD] Now tracking {len(self.voice_sessions)} user(s) in voice\n")
+                sys.stderr.flush()
+            
+            async def reconcile_voice_sessions(self):
+                """Reconcile persisted sessions with current Discord state on bot startup"""
+                now = datetime.now(timezone.utc)
+                
+                # Load any persisted active sessions from database
+                persisted_sessions = await db.discord_active_voice_sessions.find({}).to_list(None)
+                persisted_by_user = {s['discord_user_id']: s for s in persisted_sessions}
+                
+                # Get current voice state from Discord
+                current_voice_users = {}
                 for guild in self.guilds:
-                    # Scan for users already in voice channels and start tracking them
                     for voice_channel in guild.voice_channels:
                         for member in voice_channel.members:
                             if not member.bot and not should_ignore_user(member):
                                 user_id = str(member.id)
-                                if user_id not in self.voice_sessions:
-                                    # Capture who else is in the channel
-                                    others_in_channel = []
-                                    for other_member in voice_channel.members:
-                                        if str(other_member.id) != user_id and not other_member.bot:
-                                            others_in_channel.append({
-                                                'discord_id': str(other_member.id),
-                                                'display_name': other_member.display_name
-                                            })
-                                    
-                                    session_id = str(uuid.uuid4())
-                                    now = datetime.now(timezone.utc)
-                                    self.voice_sessions[user_id] = {
-                                        'session_id': session_id,
-                                        'joined_at': now,
-                                        'channel_id': str(voice_channel.id),
-                                        'channel_name': voice_channel.name,
-                                        'others_in_channel': others_in_channel
-                                    }
-                                    sys.stderr.write(f"🎤 [DISCORD] Tracking {member.display_name} already in {voice_channel.name}\n")
-                                    
-                                    # Save active session for Prospect channels
-                                    await self.save_active_prospect_session(
-                                        session_id, user_id, member.display_name,
-                                        voice_channel.name, now, others_in_channel
-                                    )
+                                current_voice_users[user_id] = {
+                                    'member': member,
+                                    'channel': voice_channel
+                                }
+                
+                # Reconcile: Handle users who left while bot was down
+                for user_id, session in persisted_by_user.items():
+                    if user_id not in current_voice_users:
+                        # User is no longer in voice - save their session with estimated end time
+                        # Use "now" as the end time (conservative estimate)
+                        duration = (now - session['joined_at']).total_seconds()
+                        
+                        if duration >= 1:
+                            voice_activity = {
+                                'id': str(uuid.uuid4()),
+                                'discord_id': user_id,
+                                'discord_user_id': user_id,
+                                'channel_id': session['channel_id'],
+                                'channel_name': session['channel_name'],
+                                'joined_at': session['joined_at'],
+                                'left_at': now,
+                                'duration_seconds': int(duration),
+                                'date': now.date().isoformat(),
+                                'estimated_end': True  # Flag that end time is estimated
+                            }
+                            await db.discord_voice_activity.insert_one(voice_activity)
+                            sys.stderr.write(f"💾 [DISCORD] Saved interrupted session for user {user_id}: {duration/60:.1f} min (estimated end)\n")
+                        
+                        # Remove from persisted sessions
+                        await db.discord_active_voice_sessions.delete_one({'discord_user_id': user_id})
+                
+                # Reconcile: Handle users currently in voice
+                for user_id, data in current_voice_users.items():
+                    member = data['member']
+                    voice_channel = data['channel']
                     
-                sys.stderr.write(f"✅ [DISCORD] Now tracking {len(self.voice_sessions)} user(s) already in voice\n")
-                sys.stderr.flush()
+                    if user_id in persisted_by_user:
+                        # User was already being tracked - resume with persisted joined_at
+                        session = persisted_by_user[user_id]
+                        self.voice_sessions[user_id] = {
+                            'session_id': session.get('session_id', str(uuid.uuid4())),
+                            'joined_at': session['joined_at'],
+                            'channel_id': session['channel_id'],
+                            'channel_name': session['channel_name'],
+                            'others_in_channel': session.get('others_in_channel', [])
+                        }
+                        sys.stderr.write(f"🔄 [DISCORD] Resumed tracking {member.display_name} (was in voice before restart)\n")
+                    else:
+                        # New user in voice - start fresh tracking
+                        others_in_channel = []
+                        for other_member in voice_channel.members:
+                            if str(other_member.id) != user_id and not other_member.bot:
+                                others_in_channel.append({
+                                    'discord_id': str(other_member.id),
+                                    'display_name': other_member.display_name
+                                })
+                        
+                        session_id = str(uuid.uuid4())
+                        self.voice_sessions[user_id] = {
+                            'session_id': session_id,
+                            'joined_at': now,
+                            'channel_id': str(voice_channel.id),
+                            'channel_name': voice_channel.name,
+                            'others_in_channel': others_in_channel
+                        }
+                        
+                        # Persist the new session
+                        await db.discord_active_voice_sessions.update_one(
+                            {'discord_user_id': user_id},
+                            {'$set': {
+                                'discord_user_id': user_id,
+                                'session_id': session_id,
+                                'joined_at': now,
+                                'channel_id': str(voice_channel.id),
+                                'channel_name': voice_channel.name,
+                                'others_in_channel': others_in_channel,
+                                'display_name': member.display_name
+                            }},
+                            upsert=True
+                        )
+                        
+                        sys.stderr.write(f"🎤 [DISCORD] Tracking {member.display_name} already in {voice_channel.name}\n")
+                        
+                        # Save active session for Prospect channels
+                        await self.save_active_prospect_session(
+                            session_id, user_id, member.display_name,
+                            voice_channel.name, now, others_in_channel
+                        )
                 
             async def on_voice_state_update(self, member, before, after):
                 """Track voice channel activity"""
@@ -303,6 +377,22 @@ async def start_discord_bot():
                             'channel_name': after.channel.name,
                             'others_in_channel': others_in_channel
                         }
+                        
+                        # Persist to database for crash recovery
+                        await db.discord_active_voice_sessions.update_one(
+                            {'discord_user_id': user_id},
+                            {'$set': {
+                                'discord_user_id': user_id,
+                                'session_id': session_id,
+                                'joined_at': now,
+                                'channel_id': str(after.channel.id),
+                                'channel_name': after.channel.name,
+                                'others_in_channel': others_in_channel,
+                                'display_name': member.display_name
+                            }},
+                            upsert=True
+                        )
+                        
                         sys.stderr.write(f"🎤 [DISCORD] {member.display_name} joined {after.channel.name}\n")
                         sys.stderr.flush()
                         
@@ -365,6 +455,9 @@ async def start_discord_bot():
                                 sys.stderr.write(f"⏭️ [DISCORD] Skipping {member.display_name} session < 1s\n")
                                 sys.stderr.flush()
                             del self.voice_sessions[user_id]
+                            
+                            # Remove from persisted sessions
+                            await db.discord_active_voice_sessions.delete_one({'discord_user_id': user_id})
                         else:
                             # User was already in voice when bot started but we didn't catch them in on_ready
                             # Start tracking them now for future sessions
@@ -431,6 +524,21 @@ async def start_discord_bot():
                             'channel_name': after.channel.name,
                             'others_in_channel': others_in_channel
                         }
+                        
+                        # Persist to database for crash recovery
+                        await db.discord_active_voice_sessions.update_one(
+                            {'discord_user_id': user_id},
+                            {'$set': {
+                                'discord_user_id': user_id,
+                                'session_id': new_session_id,
+                                'joined_at': now,
+                                'channel_id': str(after.channel.id),
+                                'channel_name': after.channel.name,
+                                'others_in_channel': others_in_channel,
+                                'display_name': member.display_name
+                            }},
+                            upsert=True
+                        )
                         
                         # Save active session for new Prospect channel
                         await self.save_active_prospect_session(
