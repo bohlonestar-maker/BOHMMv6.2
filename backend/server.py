@@ -1795,11 +1795,7 @@ async def send_email(to_email: str, subject: str, body: str):
         return False
 
 # Support request model
-class SupportRequest(BaseModel):
-    name: str
-    handle: Optional[str] = None
-    contact_info: str
-    reason: str
+# SupportRequest model imported from models package
 
 # Support email address
 SUPPORT_EMAIL = "support@boh2158.org"
@@ -2152,492 +2148,23 @@ async def log_activity(username: str, action: str, details: str, ip_address: str
     except Exception as e:
         logger.error(f"Failed to log activity: {str(e)}")
 
-# Models
-class Event(BaseModel):
-    model_config = ConfigDict(extra="ignore")
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    title: str
-    description: Optional[str] = None
-    date: str  # ISO date string (YYYY-MM-DD)
-    time: Optional[str] = None  # Time in HH:MM format
-    location: Optional[str] = None
-    chapter: Optional[str] = None  # National, AD, HA, HS, or None for all chapters
-    title_filter: Optional[str] = None  # Prez, VP, etc., or None for all titles
-    created_by: str  # Username of creator
-    creator_chapter: Optional[str] = None  # Creator's chapter
-    creator_title: Optional[str] = None  # Creator's title
-    creator_handle: Optional[str] = None  # Creator's handle from members collection
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    discord_notifications_enabled: bool = True  # Allow Discord notifications for this event
-    discord_channel: Optional[str] = "member-chat"  # Discord channel to post to
-    notification_24h_sent: bool = False  # Track if 24h notification was sent
-    notification_3h_sent: bool = False   # Track if 3h notification was sent
-    # Repeat/Recurring fields
-    repeat_type: Optional[str] = None  # none, daily, weekly, monthly, custom
-    repeat_interval: Optional[int] = 1  # Every X days/weeks/months
-    repeat_end_date: Optional[str] = None  # When to stop repeating (YYYY-MM-DD)
-    repeat_count: Optional[int] = None  # Number of occurrences (alternative to end_date)
-    repeat_days: Optional[List[int]] = None  # For weekly: [0,1,2,3,4,5,6] (Mon-Sun)
-    parent_event_id: Optional[str] = None  # For recurring instances, link to parent
-    is_recurring_instance: bool = False  # True if this is a generated instance
-
-class EventCreate(BaseModel):
-    title: str
-    description: Optional[str] = None
-    date: str  # ISO date string (YYYY-MM-DD)
-    time: Optional[str] = None
-    location: Optional[str] = None
-    chapter: Optional[str] = None
-    title_filter: Optional[str] = None
-    discord_notifications_enabled: bool = True
-    discord_channel: Optional[str] = "member-chat"  # Discord channel to post to
-    # Repeat options
-    repeat_type: Optional[str] = None  # none, daily, weekly, monthly, custom
-    repeat_interval: Optional[int] = 1
-    repeat_end_date: Optional[str] = None
-    repeat_count: Optional[int] = None
-    repeat_days: Optional[List[int]] = None  # For weekly custom: days of week
-
-class EventUpdate(BaseModel):
-    title: Optional[str] = None
-    description: Optional[str] = None
-    date: Optional[str] = None
-    time: Optional[str] = None
-    location: Optional[str] = None
-    chapter: Optional[str] = None
-    title_filter: Optional[str] = None
-    discord_notifications_enabled: Optional[bool] = None
-    discord_channel: Optional[str] = None  # Discord channel to post to
-
-class Member(BaseModel):
-    model_config = ConfigDict(extra="ignore")
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    chapter: str  # National, AD, HA, HS
-    title: str  # Prez, VP, S@A, ENF, SEC, T, CD, CC, CCLC, MD, PM
-    handle: str
-    name: str
-    email: Optional[str] = None  # BOH Email - Optional, can be empty
-    personal_email: Optional[str] = None  # Personal Email
-    phone: str
-    address: str
-    dob: Optional[str] = None  # Date of Birth (YYYY-MM-DD format)
-    join_date: Optional[str] = None  # Anniversary Date (MM/YYYY format)
-    experience_start: Optional[str] = None  # Trucking experience start date (MM/YYYY format)
-    phone_private: bool = False  # If True, only admins can see phone
-    address_private: bool = False  # If True, only admins can see address
-    email_private: bool = False  # If True, only National members and chapter officers (Prez, VP, S@A, Enf, SEC) can see email
-    personal_email_private: bool = False  # If True, personal email is hidden from non-privileged users
-    name_private: bool = False  # If True, only National members and chapter officers can see real name
-    # Military Service
-    military_service: bool = False  # If True, member has served in military
-    military_branch: Optional[str] = None  # Army, Navy, Air Force, Marines, Coast Guard, Space Force, National Guard
-    # First Responder Service
-    is_first_responder: bool = False  # If True, member has served as Police, Fire, or EMS
-    # Dues Exemption
-    non_dues_paying: bool = False  # If True, member is exempt from dues (honorary members, etc.)
-    actions: list = Field(default_factory=list)  # Merit, Promotion, Disciplinary actions
-    # Format: [{"type": "merit|promotion|disciplinary", "date": "YYYY-MM-DD", "description": "...", "added_by": "username", "added_at": "ISO timestamp"}]
-    dues: dict = Field(default_factory=lambda: {
-        str(datetime.now(timezone.utc).year): [{"status": "unpaid", "note": ""} for _ in range(12)]
-        # Format: {"2025": [{"status": "paid|unpaid|late", "note": "reason if late"}, ...], "2024": [...]}
-    })
-    meeting_attendance: dict = Field(default_factory=lambda: {
-        str(datetime.now(timezone.utc).year): [{"status": 0, "note": ""} for _ in range(24)]
-    })  # Format: {"2025": [meetings], "2024": [meetings], ...}
-    can_edit: Optional[bool] = None  # Permission flag for frontend
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-
-class MemberCreate(BaseModel):
-    chapter: str
-    title: str
-    handle: str
-    name: str
-    email: Optional[str] = None  # BOH Email - Optional, can be empty
-    personal_email: Optional[str] = None  # Personal Email
-    phone: str
-    address: str
-    dob: Optional[str] = None
-    join_date: Optional[str] = None
-    experience_start: Optional[str] = None  # Trucking experience start date (MM/YYYY format)
-    phone_private: bool = False
-    address_private: bool = False
-    email_private: bool = False
-    personal_email_private: bool = False
-    name_private: bool = False
-    # Military Service
-    military_service: bool = False
-    military_branch: Optional[str] = None
-    # First Responder Service
-    is_first_responder: bool = False
-    # Dues Exemption
-    non_dues_paying: bool = False
-    dues: Optional[dict] = None
-
-class MemberUpdate(BaseModel):
-    chapter: Optional[str] = None
-    title: Optional[str] = None
-    handle: Optional[str] = None
-    name: Optional[str] = None
-    email: Optional[str] = None  # BOH Email
-    personal_email: Optional[str] = None  # Personal Email
-    phone: Optional[str] = None
-    address: Optional[str] = None
-    dob: Optional[str] = None
-    join_date: Optional[str] = None
-    experience_start: Optional[str] = None  # Trucking experience start date (MM/YYYY format)
-    phone_private: Optional[bool] = None
-    address_private: Optional[bool] = None
-    email_private: Optional[bool] = None
-    personal_email_private: Optional[bool] = None
-    name_private: Optional[bool] = None
-    # Military Service
-    military_service: Optional[bool] = None
-    military_branch: Optional[str] = None
-    # First Responder Service
-    is_first_responder: Optional[bool] = None
-    # Dues Exemption
-    non_dues_paying: Optional[bool] = None
-    dues: Optional[dict] = None
-    meeting_attendance: Optional[dict] = None
-
-# Hangaround models (Entry level - minimal info required)
-class Hangaround(BaseModel):
-    model_config = ConfigDict(extra="ignore")
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    handle: str
-    name: str
-    meeting_attendance: dict = Field(default_factory=lambda: {
-        str(datetime.now(timezone.utc).year): []
-    })  # Format: {"2025": [meetings], "2024": [meetings], ...}
-    actions: list = Field(default_factory=list)  # Merit, Promotion, Disciplinary actions
-    can_edit: Optional[bool] = None  # Permission flag for frontend
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-
-class HangaroundCreate(BaseModel):
-    handle: str
-    name: str
-
-class HangaroundUpdate(BaseModel):
-    handle: Optional[str] = None
-    name: Optional[str] = None
-    meeting_attendance: Optional[dict] = None
-
-# Prospect models (Promoted from Hangaround - full info required)
-class Prospect(BaseModel):
-    model_config = ConfigDict(extra="ignore")
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    handle: str
-    name: str
-    email: str  # Changed from EmailStr to allow "Private" for hidden emails
-    phone: str
-    address: str
-    dob: Optional[str] = None  # Date of Birth (YYYY-MM-DD format)
-    join_date: Optional[str] = None  # Anniversary Date (MM/YYYY format)
-    # Military Service
-    military_service: bool = False  # If True, prospect has served in military
-    military_branch: Optional[str] = None  # Army, Navy, Air Force, Marines, Coast Guard, Space Force, National Guard
-    # First Responder Service
-    is_first_responder: bool = False  # If True, prospect has served as Police, Fire, or EMS
-    actions: list = Field(default_factory=list)  # Merit, Promotion, Disciplinary actions
-    meeting_attendance: dict = Field(default_factory=lambda: {
-        str(datetime.now(timezone.utc).year): []
-    })  # Format: {"2025": [meetings], "2024": [meetings], ...}
-    can_edit: Optional[bool] = None  # Permission flag for frontend
-    promoted_from_hangaround: Optional[str] = None  # ID of original hangaround record
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-
-class ProspectCreate(BaseModel):
-    handle: str
-    name: str
-    email: str  # Changed from EmailStr to allow "Private" for hidden emails
-    phone: str
-    address: str
-    dob: Optional[str] = None
-    join_date: Optional[str] = None
-    # Military Service
-    military_service: bool = False
-    military_branch: Optional[str] = None
-    # First Responder Service
-    is_first_responder: bool = False
-    meeting_attendance: Optional[dict] = None
-
-class ProspectUpdate(BaseModel):
-    handle: Optional[str] = None
-    name: Optional[str] = None
-    email: Optional[str] = None  # Changed from EmailStr to allow "Private" for hidden emails
-    phone: Optional[str] = None
-    address: Optional[str] = None
-    dob: Optional[str] = None
-    join_date: Optional[str] = None
-    # Military Service
-    military_service: Optional[bool] = None
-    military_branch: Optional[str] = None
-    # First Responder Service
-    is_first_responder: Optional[bool] = None
-    meeting_attendance: Optional[dict] = None
-
-# Model for promoting Hangaround to Prospect
-class HangaroundToProspectPromotion(BaseModel):
-    email: str
-    phone: str
-    address: str
-    dob: Optional[str] = None
-    join_date: Optional[str] = None
-    military_service: bool = False
-    military_branch: Optional[str] = None
-    is_first_responder: bool = False
-
-# Fallen Member (Wall of Honor) models
-class FallenMember(BaseModel):
-    model_config = ConfigDict(extra="ignore")
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    name: str
-    handle: str
-    chapter: Optional[str] = None
-    title: Optional[str] = None
-    photo_url: Optional[str] = None
-    date_of_passing: Optional[str] = None  # YYYY-MM-DD format
-    join_date: Optional[str] = None  # When they joined the club
-    tribute: Optional[str] = None  # Memorial message
-    military_service: bool = False
-    military_branch: Optional[str] = None
-    is_first_responder: bool = False
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    created_by: Optional[str] = None
-
-class FallenMemberCreate(BaseModel):
-    name: str
-    handle: str
-    chapter: Optional[str] = None
-    title: Optional[str] = None
-    photo_url: Optional[str] = None
-    date_of_passing: Optional[str] = None
-    join_date: Optional[str] = None
-    tribute: Optional[str] = None
-    military_service: bool = False
-    military_branch: Optional[str] = None
-    is_first_responder: bool = False
-
-class FallenMemberUpdate(BaseModel):
-    name: Optional[str] = None
-    handle: Optional[str] = None
-    chapter: Optional[str] = None
-    title: Optional[str] = None
-    photo_url: Optional[str] = None
-    date_of_passing: Optional[str] = None
-    join_date: Optional[str] = None
-    tribute: Optional[str] = None
-    military_service: Optional[bool] = None
-    military_branch: Optional[str] = None
-    is_first_responder: Optional[bool] = None
-
-# Meeting models for flexible meeting tracking
-class Meeting(BaseModel):
-    model_config = ConfigDict(extra="ignore")
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    date: str  # YYYY-MM-DD format
-    name: Optional[str] = None  # e.g., "Weekly Meeting", "Special Meeting"
-    year: str = Field(default_factory=lambda: str(datetime.now(timezone.utc).year))
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    created_by: Optional[str] = None
-
-class MeetingCreate(BaseModel):
-    date: str
-    name: Optional[str] = None
-
-class MeetingAttendanceRecord(BaseModel):
-    meeting_id: str
-    member_id: str
-    status: int = 0  # 0=absent, 1=present, 2=excused
-    note: Optional[str] = None
-
-class PrivateMessage(BaseModel):
-    model_config = ConfigDict(arbitrary_types_allowed=True)
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    sender: str
-    recipient: str
-    message: str
-    timestamp: str
-    read: bool = False
-    archived_by: List[str] = Field(default_factory=list)  # List of users who archived this conversation
-
-class PrivateMessageCreate(BaseModel):
-    recipient: str
-    message: str
-
-
-class SupportMessage(BaseModel):
-    model_config = ConfigDict(arbitrary_types_allowed=True)
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    name: str
-    email: str
-    message: str
-    timestamp: str
-    status: str = "open"  # open, closed
-    reply_text: Optional[str] = None
-    replied_at: Optional[str] = None
-
-class SupportMessageCreate(BaseModel):
-    name: str
-    email: str
-    message: str
-
-class SupportReply(BaseModel):
-    reply_text: str
-
-# Discord Analytics Models
-class DiscordMember(BaseModel):
-    model_config = ConfigDict(extra="ignore")
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    discord_id: str  # Discord user ID
-    username: str    # Discord username
-    display_name: Optional[str] = None  # Discord display name/nickname
-    avatar_url: Optional[str] = None
-    joined_at: Optional[datetime] = None  # When they joined the Discord server
-    roles: List[str] = Field(default_factory=list)  # Discord role IDs
-    is_bot: bool = False
-    member_id: Optional[str] = None  # Link to our member database
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-
-class DiscordVoiceActivity(BaseModel):
-    model_config = ConfigDict(extra="ignore")
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    discord_user_id: str
-    channel_id: str
-    channel_name: str
-    joined_at: datetime
-    left_at: Optional[datetime] = None
-    duration_seconds: Optional[int] = None  # Calculated when they leave
-    date: str = Field(default_factory=lambda: datetime.now(timezone.utc).date().isoformat())
-
-class DiscordTextActivity(BaseModel):
-    model_config = ConfigDict(extra="ignore") 
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    discord_user_id: str
-    channel_id: str
-    channel_name: str
-    message_count: int = 1
-    date: str = Field(default_factory=lambda: datetime.now(timezone.utc).date().isoformat())
-    last_message_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-
-class DiscordAnalytics(BaseModel):
-    total_members: int
-    voice_stats: dict
-    text_stats: dict
-    top_voice_users: List[dict]
-    top_text_users: List[dict]
-    daily_activity: List[dict]
-
-# ==================== STORE MODELS ====================
-
-class ProductVariation(BaseModel):
-    """A size/variation of a product"""
-    id: str
-    name: str  # e.g., "S", "M", "L", "XL", "2XL"
-    price: float
-    square_variation_id: Optional[str] = None
-    inventory_count: int = 0
-    sold_out: bool = False
-
-class StoreProduct(BaseModel):
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    name: str
-    description: Optional[str] = None
-    price: float  # Base/starting price in dollars
-    category: str  # "merchandise" or "dues"
-    image_url: Optional[str] = None
-    square_catalog_id: Optional[str] = None
-    inventory_count: int = 0  # Total across all variations
-    is_active: bool = True
-    member_price: Optional[float] = None  # Discounted price for members
-    variations: List[dict] = []  # List of size/variation options
-    has_variations: bool = False  # True if product has multiple sizes
-    allows_customization: bool = False  # True if handle/name can be added
-    show_in_supporter_store: bool = True  # True if available in public supporter store
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-
-class StoreProductCreate(BaseModel):
-    name: str
-    description: Optional[str] = None
-    price: float
-    category: str
-    image_url: Optional[str] = None
-    inventory_count: int = 0
-    member_price: Optional[float] = None
-    show_in_supporter_store: bool = True
-    allows_customization: bool = False
-
-class StoreProductUpdate(BaseModel):
-    name: Optional[str] = None
-    description: Optional[str] = None
-    price: Optional[float] = None
-    category: Optional[str] = None
-    image_url: Optional[str] = None
-    inventory_count: Optional[int] = None
-    is_active: Optional[bool] = None
-    member_price: Optional[float] = None
-    show_in_supporter_store: Optional[bool] = None
-    allows_customization: Optional[bool] = None
-
-class CartItem(BaseModel):
-    product_id: str
-    name: str
-    price: float
-    quantity: int
-    image_url: Optional[str] = None
-    variation_id: Optional[str] = None  # Selected size/variation ID
-    variation_name: Optional[str] = None  # e.g., "L", "XL"
-    customization: Optional[str] = None  # Handle/name to print on item
-
-class ShoppingCart(BaseModel):
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    user_id: str
-    items: List[CartItem] = []
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-
-class StoreOrder(BaseModel):
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    user_id: str
-    user_name: str
-    items: List[CartItem]
-    subtotal: float
-    tax: float = 0.0
-    total: float
-    status: str = "pending"  # pending, paid, shipped, completed, cancelled, refunded
-    square_order_id: Optional[str] = None
-    square_payment_id: Optional[str] = None
-    payment_method: str = "card"
-    shipping_address: Optional[str] = None
-    notes: Optional[str] = None
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-
-class PaymentRequest(BaseModel):
-    source_id: str  # Payment token from Square Web Payments SDK
-    amount_cents: int
-    order_id: str
-    customer_email: Optional[str] = None
-
-# ==================== STORE ADMIN MODELS ====================
-
-class StoreAdmin(BaseModel):
-    """Delegated store admin - users granted store management permissions by primary admins"""
-    model_config = ConfigDict(extra="ignore")
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    username: str  # Username of the user being granted access
-    granted_by: str  # Username of the primary admin who granted access
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-
-class StoreAdminCreate(BaseModel):
-    username: str
-
-# ==================== END STORE MODELS ====================
+# ==================== PYDANTIC MODELS ====================
+# Models have been extracted to the models/ package for better organization.
+# Import statement is at the top of this file.
+# See /app/backend/models/ for all model definitions:
+#   - models/user.py: User, Invite, Login, Password models
+#   - models/member.py: Member, Hangaround, Prospect, FallenMember
+#   - models/event.py: Event models
+#   - models/meeting.py: Meeting models
+#   - models/message.py: PrivateMessage, Support models
+#   - models/discord.py: Discord-related models
+#   - models/store.py: Store, Cart, Order models
+#   - models/dues.py: Dues, Extension, Forgiveness models
+#   - models/permissions.py: Permission models
+#   - models/ai.py: AI/Chat models
+#   - models/suggestions.py: Suggestion models
+#   - models/signnow.py: SignNow models
+# ==================== END PYDANTIC MODELS ====================
 
 # Initialize default admin user
 @app.on_event("startup")
@@ -6289,9 +5816,7 @@ async def delete_user(user_id: str, current_user: dict = Depends(verify_can_mana
     
     return {"message": "User deleted successfully"}
 
-# Password change endpoint
-class PasswordChange(BaseModel):
-    new_password: str
+# Password change endpoint - PasswordChange model imported from models package
 
 @api_router.put("/users/{user_id}/password")
 async def change_user_password(user_id: str, password_data: PasswordChange, current_user: dict = Depends(verify_can_manage_users)):
@@ -6333,10 +5858,7 @@ async def change_user_password(user_id: str, password_data: PasswordChange, curr
     return {"message": "Password changed successfully"}
 
 
-class OwnPasswordChange(BaseModel):
-    current_password: str
-    new_password: str
-
+# OwnPasswordChange model imported from models package
 
 @api_router.put("/auth/change-password")
 async def change_own_password(password_data: OwnPasswordChange, current_user: dict = Depends(verify_token)):
@@ -7702,10 +7224,7 @@ async def get_discord_members(current_user: dict = Depends(verify_admin)):
             raise HTTPException(status_code=500, detail=f"Discord API error: {str(e)}")
 
 
-class DiscordLinkRequest(BaseModel):
-    discord_id: str
-    member_id: str
-
+# DiscordLinkRequest model imported from models package
 
 @api_router.post("/discord/link")
 async def link_discord_member(request: DiscordLinkRequest, current_user: dict = Depends(verify_admin)):
@@ -8829,9 +8348,7 @@ async def import_discord_members(current_user: dict = Depends(verify_admin)):
         raise HTTPException(status_code=500, detail=f"Import error: {str(e)}")
 
 
-# AI Chatbot endpoint
-class ChatMessage(BaseModel):
-    message: str
+# AI Chatbot endpoint - ChatMessage model imported from models package
 
 @api_router.post("/chat")
 async def chat_with_bot(chat_msg: ChatMessage, current_user: dict = Depends(verify_token)):
@@ -9127,20 +8644,7 @@ ADDITIONAL OFFICER DUTIES:
 
 
 # ==================== AI KNOWLEDGE MANAGEMENT ====================
-
-class AIKnowledgeEntry(BaseModel):
-    title: str
-    content: str
-    category: str  # general, chain_of_command, bylaws, meetings, admin_only
-    is_active: bool = True
-    admin_only: bool = False
-
-class AIKnowledgeUpdate(BaseModel):
-    title: Optional[str] = None
-    content: Optional[str] = None
-    category: Optional[str] = None
-    is_active: Optional[bool] = None
-    admin_only: Optional[bool] = None
+# AIKnowledgeEntry and AIKnowledgeUpdate models imported from models package
 
 def check_ai_admin_access(current_user: dict):
     """Check if user has access to AI knowledge management (Nationals chapter only)"""
@@ -9622,18 +9126,7 @@ async def check_manage_system_users(user: dict) -> bool:
     """Check if user can manage system users from database (no admin bypass)"""
     return await check_permission(user, "manage_system_users")
 
-class AttendanceRecord(BaseModel):
-    member_id: str
-    meeting_date: str  # YYYY-MM-DD
-    meeting_type: str  # 'national_officer', 'chapter_officer', 'prospect', 'member'
-    status: str  # 'present', 'absent', 'excused'
-    notes: Optional[str] = None
-
-class DuesRecord(BaseModel):
-    member_id: str
-    month: str  # 'Jan_2026', 'Feb_2026', etc. or just current month
-    status: str  # 'paid', 'late', 'unpaid'
-    notes: Optional[str] = None
+# AttendanceRecord and DuesRecord models imported from models package
 
 @api_router.get("/officer-tracking/members")
 async def get_members_by_chapter(current_user: dict = Depends(verify_token)):
@@ -10774,11 +10267,7 @@ async def get_all_permissions(current_user: dict = Depends(verify_token)):
     }
 
 
-class PermissionUpdate(BaseModel):
-    chapter: str
-    title: str
-    permission_key: str
-    value: bool
+# PermissionUpdate model imported from models package
 
 
 @api_router.put("/permissions/update")
@@ -10815,10 +10304,7 @@ async def update_permission(update: PermissionUpdate, current_user: dict = Depen
     return {"success": True, "message": f"Updated {update.chapter}/{update.title}.{update.permission_key} to {update.value}"}
 
 
-class BulkPermissionUpdate(BaseModel):
-    chapter: str
-    title: str
-    permissions: dict
+# BulkPermissionUpdate model imported from models package
 
 
 @api_router.put("/permissions/bulk-update")
@@ -10858,11 +10344,7 @@ async def bulk_update_permissions(update: BulkPermissionUpdate, current_user: di
 
 
 # ==================== DUES REMINDER EMAIL ENDPOINTS ====================
-
-class DuesEmailTemplateUpdate(BaseModel):
-    subject: str
-    body: str
-    is_active: bool = True
+# DuesEmailTemplateUpdate model imported from models package
 
 
 @api_router.get("/dues-reminders/templates")
@@ -11129,15 +10611,7 @@ async def run_dues_reminder_check(current_user: dict = Depends(verify_token)):
 
 
 # ==================== DUES EXTENSION ENDPOINTS ====================
-
-class DuesExtensionCreate(BaseModel):
-    member_id: str
-    extension_until: str  # ISO date string (YYYY-MM-DD)
-    reason: str = ""
-
-class DuesExtensionUpdate(BaseModel):
-    extension_until: str
-    reason: str = ""
+# DuesExtensionCreate and DuesExtensionUpdate models imported from models package
 
 
 @api_router.get("/dues-reminders/extensions")
@@ -11290,8 +10764,7 @@ async def revoke_dues_extension(
     return {"success": True, "message": "Extension revoked"}
 
 
-class SuspendMemberRequest(BaseModel):
-    reason: str = "Manual suspension"
+# SuspendMemberRequest model imported from models package
 
 
 @api_router.post("/members/{member_id}/suspend")
@@ -11426,9 +10899,7 @@ async def reinstate_member(
     }
 
 
-class ForgiveDuesRequest(BaseModel):
-    member_id: str
-    reason: str = ""
+# ForgiveDuesRequest model imported from models package
 
 
 @api_router.post("/dues-reminders/forgive")
@@ -11498,13 +10969,7 @@ async def forgive_dues(
     }
 
 
-class BulkDuesCorrectionRequest(BaseModel):
-    member_id: str
-    start_month: str  # Format: "Jan_2026"
-    end_month: str    # Format: "May_2026"
-    status: str = "paid"  # paid, unpaid, late
-    note: str = ""
-    revoke_extension: bool = True  # Also revoke any existing extension
+# BulkDuesCorrectionRequest model imported from models package
 
 
 @api_router.post("/dues-reminders/bulk-correction")
@@ -12210,16 +11675,7 @@ async def test_discord_suspension(
 
 # ==================== SUGGESTION BOX ENDPOINTS ====================
 
-class SuggestionCreate(BaseModel):
-    title: str
-    description: str
-    is_anonymous: bool = False
-
-class SuggestionStatusUpdate(BaseModel):
-    status: str  # "new", "reviewed", "in_progress", "implemented", "declined"
-
-class SuggestionVote(BaseModel):
-    vote_type: str  # "upvote" or "downvote"
+# SuggestionCreate, SuggestionStatusUpdate, and SuggestionVote models imported from models package
 
 def can_manage_suggestions(user: dict) -> bool:
     """Check if user is a National Officer (except Honorary) who can manage suggestion statuses"""
@@ -14377,11 +13833,7 @@ async def create_hosted_checkout(shipping_address: Optional[str] = None, notes: 
         logger.error(f"Square checkout error: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Checkout error: {str(e)}")
 
-class SupporterCheckoutRequest(BaseModel):
-    items: list
-    customer_email: str
-    customer_name: str
-    shipping_address: Optional[str] = None
+# SupporterCheckoutRequest model imported from models package
 
 @api_router.post("/store/public/checkout")
 async def create_supporter_checkout(checkout_data: SupporterCheckoutRequest):
@@ -16515,9 +15967,7 @@ async def update_member_dues_with_payment_info(member_id: str, year: int, month:
         logger.error(f"Error updating member dues: {str(e)}")
 
 
-class LinkSubscriptionRequest(BaseModel):
-    member_id: str
-    square_customer_id: str
+# LinkSubscriptionRequest model imported from models package
 
 
 @api_router.post("/dues/link-subscription")
@@ -17336,12 +16786,7 @@ async def delete_form(form_id: str, current_user: dict = Depends(verify_token)):
 
 # ==================== DISCORD PROMOTION ENDPOINTS ====================
 
-class UpdateRolesRequest(BaseModel):
-    role_ids: List[str]
-
-
-class UpdateNicknameRequest(BaseModel):
-    nickname: str
+# UpdateRolesRequest and UpdateNicknameRequest models imported from models package
 
 
 @api_router.get("/discord/roles")
@@ -17913,13 +17358,7 @@ class SignNowClient:
 signnow_client = SignNowClient() if signnow_configured else None
 
 
-class SendDocumentRequest(BaseModel):
-    template_id: str
-    member_id: str
-    recipient_email: Optional[str] = None
-    role_name: Optional[str] = None
-    role_id: Optional[str] = None
-    message: Optional[str] = ""
+# SendDocumentRequest model imported from models package
 
 
 @api_router.get("/signnow/templates")
