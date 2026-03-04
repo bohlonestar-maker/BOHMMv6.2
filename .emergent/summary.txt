@@ -1,142 +1,166 @@
 <analysis>**original_problem_statement:**
-The user's initial goal was to fix production bugs, including a failing Discord kick feature. Over the session, the scope expanded significantly to include several new features and bug fixes:
+The user initially requested to continue a major refactoring of the monolithic  file. However, the user pivoted to a new, high-priority feature request: to replace the third-party SignNow integration with a completely in-house document signing system.
 
 **PRODUCT REQUIREMENTS:**
-1.  **SignNow Simplification**: Remove the Signer Role selection from the SignNow Send Document dialog.
-2.  **Stale SignNow Data**: Address an issue where documents deleted in SignNow remained Pending in the app.
-3.  **'COO' Role Addition**: The 'COO' role was missing from the Edit Member title dropdown in the frontend.
-4.  **Discord Voice Chat Analytics**: Create a new page to display daily and monthly voice chat hours for each member.
-5.  **Voice Chat Hour Inaccuracy**: Fix wildly inaccurate voice chat hours (e.g., >24 hours in a day) and subsequent under-reporting of hours. This involved deep investigation into the Discord bot's data logging.
-6.  **Extension to Paid Conversion**: Implement a feature where, upon payment, a member's extended dues months are automatically converted to paid.
-7.  **Refactor Monolithic **: Start a major, systematic refactoring of the massive  file to improve maintainability, beginning with Pydantic models, then utility functions, auth functions, and constants.
+1.  **In-House Document Signing System**:
+    *   Ability to create and manage document templates (PDFs and Markdown).
+    *   Send documents to members for signing.
+    *   Secure, token-based signing links sent via email.
+    *   Legally-defensible audit trail with IP addresses and timestamps.
+    *   PDF generation with signatures embedded.
+    *   Frontend UI must be responsive for mobile, tablet, and desktop.
+2.  **Multi-Signer Sequential Approval Workflow**:
+    *   Ability to select a chain of up to 5 National Officers as approvers when sending a document.
+    *   Approvers are notified sequentially via email to their official BOH email addresses (e.g., ).
+    *   Each approver can Approve or Deny the document and add notes.
+    *   The approval chain respects the user-selected order.
+3.  **Document Management**:
+    *   UI to view the status of all sent documents, including the full approval chain history.
+    *   Ability to download the final, signed PDF.
+    *   Ability to delete pending or old documents.
+4.  **Bug Fixes & UX Improvements**:
+    *   Ensure document signing emails are sent from .
+    *   Fix an issue where PDF documents were blocked in mobile iframes.
+    *   Fix an issue preventing the deletion of documents with new statuses like Awaiting Approval.
 
 **User's preferred language**: English
 
 **what currently exists?**
-The application is a full-stack React and FastAPI app. All user requests from this session have been addressed.
-
--   The SignNow integration has been simplified, and a feature to manually delete stale document records has been added.
--   The 'COO' role is now correctly displayed in all relevant frontend dropdowns.
--   A new Voice Chat Analytics page exists, providing detailed daily and monthly voice time statistics.
--   The underlying Discord bot logic has been heavily refactored to fix data inaccuracies by preventing duplicate session logging, cleaning the database, handling sessions that span midnight, and persisting active sessions to survive bot restarts, thus preventing data loss.
--   The backend now automatically converts extended dues months to paid when a member makes a payment.
--   A major refactoring of the monolithic  file has begun. Pydantic models, utility functions, password helpers, and some constants have been successfully extracted into separate modules (, , , ).
+The  refactoring was paused. Instead, a comprehensive in-house document signing system has been built and integrated. This system replaces the previous SignNow functionality. It includes backend APIs for template management, sending documents, and a multi-step approval workflow. The frontend has new responsive pages for template creation and document signing, and the main dashboard has been updated to manage these new documents. Most of the functionality has been implemented, including the sequential approval logic, BOH email notifications, and viewing/downloading signed documents.
 
 **Last working item**:
-    - Last item agent was working: Continuing the refactoring of . The agent had just identified Discord-related constants (, , etc.) and created a new file, , to house them.
+    - Last item agent was working: The user reported a bug where the document signing page for a recipient (Lonestar) incorrectly showed a full list of potential approvers (President, Treasurer, Secretary) even when only the Secretary was selected for that specific document. The agent was investigating why the frontend was displaying the incorrect approval chain.
     - Status: IN PROGRESS
     - Agent Testing Done: N
-    - Which testing method agent to use? backend testing agent
+    - Which testing method agent to use? The agent should first inspect the backend API response and the frontend rendering logic. A screenshot of the fixed signing page would be sufficient for verification.
     - User Testing Done: N
 
 **All Pending/In progress Issue list**:
-There are no outstanding bugs or issues reported by the user. The primary Discord kick issue and the voice chat data inaccuracy have been resolved.
+  Issue 1:  (P0) Signing page displays incorrect approver list.
+  
+  Issues Detail:
+  - Issue 1: 
+     - **Attempted fixes**: The agent confirmed via direct database queries and API tests that the backend correctly stores and handles the *selected* approvers. This suggests the bug is in the data being sent from the  endpoint or how the  page is rendering that data.
+     - **Next debug checklist**:
+         1.  Examine the API response from . Does it contain the full list of officers or only the selected ones?
+         2.  Review . How does it fetch and render the approver list? It's likely using a stale or incorrect data source instead of the  array from the API response for the specific signing request.
+         3.  Correct the rendering logic on the  page to only show the approvers attached to the specific  object.
+     - **Why fix this issue and what will be achieved with the fix?** This is confusing for the recipient and misrepresents the approval workflow. Fixing it will ensure the signing page accurately reflects who will approve the document after the recipient signs.
+     - **Status**:  IN PROGRESS
+     - **Is recurring issue?** N
+     - **Should Test frontend/backend/both after fix?** Frontend (screenshot of the signing page).
+     - **Blocked on other issue**: None.
 
 **In progress Task List**:
-  Task 1:  (P0) Continue refactoring .
+  Task 1:  (P0) Complete and stabilize the in-house document signing system.
   
  Task Detail:
   - Task 1: 
-     - **Where to resume**: The file  has just been created. The next steps are:
-        1. Move the constant definitions from  into .
-        2. Replace the definitions in  with an import statement (e.g., ).
-        3. Restart the backend and test thoroughly to ensure that all parts of the application that rely on these constants (especially the Discord bot) are still functioning correctly.
-     - **What will be achieved with this?** This will further modularize the codebase by separating configuration from application logic, making  smaller and easier to manage.
+     - **Where to resume**: Resolve the pending issue with the incorrect approver list display. After fixing the bug, perform a final end-to-end test of the entire document signing and approval flow to ensure all parts work together as expected.
+     - **What will be achieved with this?** This will deliver a complete, user-accepted replacement for the SignNow integration.
      - **Status**:  IN PROGRESS
-     - **Should Test frontend/backend/both after fix?** Backend
-     - **Blocked on something**: Nothing. This is the user's highest priority task.
+     - **Should Test frontend/backend/both after fix?** Both.
+     - **Blocked on something**: Issue 1: Signing page displays incorrect approver list.
 
 **Upcoming and Future Tasks**
     Upcoming Tasks:
-    - (P0) **Continue  Refactor**: After extracting the constants, the next logical step is to extract the Discord helper functions and then the API routes into their own dedicated modules (e.g., , ). The user wants this done slowly and carefully, with confirmation at each step.
-    - (P1) **Add More Dues Options**: Add quarterly, bi-yearly, and yearly dues options to the Member Store.
+    - (P0) **Continue  Refactor**: This was the original high-priority task before the user pivoted. Once the document signing system is stable, this should be resumed. The next step is to extract Discord helper functions and then API routes into their own modules (, ).
     
     Future Tasks:
     - (P0) **Refactor Large Frontend Files**:  (~3000 lines) and  are still very large and need to be broken down into smaller, reusable React components.
+    - (P1) **Add More Dues Options**: Add quarterly, bi-yearly, and yearly dues options to the Member Store.
     - (P1) **Suggestion Box Replies**: Add a feature for officers to reply to suggestions.
     - (P2) **Link Discord Members to System Members**: Create a UI to definitively link system members to their Discord accounts.
 
 **Completed work in this session**
-- **SignNow Feature Updates**:
-  - Simplified the Send Document dialog by removing the Signer Role selection ().
-  - Added a  endpoint and a corresponding delete button in the UI to allow manual removal of stale document records.
-- **Role Correction**:
-  - Added 'COO' to the  array in  to fix the Edit Member dialog.
-- **Discord Voice Chat Analytics (New Feature & Major Bug Fix)**:
-  - Created a new page at  and a backend endpoint at .
-  - Fixed a critical bug causing duplicate voice session records by adding a uniqueness check before database insertion in .
-  - Cleaned **8,247 duplicate records** from the  collection.
-  - Rewrote the analytics aggregation pipeline to correctly handle sessions that span midnight.
-  - Implemented a persistent session tracking system using a new  collection, making voice tracking resilient to bot restarts and preventing data loss.
-- **Dues Logic Enhancement**:
-  - Implemented the Extension to Paid Conversion feature by modifying the  function in .
-- ** Refactoring (Phases 1-4)**:
-  - **Models**: Extracted over 60 Pydantic models into a new  package, reducing  by over 500 lines.
-  - **Utils**: Extracted standalone helper functions into .
-  - **Auth**: Extracted password hashing and verification logic into .
-  - **Config**: Began extracting constants into .
+- **Refactoring  (Phase 1)**:
+  - Successfully extracted Discord-related constants from  into the existing  module and updated all imports.
+- **In-House Document Signing System (New Feature)**:
+  - **Backend**: Created new Pydantic models () and a dedicated API router () with endpoints for creating templates, sending documents, signing, and managing a multi-step approval workflow. Installed and used  and  for PDF handling.
+  - **Frontend**:
+    - Created a responsive admin page for document template management ().
+    - Created a responsive public page for recipients and approvers to sign documents ().
+    - Overhauled the Documents section in  to use the new system, including a UI for selecting and ordering approvers.
+    - Added a detailed View Details dialog to show the full signature and approval history for any document.
+  - **Multi-Signer Workflow**: Implemented the full backend logic and frontend UI for a sequential, user-defined approval chain.
+  - **Email & Decryption**:
+    - Configured the system to send signing/approval emails from .
+    - Fixed a critical bug by implementing a runtime decryption utility to correctly read encrypted BOH emails from the database for notifications.
+  - **Bug Fixes**:
+    - Added a Download PDF fallback button on the signing page to resolve issues with blocked iframes on mobile devices.
+    - Fixed the document deletion API to handle the new document statuses (, ).
+- **Testing**: Used the testing agent to validate the initial implementation of the document system pages.
 
 **Earlier issues found/mentioned but not fixed**
-   - None. All issues raised in this or the previous session have been addressed.
+   - None.
 
 **Known issue recurrence from previous fork**
   - **Issue recurrence:** Prospect Channel Analytics page showing duplicate users.
   - **Recurrence count:** 2+
-  - **Status:** RESOLVED (but remains a high-risk watch item as the root cause may be related to the duplicate event processing fixed in the voice chat feature).
+  - **Status:** RESOLVED (but remains a high-risk watch item).
 
 **Code Architecture**
 
 
 **Key Technical Concepts**
-- **Monolith Decomposition**: Began the systematic breakdown of a large, single-file application () into a modular structure with packages for models, utils, auth, and config.
-- **Data Integrity and Debugging**: Performed an in-depth investigation into a data accuracy problem, tracing it back to duplicate event processing in a Discord bot, cleaning corrupted data, and implementing multiple layers of fixes (deduplication, persistent state, better aggregation logic).
-- **Persistent Background Services**: Reworked the Discord bot to store its active state () in MongoDB, allowing it to survive restarts without losing tracking data for ongoing voice sessions.
-- **MongoDB Aggregation**: Wrote and rewrote complex aggregation pipelines to calculate statistics, handle timezone-aware date splitting for sessions crossing midnight, and group data correctly.
+- **Monolith Decomposition**: Paused, but first step (config extraction) was completed.
+- **Feature Pivot**: Shifted development priority from refactoring to building a major new feature based on user feedback.
+- **Secure Document Signing**: Used JWTs to create single-use, secure tokens for signing links.
+- **Stateful Workflow Management**: Managed the multi-step approval process using status fields (, , , ) and an ordered  array in the  MongoDB collection.
+- **Dynamic PDF Generation**: Used the  library to dynamically generate PDFs with embedded signature images and text.
+- **Runtime Data Decryption**: Implemented a fix to decrypt user emails at runtime, solving a bug where encrypted data was being used for email notifications due to module import order.
+- **Responsive UI/UX**: Built frontend pages with mobile-first, responsive layouts using Tailwind CSS.
 
 **key DB schema**
-  - ****: (New Collection) Used to persist active voice sessions to make the Discord bot's tracking resilient to restarts.
+  - ****: (New Collection) Stores document templates created by admins.
+    - 
+  - ****: (New Collection) Tracks the state of each document sent for signature.
     - 
 
 **changes in tech stack**
-  - No new external dependencies were added. The changes were architectural, introducing a modular package structure within the backend.
+  - **Added**: ,  (for PDF generation and manipulation in the backend).
 
 **All files of reference**
-- 
--  (new package)
--  (new package)
--  (new package)
 -  (new)
-- 
 -  (new)
-- 
+-  (new)
+-  (new)
+-  (heavily modified)
+-  (modified)
+-  (modified)
 
 **Areas that need refactoring**:
-- **CRITICAL (IN PROGRESS)**: The refactoring of  is the user's top priority. It must be continued slowly and carefully with verification at each step.
-- **CRITICAL (FUTURE)**:  and  remain extremely large and complex. They should be broken down into smaller, manageable components after significant progress is made on the backend refactor.
+- **CRITICAL (FUTURE)**: The refactoring of  is the user's top long-term priority and should be resumed after the document signing feature is stable.
+- **CRITICAL (FUTURE)**:  and  are still extremely large and complex.
 
 **key api endpoints**
-- ****: New endpoint to provide aggregated daily and monthly voice chat statistics.
-- ****: New endpoint to delete a document record from the application's database.
+- ****: Create a new document template.
+- ****: Send a document to a recipient with an optional approval chain.
+- ****: Get data for a signing request (for recipient or approver).
+- ****: Submit a signature or an approval/denial.
+- ****: Get the PDF content for viewing.
+- ****: Get a list of available national officers for the approval chain.
+- ****: Delete a signing request.
 
 **Critical Info for New Agent**
-- **Refactoring is Priority #1**: The user has explicitly directed to continue refactoring . This is not optional. Proceed with extreme caution, one small, verifiable step at a time, and seek user confirmation before moving to the next. The current task is to finalize the extraction of constants into .
-- **Discord Bot Sensitivity**: The Discord bot's data logging was the source of major bugs. Any future changes to the bot in  must be tested for two things: 1) It does not re-introduce duplicate records. 2) The persistent session tracking continues to work across restarts.
-- **Completed Features**: Be aware that the SignNow signer role was intentionally removed, and the Extension-to-Paid dues logic is now active. Do not try to fix or change this behavior.
+- **User Priority Pivot**: The user explicitly requested to pause the  refactoring to build the in-house document signing system. Do not resume refactoring until the document signing feature is fully working and accepted by the user.
+- **Current Bug is UI-Related**: The backend logic for the approval chain is confirmed to be working correctly (stores only selected approvers in the correct order). The current bug is a visual/display issue on the  page. Focus your debugging efforts on the frontend code and the API payload it receives.
+- **Decryption is Key**: The system relies on decrypting BOH emails from the database at runtime. The decryption utility in  is critical for the approval email notifications to work.
 
 **documents and test reports created in this job**
-  - None.
+  - 
 
 **Last 10 User Messages and any pending HUMAN messages** 
-- **10. Continue, but take it slow and careful making sure each function works before moving to the next function.**: User confirming the plan to refactor auth functions, stressing caution. (Status: Completed)
-- **9. Yes, slowly and carefully please**: User confirming the plan to refactor utility functions. (Status: Completed)
-- **8. From what I can tell, everything is working. Lets continue carefully and make sure everything stays working."**: User confirming the model refactor was successful and giving the go-ahead to continue refactoring. (Status: In Progress)
-- **7. "Continue"**: User confirming the plan to remove all inline Pydantic models after the new modules were created. (Status: Completed)
-- **6. "Yes"**: User confirming the initial refactoring plan to extract Pydantic models first. (Status: Completed)
-- **5. "Lets start refractoring and making modules. Start with the smallest and easiest place to start. Only move to the next time one the current one is finished and working. I must confirm before continuing.**: User initiating the major refactoring task and setting the cautious, step-by-step workflow. (Status: In Progress)
-- **4. In that scenario, it should show Jan, Feb, mar paid... The only option that should not be caught up is if the members dues were forgiven.**: User providing detailed business logic for the Extension to Paid Conversion feature. (Status: Completed)
-- **3. What is the extension to paid conversion feature?**: User asking for clarification on a future task. (Status: Completed)
-- **2. Continue**: User approving the plan to implement persistent session tracking for the Discord bot. (Status: Completed)
-- **1. 1. No, 2. Yes, 3. Not at this moment.**: User answering clarifying questions about the Discord analytics, confirming they want to proceed with a bot-based solution rather than an external one. (Status: Completed)
+- **10. When Lonestar goes to sign the document, it shows its going to the National President, Treasurer, and Secretary. Even though only the secretary was selected"**: User reports the critical bug that the agent is currently working on. (Status: In Progress)
+- **9. "The approval emails only need to be sent to the ones selected. Not always National President, Treasurer, and Secretary. And in the order selected"**: User clarifying the expected behavior of the approval chain. The agent confirmed the system already works this way. (Status: Resolved)
+- **8. "Email received, Document content is blocked."**: User reports that the PDF is not visible on their device. (Status: Resolved by adding an "Open PDF" fallback button)
+- **7. "I sent a form to Lonestar, it was never received. Is like the forms to come from the support@boh2158.org"**: User reports an email delivery issue and requests emails come from a different address. (Status: Resolved)
+- **6. "When I try to delete documents from document history. Heres an image of the toast**: User reports being unable to delete documents. (Status: Resolved)
+- **5. When documents are sent for approval, they need to be sent to their BOH emails**: User requests that approval notifications go to official BOH emails. (Status: Resolved)
+- **4. Where can I view the document with signatures and approval or denied?**: User requests a feature to view completed documents and their audit trail. (Status: Completed)
+- **3. User provides choices for multi-signer workflow**: User confirms requirements for the approval chain feature. (Status: Completed)
+- **2. Some of the forms require the signatures of the National Prez, National T, and the National SEC...**: User provides the detailed request for the multi-signer sequential approval workflow. (Status: In Progress)
+- **1. The document template page all needs to be optimized for smartphone, tablet, v and laptop.**: User requests the new pages be made responsive. (Status: Completed)
 
 **Project Health Check:**
 - **Broken**: None.
@@ -147,13 +171,13 @@ There are no outstanding bugs or issues reported by the user. The primary Discor
 - **Discord**: Notifications, role management, activity tracking. Requires User Bot Token and .
 - **OpenAI**: Chatbot feature. Requires User API Key.
 - **Zoho SMTP**: Application emails.
-- **SignNow**: Electronic signatures. Requires User API Key/Secret and User account credentials.
+- **SignNow**: Electronic signatures. (Being actively replaced by the new in-house system).
 
 **Testing status**
-  - Testing agent used after significant changes: NO
+  - Testing agent used after significant changes: YES (for initial page creation)
   - Troubleshoot agent used after agent stuck in loop: NO
   - Test files created: []
-  - Known regressions: None in this session. The production Discord kick regression from the previous session was resolved.
+  - Known regressions: None.
 
 **Credentials to test flow:**
 - **Admin:**  / 
@@ -162,4 +186,21 @@ There are no outstanding bugs or issues reported by the user. The primary Discor
 - **SignNow User:**  / 
 
 **What agent forgot to execute**
-- The agent successfully followed all user requests and did not appear to forget or overlook any tasks during this session. The main priority (refactoring) was initiated and is being handled according to the user's specific instructions.</analysis>
+The agent correctly followed the user's pivot from refactoring to feature development and did not overlook any sub-tasks related to the new document signing system. The original refactoring task is intentionally paused.
+
+**Debugging checklist for current issue**
+    Issue: The signing page () incorrectly displays all potential approvers instead of only those selected for the specific document.
+
+    Frontend files to check:
+    - :
+        - In the  hook that fetches the signing request data (), inspect the  object being set in the state.
+        - Examine the JSX that renders the approver list. It should be mapping over . Suspect it might be using a different, static, or incorrect list.
+
+    Backend files to check:
+    - :
+        - Check the Pydantic response model for the  endpoint. Ensure it's correctly serializing the  list from the MongoDB document. Agent's prior testing suggests the backend logic is correct, making this a lower probability cause.
+
+    Database to check:
+    -  collection:
+        - 
+        - Verify that the  array in the document contains only the selected officers (e.g., just the National Secretary). This has been confirmed previously and is likely correct. The bug is almost certainly in the Frontend layer.</analysis>

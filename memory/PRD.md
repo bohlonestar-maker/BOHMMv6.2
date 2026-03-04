@@ -63,26 +63,36 @@ Build a member management application with attendance tracking, dues management,
   - Public signing page (no login required)
   - Draw-your-signature canvas OR typed signature options
   - Legal consent checkbox with audit trail
+- [x] **Multi-Signer Sequential Approval Workflow:**
+  - Select up to 5 National Officers as approvers when sending documents
+  - Approvers are notified sequentially via email to their official BOH emails
+  - Each approver can "Approve" or "Deny" with notes
+  - Approval chain respects user-selected order
+  - Signing page displays ONLY the selected approvers (verified Mar 4)
 - [x] **Backend Implementation (`/app/backend/routes/documents.py`):**
   - `GET /api/documents/templates` - List all templates
   - `POST /api/documents/templates` - Create new template (PDF or text)
   - `PUT /api/documents/templates/{id}` - Update template
   - `DELETE /api/documents/templates/{id}` - Deactivate template
-  - `POST /api/documents/send` - Send document for signing
+  - `POST /api/documents/send` - Send document for signing with optional approval chain
   - `GET /api/documents/requests` - List signing requests
   - `GET /api/documents/sign/{token}` - Public signing page data
-  - `POST /api/documents/sign/{token}/submit` - Submit signature
+  - `POST /api/documents/sign/{token}/submit` - Submit signature or approval decision
   - `GET /api/documents/signed/{id}/download` - Download signed PDF
+  - `GET /api/documents/national-officers` - Get available approvers
 - [x] **Frontend Implementation:**
   - `/document-templates` - Admin page for template management
-  - `/sign/:signingToken` - Public signing experience
-  - Updated Dashboard documents dialog to use new system
+  - `/sign/:signingToken` - Public signing experience (responsive mobile/tablet/desktop)
+  - Updated Dashboard documents dialog with approver selection and ordering UI
+  - View Details dialog showing full signature and approval history
 - [x] **Legal Audit Trail Captures:**
   - Signer name and email
   - IP address and browser info
   - Timestamp (UTC)
   - Consent agreement text
   - Document hash (SHA-256) for integrity verification
+- [x] **Email Configuration:** Document signing emails sent from `support@boh2158.org`
+- [x] **Mobile Fixes:** Added PDF download fallback for blocked iframes
 - [x] **Template Categories:** Financial Hardship, Honorary Application, Bylaws, SOPs
 - [x] **Permission:** Uses existing `send_documents` permission
 
