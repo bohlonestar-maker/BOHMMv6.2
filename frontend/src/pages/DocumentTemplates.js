@@ -374,6 +374,18 @@ export default function DocumentTemplates() {
                       <Edit2 className="w-3 h-3 mr-1" />
                       Edit
                     </Button>
+                    {template.template_type === 'pdf' && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => navigate(`/document-templates/${template.id}/edit`)}
+                        className="flex-1 text-xs sm:text-sm text-purple-400 hover:text-purple-300"
+                        data-testid={`configure-template-${template.id}`}
+                      >
+                        <i className="fas fa-pen-to-square w-3 h-3 mr-1"></i>
+                        Fields
+                      </Button>
+                    )}
                     <Button
                       size="sm"
                       variant="outline"

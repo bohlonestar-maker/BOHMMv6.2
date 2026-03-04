@@ -1,7 +1,41 @@
 # Document Signing Models - In-house replacement for SignNow
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 from pydantic import BaseModel, Field
 from datetime import datetime
+
+
+# =============================================================================
+# Field and Signature Placement Models
+# =============================================================================
+
+class FieldPlacement(BaseModel):
+    """Defines a form field placement on a PDF"""
+    id: str  # Unique field ID
+    field_type: str  # 'text', 'date', 'textarea', 'initials', 'checkbox'
+    label: str  # Display label for the field
+    page: int  # 1-indexed page number
+    x: float  # X coordinate (percentage from left, 0-100)
+    y: float  # Y coordinate (percentage from top, 0-100)
+    width: float  # Width (percentage, 0-100)
+    height: float  # Height (percentage, 0-100)
+    required: bool = True
+    placeholder: Optional[str] = None
+    signer_type: str = "recipient"  # 'recipient' or 'approver_{index}'
+
+
+class SignaturePlacement(BaseModel):
+    """Defines a signature placement on a PDF"""
+    id: str  # Unique signature ID
+    label: str  # e.g., "Applicant Signature", "Committee Officer Signature"
+    page: int  # 1-indexed page number
+    x: float  # X coordinate (percentage from left, 0-100)
+    y: float  # Y coordinate (percentage from top, 0-100)
+    width: float  # Width (percentage, 0-100)
+    height: float  # Height (percentage, 0-100)
+    signer_type: str  # 'recipient' or 'approver_{index}' (0-indexed)
+    include_date: bool = True  # Whether to include signed date next to signature
+    date_x: Optional[float] = None  # X offset for date
+    date_y: Optional[float] = None  # Y offset for date
 
 
 # =============================================================================
@@ -21,6 +55,9 @@ class DocumentTemplateCreate(BaseModel):
     # Common fields
     is_active: bool = True
     category: Optional[str] = None  # e.g., "Financial Hardship", "Honorary Application", "Bylaws", "SOPs"
+    # Field and signature placements for PDF templates
+    field_placements: Optional[List[FieldPlacement]] = None
+    signature_placements: Optional[List[SignaturePlacement]] = None
 
 
 class DocumentTemplateUpdate(BaseModel):
@@ -30,6 +67,8 @@ class DocumentTemplateUpdate(BaseModel):
     text_content: Optional[str] = None
     is_active: Optional[bool] = None
     category: Optional[str] = None
+    field_placements: Optional[List[FieldPlacement]] = None
+    signature_placements: Optional[List[SignaturePlacement]] = None
 
 
 class DocumentTemplateResponse(BaseModel):
@@ -45,6 +84,9 @@ class DocumentTemplateResponse(BaseModel):
     created_at: datetime
     created_by: str
     updated_at: Optional[datetime] = None
+    field_placements: Optional[List[FieldPlacement]] = None
+    signature_placements: Optional[List[SignaturePlacement]] = None
+    page_count: Optional[int] = None  # Number of pages in PDF
 
 
 # =============================================================================

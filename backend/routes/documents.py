@@ -320,6 +320,147 @@ async def delete_document_template(
 
 
 # =============================================================================
+# PDF TEMPLATE CONFIGURATION ENDPOINTS
+# =============================================================================
+
+@router.get("/templates/{template_id}/pages")
+async def get_template_pages(
+    template_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get page count and thumbnails for a PDF template"""
+    db = get_db()
+    
+    template = await db.document_templates.find_one({"id": template_id})
+    if not template:
+        raise HTTPException(status_code=404, detail="Template not found")
+    
+    if template.get("template_type") != "pdf" or not template.get("pdf_data"):
+        raise HTTPException(status_code=400, detail="Template is not a PDF")
+    
+    try:
+        from PyPDF2 import PdfReader
+        pdf_bytes = base64.b64decode(template["pdf_data"])
+        reader = PdfReader(BytesIO(pdf_bytes))
+        page_count = len(reader.pages)
+        
+        # Get page dimensions for each page
+        pages_info = []
+        for i, page in enumerate(reader.pages):
+            media_box = page.mediabox
+            pages_info.append({
+                "page": i + 1,
+                "width": float(media_box.width),
+                "height": float(media_box.height)
+            })
+        
+        return {
+            "page_count": page_count,
+            "pages": pages_info,
+            "field_placements": template.get("field_placements", []),
+            "signature_placements": template.get("signature_placements", [])
+        }
+    except Exception as e:
+        sys.stderr.write(f"[DOCS] Error reading PDF pages: {e}\n")
+        raise HTTPException(status_code=500, detail="Failed to read PDF")
+
+
+@router.get("/templates/{template_id}/page/{page_num}/image")
+async def get_template_page_image(
+    template_id: str,
+    page_num: int,
+    current_user: dict = Depends(get_current_user)
+):
+    """Render a specific page of a PDF template as an image for the visual editor"""
+    db = get_db()
+    
+    template = await db.document_templates.find_one({"id": template_id})
+    if not template:
+        raise HTTPException(status_code=404, detail="Template not found")
+    
+    if template.get("template_type") != "pdf" or not template.get("pdf_data"):
+        raise HTTPException(status_code=400, detail="Template is not a PDF")
+    
+    try:
+        import fitz  # PyMuPDF
+        pdf_bytes = base64.b64decode(template["pdf_data"])
+        doc = fitz.open(stream=pdf_bytes, filetype="pdf")
+        
+        if page_num < 1 or page_num > len(doc):
+            raise HTTPException(status_code=404, detail="Page not found")
+        
+        page = doc[page_num - 1]
+        # Render at 1.5x zoom for better quality
+        mat = fitz.Matrix(1.5, 1.5)
+        pix = page.get_pixmap(matrix=mat)
+        img_bytes = pix.tobytes("png")
+        doc.close()
+        
+        return StreamingResponse(
+            BytesIO(img_bytes),
+            media_type="image/png",
+            headers={"Cache-Control": "max-age=3600"}
+        )
+    except ImportError:
+        # Fallback: Return the PDF page directly if PyMuPDF not available
+        sys.stderr.write("[DOCS] PyMuPDF not installed, cannot render page images\n")
+        raise HTTPException(status_code=501, detail="PDF rendering not available. Install PyMuPDF.")
+    except Exception as e:
+        sys.stderr.write(f"[DOCS] Error rendering PDF page: {e}\n")
+        raise HTTPException(status_code=500, detail="Failed to render PDF page")
+
+
+@router.put("/templates/{template_id}/placements")
+async def update_template_placements(
+    template_id: str,
+    request: Request,
+    current_user: dict = Depends(get_current_user)
+):
+    """Update field and signature placements for a template"""
+    db = get_db()
+    
+    # Check permission
+    permissions = current_user.get("permissions", {})
+    if not (permissions.get("send_documents") or current_user.get("role") == "admin"):
+        raise HTTPException(status_code=403, detail="Permission denied")
+    
+    template = await db.document_templates.find_one({"id": template_id})
+    if not template:
+        raise HTTPException(status_code=404, detail="Template not found")
+    
+    body = await request.json()
+    field_placements = body.get("field_placements", [])
+    signature_placements = body.get("signature_placements", [])
+    
+    # Validate placements
+    for fp in field_placements:
+        if not all(k in fp for k in ["id", "field_type", "label", "page", "x", "y", "width", "height"]):
+            raise HTTPException(status_code=400, detail="Invalid field placement format")
+    
+    for sp in signature_placements:
+        if not all(k in sp for k in ["id", "label", "page", "x", "y", "width", "height", "signer_type"]):
+            raise HTTPException(status_code=400, detail="Invalid signature placement format")
+    
+    await db.document_templates.update_one(
+        {"id": template_id},
+        {"$set": {
+            "field_placements": field_placements,
+            "signature_placements": signature_placements,
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }}
+    )
+    
+    sys.stderr.write(f"[DOCS] Updated placements for template '{template_id}': {len(field_placements)} fields, {len(signature_placements)} signatures\n")
+    
+    return {
+        "success": True,
+        "message": "Placements updated",
+        "field_placements": field_placements,
+        "signature_placements": signature_placements
+    }
+
+
+# =============================================================================
 # SIGNING REQUEST ENDPOINTS
 # =============================================================================
 
@@ -653,6 +794,23 @@ async def get_signing_page(signing_token: str, request: Request):
         response["has_approvers"] = len(approval_chain) > 0
         if approval_chain:
             response["approver_titles"] = [a.get("title") for a in approval_chain]
+    
+    # Include field placements for fillable forms (filter by signer_type)
+    field_placements = template.get("field_placements", [])
+    signature_placements = template.get("signature_placements", [])
+    
+    if is_approver:
+        # Filter to show only approver's fields/signatures
+        signer_type = f"approver_{approver_index}"
+        response["field_placements"] = [fp for fp in field_placements if fp.get("signer_type") == signer_type]
+        response["signature_placements"] = [sp for sp in signature_placements if sp.get("signer_type") == signer_type]
+    else:
+        # Recipient sees their fields/signatures
+        response["field_placements"] = [fp for fp in field_placements if fp.get("signer_type") == "recipient"]
+        response["signature_placements"] = [sp for sp in signature_placements if sp.get("signer_type") == "recipient"]
+    
+    # Include previously filled field values if any
+    response["filled_fields"] = signing_request.get("filled_fields", {})
     
     return response
 
@@ -1095,155 +1253,225 @@ BOH Document System
 
 
 async def generate_signed_pdf(template: dict, signing_request: dict, signature: dict) -> bytes:
-    """Generate a PDF with the signature embedded"""
+    """Generate a PDF with filled fields and signatures overlaid at specified positions"""
     try:
-        from reportlab.lib.pagesizes import letter
-        from reportlab.pdfgen import canvas
-        from reportlab.lib.units import inch
-        from reportlab.lib import colors
-        from PyPDF2 import PdfReader, PdfWriter
+        import fitz  # PyMuPDF
+        from PIL import Image
         
         audit = signing_request.get("audit_trail", {})
+        filled_fields = signing_request.get("recipient_fields", {}) or {}
+        approval_chain = signing_request.get("approval_chain", [])
         
         if template.get("template_type") == "pdf" and template.get("pdf_data"):
-            # For PDF templates, add signature page to existing PDF
-            original_pdf = base64.b64decode(template["pdf_data"])
-            reader = PdfReader(BytesIO(original_pdf))
-            writer = PdfWriter()
+            # Open the original PDF
+            pdf_bytes = base64.b64decode(template["pdf_data"])
+            doc = fitz.open(stream=pdf_bytes, filetype="pdf")
             
-            # Copy all pages
-            for page in reader.pages:
-                writer.add_page(page)
+            field_placements = template.get("field_placements", [])
+            signature_placements = template.get("signature_placements", [])
             
-            # Create signature page
-            sig_buffer = BytesIO()
-            c = canvas.Canvas(sig_buffer, pagesize=letter)
-            width, height = letter
-            
-            # Add signature page content
-            c.setFont("Helvetica-Bold", 16)
-            c.drawString(1*inch, height - 1*inch, "SIGNATURE CERTIFICATE")
-            
-            c.setFont("Helvetica", 11)
-            y = height - 1.5*inch
-            
-            c.drawString(1*inch, y, f"Document: {template['name']}")
-            y -= 0.3*inch
-            c.drawString(1*inch, y, f"Signer: {signature['typed_name']}")
-            y -= 0.3*inch
-            c.drawString(1*inch, y, f"Email: {audit.get('signer_email', 'N/A')}")
-            y -= 0.3*inch
-            c.drawString(1*inch, y, f"Signed At: {audit.get('signed_at', 'N/A')}")
-            y -= 0.3*inch
-            c.drawString(1*inch, y, f"IP Address: {audit.get('ip_address', 'N/A')}")
-            y -= 0.3*inch
-            c.drawString(1*inch, y, f"Signature Type: {signature['signature_type'].title()}")
-            y -= 0.5*inch
-            
-            # Draw signature if it exists
-            if signature.get("signature_image"):
-                try:
-                    sig_data = base64.b64decode(signature["signature_image"].split(",")[-1])
-                    from PIL import Image
-                    sig_img = Image.open(BytesIO(sig_data))
+            # Process each page
+            for page_num in range(len(doc)):
+                page = doc[page_num]
+                page_rect = page.rect
+                page_width = page_rect.width
+                page_height = page_rect.height
+                
+                # Overlay filled text fields on this page
+                for field in field_placements:
+                    if field.get("page") != page_num + 1:
+                        continue
                     
-                    # Save to temp buffer for reportlab
-                    img_buffer = BytesIO()
-                    sig_img.save(img_buffer, format='PNG')
-                    img_buffer.seek(0)
+                    field_id = field.get("id")
+                    field_value = filled_fields.get(field_id, "")
                     
-                    from reportlab.lib.utils import ImageReader
-                    c.drawImage(ImageReader(img_buffer), 1*inch, y - 1.5*inch, width=3*inch, height=1*inch, preserveAspectRatio=True)
-                    y -= 2*inch
-                except Exception as e:
-                    sys.stderr.write(f"[DOCS] Could not embed signature image: {e}\n")
-                    c.drawString(1*inch, y, f"Typed Signature: {signature['typed_name']}")
-                    y -= 0.5*inch
-            else:
-                c.setFont("Helvetica-Oblique", 14)
-                c.drawString(1*inch, y, f"Typed Signature: {signature['typed_name']}")
-                y -= 0.5*inch
+                    if not field_value:
+                        continue
+                    
+                    # Convert percentage to actual coordinates
+                    x = (field.get("x", 0) / 100) * page_width
+                    y = (field.get("y", 0) / 100) * page_height
+                    
+                    # Insert text at position
+                    text_point = fitz.Point(x, y + 12)  # Offset for text baseline
+                    
+                    # Use smaller font for textareas
+                    fontsize = 9 if field.get("field_type") == "textarea" else 10
+                    
+                    # Handle multi-line text for textareas
+                    if field.get("field_type") == "textarea" and "\n" in str(field_value):
+                        lines = str(field_value).split("\n")
+                        for i, line in enumerate(lines[:10]):  # Max 10 lines
+                            line_point = fitz.Point(x, y + 12 + (i * 12))
+                            page.insert_text(line_point, line[:80], fontsize=fontsize, color=(0, 0, 0))
+                    else:
+                        page.insert_text(text_point, str(field_value)[:100], fontsize=fontsize, color=(0, 0, 0))
+                
+                # Overlay signatures on this page
+                for sig_placement in signature_placements:
+                    if sig_placement.get("page") != page_num + 1:
+                        continue
+                    
+                    signer_type = sig_placement.get("signer_type", "recipient")
+                    sig_data = None
+                    typed_name = None
+                    signed_at = None
+                    
+                    if signer_type == "recipient":
+                        # Use recipient signature
+                        sig_data = signature.get("signature_image")
+                        typed_name = signature.get("typed_name")
+                        signed_at = audit.get("signed_at", "")
+                    elif signer_type.startswith("approver_"):
+                        # Use approver signature
+                        try:
+                            approver_idx = int(signer_type.split("_")[1])
+                            if approver_idx < len(approval_chain):
+                                approver = approval_chain[approver_idx]
+                                sig_data = approver.get("signature_image")
+                                typed_name = approver.get("typed_name")
+                                signed_at = approver.get("signed_at", "")
+                        except (ValueError, IndexError):
+                            pass
+                    
+                    if not typed_name:
+                        continue
+                    
+                    # Convert percentage to actual coordinates
+                    x = (sig_placement.get("x", 0) / 100) * page_width
+                    y = (sig_placement.get("y", 0) / 100) * page_height
+                    width = (sig_placement.get("width", 20) / 100) * page_width
+                    height = (sig_placement.get("height", 5) / 100) * page_height
+                    
+                    # Draw signature image if available
+                    if sig_data:
+                        try:
+                            # Handle base64 data URL
+                            if "," in sig_data:
+                                sig_data = sig_data.split(",")[1]
+                            img_bytes = base64.b64decode(sig_data)
+                            
+                            # Create image rect
+                            sig_rect = fitz.Rect(x, y, x + width, y + height)
+                            
+                            # Insert image
+                            page.insert_image(sig_rect, stream=img_bytes)
+                        except Exception as e:
+                            sys.stderr.write(f"[DOCS] Could not overlay signature image: {e}\n")
+                            # Fall back to typed name
+                            text_point = fitz.Point(x, y + height/2)
+                            page.insert_text(text_point, typed_name, fontsize=12, color=(0, 0, 0.5))
+                    else:
+                        # Typed signature - use italic-like style
+                        text_point = fitz.Point(x, y + height * 0.7)
+                        page.insert_text(text_point, typed_name, fontsize=14, color=(0, 0, 0.3))
+                    
+                    # Add date if specified
+                    if sig_placement.get("include_date") and signed_at:
+                        date_x = sig_placement.get("date_x")
+                        date_y = sig_placement.get("date_y")
+                        if date_x is not None and date_y is not None:
+                            dx = (date_x / 100) * page_width
+                            dy = (date_y / 100) * page_height
+                        else:
+                            # Default: place date to the right of signature
+                            dx = x + width + 10
+                            dy = y + height * 0.7
+                        
+                        # Format date
+                        try:
+                            dt = datetime.fromisoformat(signed_at.replace('Z', '+00:00'))
+                            date_str = dt.strftime("%m/%d/%Y")
+                        except:
+                            date_str = signed_at[:10] if signed_at else ""
+                        
+                        if date_str:
+                            page.insert_text(fitz.Point(dx, dy), date_str, fontsize=10, color=(0, 0, 0))
             
-            # Consent statement
-            c.setFont("Helvetica", 9)
-            y -= 0.3*inch
-            c.drawString(1*inch, y, f"Consent: {audit.get('consent_text', 'N/A')}")
+            # Add a signature certificate page at the end
+            cert_page = doc.new_page(-1, width=612, height=792)  # Letter size
             
-            # Document hash
-            y -= 0.5*inch
-            c.setFont("Helvetica", 8)
-            c.setFillColor(colors.gray)
-            c.drawString(1*inch, y, f"Document Hash (SHA-256): {audit.get('document_hash', 'N/A')[:64]}")
+            cert_page.insert_text(fitz.Point(72, 72), "SIGNATURE CERTIFICATE", fontsize=16, color=(0, 0, 0))
             
-            c.save()
-            sig_buffer.seek(0)
+            y_pos = 110
+            cert_page.insert_text(fitz.Point(72, y_pos), f"Document: {template['name']}", fontsize=11)
+            y_pos += 20
+            cert_page.insert_text(fitz.Point(72, y_pos), f"Recipient: {signing_request.get('recipient_name', 'N/A')}", fontsize=11)
+            y_pos += 20
+            cert_page.insert_text(fitz.Point(72, y_pos), f"Email: {signing_request.get('recipient_email', 'N/A')}", fontsize=11)
+            y_pos += 20
+            cert_page.insert_text(fitz.Point(72, y_pos), f"Signed At: {audit.get('signed_at', 'N/A')}", fontsize=11)
+            y_pos += 20
+            cert_page.insert_text(fitz.Point(72, y_pos), f"IP Address: {audit.get('ip_address', 'N/A')}", fontsize=11)
+            y_pos += 30
             
-            # Add signature page
-            sig_reader = PdfReader(sig_buffer)
-            writer.add_page(sig_reader.pages[0])
+            # List all approvers and their decisions
+            if approval_chain:
+                cert_page.insert_text(fitz.Point(72, y_pos), "APPROVAL CHAIN:", fontsize=12, color=(0, 0, 0))
+                y_pos += 20
+                for i, approver in enumerate(approval_chain):
+                    status = approver.get("decision", approver.get("status", "pending"))
+                    color = (0, 0.5, 0) if status == "approved" else (0.8, 0, 0) if status == "denied" else (0.5, 0.5, 0.5)
+                    cert_page.insert_text(
+                        fitz.Point(72, y_pos), 
+                        f"{i+1}. {approver.get('title', 'Unknown')}: {status.upper()} - {approver.get('typed_name', 'N/A')} ({approver.get('signed_at', 'pending')[:10] if approver.get('signed_at') else 'pending'})",
+                        fontsize=10,
+                        color=color
+                    )
+                    y_pos += 18
+                    if approver.get("notes"):
+                        cert_page.insert_text(fitz.Point(90, y_pos), f"Notes: {approver.get('notes')[:60]}", fontsize=9, color=(0.3, 0.3, 0.3))
+                        y_pos += 15
             
-            # Output
+            y_pos += 20
+            cert_page.insert_text(fitz.Point(72, y_pos), f"Document Hash (SHA-256):", fontsize=9, color=(0.5, 0.5, 0.5))
+            y_pos += 15
+            cert_page.insert_text(fitz.Point(72, y_pos), audit.get("document_hash", "N/A")[:64], fontsize=8, color=(0.5, 0.5, 0.5))
+            
+            # Save and return
             output = BytesIO()
-            writer.write(output)
+            doc.save(output)
+            doc.close()
             return output.getvalue()
             
         else:
-            # For text templates, generate PDF from scratch
-            buffer = BytesIO()
-            c = canvas.Canvas(buffer, pagesize=letter)
-            width, height = letter
+            # For text templates, generate PDF from scratch using PyMuPDF
+            doc = fitz.open()
+            page = doc.new_page(-1, width=612, height=792)
             
             # Title
-            c.setFont("Helvetica-Bold", 18)
-            c.drawString(1*inch, height - 1*inch, template["name"])
+            page.insert_text(fitz.Point(72, 72), template["name"], fontsize=18, color=(0, 0, 0))
             
             # Content
-            c.setFont("Helvetica", 11)
-            y = height - 1.5*inch
-            
+            y_pos = 110
             text_content = template.get("text_content", "")
             for line in text_content.split("\n"):
-                if y < 2*inch:
-                    c.showPage()
-                    y = height - 1*inch
-                c.drawString(1*inch, y, line[:90])  # Truncate long lines
-                y -= 0.2*inch
+                if y_pos > 720:
+                    page = doc.new_page(-1, width=612, height=792)
+                    y_pos = 72
+                page.insert_text(fitz.Point(72, y_pos), line[:90], fontsize=11)
+                y_pos += 15
             
             # Signature section
-            c.showPage()
-            y = height - 1*inch
+            y_pos += 30
+            if y_pos > 650:
+                page = doc.new_page(-1, width=612, height=792)
+                y_pos = 72
             
-            c.setFont("Helvetica-Bold", 14)
-            c.drawString(1*inch, y, "SIGNATURE")
-            y -= 0.5*inch
+            page.insert_text(fitz.Point(72, y_pos), "SIGNATURE", fontsize=14, color=(0, 0, 0))
+            y_pos += 25
+            page.insert_text(fitz.Point(72, y_pos), f"Signed by: {signature.get('typed_name', 'N/A')}", fontsize=11)
+            y_pos += 18
+            page.insert_text(fitz.Point(72, y_pos), f"Date: {audit.get('signed_at', 'N/A')}", fontsize=11)
+            y_pos += 18
+            page.insert_text(fitz.Point(72, y_pos), f"IP: {audit.get('ip_address', 'N/A')}", fontsize=11)
             
-            c.setFont("Helvetica", 11)
-            c.drawString(1*inch, y, f"Signed by: {signature['typed_name']}")
-            y -= 0.3*inch
-            c.drawString(1*inch, y, f"Date: {audit.get('signed_at', 'N/A')}")
-            y -= 0.3*inch
-            c.drawString(1*inch, y, f"IP: {audit.get('ip_address', 'N/A')}")
-            
-            # Draw signature image if available
-            if signature.get("signature_image"):
-                try:
-                    sig_data = base64.b64decode(signature["signature_image"].split(",")[-1])
-                    from PIL import Image
-                    sig_img = Image.open(BytesIO(sig_data))
-                    
-                    img_buffer = BytesIO()
-                    sig_img.save(img_buffer, format='PNG')
-                    img_buffer.seek(0)
-                    
-                    from reportlab.lib.utils import ImageReader
-                    y -= 0.5*inch
-                    c.drawImage(ImageReader(img_buffer), 1*inch, y - 1*inch, width=3*inch, height=1*inch, preserveAspectRatio=True)
-                except Exception as e:
-                    sys.stderr.write(f"[DOCS] Could not embed signature image: {e}\n")
-            
-            c.save()
-            return buffer.getvalue()
+            # Save and return
+            output = BytesIO()
+            doc.save(output)
+            doc.close()
+            return output.getvalue()
             
     except ImportError as e:
-        sys.stderr.write(f"[DOCS] PDF generation requires reportlab and PyPDF2: {e}\n")
+        sys.stderr.write(f"[DOCS] PDF generation requires PyMuPDF: {e}\n")
         raise HTTPException(status_code=500, detail="PDF generation not available")

@@ -30,6 +30,7 @@ import DuesReminders from "@/pages/DuesReminders";
 import Forms from "@/pages/Forms";
 import PromotionPage from "@/pages/PromotionPage";
 import DocumentTemplates from "@/pages/DocumentTemplates";
+import TemplateEditor from "@/pages/TemplateEditor";
 import SignDocument from "@/pages/SignDocument";
 import ChatBot from "@/components/ChatBot";
 import { Toaster } from "@/components/ui/sonner";
@@ -542,6 +543,16 @@ function App() {
             element={
               isAuthenticated ? (
                 <DocumentTemplates />
+              ) : (
+                <Navigate to="/" replace />
+              )
+            }
+          />
+          <Route
+            path="/document-templates/:templateId/edit"
+            element={
+              isAuthenticated ? (
+                <TemplateEditor />
               ) : (
                 <Navigate to="/" replace />
               )

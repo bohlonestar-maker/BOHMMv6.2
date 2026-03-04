@@ -22,6 +22,9 @@ export default function SignDocument() {
   const [submitting, setSubmitting] = useState(false);
   const [signed, setSigned] = useState(false);
   
+  // Fillable form fields
+  const [formFields, setFormFields] = useState({});
+  
   // Approver-specific state
   const [decision, setDecision] = useState('');  // 'approved' or 'denied'
   const [approverNotes, setApproverNotes] = useState('');
@@ -66,6 +69,15 @@ export default function SignDocument() {
       const response = await axios.get(`${API}/documents/sign/${signingToken}`);
       setDocumentData(response.data);
       setTypedName(response.data.recipient_name || '');
+      
+      // Initialize form fields with any previously filled values
+      const filledFields = response.data.filled_fields || {};
+      const fieldPlacements = response.data.field_placements || [];
+      const initialFields = {};
+      fieldPlacements.forEach(field => {
+        initialFields[field.id] = filledFields[field.id] || '';
+      });
+      setFormFields(initialFields);
     } catch (err) {
       console.error('Error fetching document:', err);
       if (err.response?.status === 404) {
@@ -171,6 +183,15 @@ export default function SignDocument() {
       return;
     }
     
+    // Validate required form fields
+    const fieldPlacements = documentData?.field_placements || [];
+    for (const field of fieldPlacements) {
+      if (field.required && !formFields[field.id]?.trim()) {
+        toast.error(`Please fill in: ${field.label}`);
+        return;
+      }
+    }
+    
     setSubmitting(true);
     
     try {
@@ -181,6 +202,11 @@ export default function SignDocument() {
       
       if (signatureType === 'drawn') {
         formData.append('signature_image', getSignatureImage());
+      }
+      
+      // Add filled form fields
+      if (Object.keys(formFields).length > 0) {
+        formData.append('recipient_fields', JSON.stringify(formFields));
       }
       
       // Approver-specific fields
@@ -420,6 +446,68 @@ export default function SignDocument() {
             )}
           </CardContent>
         </Card>
+
+        {/* Fillable Form Fields */}
+        {documentData?.field_placements?.length > 0 && (
+          <Card className="bg-slate-800 border-slate-700 mb-4 sm:mb-6">
+            <CardHeader className="p-4 sm:p-6 pb-2 sm:pb-4">
+              <CardTitle className="text-white text-base sm:text-lg">
+                <i className="fas fa-edit mr-2 text-purple-400"></i>
+                Form Fields
+              </CardTitle>
+              <CardDescription className="text-xs sm:text-sm">
+                Please fill in the required information
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="p-4 sm:p-6 pt-0">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {documentData.field_placements.map((field) => (
+                  <div key={field.id} className={field.field_type === 'textarea' ? 'md:col-span-2' : ''}>
+                    <Label className="text-slate-300 text-sm mb-1 block">
+                      {field.label}
+                      {field.required && <span className="text-red-400 ml-1">*</span>}
+                    </Label>
+                    {field.field_type === 'textarea' ? (
+                      <Textarea
+                        value={formFields[field.id] || ''}
+                        onChange={(e) => setFormFields(prev => ({ ...prev, [field.id]: e.target.value }))}
+                        placeholder={field.placeholder || `Enter ${field.label.toLowerCase()}`}
+                        className="bg-slate-700 border-slate-600 text-white min-h-[100px]"
+                        data-testid={`field-${field.id}`}
+                      />
+                    ) : field.field_type === 'date' ? (
+                      <Input
+                        type="date"
+                        value={formFields[field.id] || ''}
+                        onChange={(e) => setFormFields(prev => ({ ...prev, [field.id]: e.target.value }))}
+                        className="bg-slate-700 border-slate-600 text-white"
+                        data-testid={`field-${field.id}`}
+                      />
+                    ) : field.field_type === 'checkbox' ? (
+                      <div className="flex items-center gap-2">
+                        <Checkbox
+                          checked={formFields[field.id] === 'true'}
+                          onCheckedChange={(checked) => setFormFields(prev => ({ ...prev, [field.id]: checked ? 'true' : '' }))}
+                          data-testid={`field-${field.id}`}
+                        />
+                        <span className="text-slate-400 text-sm">{field.placeholder || 'I agree'}</span>
+                      </div>
+                    ) : (
+                      <Input
+                        type="text"
+                        value={formFields[field.id] || ''}
+                        onChange={(e) => setFormFields(prev => ({ ...prev, [field.id]: e.target.value }))}
+                        placeholder={field.placeholder || `Enter ${field.label.toLowerCase()}`}
+                        className="bg-slate-700 border-slate-600 text-white"
+                        data-testid={`field-${field.id}`}
+                      />
+                    )}
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Signature Form */}
         <Card className="bg-slate-800 border-slate-700">
