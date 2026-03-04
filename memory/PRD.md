@@ -93,6 +93,7 @@ Build a member management application with attendance tracking, dues management,
   - Document hash (SHA-256) for integrity verification
 - [x] **Email Configuration:** Document signing emails sent from `support@boh2158.org`
 - [x] **Mobile Fixes:** Added PDF download fallback for blocked iframes
+- [x] **Delete Documents:** Can permanently delete cancelled/completed/expired documents from history
 - [x] **Template Categories:** Financial Hardship, Honorary Application, Bylaws, SOPs
 - [x] **Permission:** Uses existing `send_documents` permission
 

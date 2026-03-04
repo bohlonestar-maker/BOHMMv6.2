@@ -497,11 +497,16 @@ async def get_signing_request(
 
 
 @router.delete("/requests/{request_id}")
-async def cancel_signing_request(
+async def cancel_or_delete_signing_request(
     request_id: str,
+    permanent: bool = False,
     current_user: dict = Depends(get_current_user)
 ):
-    """Cancel a signing request (can cancel pending, pending_recipient, pending_approval, or viewed)"""
+    """Cancel or permanently delete a signing request.
+    
+    - For active requests (pending, pending_recipient, pending_approval, viewed): cancels them
+    - For inactive requests (cancelled, completed, expired, denied): permanently deletes them if permanent=True
+    """
     db = get_db()
     
     # Check permission
@@ -509,19 +514,35 @@ async def cancel_signing_request(
     if not (permissions.get("send_documents") or current_user.get("role") == "admin"):
         raise HTTPException(status_code=403, detail="Permission denied")
     
-    # Allow cancelling any request that isn't already completed or cancelled
-    result = await db.signing_requests.update_one(
-        {
-            "id": request_id, 
-            "status": {"$in": ["pending", "pending_recipient", "pending_approval", "viewed"]}
-        },
-        {"$set": {"status": "cancelled"}}
-    )
+    # First, check if the document exists and get its status
+    doc = await db.signing_requests.find_one({"id": request_id}, {"status": 1})
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document not found")
     
-    if result.modified_count == 0:
-        raise HTTPException(status_code=404, detail="Request not found or already processed")
+    current_status = doc.get("status")
     
-    return {"success": True, "message": "Signing request cancelled"}
+    # If document is in a final state (cancelled, completed, expired, denied), allow permanent deletion
+    if current_status in ["cancelled", "completed", "expired", "denied"]:
+        if permanent:
+            # Permanently delete the document and associated signatures
+            await db.signing_requests.delete_one({"id": request_id})
+            await db.signatures.delete_many({"signing_request_id": request_id})
+            sys.stderr.write(f"[DOCS] Permanently deleted document {request_id} (was {current_status}) by {current_user.get('username')}\n")
+            return {"success": True, "message": f"Document permanently deleted"}
+        else:
+            # For backwards compatibility, just return success (already in final state)
+            return {"success": True, "message": f"Document already {current_status}"}
+    
+    # For active requests, cancel them
+    if current_status in ["pending", "pending_recipient", "pending_approval", "viewed"]:
+        await db.signing_requests.update_one(
+            {"id": request_id},
+            {"$set": {"status": "cancelled"}}
+        )
+        sys.stderr.write(f"[DOCS] Cancelled document {request_id} by {current_user.get('username')}\n")
+        return {"success": True, "message": "Signing request cancelled"}
+    
+    raise HTTPException(status_code=400, detail=f"Cannot process document with status: {current_status}")
 
 
 # =============================================================================

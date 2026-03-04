@@ -718,20 +718,33 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
     }
   };
 
-  const handleDeleteDocumentRecord = async (docId) => {
-    if (!window.confirm("Are you sure you want to cancel this document request?")) {
+  const handleDeleteDocumentRecord = async (docId, currentStatus) => {
+    // For cancelled/completed/expired/denied documents, offer permanent deletion
+    const isFinalState = ["cancelled", "completed", "expired", "denied"].includes(currentStatus);
+    
+    const confirmMessage = isFinalState
+      ? "Are you sure you want to permanently delete this document record? This cannot be undone."
+      : "Are you sure you want to cancel this document request?";
+    
+    if (!window.confirm(confirmMessage)) {
       return;
     }
     
     const token = localStorage.getItem("token");
     try {
-      await axios.delete(`${API}/documents/requests/${docId}`, {
+      // Add permanent=true for documents in final states
+      const url = isFinalState 
+        ? `${API}/documents/requests/${docId}?permanent=true`
+        : `${API}/documents/requests/${docId}`;
+      
+      await axios.delete(url, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      toast.success("Document request cancelled");
+      
+      toast.success(isFinalState ? "Document permanently deleted" : "Document request cancelled");
       fetchMemberDocuments(selectedMember.id);
     } catch (error) {
-      toast.error(error.response?.data?.detail || "Failed to cancel document request");
+      toast.error(error.response?.data?.detail || "Failed to process document request");
     }
   };
 
@@ -3194,9 +3207,9 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
                             </button>
                           )}
                           <button
-                            onClick={() => handleDeleteDocumentRecord(doc.id)}
+                            onClick={() => handleDeleteDocumentRecord(doc.id, doc.status)}
                             className="px-3 py-1.5 text-xs bg-red-600/30 hover:bg-red-600/50 text-red-300 rounded transition-colors"
-                            title="Cancel request"
+                            title={["cancelled", "completed", "expired", "denied"].includes(doc.status) ? "Delete permanently" : "Cancel request"}
                           >
                             <Trash2 className="w-3 h-3" />
                           </button>
