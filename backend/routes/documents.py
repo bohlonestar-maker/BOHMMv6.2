@@ -937,7 +937,11 @@ async def download_signed_document(
     """Download the signed document with signature overlay"""
     db = get_db()
     
-    signing_request = await db.signing_requests.find_one({"id": request_id, "status": "signed"})
+    # Accept both "signed" and "completed" statuses (completed is used for approved docs)
+    signing_request = await db.signing_requests.find_one({
+        "id": request_id, 
+        "status": {"$in": ["signed", "completed"]}
+    })
     if not signing_request:
         raise HTTPException(status_code=404, detail="Signed document not found")
     

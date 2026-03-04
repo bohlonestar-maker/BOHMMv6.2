@@ -714,7 +714,18 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
       
       toast.success("Document downloaded");
     } catch (error) {
-      toast.error(error.response?.data?.detail || "Failed to download document");
+      // Handle blob response errors - need to read the blob as text
+      if (error.response?.data instanceof Blob) {
+        try {
+          const text = await error.response.data.text();
+          const json = JSON.parse(text);
+          toast.error(json.detail || "Failed to download document");
+        } catch {
+          toast.error("Failed to download document");
+        }
+      } else {
+        toast.error(error.response?.data?.detail || "Failed to download document");
+      }
     }
   };
 
