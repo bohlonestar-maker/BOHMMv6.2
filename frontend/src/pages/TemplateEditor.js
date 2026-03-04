@@ -28,6 +28,8 @@ const SIGNER_TYPES = [
   { value: 'approver_2', label: 'Approver 3' },
   { value: 'approver_3', label: 'Approver 4' },
   { value: 'approver_4', label: 'Approver 5' },
+  { value: 'approver_5', label: 'Approver 6' },
+  { value: 'approver_6', label: 'Approver 7' },
 ];
 
 export default function TemplateEditor() {
