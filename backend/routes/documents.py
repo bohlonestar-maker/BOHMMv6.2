@@ -461,7 +461,7 @@ async def cancel_signing_request(
     request_id: str,
     current_user: dict = Depends(get_current_user)
 ):
-    """Cancel a pending signing request"""
+    """Cancel a signing request (can cancel pending, pending_recipient, pending_approval, or viewed)"""
     db = get_db()
     
     # Check permission
@@ -469,8 +469,12 @@ async def cancel_signing_request(
     if not (permissions.get("send_documents") or current_user.get("role") == "admin"):
         raise HTTPException(status_code=403, detail="Permission denied")
     
+    # Allow cancelling any request that isn't already completed or cancelled
     result = await db.signing_requests.update_one(
-        {"id": request_id, "status": "pending"},
+        {
+            "id": request_id, 
+            "status": {"$in": ["pending", "pending_recipient", "pending_approval", "viewed"]}
+        },
         {"$set": {"status": "cancelled"}}
     )
     
