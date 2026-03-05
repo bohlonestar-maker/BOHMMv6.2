@@ -487,10 +487,40 @@ export default function SignDocument() {
                       <div className="flex items-center gap-2">
                         <Checkbox
                           checked={formFields[field.id] === 'true'}
-                          onCheckedChange={(checked) => setFormFields(prev => ({ ...prev, [field.id]: checked ? 'true' : '' }))}
+                          onCheckedChange={(checked) => {
+                            // Make Approved/Denied checkboxes mutually exclusive
+                            const fieldId = field.id.toLowerCase();
+                            const isApprovedField = fieldId.includes('approved');
+                            const isDeniedField = fieldId.includes('denied');
+                            
+                            if (checked && (isApprovedField || isDeniedField)) {
+                              // Find the opposite checkbox and clear it
+                              const rowMatch = fieldId.match(/(\d+)$/); // Get row number
+                              if (rowMatch) {
+                                const rowNum = rowMatch[1];
+                                const oppositeType = isApprovedField ? 'denied' : 'approved';
+                                // Find all fields that match the opposite type for this row
+                                const oppositeFieldId = Object.keys(formFields).find(key => 
+                                  key.toLowerCase().includes(oppositeType) && key.includes(rowNum)
+                                ) || documentData?.field_placements?.find(f => 
+                                  f.id.toLowerCase().includes(oppositeType) && f.id.includes(rowNum)
+                                )?.id;
+                                
+                                if (oppositeFieldId) {
+                                  setFormFields(prev => ({ 
+                                    ...prev, 
+                                    [field.id]: 'true',
+                                    [oppositeFieldId]: '' 
+                                  }));
+                                  return;
+                                }
+                              }
+                            }
+                            setFormFields(prev => ({ ...prev, [field.id]: checked ? 'true' : '' }));
+                          }}
                           data-testid={`field-${field.id}`}
                         />
-                        <span className="text-slate-400 text-sm">{field.placeholder || 'I agree'}</span>
+                        <span className="text-slate-400 text-sm">{field.placeholder || field.label}</span>
                       </div>
                     ) : (
                       <Input
