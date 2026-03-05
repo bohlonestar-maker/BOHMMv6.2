@@ -40,6 +40,11 @@ export default function DocumentTemplates() {
   const [deletingTemplate, setDeletingTemplate] = useState(null);
   const [deleting, setDeleting] = useState(false);
 
+  // Deactivate confirmation dialog
+  const [deactivateDialogOpen, setDeactivateDialogOpen] = useState(false);
+  const [deactivatingTemplate, setDeactivatingTemplate] = useState(null);
+  const [toggling, setToggling] = useState(false);
+
   // Mobile menu state
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -182,7 +187,19 @@ export default function DocumentTemplates() {
     }
   };
 
+  const handleToggleClick = (template) => {
+    if (template.is_active) {
+      // Show confirmation for deactivation
+      setDeactivatingTemplate(template);
+      setDeactivateDialogOpen(true);
+    } else {
+      // Reactivate immediately (no confirmation needed)
+      handleToggleActive(template);
+    }
+  };
+
   const handleToggleActive = async (template) => {
+    setToggling(true);
     try {
       const data = new FormData();
       data.append('is_active', (!template.is_active).toString());
@@ -194,10 +211,14 @@ export default function DocumentTemplates() {
         }
       });
       toast.success(template.is_active ? 'Template deactivated' : 'Template activated');
+      setDeactivateDialogOpen(false);
+      setDeactivatingTemplate(null);
       fetchTemplates();
     } catch (err) {
       console.error('Error toggling template:', err);
       toast.error('Failed to update template');
+    } finally {
+      setToggling(false);
     }
   };
 
@@ -420,7 +441,7 @@ export default function DocumentTemplates() {
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => handleToggleActive(template)}
+                      onClick={() => handleToggleClick(template)}
                       className={`text-xs ${template.is_active ? 'text-yellow-400 hover:text-yellow-300 border-yellow-600 hover:border-yellow-500' : 'text-green-400 hover:text-green-300 border-green-600 hover:border-green-500'}`}
                       data-testid={`toggle-template-${template.id}`}
                     >
@@ -749,6 +770,56 @@ export default function DocumentTemplates() {
             >
               {deleting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Trash2 className="w-4 h-4 mr-2" />}
               Delete Forever
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Deactivate Confirmation Dialog */}
+      <Dialog open={deactivateDialogOpen} onOpenChange={setDeactivateDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-yellow-400 flex items-center gap-2">
+              <EyeOff className="w-5 h-5" />
+              Deactivate Template
+            </DialogTitle>
+            <DialogDescription>
+              Are you sure you want to deactivate "{deactivatingTemplate?.name}"?
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="py-4">
+            <div className="bg-slate-800 rounded-lg p-4">
+              <p className="text-slate-300 text-sm">
+                Deactivating this template will:
+              </p>
+              <ul className="mt-2 space-y-1 text-slate-400 text-sm list-disc list-inside">
+                <li>Hide it from the template list</li>
+                <li>Prevent it from being used for new documents</li>
+                <li>Keep all existing signed documents intact</li>
+              </ul>
+              <p className="mt-3 text-slate-400 text-sm">
+                You can reactivate it at any time by clicking "Show Inactive" and then turning it back on.
+              </p>
+            </div>
+          </div>
+          
+          <DialogFooter className="flex-col sm:flex-row gap-2">
+            <Button 
+              variant="outline" 
+              onClick={() => setDeactivateDialogOpen(false)}
+              disabled={toggling}
+              className="w-full sm:w-auto"
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={() => handleToggleActive(deactivatingTemplate)}
+              disabled={toggling}
+              className="w-full sm:w-auto bg-yellow-600 hover:bg-yellow-700 text-white"
+            >
+              {toggling ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <EyeOff className="w-4 h-4 mr-2" />}
+              Deactivate Template
             </Button>
           </DialogFooter>
         </DialogContent>
