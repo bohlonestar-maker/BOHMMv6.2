@@ -11,7 +11,7 @@ import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 def update_testadmin():
-    base_url = "https://doc-mgmt-staging.preview.emergentagent.com/api"
+    base_url = "https://signing-system-v2.preview.emergentagent.com/api"
     
     # Login as testadmin
     response = requests.post(

@@ -56,6 +56,30 @@ Build a member management application with attendance tracking, dues management,
 
 ### What's Been Implemented
 
+#### March 5, 2026 - Document Signing System Refactor (bohsign)
+- [x] **Backend Refactored to Modular Structure:**
+  - Original `documents.py` (~1500 lines) split into 7 focused modules:
+  - `__init__.py` - Router initialization and module exports
+  - `utils.py` - Shared utilities, auth, encryption, constants
+  - `templates.py` - Template CRUD and PDF page rendering
+  - `signing.py` - Signing request and submission logic
+  - `approvals.py` - Approval workflow (integrated in signing.py)
+  - `pdf.py` - Signed PDF generation with overlay
+  - `officers.py` - National officers list endpoint
+  - `email.py` - Email notification helpers
+- [x] **Frontend Components Extracted:**
+  - `SignatureCanvas.js` - Reusable drawn signature canvas with touch support
+  - `ApproverBanner.js` - Approver info and history display
+  - `DocumentFormFields.js` - Fillable form fields with mutual exclusion logic
+  - `ApproverDecision.js` - Approve/Deny buttons with notes
+  - `index.js` - Central exports for document components
+- [x] **SignDocument.js Refactored:**
+  - Reduced from 745 lines by extracting reusable components
+  - Replaced FontAwesome icons with lucide-react
+  - Improved code organization and maintainability
+- [x] **No Functional Changes:** Pure refactor, all existing behavior preserved
+- [x] **All API Endpoints Verified:** Templates, officers, signing all working
+
 #### March 4, 2026 - In-House Document Signing System (Replaces SignNow)
 - [x] **Complete E-Signature Solution:**
   - Document template management (PDF upload or text-based templates)
@@ -69,17 +93,12 @@ Build a member management application with attendance tracking, dues management,
   - Each approver can "Approve" or "Deny" with notes
   - Approval chain respects user-selected order
   - Signing page displays ONLY the selected approvers (verified Mar 4)
-- [x] **Backend Implementation (`/app/backend/routes/documents.py`):**
-  - `GET /api/documents/templates` - List all templates
-  - `POST /api/documents/templates` - Create new template (PDF or text)
-  - `PUT /api/documents/templates/{id}` - Update template
-  - `DELETE /api/documents/templates/{id}` - Deactivate template
-  - `POST /api/documents/send` - Send document for signing with optional approval chain
-  - `GET /api/documents/requests` - List signing requests
-  - `GET /api/documents/sign/{token}` - Public signing page data
-  - `POST /api/documents/sign/{token}/submit` - Submit signature or approval decision
-  - `GET /api/documents/signed/{id}/download` - Download signed PDF
-  - `GET /api/documents/national-officers` - Get available approvers
+- [x] **Backend Implementation (Refactored to `/app/backend/routes/documents/`):**
+  - `templates.py`: GET/POST/PUT/DELETE templates, PDF page rendering
+  - `signing.py`: POST /send, GET /requests, GET /sign/{token}, POST /submit
+  - `pdf.py`: GET /signed/{id}/download
+  - `officers.py`: GET /national-officers
+  - `email.py`: Signing notification emails
 - [x] **Frontend Implementation:**
   - `/document-templates` - Admin page for template management
   - `/sign/:signingToken` - Public signing experience (responsive mobile/tablet/desktop)

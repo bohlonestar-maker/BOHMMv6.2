@@ -6,8 +6,16 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../co
 import { Checkbox } from '../components/ui/checkbox';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
-import { Textarea } from '../components/ui/textarea';
 import { toast } from 'sonner';
+import { FileSignature, Lock, Keyboard, Pen, Loader2, CheckCircle, XCircle, Info, ExternalLink } from 'lucide-react';
+
+// Document signing components
+import { 
+  SignatureCanvas, 
+  ApproverBanner, 
+  DocumentFormFields, 
+  ApproverDecision 
+} from '../components/documents';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -30,39 +38,12 @@ export default function SignDocument() {
   const [approverNotes, setApproverNotes] = useState('');
   
   // Canvas for drawn signature
-  const canvasRef = useRef(null);
-  const canvasContainerRef = useRef(null);
-  const [isDrawing, setIsDrawing] = useState(false);
+  const signatureCanvasRef = useRef(null);
   const [hasDrawn, setHasDrawn] = useState(false);
 
   useEffect(() => {
     fetchDocument();
   }, [signingToken]);
-
-  // Resize canvas on window resize
-  useEffect(() => {
-    const resizeCanvas = () => {
-      if (canvasRef.current && canvasContainerRef.current) {
-        const container = canvasContainerRef.current;
-        const canvas = canvasRef.current;
-        const ctx = canvas.getContext('2d');
-        
-        // Save current drawing
-        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-        
-        // Resize
-        canvas.width = container.clientWidth - 16; // Account for padding
-        canvas.height = 120;
-        
-        // Restore drawing (may be distorted but better than losing it)
-        ctx.putImageData(imageData, 0, 0);
-      }
-    };
-
-    resizeCanvas();
-    window.addEventListener('resize', resizeCanvas);
-    return () => window.removeEventListener('resize', resizeCanvas);
-  }, [signatureType]);
 
   const fetchDocument = async () => {
     try {
@@ -94,69 +75,9 @@ export default function SignDocument() {
     }
   };
 
-  // Canvas drawing functions with touch support
-  const getCoordinates = (e) => {
-    const canvas = canvasRef.current;
-    const rect = canvas.getBoundingClientRect();
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
-    
-    if (e.touches) {
-      return {
-        x: (e.touches[0].clientX - rect.left) * scaleX,
-        y: (e.touches[0].clientY - rect.top) * scaleY
-      };
-    }
-    return {
-      x: (e.clientX - rect.left) * scaleX,
-      y: (e.clientY - rect.top) * scaleY
-    };
-  };
-
-  const startDrawing = (e) => {
-    e.preventDefault();
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
-    const { x, y } = getCoordinates(e);
-    
-    ctx.beginPath();
-    ctx.moveTo(x, y);
-    setIsDrawing(true);
-  };
-
-  const draw = (e) => {
-    if (!isDrawing) return;
-    e.preventDefault();
-    
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
-    const { x, y } = getCoordinates(e);
-    
-    ctx.lineTo(x, y);
-    ctx.strokeStyle = '#1e293b';
-    ctx.lineWidth = 2;
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
-    ctx.stroke();
-    setHasDrawn(true);
-  };
-
-  const stopDrawing = (e) => {
-    if (e) e.preventDefault();
-    setIsDrawing(false);
-  };
-
-  const clearSignature = () => {
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    setHasDrawn(false);
-  };
-
+  // Get signature image from canvas ref
   const getSignatureImage = () => {
-    if (!hasDrawn) return null;
-    const canvas = canvasRef.current;
-    return canvas.toDataURL('image/png');
+    return signatureCanvasRef.current?.getSignatureImage() || null;
   };
 
   const handleSubmit = async (e) => {
@@ -240,7 +161,7 @@ export default function SignDocument() {
     return (
       <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
         <div className="text-center">
-          <i className="fas fa-spinner fa-spin text-3xl text-purple-400 mb-4"></i>
+          <Loader2 className="w-10 h-10 text-purple-400 mb-4 animate-spin mx-auto" />
           <p className="text-white">Loading document...</p>
         </div>
       </div>
@@ -254,7 +175,7 @@ export default function SignDocument() {
         <Card className="max-w-md w-full bg-slate-800 border-slate-700">
           <CardHeader>
             <CardTitle className="text-red-400 flex items-center gap-2 text-lg sm:text-xl">
-              <i className="fas fa-exclamation-circle"></i>
+              <XCircle className="w-6 h-6" />
               Unable to Sign
             </CardTitle>
           </CardHeader>
@@ -274,7 +195,11 @@ export default function SignDocument() {
         <Card className="max-w-md w-full bg-slate-800 border-slate-700">
           <CardHeader>
             <CardTitle className={`${decision === 'denied' ? 'text-red-400' : 'text-green-400'} flex items-center gap-2 text-lg sm:text-xl`}>
-              <i className={`fas fa-${decision === 'denied' ? 'times' : 'check'}-circle`}></i>
+              {decision === 'denied' ? (
+                <XCircle className="w-6 h-6" />
+              ) : (
+                <CheckCircle className="w-6 h-6" />
+              )}
               {isApprover 
                 ? (decision === 'approved' ? 'Document Approved!' : 'Document Denied')
                 : 'Document Signed!'
@@ -290,7 +215,7 @@ export default function SignDocument() {
             </p>
             {documentData?.has_approvers && !isApprover && (
               <p className="text-purple-400 text-sm">
-                <i className="fas fa-info-circle mr-1"></i>
+                <Info className="w-4 h-4 inline mr-1" />
                 This document has been sent for approval.
               </p>
             )}
@@ -324,48 +249,19 @@ export default function SignDocument() {
 
         {/* Approver Info Banner */}
         {isApprover && (
-          <Card className="bg-orange-900/30 border-orange-700 mb-4 sm:mb-6">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-orange-600 flex items-center justify-center text-white font-bold">
-                  {documentData?.approver_order}
-                </div>
-                <div>
-                  <p className="text-orange-200 font-medium">
-                    You are approver {documentData?.approver_order} of {documentData?.total_approvers}
-                  </p>
-                  <p className="text-orange-300/70 text-sm">
-                    {documentData?.approver_title}
-                  </p>
-                </div>
-              </div>
-              
-              {/* Previous approvals */}
-              {documentData?.previous_approvals?.length > 0 && (
-                <div className="mt-3 pt-3 border-t border-orange-700/50">
-                  <p className="text-xs text-orange-300/70 mb-2">Previous approvals:</p>
-                  <div className="space-y-1">
-                    {documentData.previous_approvals.map((approval, i) => (
-                      <div key={i} className="flex items-center gap-2 text-sm">
-                        <i className={`fas fa-${approval.decision === 'approved' ? 'check text-green-400' : 'times text-red-400'}`}></i>
-                        <span className="text-slate-300">{approval.title}</span>
-                        <span className={approval.decision === 'approved' ? 'text-green-400' : 'text-red-400'}>
-                          ({approval.decision})
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          <ApproverBanner
+            approverOrder={documentData?.approver_order}
+            totalApprovers={documentData?.total_approvers}
+            approverTitle={documentData?.approver_title}
+            previousApprovals={documentData?.previous_approvals}
+          />
         )}
 
         {/* Document Info */}
         <Card className="bg-slate-800 border-slate-700 mb-4 sm:mb-6">
           <CardHeader className="p-4 sm:p-6">
             <CardTitle className="text-purple-400 flex items-center gap-2 text-base sm:text-lg">
-              <i className="fas fa-file-signature"></i>
+              <FileSignature className="w-5 h-5" />
               <span className="truncate">{documentData?.template_name}</span>
             </CardTitle>
             <CardDescription className="text-xs sm:text-sm">
@@ -389,7 +285,7 @@ export default function SignDocument() {
           <Card className="bg-purple-900/20 border-purple-700 mb-4 sm:mb-6">
             <CardContent className="p-4">
               <p className="text-purple-200 text-sm mb-2">
-                <i className="fas fa-info-circle mr-2"></i>
+                <Info className="w-4 h-4 inline mr-2" />
                 After you sign, this document will be sent for approval to:
               </p>
               <div className="flex flex-wrap gap-2">
@@ -423,7 +319,7 @@ export default function SignDocument() {
                 {/* Fallback download button for blocked iframes */}
                 <div className="flex items-center justify-center gap-3 p-3 bg-slate-700/50 rounded-lg">
                   <p className="text-slate-400 text-sm">
-                    <i className="fas fa-info-circle mr-2"></i>
+                    <Info className="w-4 h-4 inline mr-2" />
                     Can't see the document?
                   </p>
                   <a
@@ -432,7 +328,7 @@ export default function SignDocument() {
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm transition-colors"
                   >
-                    <i className="fas fa-external-link-alt"></i>
+                    <ExternalLink className="w-4 h-4" />
                     Open PDF
                   </a>
                 </div>
@@ -447,97 +343,12 @@ export default function SignDocument() {
           </CardContent>
         </Card>
 
-        {/* Fillable Form Fields */}
-        {documentData?.field_placements?.length > 0 && (
-          <Card className="bg-slate-800 border-slate-700 mb-4 sm:mb-6">
-            <CardHeader className="p-4 sm:p-6 pb-2 sm:pb-4">
-              <CardTitle className="text-white text-base sm:text-lg">
-                <i className="fas fa-edit mr-2 text-purple-400"></i>
-                Form Fields
-              </CardTitle>
-              <CardDescription className="text-xs sm:text-sm">
-                Please fill in the required information
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="p-4 sm:p-6 pt-0">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {documentData.field_placements.map((field) => (
-                  <div key={field.id} className={field.field_type === 'textarea' ? 'md:col-span-2' : ''}>
-                    <Label className="text-slate-300 text-sm mb-1 block">
-                      {field.label}
-                      {field.required && <span className="text-red-400 ml-1">*</span>}
-                    </Label>
-                    {field.field_type === 'textarea' ? (
-                      <Textarea
-                        value={formFields[field.id] || ''}
-                        onChange={(e) => setFormFields(prev => ({ ...prev, [field.id]: e.target.value }))}
-                        placeholder={field.placeholder || `Enter ${field.label.toLowerCase()}`}
-                        className="bg-slate-700 border-slate-600 text-white min-h-[100px]"
-                        data-testid={`field-${field.id}`}
-                      />
-                    ) : field.field_type === 'date' ? (
-                      <Input
-                        type="date"
-                        value={formFields[field.id] || ''}
-                        onChange={(e) => setFormFields(prev => ({ ...prev, [field.id]: e.target.value }))}
-                        className="bg-slate-700 border-slate-600 text-white"
-                        data-testid={`field-${field.id}`}
-                      />
-                    ) : field.field_type === 'checkbox' ? (
-                      <div className="flex items-center gap-2">
-                        <Checkbox
-                          checked={formFields[field.id] === 'true'}
-                          onCheckedChange={(checked) => {
-                            // Make Approved/Denied checkboxes mutually exclusive
-                            const fieldId = field.id.toLowerCase();
-                            const isApprovedField = fieldId.includes('approved');
-                            const isDeniedField = fieldId.includes('denied');
-                            
-                            if (checked && (isApprovedField || isDeniedField)) {
-                              // Find the opposite checkbox and clear it
-                              const rowMatch = fieldId.match(/(\d+)$/); // Get row number
-                              if (rowMatch) {
-                                const rowNum = rowMatch[1];
-                                const oppositeType = isApprovedField ? 'denied' : 'approved';
-                                // Find all fields that match the opposite type for this row
-                                const oppositeFieldId = Object.keys(formFields).find(key => 
-                                  key.toLowerCase().includes(oppositeType) && key.includes(rowNum)
-                                ) || documentData?.field_placements?.find(f => 
-                                  f.id.toLowerCase().includes(oppositeType) && f.id.includes(rowNum)
-                                )?.id;
-                                
-                                if (oppositeFieldId) {
-                                  setFormFields(prev => ({ 
-                                    ...prev, 
-                                    [field.id]: 'true',
-                                    [oppositeFieldId]: '' 
-                                  }));
-                                  return;
-                                }
-                              }
-                            }
-                            setFormFields(prev => ({ ...prev, [field.id]: checked ? 'true' : '' }));
-                          }}
-                          data-testid={`field-${field.id}`}
-                        />
-                        <span className="text-slate-400 text-sm">{field.placeholder || field.label}</span>
-                      </div>
-                    ) : (
-                      <Input
-                        type="text"
-                        value={formFields[field.id] || ''}
-                        onChange={(e) => setFormFields(prev => ({ ...prev, [field.id]: e.target.value }))}
-                        placeholder={field.placeholder || `Enter ${field.label.toLowerCase()}`}
-                        className="bg-slate-700 border-slate-600 text-white"
-                        data-testid={`field-${field.id}`}
-                      />
-                    )}
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
+        {/* Fillable Form Fields - Using component */}
+        <DocumentFormFields 
+          fieldPlacements={documentData?.field_placements} 
+          formFields={formFields} 
+          setFormFields={setFormFields} 
+        />
 
         {/* Signature Form */}
         <Card className="bg-slate-800 border-slate-700">
@@ -558,7 +369,7 @@ export default function SignDocument() {
                   className={`flex-1 ${signatureType === 'typed' ? 'bg-purple-600' : ''}`}
                   data-testid="signature-type-typed"
                 >
-                  <i className="fas fa-keyboard mr-2"></i>
+                  <Keyboard className="w-4 h-4 mr-2" />
                   Type Signature
                 </Button>
                 <Button
@@ -568,7 +379,7 @@ export default function SignDocument() {
                   className={`flex-1 ${signatureType === 'drawn' ? 'bg-purple-600' : ''}`}
                   data-testid="signature-type-drawn"
                 >
-                  <i className="fas fa-pen mr-2"></i>
+                  <Pen className="w-4 h-4 mr-2" />
                   Draw Signature
                 </Button>
               </div>
@@ -600,41 +411,10 @@ export default function SignDocument() {
 
               {/* Drawn Signature Canvas */}
               {signatureType === 'drawn' && (
-                <div>
-                  <div className="flex justify-between items-center mb-2">
-                    <Label className="text-slate-200 text-sm">Draw Your Signature</Label>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={clearSignature}
-                      data-testid="clear-signature-btn"
-                    >
-                      <i className="fas fa-eraser mr-1"></i>
-                      Clear
-                    </Button>
-                  </div>
-                  <div ref={canvasContainerRef} className="bg-white rounded-lg p-2">
-                    <canvas
-                      ref={canvasRef}
-                      width={300}
-                      height={120}
-                      className="w-full border-2 border-dashed border-slate-300 rounded cursor-crosshair"
-                      style={{ touchAction: 'none' }}
-                      onMouseDown={startDrawing}
-                      onMouseMove={draw}
-                      onMouseUp={stopDrawing}
-                      onMouseLeave={stopDrawing}
-                      onTouchStart={startDrawing}
-                      onTouchMove={draw}
-                      onTouchEnd={stopDrawing}
-                      data-testid="signature-canvas"
-                    />
-                  </div>
-                  <p className="text-xs text-slate-400 mt-1">
-                    Use your finger or mouse to draw your signature
-                  </p>
-                </div>
+                <SignatureCanvas 
+                  ref={signatureCanvasRef}
+                  onSignatureChange={setHasDrawn}
+                />
               )}
 
               {/* Consent Checkbox */}
@@ -656,47 +436,12 @@ export default function SignDocument() {
 
               {/* Approver Decision Section */}
               {isApprover && (
-                <div className="border-t border-slate-700 pt-4 space-y-4">
-                  <div>
-                    <Label className="text-slate-200 text-sm mb-3 block">Your Decision *</Label>
-                    <div className="grid grid-cols-2 gap-3">
-                      <button
-                        type="button"
-                        onClick={() => setDecision('approved')}
-                        className={`p-4 rounded-lg border-2 transition-all ${
-                          decision === 'approved' 
-                            ? 'border-green-500 bg-green-600/20' 
-                            : 'border-slate-600 hover:border-green-500/50'
-                        }`}
-                      >
-                        <i className={`fas fa-check-circle text-2xl mb-2 ${decision === 'approved' ? 'text-green-400' : 'text-slate-400'}`}></i>
-                        <p className={`font-medium ${decision === 'approved' ? 'text-green-400' : 'text-slate-300'}`}>Approve</p>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setDecision('denied')}
-                        className={`p-4 rounded-lg border-2 transition-all ${
-                          decision === 'denied' 
-                            ? 'border-red-500 bg-red-600/20' 
-                            : 'border-slate-600 hover:border-red-500/50'
-                        }`}
-                      >
-                        <i className={`fas fa-times-circle text-2xl mb-2 ${decision === 'denied' ? 'text-red-400' : 'text-slate-400'}`}></i>
-                        <p className={`font-medium ${decision === 'denied' ? 'text-red-400' : 'text-slate-300'}`}>Deny</p>
-                      </button>
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <Label className="text-slate-200 text-sm">Notes / Comments (Optional)</Label>
-                    <Textarea
-                      value={approverNotes}
-                      onChange={(e) => setApproverNotes(e.target.value)}
-                      placeholder={decision === 'denied' ? 'Please provide reason for denial...' : 'Add any notes or conditions...'}
-                      className="bg-slate-700 border-slate-600 text-white mt-1 min-h-[80px]"
-                    />
-                  </div>
-                </div>
+                <ApproverDecision
+                  decision={decision}
+                  setDecision={setDecision}
+                  notes={approverNotes}
+                  setNotes={setApproverNotes}
+                />
               )}
 
               {/* Submit Button */}
@@ -712,17 +457,21 @@ export default function SignDocument() {
               >
                 {submitting ? (
                   <>
-                    <i className="fas fa-spinner fa-spin mr-2"></i>
+                    <Loader2 className="w-5 h-5 mr-2 animate-spin" />
                     {isApprover ? 'Submitting...' : 'Signing...'}
                   </>
                 ) : isApprover ? (
                   <>
-                    <i className={`fas fa-${decision === 'denied' ? 'times' : 'check'}-circle mr-2`}></i>
+                    {decision === 'denied' ? (
+                      <XCircle className="w-5 h-5 mr-2" />
+                    ) : (
+                      <CheckCircle className="w-5 h-5 mr-2" />
+                    )}
                     {decision ? (decision === 'approved' ? 'Approve & Sign' : 'Deny & Sign') : 'Select Decision'}
                   </>
                 ) : (
                   <>
-                    <i className="fas fa-signature mr-2"></i>
+                    <FileSignature className="w-5 h-5 mr-2" />
                     Sign Document
                   </>
                 )}
@@ -734,7 +483,7 @@ export default function SignDocument() {
         {/* Footer */}
         <div className="text-center mt-6 sm:mt-8 text-slate-500 text-xs sm:text-sm">
           <p>
-            <i className="fas fa-lock mr-1"></i>
+            <Lock className="w-4 h-4 inline mr-1" />
             Your signature is secure and legally binding
           </p>
         </div>

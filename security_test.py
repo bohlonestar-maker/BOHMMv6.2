@@ -14,7 +14,7 @@ import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 class SecurityTester:
-    def __init__(self, base_url="https://doc-mgmt-staging.preview.emergentagent.com/api"):
+    def __init__(self, base_url="https://signing-system-v2.preview.emergentagent.com/api"):
         self.base_url = base_url
         self.token = None
         self.tests_run = 0
