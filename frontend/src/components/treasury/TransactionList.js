@@ -35,6 +35,12 @@ export default function TransactionList({ accounts, categories, canManage, onTra
   const [editingTransaction, setEditingTransaction] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   
+  // Receipt state
+  const [receiptDialogOpen, setReceiptDialogOpen] = useState(false);
+  const [viewingReceipt, setViewingReceipt] = useState(null);
+  const [uploadingReceipt, setUploadingReceipt] = useState(false);
+  const [selectedFile, setSelectedFile] = useState(null);
+  
   // Form state
   const [formData, setFormData] = useState({
     type: 'expense',
@@ -158,6 +164,46 @@ export default function TransactionList({ accounts, categories, canManage, onTra
     }
   };
 
+  const handleUploadReceipt = async (transactionId) => {
+    if (!selectedFile) {
+      toast.error('Please select a file');
+      return;
+    }
+    
+    setUploadingReceipt(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', selectedFile);
+      
+      await axios.post(`${API}/treasury/transactions/${transactionId}/receipt`, formData, {
+        headers: { 
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+      
+      toast.success('Receipt uploaded successfully');
+      setSelectedFile(null);
+      setReceiptDialogOpen(false);
+      loadTransactions();
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Failed to upload receipt');
+    } finally {
+      setUploadingReceipt(false);
+    }
+  };
+
+  const handleViewReceipt = (transaction) => {
+    // Open receipt in new tab
+    window.open(`${API}/treasury/transactions/${transaction.id}/receipt`, '_blank');
+  };
+
+  const openReceiptUpload = (transaction) => {
+    setViewingReceipt(transaction);
+    setSelectedFile(null);
+    setReceiptDialogOpen(true);
+  };
+
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
@@ -268,26 +314,51 @@ export default function TransactionList({ accounts, categories, canManage, onTra
                       }`}>
                         {t.type === 'income' ? '+' : '-'}{formatCurrency(t.amount)}
                       </p>
-                      {canManage && (
-                        <div className="flex gap-1">
+                      <div className="flex gap-1">
+                        {/* Receipt buttons */}
+                        {t.receipt_filename ? (
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => handleOpenDialog(t)}
-                            className="text-slate-400 hover:text-white"
+                            onClick={() => handleViewReceipt(t)}
+                            className="text-green-400 hover:text-green-300"
+                            title="View Receipt"
                           >
-                            <Edit2 className="w-4 h-4" />
+                            <Eye className="w-4 h-4" />
                           </Button>
+                        ) : canManage ? (
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => handleDelete(t)}
-                            className="text-slate-400 hover:text-red-400"
+                            onClick={() => openReceiptUpload(t)}
+                            className="text-slate-400 hover:text-purple-400"
+                            title="Upload Receipt"
                           >
-                            <Trash2 className="w-4 h-4" />
+                            <Upload className="w-4 h-4" />
                           </Button>
-                        </div>
-                      )}
+                        ) : null}
+                        
+                        {canManage && (
+                          <>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleOpenDialog(t)}
+                              className="text-slate-400 hover:text-white"
+                            >
+                              <Edit2 className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDelete(t)}
+                              className="text-slate-400 hover:text-red-400"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -444,6 +515,87 @@ export default function TransactionList({ accounts, categories, canManage, onTra
             >
               {submitting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
               {editingTransaction ? 'Update' : 'Add'} {formData.type === 'income' ? 'Income' : 'Expense'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Receipt Upload Dialog */}
+      <Dialog open={receiptDialogOpen} onOpenChange={setReceiptDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Receipt className="w-5 h-5 text-purple-400" />
+              Upload Receipt
+            </DialogTitle>
+            <DialogDescription>
+              {viewingReceipt?.description} - {formatCurrency(viewingReceipt?.amount)}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="border-2 border-dashed border-slate-600 rounded-lg p-6 text-center">
+              <input
+                type="file"
+                id="receipt-upload"
+                accept="image/*,.pdf"
+                onChange={(e) => setSelectedFile(e.target.files[0])}
+                className="hidden"
+              />
+              <label 
+                htmlFor="receipt-upload" 
+                className="cursor-pointer block"
+              >
+                {selectedFile ? (
+                  <div className="space-y-2">
+                    <Receipt className="w-10 h-10 text-green-400 mx-auto" />
+                    <p className="text-white font-medium">{selectedFile.name}</p>
+                    <p className="text-slate-400 text-sm">
+                      {(selectedFile.size / 1024).toFixed(1)} KB
+                    </p>
+                    <p className="text-purple-400 text-sm">Click to change</p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <Upload className="w-10 h-10 text-slate-400 mx-auto" />
+                    <p className="text-slate-300">Click to select file</p>
+                    <p className="text-slate-500 text-sm">
+                      Images or PDF (max 5MB)
+                    </p>
+                  </div>
+                )}
+              </label>
+            </div>
+            
+            {viewingReceipt?.receipt_filename && (
+              <div className="flex items-center justify-between p-3 bg-slate-700/50 rounded-lg">
+                <div className="flex items-center gap-2">
+                  <Eye className="w-4 h-4 text-green-400" />
+                  <span className="text-slate-300 text-sm">Current: {viewingReceipt.receipt_filename}</span>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleViewReceipt(viewingReceipt)}
+                  className="text-green-400 hover:text-green-300"
+                >
+                  View
+                </Button>
+              </div>
+            )}
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setReceiptDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={() => handleUploadReceipt(viewingReceipt?.id)}
+              disabled={uploadingReceipt || !selectedFile}
+              className="bg-purple-600 hover:bg-purple-700"
+            >
+              {uploadingReceipt ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Upload className="w-4 h-4 mr-2" />}
+              Upload Receipt
             </Button>
           </DialogFooter>
         </DialogContent>
