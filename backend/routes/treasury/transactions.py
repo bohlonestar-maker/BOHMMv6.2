@@ -19,7 +19,7 @@ from pydantic import BaseModel
 
 from .utils import (
     get_db, get_current_user, check_treasury_permission,
-    encrypt_transaction, decrypt_transaction, encrypt_value, decrypt_account
+    encrypt_transaction, decrypt_transaction, encrypt_value, decrypt_account, log_audit
 )
 
 router = APIRouter()
@@ -185,6 +185,22 @@ async def create_transaction(
         }
     )
     
+    # Audit log
+    await log_audit(
+        action="transaction_created",
+        entity_type="transaction",
+        entity_id=transaction_doc["id"],
+        entity_name=transaction.description[:50] if transaction.description else "Transaction",
+        user=current_user,
+        details={
+            "type": transaction.type,
+            "amount": transaction.amount,
+            "account": decrypted_account["name"],
+            "category": category["name"],
+            "date": transaction.date
+        }
+    )
+    
     sys.stderr.write(f"[TREASURY] Created {transaction.type}: ${transaction.amount:.2f} (encrypted)\n")
     
     # Return decrypted version for display
@@ -209,6 +225,9 @@ async def update_transaction(
     
     if transaction["type"] not in ["income", "expense"]:
         raise HTTPException(status_code=400, detail="Cannot edit this transaction type")
+    
+    # Get decrypted version for audit log
+    decrypted_tx = decrypt_transaction(transaction)
     
     update_data = {k: v for k, v in update.dict().items() if v is not None}
     if not update_data:
@@ -251,6 +270,17 @@ async def update_transaction(
         {"$set": encrypted_update}
     )
     
+    # Audit log
+    await log_audit(
+        action="transaction_updated",
+        entity_type="transaction",
+        entity_id=transaction_id,
+        entity_name=decrypted_tx.get("description", "Transaction")[:50],
+        user=current_user,
+        old_values={k: decrypted_tx.get(k) for k in update_data.keys() if k not in ["updated_at", "updated_by"]},
+        new_values={k: v for k, v in update_data.items() if k not in ["updated_at", "updated_by"]}
+    )
+    
     return {"success": True, "message": "Transaction updated"}
 
 
@@ -272,6 +302,9 @@ async def delete_transaction(
     if transaction["type"] not in ["income", "expense"]:
         raise HTTPException(status_code=400, detail="Cannot delete this transaction type")
     
+    # Get decrypted version for audit log
+    decrypted_tx = decrypt_transaction(transaction)
+    
     # Reverse the balance change
     if transaction["type"] == "income":
         balance_change = -transaction["amount"]
@@ -285,7 +318,22 @@ async def delete_transaction(
     
     await db.treasury_transactions.delete_one({"id": transaction_id})
     
-    sys.stderr.write(f"[TREASURY] Deleted {transaction['type']}: ${transaction['amount']:.2f} - {transaction['description']}\n")
+    # Audit log
+    await log_audit(
+        action="transaction_deleted",
+        entity_type="transaction",
+        entity_id=transaction_id,
+        entity_name=decrypted_tx.get("description", "Transaction")[:50],
+        user=current_user,
+        details={
+            "type": transaction["type"],
+            "amount": transaction["amount"],
+            "account": transaction.get("account_name", "Unknown"),
+            "date": transaction.get("date")
+        }
+    )
+    
+    sys.stderr.write(f"[TREASURY] Deleted {transaction['type']}: ${transaction['amount']:.2f} - {decrypted_tx.get('description', 'N/A')}\n")
     
     return {"success": True, "message": "Transaction deleted"}
 
@@ -305,6 +353,9 @@ async def upload_receipt(
     transaction = await db.treasury_transactions.find_one({"id": transaction_id})
     if not transaction:
         raise HTTPException(status_code=404, detail="Transaction not found")
+    
+    # Get decrypted version for audit log
+    decrypted_tx = decrypt_transaction(transaction)
     
     # Validate file type
     allowed_types = ["image/jpeg", "image/png", "image/webp", "application/pdf"]
@@ -326,6 +377,20 @@ async def upload_receipt(
             "receipt_data": encoded,
             "updated_at": datetime.now(timezone.utc).isoformat()
         }}
+    )
+    
+    # Audit log
+    await log_audit(
+        action="receipt_uploaded",
+        entity_type="transaction",
+        entity_id=transaction_id,
+        entity_name=decrypted_tx.get("description", "Transaction")[:50],
+        user=current_user,
+        details={
+            "filename": file.filename,
+            "content_type": file.content_type,
+            "file_size_bytes": len(content)
+        }
     )
     
     return {"success": True, "message": "Receipt uploaded"}

@@ -17,7 +17,7 @@ from typing import Optional, List
 
 from .utils import (
     get_db, get_current_user, check_treasury_permission,
-    encrypt_account, decrypt_account, encrypt_value
+    encrypt_account, decrypt_account, encrypt_value, log_audit
 )
 
 router = APIRouter()
@@ -122,6 +122,19 @@ async def create_account(
             "Initial balance", current_user.get("username", "unknown")
         )
     
+    # Audit log
+    await log_audit(
+        action="account_created",
+        entity_type="account",
+        entity_id=account_doc["id"],
+        entity_name=account.name.strip(),
+        user=current_user,
+        details={
+            "type": account.type,
+            "initial_balance": account.initial_balance
+        }
+    )
+    
     sys.stderr.write(f"[TREASURY] Created account (encrypted) with balance ${account.initial_balance:.2f}\n")
     
     # Return unencrypted for display
@@ -144,15 +157,36 @@ async def update_account(
     if not account:
         raise HTTPException(status_code=404, detail="Account not found")
     
+    # Get decrypted account for audit log
+    decrypted_account = decrypt_account(account)
+    
     update_data = {k: v for k, v in update.dict().items() if v is not None}
     if not update_data:
         raise HTTPException(status_code=400, detail="No update data provided")
     
     update_data["updated_at"] = datetime.now(timezone.utc).isoformat()
     
+    # Encrypt name/description if being updated
+    encrypted_update = update_data.copy()
+    if "name" in encrypted_update and encrypted_update["name"]:
+        encrypted_update["name"] = encrypt_value(encrypted_update["name"])
+    if "description" in encrypted_update and encrypted_update["description"]:
+        encrypted_update["description"] = encrypt_value(encrypted_update["description"])
+    
     await db.treasury_accounts.update_one(
         {"id": account_id},
-        {"$set": update_data}
+        {"$set": encrypted_update}
+    )
+    
+    # Audit log
+    await log_audit(
+        action="account_updated",
+        entity_type="account",
+        entity_id=account_id,
+        entity_name=decrypted_account.get("name", "Unknown"),
+        user=current_user,
+        old_values={k: decrypted_account.get(k) for k in update_data.keys() if k != "updated_at"},
+        new_values={k: v for k, v in update_data.items() if k != "updated_at"}
     )
     
     return {"success": True, "message": "Account updated"}
@@ -174,7 +208,10 @@ async def adjust_balance(
     if not account:
         raise HTTPException(status_code=404, detail="Account not found")
     
-    new_balance = account.get("balance", 0) + adjustment.amount
+    # Get decrypted account for audit log
+    decrypted_account = decrypt_account(account)
+    old_balance = account.get("balance", 0)
+    new_balance = old_balance + adjustment.amount
     
     await db.treasury_accounts.update_one(
         {"id": account_id},
@@ -190,7 +227,22 @@ async def adjust_balance(
         current_user.get("username", "unknown")
     )
     
-    sys.stderr.write(f"[TREASURY] Adjusted '{account['name']}' by ${adjustment.amount:.2f} - {adjustment.reason}\n")
+    # Audit log
+    await log_audit(
+        action="account_balance_adjusted",
+        entity_type="account",
+        entity_id=account_id,
+        entity_name=decrypted_account.get("name", "Unknown"),
+        user=current_user,
+        details={
+            "reason": adjustment.reason,
+            "adjustment_amount": adjustment.amount
+        },
+        old_values={"balance": old_balance},
+        new_values={"balance": new_balance}
+    )
+    
+    sys.stderr.write(f"[TREASURY] Adjusted '{decrypted_account['name']}' by ${adjustment.amount:.2f} - {adjustment.reason}\n")
     
     return {"success": True, "new_balance": new_balance}
 
@@ -250,6 +302,21 @@ async def transfer_between_accounts(
         "created_by": current_user.get("username", "unknown")
     }
     await db.treasury_transactions.insert_one(transfer_doc)
+    
+    # Audit log
+    await log_audit(
+        action="account_transfer",
+        entity_type="account",
+        entity_id=transfer_doc["id"],
+        entity_name=f"{from_decrypted['name']} -> {to_decrypted['name']}",
+        user=current_user,
+        details={
+            "from_account": from_decrypted["name"],
+            "to_account": to_decrypted["name"],
+            "amount": transfer.amount,
+            "description": transfer.description
+        }
+    )
     
     sys.stderr.write(f"[TREASURY] Transferred ${transfer.amount:.2f} from '{from_decrypted['name']}' to '{to_decrypted['name']}'\n")
     

@@ -1,9 +1,9 @@
 /**
  * Treasury Settings Component
  * 
- * Manage accounts and categories
+ * Manage accounts, categories, and view audit logs
  */
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
@@ -15,7 +15,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { toast } from 'sonner';
 import { 
   Plus, Building2, PiggyBank, Banknote, Wallet, 
-  Tag, Loader2, Trash2, Edit2
+  Tag, Loader2, Trash2, Edit2, History, RefreshCw,
+  ChevronLeft, ChevronRight
 } from 'lucide-react';
 
 const API = process.env.REACT_APP_BACKEND_URL + '/api';
@@ -48,8 +49,47 @@ export default function TreasurySettings({ accounts, categories, onAccountsChang
     description: ''
   });
   const [submittingCategory, setSubmittingCategory] = useState(false);
+  
+  // Audit logs
+  const [auditLogs, setAuditLogs] = useState([]);
+  const [auditLoading, setAuditLoading] = useState(false);
+  const [auditTotal, setAuditTotal] = useState(0);
+  const [auditOffset, setAuditOffset] = useState(0);
+  const [auditFilter, setAuditFilter] = useState('');
+  const auditLimit = 20;
 
   const token = localStorage.getItem('token');
+  
+  // Fetch audit logs
+  const fetchAuditLogs = useCallback(async () => {
+    setAuditLoading(true);
+    try {
+      const params = new URLSearchParams({
+        limit: auditLimit,
+        offset: auditOffset
+      });
+      if (auditFilter) {
+        params.append('entity_type', auditFilter);
+      }
+      
+      const res = await axios.get(`${API}/treasury/audit?${params}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setAuditLogs(res.data.logs || []);
+      setAuditTotal(res.data.total || 0);
+    } catch (err) {
+      console.error('Failed to fetch audit logs:', err);
+    } finally {
+      setAuditLoading(false);
+    }
+  }, [token, auditOffset, auditFilter]);
+  
+  // Load audit logs when tab changes
+  useEffect(() => {
+    if (activeTab === 'audit') {
+      fetchAuditLogs();
+    }
+  }, [activeTab, fetchAuditLogs]);
 
   // Account handlers
   const handleCreateAccount = async () => {
@@ -146,6 +186,26 @@ export default function TreasurySettings({ accounts, categories, onAccountsChang
 
   const incomeCategories = categories.filter(c => c.type === 'income');
   const expenseCategories = categories.filter(c => c.type === 'expense');
+  
+  // Audit log helpers
+  const formatAuditDate = (timestamp) => {
+    if (!timestamp) return '';
+    const date = new Date(timestamp);
+    return date.toLocaleString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+  
+  const getActionColor = (action) => {
+    if (action?.includes('created')) return 'text-green-400';
+    if (action?.includes('deleted')) return 'text-red-400';
+    if (action?.includes('updated') || action?.includes('adjusted')) return 'text-amber-400';
+    if (action?.includes('transfer')) return 'text-blue-400';
+    return 'text-slate-400';
+  };
 
   return (
     <div className="space-y-6">
@@ -153,6 +213,10 @@ export default function TreasurySettings({ accounts, categories, onAccountsChang
         <TabsList className="bg-slate-800">
           <TabsTrigger value="accounts">Accounts</TabsTrigger>
           <TabsTrigger value="categories">Categories</TabsTrigger>
+          <TabsTrigger value="audit" className="flex items-center gap-1">
+            <History className="w-3 h-3" />
+            Audit Log
+          </TabsTrigger>
         </TabsList>
 
         {/* Accounts Tab */}
@@ -290,6 +354,126 @@ export default function TreasurySettings({ accounts, categories, onAccountsChang
               </CardContent>
             </Card>
           </div>
+        </TabsContent>
+
+        {/* Audit Log Tab */}
+        <TabsContent value="audit" className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-medium text-white flex items-center gap-2">
+              <History className="w-5 h-5 text-slate-400" />
+              Activity History
+            </h3>
+            <div className="flex items-center gap-2">
+              <Select value={auditFilter || 'all'} onValueChange={(v) => { setAuditFilter(v === 'all' ? '' : v); setAuditOffset(0); }}>
+                <SelectTrigger className="bg-slate-800 border-slate-700 w-36">
+                  <SelectValue placeholder="All Types" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Types</SelectItem>
+                  <SelectItem value="account">Accounts</SelectItem>
+                  <SelectItem value="transaction">Transactions</SelectItem>
+                  <SelectItem value="category">Categories</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={fetchAuditLogs}
+                disabled={auditLoading}
+              >
+                <RefreshCw className={`w-4 h-4 ${auditLoading ? 'animate-spin' : ''}`} />
+              </Button>
+            </div>
+          </div>
+
+          <Card className="bg-slate-800 border-slate-700">
+            <CardContent className="p-0">
+              {auditLoading && auditLogs.length === 0 ? (
+                <div className="p-8 text-center">
+                  <Loader2 className="w-8 h-8 text-slate-500 mx-auto animate-spin" />
+                  <p className="text-slate-400 mt-2">Loading audit logs...</p>
+                </div>
+              ) : auditLogs.length === 0 ? (
+                <div className="p-8 text-center">
+                  <History className="w-12 h-12 text-slate-500 mx-auto mb-4" />
+                  <p className="text-slate-400">No activity recorded yet.</p>
+                  <p className="text-slate-500 text-sm">Actions will be logged as you manage accounts and transactions.</p>
+                </div>
+              ) : (
+                <div className="divide-y divide-slate-700">
+                  {auditLogs.map((log) => (
+                    <div key={log.id} className="p-4 hover:bg-slate-700/50 transition-colors">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className={`font-medium ${getActionColor(log.action)}`}>
+                              {log.action_display}
+                            </span>
+                            <span className="text-slate-500 text-xs px-2 py-0.5 bg-slate-700 rounded">
+                              {log.entity_type}
+                            </span>
+                          </div>
+                          <p className="text-white text-sm mt-1">{log.entity_name}</p>
+                          {log.details && (
+                            <div className="mt-2 text-xs text-slate-500">
+                              {log.details.amount && <span className="mr-3">Amount: ${log.details.amount}</span>}
+                              {log.details.reason && <span className="mr-3">Reason: {log.details.reason}</span>}
+                              {log.details.type && <span className="mr-3">Type: {log.details.type}</span>}
+                            </div>
+                          )}
+                          {(log.old_values || log.new_values) && (
+                            <div className="mt-2 text-xs">
+                              {log.old_values && Object.keys(log.old_values).length > 0 && (
+                                <div className="text-red-400/70">
+                                  Old: {Object.entries(log.old_values).map(([k, v]) => `${k}: ${v}`).join(', ')}
+                                </div>
+                              )}
+                              {log.new_values && Object.keys(log.new_values).length > 0 && (
+                                <div className="text-green-400/70">
+                                  New: {Object.entries(log.new_values).map(([k, v]) => `${k}: ${v}`).join(', ')}
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                        <div className="text-right text-xs text-slate-500 whitespace-nowrap ml-4">
+                          <div>{formatAuditDate(log.timestamp)}</div>
+                          <div className="mt-1">by {log.username}</div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+              
+              {/* Pagination */}
+              {auditTotal > auditLimit && (
+                <div className="flex items-center justify-between p-4 border-t border-slate-700">
+                  <p className="text-sm text-slate-500">
+                    Showing {auditOffset + 1} - {Math.min(auditOffset + auditLimit, auditTotal)} of {auditTotal}
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setAuditOffset(Math.max(0, auditOffset - auditLimit))}
+                      disabled={auditOffset === 0}
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setAuditOffset(auditOffset + auditLimit)}
+                      disabled={auditOffset + auditLimit >= auditTotal}
+                    >
+                      <ChevronRight className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
 

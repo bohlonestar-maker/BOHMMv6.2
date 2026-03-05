@@ -114,6 +114,14 @@ Build a member management application with attendance tracking, dues management,
   - Data automatically decrypted when retrieved through API
   - Encryption key stored in `ENCRYPTION_KEY` environment variable
   - Backward compatible - handles both encrypted and unencrypted data
+- [x] **Audit Logging for Compliance (Mar 5, 2026):**
+  - All Treasury operations logged to `treasury_audit_log` collection
+  - Tracks: action type, entity, user, timestamp, old/new values
+  - Logged actions: account CRUD, transactions CRUD, transfers, balance adjustments, receipt uploads
+  - View audit logs in Settings > Audit Log tab
+  - Filter by entity type (accounts, transactions, categories)
+  - Pagination for large audit histories
+  - API endpoint: `GET /api/treasury/audit`
 
 #### March 4, 2026 - In-House Document Signing System (Replaces SignNow)
 - [x] **Complete E-Signature Solution:**

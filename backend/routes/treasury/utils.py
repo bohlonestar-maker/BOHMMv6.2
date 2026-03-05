@@ -5,11 +5,14 @@ Provides shared utilities for the treasury system:
 - Database and auth initialization
 - Permission checking
 - Encryption for sensitive financial data
+- Audit logging for compliance
 - Common constants
 """
 import os
 import sys
-from typing import Optional
+import uuid
+from datetime import datetime, timezone
+from typing import Optional, Any, Dict
 from fastapi import HTTPException, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from cryptography.fernet import Fernet
@@ -163,3 +166,132 @@ def require_treasury_permission(permission: str):
             )
         return True
     return check
+
+
+# =====================
+# AUDIT LOGGING
+# =====================
+
+# Audit action types
+AUDIT_ACTIONS = {
+    # Account actions
+    "account_created": "Account Created",
+    "account_updated": "Account Updated",
+    "account_deleted": "Account Deleted",
+    "account_balance_adjusted": "Balance Adjusted",
+    "account_transfer": "Funds Transferred",
+    
+    # Transaction actions
+    "transaction_created": "Transaction Created",
+    "transaction_updated": "Transaction Updated",
+    "transaction_deleted": "Transaction Deleted",
+    "receipt_uploaded": "Receipt Uploaded",
+    
+    # Category actions
+    "category_created": "Category Created",
+    "category_updated": "Category Updated",
+    "category_deleted": "Category Deleted",
+    
+    # Budget actions
+    "budget_created": "Budget Created",
+    "budget_updated": "Budget Updated",
+    "budget_deleted": "Budget Deleted",
+}
+
+
+async def log_audit(
+    action: str,
+    entity_type: str,
+    entity_id: str,
+    entity_name: str,
+    user: dict,
+    details: Optional[Dict[str, Any]] = None,
+    old_values: Optional[Dict[str, Any]] = None,
+    new_values: Optional[Dict[str, Any]] = None
+):
+    """
+    Log an audit event for Treasury operations
+    
+    Args:
+        action: Action type (e.g., 'account_created', 'transaction_deleted')
+        entity_type: Type of entity ('account', 'transaction', 'category', 'budget')
+        entity_id: ID of the affected entity
+        entity_name: Human-readable name of the entity
+        user: Current user dict with username, role
+        details: Additional details about the action
+        old_values: Previous values (for updates)
+        new_values: New values (for updates)
+    """
+    db = get_db()
+    
+    audit_entry = {
+        "id": str(uuid.uuid4()),
+        "action": action,
+        "action_display": AUDIT_ACTIONS.get(action, action),
+        "entity_type": entity_type,
+        "entity_id": entity_id,
+        "entity_name": entity_name,
+        "user_id": user.get("id") or user.get("_id"),
+        "username": user.get("username", "unknown"),
+        "user_role": user.get("role", "unknown"),
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "details": details,
+        "old_values": old_values,
+        "new_values": new_values
+    }
+    
+    try:
+        await db.treasury_audit_log.insert_one(audit_entry)
+    except Exception as e:
+        # Don't fail the main operation if audit logging fails
+        sys.stderr.write(f"[TREASURY AUDIT] Error logging audit: {e}\n")
+
+
+async def get_audit_logs(
+    entity_type: str = None,
+    entity_id: str = None,
+    action: str = None,
+    username: str = None,
+    start_date: str = None,
+    end_date: str = None,
+    limit: int = 100,
+    offset: int = 0
+) -> dict:
+    """
+    Retrieve audit logs with filtering
+    
+    Returns:
+        Dict with 'logs' list and 'total' count
+    """
+    db = get_db()
+    
+    query = {}
+    
+    if entity_type:
+        query["entity_type"] = entity_type
+    if entity_id:
+        query["entity_id"] = entity_id
+    if action:
+        query["action"] = action
+    if username:
+        query["username"] = {"$regex": username, "$options": "i"}
+    if start_date:
+        query["timestamp"] = {"$gte": start_date}
+    if end_date:
+        if "timestamp" in query:
+            query["timestamp"]["$lte"] = end_date
+        else:
+            query["timestamp"] = {"$lte": end_date}
+    
+    total = await db.treasury_audit_log.count_documents(query)
+    
+    logs = await db.treasury_audit_log.find(
+        query, {"_id": 0}
+    ).sort("timestamp", -1).skip(offset).limit(limit).to_list(limit)
+    
+    return {
+        "logs": logs,
+        "total": total,
+        "limit": limit,
+        "offset": offset
+    }
