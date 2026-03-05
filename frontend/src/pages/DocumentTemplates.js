@@ -8,7 +8,7 @@ import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Textarea } from '../components/ui/textarea';
 import { toast } from 'sonner';
-import { Plus, FileText, Upload, Edit2, Eye, EyeOff, ArrowLeft, Menu, Trash2, Loader2 } from 'lucide-react';
+import { Plus, FileText, Upload, Edit2, Eye, EyeOff, ArrowLeft, Menu, Trash2, Loader2, Settings2 } from 'lucide-react';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -413,7 +413,7 @@ export default function DocumentTemplates() {
                         className="text-xs text-purple-400 hover:text-purple-300 border-purple-600 hover:border-purple-500"
                         data-testid={`configure-template-${template.id}`}
                       >
-                        <i className="fas fa-pen-to-square w-3 h-3 sm:mr-1"></i>
+                        <Settings2 className="w-3 h-3 sm:mr-1" />
                         <span className="hidden sm:inline">Fields</span>
                       </Button>
                     )}
