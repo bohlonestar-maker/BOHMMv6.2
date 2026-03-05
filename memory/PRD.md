@@ -89,6 +89,24 @@ Build a member management application with attendance tracking, dues management,
     - Delete Forever - permanent deletion (blocked if template has been used for signing)
   - Proper error handling for templates in use
 
+#### March 5, 2026 - Treasury Module (New Feature)
+- [x] **Backend Implementation (`/app/backend/routes/treasury/`):**
+  - Modular architecture with separate files for each feature
+  - `utils.py` - Shared utilities, permissions (view_treasury, manage_treasury, treasury_admin)
+  - `categories.py` - Dynamic income/expense category management
+  - `accounts.py` - Multiple account support (checking, savings, cash, other)
+  - `transactions.py` - Income/expense CRUD with receipt upload
+  - `budgets.py` - Budget allocation by category and period
+  - `reports.py` - Monthly, quarterly, yearly financial reports
+- [x] **Frontend Implementation (`/app/frontend/src/pages/Treasury.js`):**
+  - Tab-based navigation: Overview, Transactions, Budgets, Reports, Settings
+  - Modular components in `/app/frontend/src/components/treasury/`
+  - Permission-based access control
+- [x] **Treasury Permissions Added:**
+  - `view_treasury` - Read-only access
+  - `manage_treasury` - Can add/edit/delete transactions
+  - `treasury_admin` - Full access including settings and budgets
+
 #### March 4, 2026 - In-House Document Signing System (Replaces SignNow)
 - [x] **Complete E-Signature Solution:**
   - Document template management (PDF upload or text-based templates)

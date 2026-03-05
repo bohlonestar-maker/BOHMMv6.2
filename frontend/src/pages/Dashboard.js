@@ -1354,6 +1354,17 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
                         </DropdownMenuItem>
                       )}
                       
+                      {/* Treasury - Treasury permissions or admin */}
+                      {(userPermissions?.view_treasury || userPermissions?.manage_treasury || userPermissions?.treasury_admin || userRole === 'admin') && (
+                        <DropdownMenuItem 
+                          onSelect={(e) => { e.preventDefault(); navigate("/treasury"); }} 
+                          className="text-red-400 focus:bg-red-900/30 focus:text-red-300 cursor-pointer"
+                        >
+                          <DollarSign className="w-4 h-4 mr-2" />
+                          Treasury
+                        </DropdownMenuItem>
+                      )}
+                      
                       {/* Manage Events - Permission based */}
                       {userPermissions?.manage_events && (
                         <DropdownMenuItem 

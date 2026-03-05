@@ -32,6 +32,7 @@ import PromotionPage from "@/pages/PromotionPage";
 import DocumentTemplates from "@/pages/DocumentTemplates";
 import TemplateEditor from "@/pages/TemplateEditor";
 import SignDocument from "@/pages/SignDocument";
+import Treasury from "@/pages/Treasury";
 import ChatBot from "@/components/ChatBot";
 import { Toaster } from "@/components/ui/sonner";
 
@@ -561,6 +562,16 @@ function App() {
           <Route
             path="/sign/:signingToken"
             element={<SignDocument />}
+          />
+          <Route
+            path="/treasury"
+            element={
+              isAuthenticated ? (
+                <Treasury />
+              ) : (
+                <Navigate to="/" replace />
+              )
+            }
           />
         </Routes>
         <KeepAlive />

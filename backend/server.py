@@ -157,6 +157,12 @@ from routes.documents import router as documents_router
 sys.stderr.write("✅ [INIT] Documents routes imported\n")
 sys.stderr.flush()
 
+sys.stderr.write("  [INIT] Importing treasury routes...\n")
+sys.stderr.flush()
+from routes.treasury import router as treasury_router
+sys.stderr.write("✅ [INIT] Treasury routes imported\n")
+sys.stderr.flush()
+
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
@@ -2153,6 +2159,10 @@ async def log_activity(username: str, action: str, details: str, ip_address: str
 # Initialize documents router with dependencies
 from routes.documents import init_router as init_documents_router
 init_documents_router(db, verify_token, verify_admin)
+
+# Initialize treasury router with dependencies
+from routes.treasury import init_router as init_treasury_router
+init_treasury_router(db, verify_token)
 
 # Initialize default admin user
 @app.on_event("startup")
@@ -10164,6 +10174,9 @@ AVAILABLE_PERMISSIONS = [
     {"key": "manage_system_users", "label": "Manage System Users", "description": "Can add/edit system user accounts"},
     {"key": "manage_dues_reminders", "label": "Manage Dues Reminders", "description": "Can view/edit dues reminder emails and run checks"},
     {"key": "send_documents", "label": "Send Documents", "description": "Can send documents for e-signature and manage document templates"},
+    {"key": "view_treasury", "label": "View Treasury", "description": "Can view treasury finances (read-only)"},
+    {"key": "manage_treasury", "label": "Manage Treasury", "description": "Can add/edit/delete treasury transactions"},
+    {"key": "treasury_admin", "label": "Treasury Admin", "description": "Full treasury access including settings, budgets, and reports"},
 ]
 
 # All manageable titles
@@ -17578,6 +17591,9 @@ app.include_router(api_router)
 
 # Include documents router under /api prefix
 app.include_router(documents_router, prefix="/api")
+
+# Include treasury router under /api prefix
+app.include_router(treasury_router, prefix="/api")
 
 # Mount static files for uploaded images
 app.mount("/uploads", StaticFiles(directory=str(UPLOAD_DIR)), name="uploads")
