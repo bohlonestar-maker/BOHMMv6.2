@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../components/ui/dialog';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '../components/ui/sheet';
 import { toast } from 'sonner';
-import { ChevronLeft, ChevronRight, Plus, Trash2, Save, Type, PenLine, Calendar, FileText, CheckSquare, Menu, X, Settings, Layers } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, Trash2, Save, Type, PenLine, Calendar, FileText, CheckSquare, Menu, X, Settings, Layers, Grid3X3 } from 'lucide-react';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -55,6 +55,8 @@ export default function TemplateEditor() {
   const [newItemConfig, setNewItemConfig] = useState({});
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showElementsPanel, setShowElementsPanel] = useState(false);
+  const [showGrid, setShowGrid] = useState(false);
+  const [gridSize, setGridSize] = useState(10); // Grid size in percentage (10% = 10x10 grid)
   const mobileScrollRef = useRef(null);
   
   // Image dimensions
@@ -288,6 +290,37 @@ export default function TemplateEditor() {
           <p className="text-xs text-purple-400 p-2 bg-purple-500/10 rounded">
             Tap on the PDF to place the {addMode}
           </p>
+        )}
+      </div>
+
+      {/* Grid Toggle */}
+      <div className="space-y-2">
+        <h3 className="text-sm font-medium text-white">Alignment Grid</h3>
+        <div className="flex items-center gap-2">
+          <Button
+            variant={showGrid ? 'default' : 'outline'}
+            size="sm"
+            className="flex-1"
+            onClick={() => setShowGrid(!showGrid)}
+          >
+            <Grid3X3 className="w-4 h-4 mr-2" />
+            {showGrid ? 'Hide Grid' : 'Show Grid'}
+          </Button>
+        </div>
+        {showGrid && (
+          <div className="flex items-center gap-2 mt-2">
+            <Label className="text-xs text-slate-400 whitespace-nowrap">Grid Size:</Label>
+            <Select value={String(gridSize)} onValueChange={(v) => setGridSize(Number(v))}>
+              <SelectTrigger className="h-7 text-xs bg-slate-700 border-slate-600 flex-1">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="5">5% (20x20)</SelectItem>
+                <SelectItem value="10">10% (10x10)</SelectItem>
+                <SelectItem value="20">20% (5x5)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         )}
       </div>
 
@@ -836,6 +869,38 @@ export default function TemplateEditor() {
                     onLoad={handleImageLoad}
                     draggable={false}
                   />
+                  {/* Grid Overlay */}
+                  {showGrid && (
+                    <div className="absolute inset-0 pointer-events-none">
+                      {/* Vertical lines */}
+                      {Array.from({ length: Math.floor(100 / gridSize) - 1 }, (_, i) => (
+                        <div
+                          key={`v-${i}`}
+                          className="absolute top-0 bottom-0 border-l border-cyan-500/40"
+                          style={{ left: `${(i + 1) * gridSize}%` }}
+                        >
+                          <span className="absolute -top-4 -translate-x-1/2 text-[8px] text-cyan-400 bg-slate-800/80 px-1 rounded">
+                            {(i + 1) * gridSize}%
+                          </span>
+                        </div>
+                      ))}
+                      {/* Horizontal lines */}
+                      {Array.from({ length: Math.floor(100 / gridSize) - 1 }, (_, i) => (
+                        <div
+                          key={`h-${i}`}
+                          className="absolute left-0 right-0 border-t border-cyan-500/40"
+                          style={{ top: `${(i + 1) * gridSize}%` }}
+                        >
+                          <span className="absolute -left-6 -translate-y-1/2 text-[8px] text-cyan-400 bg-slate-800/80 px-1 rounded">
+                            {(i + 1) * gridSize}%
+                          </span>
+                        </div>
+                      ))}
+                      {/* Center crosshairs */}
+                      <div className="absolute top-1/2 left-0 right-0 border-t-2 border-dashed border-red-500/50" />
+                      <div className="absolute left-1/2 top-0 bottom-0 border-l-2 border-dashed border-red-500/50" />
+                    </div>
+                  )}
                   {/* Field overlays */}
                   {currentPageFields.map(field => (
                     <div
@@ -920,6 +985,14 @@ export default function TemplateEditor() {
         >
           <PenLine className="w-4 h-4 mr-1" />
           <span className="text-xs">Sign</span>
+        </Button>
+        <Button
+          variant={showGrid ? 'default' : 'outline'}
+          size="sm"
+          className={`h-10 ${showGrid ? 'bg-cyan-600' : ''}`}
+          onClick={() => setShowGrid(!showGrid)}
+        >
+          <Grid3X3 className="w-4 h-4" />
         </Button>
         <Button
           variant="outline"
