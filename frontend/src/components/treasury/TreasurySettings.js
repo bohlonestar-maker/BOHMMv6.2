@@ -208,61 +208,62 @@ export default function TreasurySettings({ accounts, categories, onAccountsChang
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="bg-slate-800">
-          <TabsTrigger value="accounts">Accounts</TabsTrigger>
-          <TabsTrigger value="categories">Categories</TabsTrigger>
-          <TabsTrigger value="audit" className="flex items-center gap-1">
+        <TabsList className="bg-slate-800 w-full sm:w-auto flex overflow-x-auto">
+          <TabsTrigger value="accounts" className="flex-shrink-0 text-xs sm:text-sm">Accounts</TabsTrigger>
+          <TabsTrigger value="categories" className="flex-shrink-0 text-xs sm:text-sm">Categories</TabsTrigger>
+          <TabsTrigger value="audit" className="flex items-center gap-1 flex-shrink-0 text-xs sm:text-sm">
             <History className="w-3 h-3" />
-            Audit Log
+            <span className="hidden sm:inline">Audit</span> Log
           </TabsTrigger>
         </TabsList>
 
         {/* Accounts Tab */}
-        <TabsContent value="accounts" className="space-y-4">
+        <TabsContent value="accounts" className="space-y-3 sm:space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-lg font-medium text-white">Treasury Accounts</h3>
-            <Button onClick={() => setAccountDialogOpen(true)} className="bg-green-600 hover:bg-green-700">
-              <Plus className="w-4 h-4 mr-2" />
-              Add Account
+            <h3 className="text-base sm:text-lg font-medium text-white">Treasury Accounts</h3>
+            <Button onClick={() => setAccountDialogOpen(true)} className="bg-green-600 hover:bg-green-700" size="sm">
+              <Plus className="w-4 h-4 sm:mr-2" />
+              <span className="hidden sm:inline">Add Account</span>
             </Button>
           </div>
 
           {accounts.length === 0 ? (
             <Card className="bg-slate-800 border-slate-700">
-              <CardContent className="p-8 text-center">
-                <Wallet className="w-12 h-12 text-slate-500 mx-auto mb-4" />
-                <p className="text-slate-400">No accounts yet. Create your first account to get started.</p>
+              <CardContent className="p-6 sm:p-8 text-center">
+                <Wallet className="w-10 h-10 sm:w-12 sm:h-12 text-slate-500 mx-auto mb-3 sm:mb-4" />
+                <p className="text-slate-400 text-sm sm:text-base">No accounts yet. Create your first account to get started.</p>
               </CardContent>
             </Card>
           ) : (
-            <div className="grid gap-4">
+            <div className="grid gap-3 sm:gap-4">
               {accounts.map((account) => {
                 const IconComponent = accountIcons[account.type] || Wallet;
                 return (
                   <Card key={account.id} className="bg-slate-800 border-slate-700">
-                    <CardContent className="p-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                    <CardContent className="p-3 sm:p-4">
+                      {/* Mobile: Stacked layout */}
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0">
+                        <div className="flex items-center gap-2 sm:gap-3">
+                          <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
                             account.type === 'checking' ? 'bg-blue-600/20' :
                             account.type === 'savings' ? 'bg-purple-600/20' :
                             account.type === 'cash' ? 'bg-green-600/20' : 'bg-slate-600/20'
                           }`}>
-                            <IconComponent className={`w-5 h-5 ${
+                            <IconComponent className={`w-4 h-4 sm:w-5 sm:h-5 ${
                               account.type === 'checking' ? 'text-blue-400' :
                               account.type === 'savings' ? 'text-purple-400' :
                               account.type === 'cash' ? 'text-green-400' : 'text-slate-400'
                             }`} />
                           </div>
-                          <div>
-                            <p className="text-white font-medium">{account.name}</p>
+                          <div className="min-w-0">
+                            <p className="text-white font-medium text-sm sm:text-base truncate">{account.name}</p>
                             <p className="text-slate-500 text-xs capitalize">{account.type}</p>
                           </div>
                         </div>
-                        <div className="flex items-center gap-4">
-                          <p className={`text-lg font-bold ${
+                        <div className="flex items-center justify-between sm:justify-end gap-3 sm:gap-4 pl-10 sm:pl-0">
+                          <p className={`text-base sm:text-lg font-bold ${
                             account.balance >= 0 ? 'text-green-400' : 'text-red-400'
                           }`}>
                             {formatCurrency(account.balance)}
@@ -271,7 +272,7 @@ export default function TreasurySettings({ accounts, categories, onAccountsChang
                             variant="ghost"
                             size="sm"
                             onClick={() => handleDeleteAccount(account)}
-                            className="text-slate-400 hover:text-red-400"
+                            className="text-slate-400 hover:text-red-400 h-8 w-8 p-0"
                           >
                             <Trash2 className="w-4 h-4" />
                           </Button>
@@ -286,29 +287,29 @@ export default function TreasurySettings({ accounts, categories, onAccountsChang
         </TabsContent>
 
         {/* Categories Tab */}
-        <TabsContent value="categories" className="space-y-4">
+        <TabsContent value="categories" className="space-y-3 sm:space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-lg font-medium text-white">Transaction Categories</h3>
-            <Button onClick={() => setCategoryDialogOpen(true)} className="bg-green-600 hover:bg-green-700">
-              <Plus className="w-4 h-4 mr-2" />
-              Add Category
+            <h3 className="text-base sm:text-lg font-medium text-white">Transaction Categories</h3>
+            <Button onClick={() => setCategoryDialogOpen(true)} className="bg-green-600 hover:bg-green-700" size="sm">
+              <Plus className="w-4 h-4 sm:mr-2" />
+              <span className="hidden sm:inline">Add Category</span>
             </Button>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
             {/* Income Categories */}
             <Card className="bg-slate-800 border-slate-700">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-green-400 text-base flex items-center gap-2">
+              <CardHeader className="pb-2 p-3 sm:p-6 sm:pb-2">
+                <CardTitle className="text-green-400 text-sm sm:text-base flex items-center gap-2">
                   <Tag className="w-4 h-4" />
                   Income Categories
                 </CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
+              <CardContent className="p-3 sm:p-6 pt-0">
+                <div className="space-y-2 max-h-64 overflow-y-auto">
                   {incomeCategories.map((cat) => (
                     <div key={cat.id} className="flex items-center justify-between py-2 border-b border-slate-700 last:border-0">
-                      <span className="text-slate-300 text-sm">{cat.name}</span>
+                      <span className="text-slate-300 text-xs sm:text-sm">{cat.name}</span>
                       {!cat.is_default && (
                         <Button
                           variant="ghost"
@@ -327,17 +328,17 @@ export default function TreasurySettings({ accounts, categories, onAccountsChang
 
             {/* Expense Categories */}
             <Card className="bg-slate-800 border-slate-700">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-red-400 text-base flex items-center gap-2">
+              <CardHeader className="pb-2 p-3 sm:p-6 sm:pb-2">
+                <CardTitle className="text-red-400 text-sm sm:text-base flex items-center gap-2">
                   <Tag className="w-4 h-4" />
                   Expense Categories
                 </CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
+              <CardContent className="p-3 sm:p-6 pt-0">
+                <div className="space-y-2 max-h-64 overflow-y-auto">
                   {expenseCategories.map((cat) => (
                     <div key={cat.id} className="flex items-center justify-between py-2 border-b border-slate-700 last:border-0">
-                      <span className="text-slate-300 text-sm">{cat.name}</span>
+                      <span className="text-slate-300 text-xs sm:text-sm">{cat.name}</span>
                       {!cat.is_default && (
                         <Button
                           variant="ghost"
@@ -358,14 +359,14 @@ export default function TreasurySettings({ accounts, categories, onAccountsChang
 
         {/* Audit Log Tab */}
         <TabsContent value="audit" className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg font-medium text-white flex items-center gap-2">
-              <History className="w-5 h-5 text-slate-400" />
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <h3 className="text-base sm:text-lg font-medium text-white flex items-center gap-2">
+              <History className="w-4 h-4 sm:w-5 sm:h-5 text-slate-400" />
               Activity History
             </h3>
             <div className="flex items-center gap-2">
               <Select value={auditFilter || 'all'} onValueChange={(v) => { setAuditFilter(v === 'all' ? '' : v); setAuditOffset(0); }}>
-                <SelectTrigger className="bg-slate-800 border-slate-700 w-36">
+                <SelectTrigger className="bg-slate-800 border-slate-700 w-28 sm:w-36 text-xs sm:text-sm">
                   <SelectValue placeholder="All Types" />
                 </SelectTrigger>
                 <SelectContent>
@@ -380,6 +381,7 @@ export default function TreasurySettings({ accounts, categories, onAccountsChang
                 size="sm" 
                 onClick={fetchAuditLogs}
                 disabled={auditLoading}
+                className="h-9 w-9 p-0"
               >
                 <RefreshCw className={`w-4 h-4 ${auditLoading ? 'animate-spin' : ''}`} />
               </Button>
@@ -389,21 +391,45 @@ export default function TreasurySettings({ accounts, categories, onAccountsChang
           <Card className="bg-slate-800 border-slate-700">
             <CardContent className="p-0">
               {auditLoading && auditLogs.length === 0 ? (
-                <div className="p-8 text-center">
+                <div className="p-6 sm:p-8 text-center">
                   <Loader2 className="w-8 h-8 text-slate-500 mx-auto animate-spin" />
-                  <p className="text-slate-400 mt-2">Loading audit logs...</p>
+                  <p className="text-slate-400 mt-2 text-sm">Loading audit logs...</p>
                 </div>
               ) : auditLogs.length === 0 ? (
-                <div className="p-8 text-center">
-                  <History className="w-12 h-12 text-slate-500 mx-auto mb-4" />
-                  <p className="text-slate-400">No activity recorded yet.</p>
-                  <p className="text-slate-500 text-sm">Actions will be logged as you manage accounts and transactions.</p>
+                <div className="p-6 sm:p-8 text-center">
+                  <History className="w-10 h-10 sm:w-12 sm:h-12 text-slate-500 mx-auto mb-3 sm:mb-4" />
+                  <p className="text-slate-400 text-sm sm:text-base">No activity recorded yet.</p>
+                  <p className="text-slate-500 text-xs sm:text-sm">Actions will be logged as you manage accounts and transactions.</p>
                 </div>
               ) : (
                 <div className="divide-y divide-slate-700">
                   {auditLogs.map((log) => (
-                    <div key={log.id} className="p-4 hover:bg-slate-700/50 transition-colors">
-                      <div className="flex items-start justify-between">
+                    <div key={log.id} className="p-3 sm:p-4 hover:bg-slate-700/50 transition-colors">
+                      {/* Mobile Layout */}
+                      <div className="sm:hidden">
+                        <div className="flex items-start justify-between mb-1">
+                          <span className={`font-medium text-sm ${getActionColor(log.action)}`}>
+                            {log.action_display}
+                          </span>
+                          <span className="text-slate-500 text-xs px-1.5 py-0.5 bg-slate-700 rounded">
+                            {log.entity_type}
+                          </span>
+                        </div>
+                        <p className="text-white text-sm truncate">{log.entity_name}</p>
+                        <div className="flex items-center justify-between mt-2 text-xs text-slate-500">
+                          <span>{formatAuditDate(log.timestamp)}</span>
+                          <span>by {log.username}</span>
+                        </div>
+                        {log.details && (
+                          <div className="mt-2 text-xs text-slate-500 flex flex-wrap gap-2">
+                            {log.details.amount && <span>Amount: ${log.details.amount}</span>}
+                            {log.details.type && <span>Type: {log.details.type}</span>}
+                          </div>
+                        )}
+                      </div>
+                      
+                      {/* Desktop Layout */}
+                      <div className="hidden sm:flex items-start justify-between">
                         <div className="flex-1">
                           <div className="flex items-center gap-2">
                             <span className={`font-medium ${getActionColor(log.action)}`}>

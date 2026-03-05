@@ -150,60 +150,79 @@ export default function Treasury() {
   return (
     <div className="min-h-screen bg-slate-900">
       {/* Header */}
-      <div className="bg-slate-800 border-b border-slate-700 px-4 py-4">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={() => navigate('/')}
-              className="text-slate-400 hover:text-white"
-            >
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Dashboard
-            </Button>
-            <div>
-              <h1 className="text-xl font-bold text-white flex items-center gap-2">
-                <DollarSign className="w-6 h-6 text-green-400" />
-                Treasury
-              </h1>
-              <p className="text-slate-400 text-sm">Financial Management</p>
+      <div className="bg-slate-800 border-b border-slate-700 px-3 sm:px-4 py-3 sm:py-4">
+        <div className="max-w-7xl mx-auto">
+          {/* Mobile: Stack layout, Desktop: Flex row */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
+            <div className="flex items-center gap-3 sm:gap-4">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => navigate('/')}
+                className="text-slate-400 hover:text-white p-2 sm:px-3"
+              >
+                <ArrowLeft className="w-4 h-4 sm:mr-2" />
+                <span className="hidden sm:inline">Dashboard</span>
+              </Button>
+              <div>
+                <h1 className="text-lg sm:text-xl font-bold text-white flex items-center gap-2">
+                  <DollarSign className="w-5 h-5 sm:w-6 sm:h-6 text-green-400" />
+                  Treasury
+                </h1>
+                <p className="text-slate-400 text-xs sm:text-sm">Financial Management</p>
+              </div>
             </div>
-          </div>
-          
-          {/* Total Balance Display */}
-          <div className="text-right">
-            <p className="text-slate-400 text-xs">Total Balance</p>
-            <p className={`text-2xl font-bold ${totalBalance >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-              ${totalBalance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-            </p>
+            
+            {/* Total Balance Display */}
+            <div className="text-left sm:text-right bg-slate-700/50 sm:bg-transparent rounded-lg p-2 sm:p-0">
+              <p className="text-slate-400 text-xs">Total Balance</p>
+              <p className={`text-xl sm:text-2xl font-bold ${totalBalance >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                ${totalBalance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </p>
+            </div>
           </div>
         </div>
       </div>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto p-4">
+      <div className="max-w-7xl mx-auto p-3 sm:p-4">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-5 bg-slate-800 mb-6">
-            <TabsTrigger value="overview" className="text-slate-300 data-[state=active]:bg-green-600 data-[state=active]:text-white">
-              <Wallet className="w-4 h-4 mr-2" />
+          {/* Mobile: Scrollable tabs, Tablet+: Grid */}
+          <TabsList className="w-full bg-slate-800 mb-4 sm:mb-6 overflow-x-auto flex sm:grid sm:grid-cols-5 gap-1">
+            <TabsTrigger 
+              value="overview" 
+              className="flex-shrink-0 text-slate-300 data-[state=active]:bg-green-600 data-[state=active]:text-white px-3 sm:px-4"
+            >
+              <Wallet className="w-4 h-4 sm:mr-2" />
               <span className="hidden sm:inline">Overview</span>
             </TabsTrigger>
-            <TabsTrigger value="transactions" className="text-slate-300 data-[state=active]:bg-green-600 data-[state=active]:text-white">
-              <Receipt className="w-4 h-4 mr-2" />
+            <TabsTrigger 
+              value="transactions" 
+              className="flex-shrink-0 text-slate-300 data-[state=active]:bg-green-600 data-[state=active]:text-white px-3 sm:px-4"
+            >
+              <Receipt className="w-4 h-4 sm:mr-2" />
               <span className="hidden sm:inline">Transactions</span>
             </TabsTrigger>
-            <TabsTrigger value="budgets" className="text-slate-300 data-[state=active]:bg-green-600 data-[state=active]:text-white">
-              <PieChart className="w-4 h-4 mr-2" />
+            <TabsTrigger 
+              value="budgets" 
+              className="flex-shrink-0 text-slate-300 data-[state=active]:bg-green-600 data-[state=active]:text-white px-3 sm:px-4"
+            >
+              <PieChart className="w-4 h-4 sm:mr-2" />
               <span className="hidden sm:inline">Budgets</span>
             </TabsTrigger>
-            <TabsTrigger value="reports" className="text-slate-300 data-[state=active]:bg-green-600 data-[state=active]:text-white">
-              <FileText className="w-4 h-4 mr-2" />
+            <TabsTrigger 
+              value="reports" 
+              className="flex-shrink-0 text-slate-300 data-[state=active]:bg-green-600 data-[state=active]:text-white px-3 sm:px-4"
+            >
+              <FileText className="w-4 h-4 sm:mr-2" />
               <span className="hidden sm:inline">Reports</span>
             </TabsTrigger>
             {isAdmin && (
-              <TabsTrigger value="settings" className="text-slate-300 data-[state=active]:bg-green-600 data-[state=active]:text-white">
-                <Settings className="w-4 h-4 mr-2" />
+              <TabsTrigger 
+                value="settings" 
+                className="flex-shrink-0 text-slate-300 data-[state=active]:bg-green-600 data-[state=active]:text-white px-3 sm:px-4"
+              >
+                <Settings className="w-4 h-4 sm:mr-2" />
                 <span className="hidden sm:inline">Settings</span>
               </TabsTrigger>
             )}

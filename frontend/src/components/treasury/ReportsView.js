@@ -65,11 +65,11 @@ export default function ReportsView() {
   const years = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Report Selection */}
-      <div className="flex flex-wrap gap-4 items-center">
+      <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 sm:items-center">
         <Select value={reportType} onValueChange={setReportType}>
-          <SelectTrigger className="w-40 bg-slate-800 border-slate-700">
+          <SelectTrigger className="w-full sm:w-40 bg-slate-800 border-slate-700">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -78,50 +78,52 @@ export default function ReportsView() {
           </SelectContent>
         </Select>
         
-        <Select value={year.toString()} onValueChange={(v) => setYear(parseInt(v))}>
-          <SelectTrigger className="w-32 bg-slate-800 border-slate-700">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {years.map(y => (
-              <SelectItem key={y} value={y.toString()}>{y}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        
-        {reportType === 'quarterly' && (
-          <Select value={quarter.toString()} onValueChange={(v) => setQuarter(parseInt(v))}>
-            <SelectTrigger className="w-32 bg-slate-800 border-slate-700">
+        <div className="flex gap-2">
+          <Select value={year.toString()} onValueChange={(v) => setYear(parseInt(v))}>
+            <SelectTrigger className="w-full sm:w-32 bg-slate-800 border-slate-700">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="1">Q1</SelectItem>
-              <SelectItem value="2">Q2</SelectItem>
-              <SelectItem value="3">Q3</SelectItem>
-              <SelectItem value="4">Q4</SelectItem>
+              {years.map(y => (
+                <SelectItem key={y} value={y.toString()}>{y}</SelectItem>
+              ))}
             </SelectContent>
           </Select>
-        )}
+          
+          {reportType === 'quarterly' && (
+            <Select value={quarter.toString()} onValueChange={(v) => setQuarter(parseInt(v))}>
+              <SelectTrigger className="w-full sm:w-32 bg-slate-800 border-slate-700">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="1">Q1</SelectItem>
+                <SelectItem value="2">Q2</SelectItem>
+                <SelectItem value="3">Q3</SelectItem>
+                <SelectItem value="4">Q4</SelectItem>
+              </SelectContent>
+            </Select>
+          )}
+        </div>
       </div>
 
       {/* Report Content */}
       {loading ? (
-        <div className="flex items-center justify-center p-8">
+        <div className="flex items-center justify-center p-6 sm:p-8">
           <Loader2 className="w-8 h-8 text-green-400 animate-spin" />
         </div>
       ) : report ? (
-        <div className="space-y-6">
+        <div className="space-y-4 sm:space-y-6">
           {/* Summary Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
             <Card className="bg-slate-800 border-slate-700">
-              <CardContent className="p-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-green-600/20 flex items-center justify-center">
-                    <TrendingUp className="w-5 h-5 text-green-400" />
+              <CardContent className="p-3 sm:p-4">
+                <div className="flex items-center gap-2 sm:gap-3">
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-green-600/20 flex items-center justify-center flex-shrink-0">
+                    <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 text-green-400" />
                   </div>
-                  <div>
-                    <p className="text-slate-400 text-sm">Total Income</p>
-                    <p className="text-xl font-bold text-green-400">
+                  <div className="min-w-0">
+                    <p className="text-slate-400 text-xs sm:text-sm">Total Income</p>
+                    <p className="text-lg sm:text-xl font-bold text-green-400 truncate">
                       {formatCurrency(report.summary?.total_income)}
                     </p>
                   </div>
@@ -130,14 +132,14 @@ export default function ReportsView() {
             </Card>
 
             <Card className="bg-slate-800 border-slate-700">
-              <CardContent className="p-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-red-600/20 flex items-center justify-center">
-                    <TrendingDown className="w-5 h-5 text-red-400" />
+              <CardContent className="p-3 sm:p-4">
+                <div className="flex items-center gap-2 sm:gap-3">
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-red-600/20 flex items-center justify-center flex-shrink-0">
+                    <TrendingDown className="w-4 h-4 sm:w-5 sm:h-5 text-red-400" />
                   </div>
-                  <div>
-                    <p className="text-slate-400 text-sm">Total Expenses</p>
-                    <p className="text-xl font-bold text-red-400">
+                  <div className="min-w-0">
+                    <p className="text-slate-400 text-xs sm:text-sm">Total Expenses</p>
+                    <p className="text-lg sm:text-xl font-bold text-red-400 truncate">
                       {formatCurrency(report.summary?.total_expenses)}
                     </p>
                   </div>
@@ -146,18 +148,18 @@ export default function ReportsView() {
             </Card>
 
             <Card className="bg-slate-800 border-slate-700">
-              <CardContent className="p-4">
-                <div className="flex items-center gap-3">
-                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+              <CardContent className="p-3 sm:p-4">
+                <div className="flex items-center gap-2 sm:gap-3">
+                  <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
                     report.summary?.net >= 0 ? 'bg-green-600/20' : 'bg-red-600/20'
                   }`}>
-                    <FileText className={`w-5 h-5 ${
+                    <FileText className={`w-4 h-4 sm:w-5 sm:h-5 ${
                       report.summary?.net >= 0 ? 'text-green-400' : 'text-red-400'
                     }`} />
                   </div>
-                  <div>
-                    <p className="text-slate-400 text-sm">Net</p>
-                    <p className={`text-xl font-bold ${
+                  <div className="min-w-0">
+                    <p className="text-slate-400 text-xs sm:text-sm">Net</p>
+                    <p className={`text-lg sm:text-xl font-bold truncate ${
                       report.summary?.net >= 0 ? 'text-green-400' : 'text-red-400'
                     }`}>
                       {formatCurrency(report.summary?.net)}
@@ -171,14 +173,14 @@ export default function ReportsView() {
           {/* Period Breakdown */}
           {(report.monthly_breakdown || report.quarterly_breakdown) && (
             <Card className="bg-slate-800 border-slate-700">
-              <CardHeader>
-                <CardTitle className="text-white">
+              <CardHeader className="p-3 sm:p-6 pb-2 sm:pb-4">
+                <CardTitle className="text-white text-sm sm:text-base">
                   {reportType === 'quarterly' ? 'Monthly' : 'Quarterly'} Breakdown
                 </CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
+              <CardContent className="p-3 sm:p-6 pt-0">
+                <div className="overflow-x-auto -mx-3 sm:mx-0">
+                  <table className="w-full text-xs sm:text-sm min-w-[320px]">
                     <thead>
                       <tr className="border-b border-slate-700">
                         <th className="text-left p-2 text-slate-400">Period</th>
@@ -214,7 +216,7 @@ export default function ReportsView() {
           )}
 
           {/* Category Breakdowns */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
             {/* Income by Category */}
             <Card className="bg-slate-800 border-slate-700">
               <CardHeader>

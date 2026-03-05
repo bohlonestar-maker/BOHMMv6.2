@@ -224,69 +224,131 @@ export default function TransactionList({ accounts, categories, canManage, onTra
   });
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3 sm:space-y-4">
       {/* Header with filters */}
-      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-        <div className="flex flex-wrap gap-2">
-          <Select value={filterType} onValueChange={setFilterType}>
-            <SelectTrigger className="w-32 bg-slate-800 border-slate-700">
-              <SelectValue placeholder="Type" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Types</SelectItem>
-              <SelectItem value="income">Income</SelectItem>
-              <SelectItem value="expense">Expenses</SelectItem>
-            </SelectContent>
-          </Select>
+      <div className="flex flex-col gap-3 sm:gap-4">
+        {/* Filters - Stack on mobile, row on tablet+ */}
+        <div className="flex flex-col sm:flex-row gap-2 sm:gap-2 sm:items-center sm:justify-between">
+          <div className="flex flex-wrap gap-2">
+            <Select value={filterType} onValueChange={setFilterType}>
+              <SelectTrigger className="w-full sm:w-32 bg-slate-800 border-slate-700">
+                <SelectValue placeholder="Type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Types</SelectItem>
+                <SelectItem value="income">Income</SelectItem>
+                <SelectItem value="expense">Expenses</SelectItem>
+              </SelectContent>
+            </Select>
+            
+            <Select value={filterAccount} onValueChange={setFilterAccount}>
+              <SelectTrigger className="w-full sm:w-40 bg-slate-800 border-slate-700">
+                <SelectValue placeholder="Account" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Accounts</SelectItem>
+                {accounts.map(acc => (
+                  <SelectItem key={acc.id} value={acc.id}>{acc.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
           
-          <Select value={filterAccount} onValueChange={setFilterAccount}>
-            <SelectTrigger className="w-40 bg-slate-800 border-slate-700">
-              <SelectValue placeholder="Account" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Accounts</SelectItem>
-              {accounts.map(acc => (
-                <SelectItem key={acc.id} value={acc.id}>{acc.name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-            <Input
-              placeholder="Search..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-9 w-48 bg-slate-800 border-slate-700"
-            />
+          <div className="flex gap-2 items-center">
+            <div className="relative flex-1 sm:flex-initial">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <Input
+                placeholder="Search..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-9 w-full sm:w-48 bg-slate-800 border-slate-700"
+              />
+            </div>
+            
+            {canManage && (
+              <Button 
+                onClick={() => handleOpenDialog()} 
+                className="bg-green-600 hover:bg-green-700 flex-shrink-0"
+                size="sm"
+              >
+                <Plus className="w-4 h-4 sm:mr-2" />
+                <span className="hidden sm:inline">Add Transaction</span>
+              </Button>
+            )}
           </div>
         </div>
-        
-        {canManage && (
-          <Button onClick={() => handleOpenDialog()} className="bg-green-600 hover:bg-green-700">
-            <Plus className="w-4 h-4 mr-2" />
-            Add Transaction
-          </Button>
-        )}
       </div>
 
       {/* Transaction List */}
       <Card className="bg-slate-800 border-slate-700">
         <CardContent className="p-0">
           {loading ? (
-            <div className="p-8 text-center">
+            <div className="p-6 sm:p-8 text-center">
               <Loader2 className="w-8 h-8 text-green-400 animate-spin mx-auto" />
             </div>
           ) : filteredTransactions.length === 0 ? (
-            <div className="p-8 text-center">
-              <Receipt className="w-12 h-12 text-slate-500 mx-auto mb-4" />
-              <p className="text-slate-400">No transactions found</p>
+            <div className="p-6 sm:p-8 text-center">
+              <Receipt className="w-10 h-10 sm:w-12 sm:h-12 text-slate-500 mx-auto mb-3 sm:mb-4" />
+              <p className="text-slate-400 text-sm sm:text-base">No transactions found</p>
             </div>
           ) : (
             <div className="divide-y divide-slate-700">
               {filteredTransactions.map((t) => (
-                <div key={t.id} className="p-4 hover:bg-slate-700/50 transition-colors">
-                  <div className="flex items-center justify-between">
+                <div key={t.id} className="p-3 sm:p-4 hover:bg-slate-700/50 transition-colors">
+                  {/* Mobile Layout */}
+                  <div className="sm:hidden">
+                    <div className="flex items-start justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                          t.type === 'income' ? 'bg-green-600/20' : 'bg-red-600/20'
+                        }`}>
+                          {t.type === 'income' ? (
+                            <TrendingUp className="w-4 h-4 text-green-400" />
+                          ) : (
+                            <TrendingDown className="w-4 h-4 text-red-400" />
+                          )}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-white font-medium text-sm truncate">{t.description}</p>
+                          <p className="text-xs text-slate-400">{t.category_name}</p>
+                        </div>
+                      </div>
+                      <p className={`text-base font-bold flex-shrink-0 ${
+                        t.type === 'income' ? 'text-green-400' : 'text-red-400'
+                      }`}>
+                        {t.type === 'income' ? '+' : '-'}{formatCurrency(t.amount)}
+                      </p>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div className="text-xs text-slate-500">
+                        {t.account_name} • {new Date(t.date).toLocaleDateString()}
+                      </div>
+                      <div className="flex gap-1">
+                        {t.receipt_filename ? (
+                          <Button variant="ghost" size="sm" onClick={() => handleViewReceipt(t)} className="text-green-400 h-7 w-7 p-0">
+                            <Eye className="w-4 h-4" />
+                          </Button>
+                        ) : canManage ? (
+                          <Button variant="ghost" size="sm" onClick={() => openReceiptUpload(t)} className="text-slate-400 h-7 w-7 p-0">
+                            <Upload className="w-4 h-4" />
+                          </Button>
+                        ) : null}
+                        {canManage && (
+                          <>
+                            <Button variant="ghost" size="sm" onClick={() => handleOpenDialog(t)} className="text-slate-400 h-7 w-7 p-0">
+                              <Edit2 className="w-4 h-4" />
+                            </Button>
+                            <Button variant="ghost" size="sm" onClick={() => handleDelete(t)} className="text-slate-400 h-7 w-7 p-0">
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Tablet/Desktop Layout */}
+                  <div className="hidden sm:flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
                         t.type === 'income' ? 'bg-green-600/20' : 'bg-red-600/20'
@@ -315,45 +377,21 @@ export default function TransactionList({ accounts, categories, canManage, onTra
                         {t.type === 'income' ? '+' : '-'}{formatCurrency(t.amount)}
                       </p>
                       <div className="flex gap-1">
-                        {/* Receipt buttons */}
                         {t.receipt_filename ? (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleViewReceipt(t)}
-                            className="text-green-400 hover:text-green-300"
-                            title="View Receipt"
-                          >
+                          <Button variant="ghost" size="sm" onClick={() => handleViewReceipt(t)} className="text-green-400 hover:text-green-300" title="View Receipt">
                             <Eye className="w-4 h-4" />
                           </Button>
                         ) : canManage ? (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => openReceiptUpload(t)}
-                            className="text-slate-400 hover:text-purple-400"
-                            title="Upload Receipt"
-                          >
+                          <Button variant="ghost" size="sm" onClick={() => openReceiptUpload(t)} className="text-slate-400 hover:text-purple-400" title="Upload Receipt">
                             <Upload className="w-4 h-4" />
                           </Button>
                         ) : null}
-                        
                         {canManage && (
                           <>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleOpenDialog(t)}
-                              className="text-slate-400 hover:text-white"
-                            >
+                            <Button variant="ghost" size="sm" onClick={() => handleOpenDialog(t)} className="text-slate-400 hover:text-white">
                               <Edit2 className="w-4 h-4" />
                             </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleDelete(t)}
-                              className="text-slate-400 hover:text-red-400"
-                            >
+                            <Button variant="ghost" size="sm" onClick={() => handleDelete(t)} className="text-slate-400 hover:text-red-400">
                               <Trash2 className="w-4 h-4" />
                             </Button>
                           </>
@@ -400,9 +438,9 @@ export default function TransactionList({ accounts, categories, canManage, onTra
               </Button>
             </div>
             
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <div>
-                <Label>Account *</Label>
+                <Label className="text-sm">Account *</Label>
                 <Select 
                   value={formData.account_id} 
                   onValueChange={(v) => setFormData(prev => ({ ...prev, account_id: v }))}
@@ -419,7 +457,7 @@ export default function TransactionList({ accounts, categories, canManage, onTra
               </div>
               
               <div>
-                <Label>Category *</Label>
+                <Label className="text-sm">Category *</Label>
                 <Select 
                   value={formData.category_id} 
                   onValueChange={(v) => setFormData(prev => ({ ...prev, category_id: v }))}
@@ -436,9 +474,9 @@ export default function TransactionList({ accounts, categories, canManage, onTra
               </div>
             </div>
             
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <div>
-                <Label>Amount *</Label>
+                <Label className="text-sm">Amount *</Label>
                 <Input
                   type="number"
                   step="0.01"
@@ -451,7 +489,7 @@ export default function TransactionList({ accounts, categories, canManage, onTra
               </div>
               
               <div>
-                <Label>Date *</Label>
+                <Label className="text-sm">Date *</Label>
                 <Input
                   type="date"
                   value={formData.date}
@@ -462,7 +500,7 @@ export default function TransactionList({ accounts, categories, canManage, onTra
             </div>
             
             <div>
-              <Label>Description *</Label>
+              <Label className="text-sm">Description *</Label>
               <Input
                 value={formData.description}
                 onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
@@ -471,9 +509,9 @@ export default function TransactionList({ accounts, categories, canManage, onTra
               />
             </div>
             
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <div>
-                <Label>Vendor/Payee</Label>
+                <Label className="text-sm">Vendor/Payee</Label>
                 <Input
                   value={formData.vendor_payee}
                   onChange={(e) => setFormData(prev => ({ ...prev, vendor_payee: e.target.value }))}
@@ -483,7 +521,7 @@ export default function TransactionList({ accounts, categories, canManage, onTra
               </div>
               
               <div>
-                <Label>Reference #</Label>
+                <Label className="text-sm">Reference #</Label>
                 <Input
                   value={formData.reference_number}
                   onChange={(e) => setFormData(prev => ({ ...prev, reference_number: e.target.value }))}
@@ -494,7 +532,7 @@ export default function TransactionList({ accounts, categories, canManage, onTra
             </div>
             
             <div>
-              <Label>Notes</Label>
+              <Label className="text-sm">Notes</Label>
               <Textarea
                 value={formData.notes}
                 onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
@@ -504,14 +542,14 @@ export default function TransactionList({ accounts, categories, canManage, onTra
             </div>
           </div>
           
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>
+          <DialogFooter className="flex-col sm:flex-row gap-2">
+            <Button variant="outline" onClick={() => setDialogOpen(false)} className="w-full sm:w-auto">
               Cancel
             </Button>
             <Button 
               onClick={handleSubmit} 
               disabled={submitting}
-              className={formData.type === 'income' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'}
+              className={`w-full sm:w-auto ${formData.type === 'income' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'}`}
             >
               {submitting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
               {editingTransaction ? 'Update' : 'Add'} {formData.type === 'income' ? 'Income' : 'Expense'}

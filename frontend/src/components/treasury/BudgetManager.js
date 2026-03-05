@@ -108,21 +108,21 @@ export default function BudgetManager({ categories, isAdmin }) {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center p-8">
+      <div className="flex items-center justify-center p-6 sm:p-8">
         <Loader2 className="w-8 h-8 text-green-400 animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-white">Budget Allocations</h2>
+        <h2 className="text-base sm:text-lg font-semibold text-white">Budget Allocations</h2>
         {isAdmin && (
-          <Button onClick={() => setDialogOpen(true)} className="bg-green-600 hover:bg-green-700">
-            <Plus className="w-4 h-4 mr-2" />
-            Add Budget
+          <Button onClick={() => setDialogOpen(true)} className="bg-green-600 hover:bg-green-700" size="sm">
+            <Plus className="w-4 h-4 sm:mr-2" />
+            <span className="hidden sm:inline">Add Budget</span>
           </Button>
         )}
       </div>
@@ -130,18 +130,18 @@ export default function BudgetManager({ categories, isAdmin }) {
       {/* Budget List */}
       {budgets.length === 0 ? (
         <Card className="bg-slate-800 border-slate-700">
-          <CardContent className="p-8 text-center">
-            <PieChart className="w-12 h-12 text-slate-500 mx-auto mb-4" />
-            <p className="text-slate-400">No budgets set up yet.</p>
+          <CardContent className="p-6 sm:p-8 text-center">
+            <PieChart className="w-10 h-10 sm:w-12 sm:h-12 text-slate-500 mx-auto mb-3 sm:mb-4" />
+            <p className="text-slate-400 text-sm sm:text-base">No budgets set up yet.</p>
             {isAdmin && (
-              <p className="text-slate-500 text-sm mt-2">
+              <p className="text-slate-500 text-xs sm:text-sm mt-2">
                 Create budgets to track spending by category.
               </p>
             )}
           </CardContent>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
           {budgets.map((budget) => {
             const percentUsed = budget.percent_used || 0;
             const isOverBudget = percentUsed > 100;
@@ -149,10 +149,10 @@ export default function BudgetManager({ categories, isAdmin }) {
             
             return (
               <Card key={budget.id} className="bg-slate-800 border-slate-700">
-                <CardContent className="p-4">
-                  <div className="flex items-start justify-between mb-3">
-                    <div>
-                      <p className="text-white font-medium">{budget.category_name}</p>
+                <CardContent className="p-3 sm:p-4">
+                  <div className="flex items-start justify-between mb-2 sm:mb-3">
+                    <div className="min-w-0">
+                      <p className="text-white font-medium text-sm sm:text-base truncate">{budget.category_name}</p>
                       <p className="text-slate-400 text-xs">
                         {budget.period === 'yearly' && budget.year}
                         {budget.period === 'quarterly' && `${getQuarterName(budget.quarter)} ${budget.year}`}
@@ -164,7 +164,7 @@ export default function BudgetManager({ categories, isAdmin }) {
                         variant="ghost"
                         size="sm"
                         onClick={() => handleDelete(budget)}
-                        className="text-slate-400 hover:text-red-400"
+                        className="text-slate-400 hover:text-red-400 h-7 w-7 p-0"
                       >
                         <Trash2 className="w-4 h-4" />
                       </Button>
@@ -172,7 +172,7 @@ export default function BudgetManager({ categories, isAdmin }) {
                   </div>
                   
                   <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
+                    <div className="flex justify-between text-xs sm:text-sm">
                       <span className="text-slate-400">
                         {formatCurrency(budget.spent)} of {formatCurrency(budget.amount)}
                       </span>
