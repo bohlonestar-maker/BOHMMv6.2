@@ -757,7 +757,7 @@ export default function TemplateEditor() {
               variant="ghost" 
               size="sm"
               onClick={() => navigate('/document-templates')}
-              className="flex-shrink-0 h-8 sm:h-9 px-2 sm:px-3"
+              className="flex-shrink-0 h-8 sm:h-9 px-2 sm:px-3 text-slate-200 hover:text-white"
             >
               <ChevronLeft className="w-4 h-4" />
               <span className="hidden sm:inline ml-1">Back</span>
@@ -771,7 +771,7 @@ export default function TemplateEditor() {
             {/* Mobile Menu Button */}
             <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
               <SheetTrigger asChild>
-                <Button variant="outline" size="sm" className="lg:hidden h-8 sm:h-9">
+                <Button variant="outline" size="sm" className="lg:hidden h-8 sm:h-9 text-slate-200 border-slate-600 hover:text-white hover:border-slate-500">
                   <Menu className="w-4 h-4" />
                   <span className="ml-1 text-xs">{totalElements}</span>
                 </Button>
@@ -790,7 +790,7 @@ export default function TemplateEditor() {
               onClick={handleSave} 
               disabled={saving} 
               size="sm"
-              className="bg-purple-600 hover:bg-purple-700 h-8 sm:h-9 px-2 sm:px-4"
+              className="bg-purple-600 hover:bg-purple-700 text-white h-8 sm:h-9 px-2 sm:px-4"
             >
               <Save className="w-4 h-4" />
               <span className="hidden sm:inline ml-2">{saving ? 'Saving...' : 'Save'}</span>
@@ -821,7 +821,7 @@ export default function TemplateEditor() {
           size="sm"
           disabled={currentPage <= 1}
           onClick={() => setCurrentPage(p => p - 1)}
-          className="h-8"
+          className="h-8 text-slate-200 hover:text-white disabled:text-slate-500"
         >
           <ChevronLeft className="w-4 h-4 mr-1" />
           Prev
@@ -834,7 +834,7 @@ export default function TemplateEditor() {
           size="sm"
           disabled={currentPage >= pagesInfo.length}
           onClick={() => setCurrentPage(p => p + 1)}
-          className="h-8"
+          className="h-8 text-slate-200 hover:text-white disabled:text-slate-500"
         >
           Next
           <ChevronRight className="w-4 h-4 ml-1" />
