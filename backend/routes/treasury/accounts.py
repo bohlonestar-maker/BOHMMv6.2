@@ -15,7 +15,10 @@ from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 from typing import Optional, List
 
-from .utils import get_db, get_current_user, check_treasury_permission
+from .utils import (
+    get_db, get_current_user, check_treasury_permission,
+    encrypt_account, decrypt_account, encrypt_value
+)
 
 router = APIRouter()
 
@@ -62,11 +65,14 @@ async def list_accounts(
         query, {"_id": 0}
     ).sort("name", 1).to_list(50)
     
+    # Decrypt account names for display
+    decrypted_accounts = [decrypt_account(acc) for acc in accounts]
+    
     # Calculate total balance
-    total_balance = sum(acc.get("balance", 0) for acc in accounts if acc.get("is_active", True))
+    total_balance = sum(acc.get("balance", 0) for acc in decrypted_accounts if acc.get("is_active", True))
     
     return {
-        "accounts": accounts,
+        "accounts": decrypted_accounts,
         "total_balance": total_balance
     }
 
@@ -85,12 +91,12 @@ async def create_account(
     
     db = get_db()
     
-    # Check for duplicate name
-    existing = await db.treasury_accounts.find_one({
-        "name": {"$regex": f"^{account.name}$", "$options": "i"}
-    })
-    if existing:
-        raise HTTPException(status_code=400, detail="Account name already exists")
+    # Check for duplicate name (check encrypted names)
+    all_accounts = await db.treasury_accounts.find({}, {"_id": 0, "name": 1}).to_list(100)
+    for acc in all_accounts:
+        decrypted_name = decrypt_account(acc).get("name", "")
+        if decrypted_name.lower() == account.name.strip().lower():
+            raise HTTPException(status_code=400, detail="Account name already exists")
     
     now = datetime.now(timezone.utc)
     account_doc = {
@@ -105,7 +111,9 @@ async def create_account(
         "last_transaction_at": None
     }
     
-    await db.treasury_accounts.insert_one(account_doc)
+    # Encrypt sensitive fields before storing
+    encrypted_doc = encrypt_account(account_doc)
+    await db.treasury_accounts.insert_one(encrypted_doc)
     
     # Log initial balance as transaction if not zero
     if account.initial_balance != 0:
@@ -114,8 +122,9 @@ async def create_account(
             "Initial balance", current_user.get("username", "unknown")
         )
     
-    sys.stderr.write(f"[TREASURY] Created account '{account.name}' with balance ${account.initial_balance:.2f}\n")
+    sys.stderr.write(f"[TREASURY] Created account (encrypted) with balance ${account.initial_balance:.2f}\n")
     
+    # Return unencrypted for display
     return {k: v for k, v in account_doc.items() if k != "_id"}
 
 
@@ -208,6 +217,10 @@ async def transfer_between_accounts(
     if not to_account:
         raise HTTPException(status_code=404, detail="Destination account not found")
     
+    # Decrypt account names
+    from_decrypted = decrypt_account(from_account)
+    to_decrypted = decrypt_account(to_account)
+    
     if from_account.get("balance", 0) < transfer.amount:
         raise HTTPException(status_code=400, detail="Insufficient funds in source account")
     
@@ -228,17 +241,17 @@ async def transfer_between_accounts(
         "id": str(uuid.uuid4()),
         "type": "transfer",
         "from_account_id": transfer.from_account_id,
-        "from_account_name": from_account["name"],
+        "from_account_name": from_decrypted["name"],
         "to_account_id": transfer.to_account_id,
-        "to_account_name": to_account["name"],
+        "to_account_name": to_decrypted["name"],
         "amount": transfer.amount,
-        "description": transfer.description or f"Transfer from {from_account['name']} to {to_account['name']}",
+        "description": transfer.description or f"Transfer from {from_decrypted['name']} to {to_decrypted['name']}",
         "created_at": now.isoformat(),
         "created_by": current_user.get("username", "unknown")
     }
     await db.treasury_transactions.insert_one(transfer_doc)
     
-    sys.stderr.write(f"[TREASURY] Transferred ${transfer.amount:.2f} from '{from_account['name']}' to '{to_account['name']}'\n")
+    sys.stderr.write(f"[TREASURY] Transferred ${transfer.amount:.2f} from '{from_decrypted['name']}' to '{to_decrypted['name']}'\n")
     
     return {"success": True, "message": f"Transferred ${transfer.amount:.2f}"}
 

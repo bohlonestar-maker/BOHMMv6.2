@@ -143,7 +143,7 @@
   - Changed from check-then-insert to atomic upsert using `$setOnInsert`
 
 - **Square Webhook URL Updated**
-  - Webhook URL updated from old preview URL to current: `https://signing-system-v2.preview.emergentagent.com/api/webhooks/square`
+  - Webhook URL updated from old preview URL to current: `https://treasury-encrypt.preview.emergentagent.com/api/webhooks/square`
 
 ---
 

@@ -4,6 +4,7 @@ Treasury Module - Shared Utilities and Configuration
 Provides shared utilities for the treasury system:
 - Database and auth initialization
 - Permission checking
+- Encryption for sensitive financial data
 - Common constants
 """
 import os
@@ -11,6 +12,7 @@ import sys
 from typing import Optional
 from fastapi import HTTPException, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from cryptography.fernet import Fernet
 
 # Security
 security = HTTPBearer()
@@ -18,6 +20,7 @@ security = HTTPBearer()
 # Global state
 _db = None
 _verify_token_func = None
+_cipher_suite = None
 
 # Default categories
 DEFAULT_INCOME_CATEGORIES = [
@@ -30,12 +33,24 @@ DEFAULT_EXPENSE_CATEGORIES = [
     "Charity/Donations", "Marketing", "Administrative", "Other Expense"
 ]
 
+# Sensitive fields that need encryption
+ENCRYPTED_TRANSACTION_FIELDS = ['description', 'vendor_payee', 'reference_number', 'notes']
+ENCRYPTED_ACCOUNT_FIELDS = ['name', 'description']
+
 
 def init_treasury_module(database, token_verifier):
     """Initialize treasury module with database and auth dependencies"""
-    global _db, _verify_token_func
+    global _db, _verify_token_func, _cipher_suite
     _db = database
     _verify_token_func = token_verifier
+    
+    # Initialize encryption
+    encryption_key = os.environ.get('ENCRYPTION_KEY')
+    if encryption_key:
+        _cipher_suite = Fernet(encryption_key.encode())
+        sys.stderr.write("✅ [TREASURY] Encryption enabled for financial data\n")
+    else:
+        sys.stderr.write("⚠️ [TREASURY] WARNING: ENCRYPTION_KEY not set - financial data will NOT be encrypted!\n")
 
 
 def get_db():
@@ -43,6 +58,68 @@ def get_db():
     if _db is None:
         raise HTTPException(status_code=500, detail="Database not initialized")
     return _db
+
+
+def encrypt_value(value: str) -> str:
+    """Encrypt a single value using AES-256 (Fernet)"""
+    if not value or not _cipher_suite:
+        return value
+    try:
+        return _cipher_suite.encrypt(value.encode()).decode()
+    except Exception as e:
+        sys.stderr.write(f"[TREASURY] Encryption error: {e}\n")
+        return value
+
+
+def decrypt_value(encrypted_value: str) -> str:
+    """Decrypt a single value"""
+    if not encrypted_value or not _cipher_suite:
+        return encrypted_value
+    try:
+        return _cipher_suite.decrypt(encrypted_value.encode()).decode()
+    except Exception:
+        # If decryption fails, data might not be encrypted (backward compatibility)
+        return encrypted_value
+
+
+def encrypt_transaction(transaction: dict) -> dict:
+    """Encrypt sensitive transaction fields before storing"""
+    encrypted = transaction.copy()
+    for field in ENCRYPTED_TRANSACTION_FIELDS:
+        if field in encrypted and encrypted[field]:
+            encrypted[field] = encrypt_value(str(encrypted[field]))
+    return encrypted
+
+
+def decrypt_transaction(transaction: dict) -> dict:
+    """Decrypt sensitive transaction fields for display"""
+    if not transaction:
+        return transaction
+    decrypted = transaction.copy()
+    for field in ENCRYPTED_TRANSACTION_FIELDS:
+        if field in decrypted and decrypted[field]:
+            decrypted[field] = decrypt_value(decrypted[field])
+    return decrypted
+
+
+def encrypt_account(account: dict) -> dict:
+    """Encrypt sensitive account fields before storing"""
+    encrypted = account.copy()
+    for field in ENCRYPTED_ACCOUNT_FIELDS:
+        if field in encrypted and encrypted[field]:
+            encrypted[field] = encrypt_value(str(encrypted[field]))
+    return encrypted
+
+
+def decrypt_account(account: dict) -> dict:
+    """Decrypt sensitive account fields for display"""
+    if not account:
+        return account
+    decrypted = account.copy()
+    for field in ENCRYPTED_ACCOUNT_FIELDS:
+        if field in decrypted and decrypted[field]:
+            decrypted[field] = decrypt_value(decrypted[field])
+    return decrypted
 
 
 async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):

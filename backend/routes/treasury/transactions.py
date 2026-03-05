@@ -17,7 +17,10 @@ from typing import Optional, List
 from fastapi import APIRouter, HTTPException, Depends, UploadFile, File, Form
 from pydantic import BaseModel
 
-from .utils import get_db, get_current_user, check_treasury_permission
+from .utils import (
+    get_db, get_current_user, check_treasury_permission,
+    encrypt_transaction, decrypt_transaction, encrypt_value, decrypt_account
+)
 
 router = APIRouter()
 
@@ -83,8 +86,11 @@ async def list_transactions(
         query, {"_id": 0, "receipt_data": 0}  # Exclude large receipt data from list
     ).sort("date", -1).skip(offset).limit(limit).to_list(limit)
     
+    # Decrypt sensitive fields
+    decrypted_transactions = [decrypt_transaction(t) for t in transactions]
+    
     return {
-        "transactions": transactions,
+        "transactions": decrypted_transactions,
         "total": total,
         "limit": limit,
         "offset": offset
@@ -109,7 +115,8 @@ async def get_transaction(
     if not transaction:
         raise HTTPException(status_code=404, detail="Transaction not found")
     
-    return transaction
+    # Decrypt sensitive fields
+    return decrypt_transaction(transaction)
 
 
 @router.post("/transactions")
@@ -134,6 +141,9 @@ async def create_transaction(
     if not account:
         raise HTTPException(status_code=404, detail="Account not found")
     
+    # Decrypt account name for storage (account names are encrypted in DB)
+    decrypted_account = decrypt_account(account)
+    
     # Verify category exists
     category = await db.treasury_categories.find_one({"id": transaction.category_id})
     if not category:
@@ -145,7 +155,7 @@ async def create_transaction(
         "id": str(uuid.uuid4()),
         "type": transaction.type,
         "account_id": transaction.account_id,
-        "account_name": account["name"],
+        "account_name": decrypted_account["name"],
         "category_id": transaction.category_id,
         "category_name": category["name"],
         "amount": transaction.amount,
@@ -161,7 +171,9 @@ async def create_transaction(
         "updated_at": None
     }
     
-    await db.treasury_transactions.insert_one(transaction_doc)
+    # Encrypt sensitive fields before storing
+    encrypted_doc = encrypt_transaction(transaction_doc)
+    await db.treasury_transactions.insert_one(encrypted_doc)
     
     # Update account balance
     balance_change = transaction.amount if transaction.type == "income" else -transaction.amount
@@ -173,8 +185,9 @@ async def create_transaction(
         }
     )
     
-    sys.stderr.write(f"[TREASURY] Created {transaction.type}: ${transaction.amount:.2f} - {transaction.description}\n")
+    sys.stderr.write(f"[TREASURY] Created {transaction.type}: ${transaction.amount:.2f} (encrypted)\n")
     
+    # Return decrypted version for display
     return {k: v for k, v in transaction_doc.items() if k not in ["_id", "receipt_data"]}
 
 
@@ -225,9 +238,17 @@ async def update_transaction(
     update_data["updated_at"] = datetime.now(timezone.utc).isoformat()
     update_data["updated_by"] = current_user.get("username", "unknown")
     
+    # Encrypt sensitive fields in update data
+    encrypted_update = {}
+    for k, v in update_data.items():
+        if k in ['description', 'vendor_payee', 'reference_number', 'notes'] and v:
+            encrypted_update[k] = encrypt_value(str(v))
+        else:
+            encrypted_update[k] = v
+    
     await db.treasury_transactions.update_one(
         {"id": transaction_id},
-        {"$set": update_data}
+        {"$set": encrypted_update}
     )
     
     return {"success": True, "message": "Transaction updated"}
