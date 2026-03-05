@@ -971,7 +971,7 @@ export default function TemplateEditor() {
         <Button
           variant={addMode === 'field' ? 'default' : 'outline'}
           size="sm"
-          className={`flex-1 h-10 ${addMode === 'field' ? 'bg-purple-600' : ''}`}
+          className={`flex-1 h-10 ${addMode === 'field' ? 'bg-purple-600 text-white' : 'text-slate-200 border-slate-600'}`}
           onClick={() => setAddMode(addMode === 'field' ? null : 'field')}
         >
           <Type className="w-4 h-4 mr-1" />
@@ -980,7 +980,7 @@ export default function TemplateEditor() {
         <Button
           variant={addMode === 'signature' ? 'default' : 'outline'}
           size="sm"
-          className={`flex-1 h-10 ${addMode === 'signature' ? 'bg-orange-600' : ''}`}
+          className={`flex-1 h-10 ${addMode === 'signature' ? 'bg-orange-600 text-white' : 'text-slate-200 border-slate-600'}`}
           onClick={() => setAddMode(addMode === 'signature' ? null : 'signature')}
         >
           <PenLine className="w-4 h-4 mr-1" />
@@ -989,7 +989,7 @@ export default function TemplateEditor() {
         <Button
           variant={showGrid ? 'default' : 'outline'}
           size="sm"
-          className={`h-10 ${showGrid ? 'bg-cyan-600' : ''}`}
+          className={`h-10 ${showGrid ? 'bg-cyan-600 text-white' : 'text-slate-200 border-slate-600'}`}
           onClick={() => setShowGrid(!showGrid)}
         >
           <Grid3X3 className="w-4 h-4" />
@@ -997,7 +997,7 @@ export default function TemplateEditor() {
         <Button
           variant="outline"
           size="sm"
-          className="flex-1 h-10"
+          className="flex-1 h-10 text-slate-200 border-slate-600"
           onClick={() => setShowElementsPanel(true)}
         >
           <Layers className="w-4 h-4 mr-1" />

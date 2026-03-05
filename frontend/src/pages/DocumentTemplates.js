@@ -358,7 +358,7 @@ export default function DocumentTemplates() {
                       size="sm"
                       variant="outline"
                       onClick={() => handleView(template)}
-                      className="text-xs"
+                      className="text-xs text-slate-200 hover:text-white border-slate-600 hover:border-slate-500"
                       data-testid={`view-template-${template.id}`}
                     >
                       <Eye className="w-3 h-3 sm:mr-1" />
@@ -368,7 +368,7 @@ export default function DocumentTemplates() {
                       size="sm"
                       variant="outline"
                       onClick={() => handleEdit(template)}
-                      className="text-xs"
+                      className="text-xs text-slate-200 hover:text-white border-slate-600 hover:border-slate-500"
                       data-testid={`edit-template-${template.id}`}
                     >
                       <Edit2 className="w-3 h-3 sm:mr-1" />
@@ -379,7 +379,7 @@ export default function DocumentTemplates() {
                         size="sm"
                         variant="outline"
                         onClick={() => navigate(`/document-templates/${template.id}/edit`)}
-                        className="text-xs text-purple-400 hover:text-purple-300"
+                        className="text-xs text-purple-400 hover:text-purple-300 border-purple-600 hover:border-purple-500"
                         data-testid={`configure-template-${template.id}`}
                       >
                         <i className="fas fa-pen-to-square w-3 h-3 sm:mr-1"></i>
@@ -390,7 +390,7 @@ export default function DocumentTemplates() {
                       size="sm"
                       variant="outline"
                       onClick={() => handleToggleActive(template)}
-                      className={`text-xs ${template.is_active ? 'text-red-400 hover:text-red-300' : 'text-green-400 hover:text-green-300'}`}
+                      className={`text-xs ${template.is_active ? 'text-red-400 hover:text-red-300 border-red-600 hover:border-red-500' : 'text-green-400 hover:text-green-300 border-green-600 hover:border-green-500'}`}
                       data-testid={`toggle-template-${template.id}`}
                     >
                       {template.is_active ? (
