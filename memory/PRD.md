@@ -106,6 +106,14 @@ Build a member management application with attendance tracking, dues management,
   - `view_treasury` - Read-only access
   - `manage_treasury` - Can add/edit/delete transactions
   - `treasury_admin` - Full access including settings and budgets
+- [x] **AES-256 Encryption for Sensitive Data (Mar 5, 2026):**
+  - All sensitive Treasury data encrypted at rest using Fernet (AES-256)
+  - **Encrypted Account Fields:** name, description
+  - **Encrypted Transaction Fields:** description, vendor_payee, reference_number, notes
+  - **NOT Encrypted:** amounts, dates, IDs, category names (for efficient querying)
+  - Data automatically decrypted when retrieved through API
+  - Encryption key stored in `ENCRYPTION_KEY` environment variable
+  - Backward compatible - handles both encrypted and unencrypted data
 
 #### March 4, 2026 - In-House Document Signing System (Replaces SignNow)
 - [x] **Complete E-Signature Solution:**
@@ -409,6 +417,8 @@ Build a member management application with attendance tracking, dues management,
 - [x] ~~Square one-time payment sync bug~~ (Completed Jan 29 - fixed + admin reapply endpoint)
 - [x] ~~SignNow Integration~~ (Completed Mar 3, 2026 - Send documents for signature from member profiles)
 - [x] ~~In-House Document Signing~~ (Completed Mar 4, 2026 - Replaced SignNow with custom e-signature system)
+- [x] ~~Treasury Data Encryption~~ (Completed Mar 5, 2026 - AES-256 encryption for sensitive financial data)
+- [ ] Treasury Quarterly Report Generation
 - [ ] Triple birthday notification fix (distributed lock not working across containers)
 - [ ] "Update Dues" dialog mobile responsiveness
 - [ ] Add quarterly/bi-yearly/yearly dues subscription options
