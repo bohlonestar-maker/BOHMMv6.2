@@ -134,7 +134,7 @@ export default function Treasury() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Button onClick={() => navigate('/dashboard')} variant="outline">
+            <Button onClick={() => navigate('/')} variant="outline">
               <ArrowLeft className="w-4 h-4 mr-2" />
               Back to Dashboard
             </Button>
@@ -156,7 +156,7 @@ export default function Treasury() {
             <Button 
               variant="ghost" 
               size="sm" 
-              onClick={() => navigate('/dashboard')}
+              onClick={() => navigate('/')}
               className="text-slate-400 hover:text-white"
             >
               <ArrowLeft className="w-4 h-4 mr-2" />
