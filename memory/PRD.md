@@ -82,6 +82,12 @@ Build a member management application with attendance tracking, dues management,
   - Tests utility functions, endpoints, and integration
   - All tests passing (30 total document signing tests)
 - [x] **No Functional Changes:** Pure refactor, all existing behavior preserved
+- [x] **Template Deletion Feature Added:**
+  - Delete button on each template card
+  - Confirmation dialog with two options:
+    - Deactivate (recommended) - soft delete, can be reactivated
+    - Delete Forever - permanent deletion (blocked if template has been used for signing)
+  - Proper error handling for templates in use
 
 #### March 4, 2026 - In-House Document Signing System (Replaces SignNow)
 - [x] **Complete E-Signature Solution:**

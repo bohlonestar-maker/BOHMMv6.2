@@ -8,7 +8,7 @@ import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Textarea } from '../components/ui/textarea';
 import { toast } from 'sonner';
-import { Plus, FileText, Upload, Edit2, Eye, EyeOff, ArrowLeft, Menu } from 'lucide-react';
+import { Plus, FileText, Upload, Edit2, Eye, EyeOff, ArrowLeft, Menu, Trash2, Loader2 } from 'lucide-react';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -34,6 +34,11 @@ export default function DocumentTemplates() {
   // View template dialog
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
   const [viewingTemplate, setViewingTemplate] = useState(null);
+
+  // Delete confirmation dialog
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deletingTemplate, setDeletingTemplate] = useState(null);
+  const [deleting, setDeleting] = useState(false);
 
   // Mobile menu state
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -196,6 +201,32 @@ export default function DocumentTemplates() {
     }
   };
 
+  const handleDeleteClick = (template) => {
+    setDeletingTemplate(template);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async (permanent = false) => {
+    if (!deletingTemplate) return;
+    
+    setDeleting(true);
+    try {
+      await axios.delete(`${API}/documents/templates/${deletingTemplate.id}`, {
+        params: { permanent },
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      toast.success(permanent ? 'Template permanently deleted' : 'Template deactivated');
+      setDeleteDialogOpen(false);
+      setDeletingTemplate(null);
+      fetchTemplates();
+    } catch (err) {
+      console.error('Error deleting template:', err);
+      toast.error(err.response?.data?.detail || 'Failed to delete template');
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   const categories = ['Financial Hardship', 'Honorary Application', 'Bylaws', 'SOPs', 'Other'];
 
   return (
@@ -353,7 +384,7 @@ export default function DocumentTemplates() {
                   </div>
                   
                   {/* Action Buttons - Better responsive layout */}
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
                     <Button
                       size="sm"
                       variant="outline"
@@ -390,7 +421,7 @@ export default function DocumentTemplates() {
                       size="sm"
                       variant="outline"
                       onClick={() => handleToggleActive(template)}
-                      className={`text-xs ${template.is_active ? 'text-red-400 hover:text-red-300 border-red-600 hover:border-red-500' : 'text-green-400 hover:text-green-300 border-green-600 hover:border-green-500'}`}
+                      className={`text-xs ${template.is_active ? 'text-yellow-400 hover:text-yellow-300 border-yellow-600 hover:border-yellow-500' : 'text-green-400 hover:text-green-300 border-green-600 hover:border-green-500'}`}
                       data-testid={`toggle-template-${template.id}`}
                     >
                       {template.is_active ? (
@@ -404,6 +435,16 @@ export default function DocumentTemplates() {
                           <span className="hidden sm:inline">On</span>
                         </>
                       )}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleDeleteClick(template)}
+                      className="text-xs text-red-400 hover:text-red-300 border-red-600 hover:border-red-500"
+                      data-testid={`delete-template-${template.id}`}
+                    >
+                      <Trash2 className="w-3 h-3 sm:mr-1" />
+                      <span className="hidden sm:inline">Delete</span>
                     </Button>
                   </div>
                 </CardContent>
@@ -636,6 +677,78 @@ export default function DocumentTemplates() {
           <DialogFooter className="mt-4">
             <Button variant="outline" onClick={() => setViewDialogOpen(false)} className="w-full sm:w-auto">
               Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-red-400 flex items-center gap-2">
+              <Trash2 className="w-5 h-5" />
+              Delete Template
+            </DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete "{deletingTemplate?.name}"?
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="bg-slate-800 rounded-lg p-4 space-y-3">
+              <div className="flex items-start gap-3">
+                <div className="w-8 h-8 rounded-full bg-yellow-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <EyeOff className="w-4 h-4 text-yellow-400" />
+                </div>
+                <div>
+                  <p className="text-white font-medium text-sm">Deactivate (Recommended)</p>
+                  <p className="text-slate-400 text-xs mt-1">
+                    Hides the template but keeps it for records. Can be reactivated later.
+                  </p>
+                </div>
+              </div>
+              
+              <div className="flex items-start gap-3">
+                <div className="w-8 h-8 rounded-full bg-red-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <Trash2 className="w-4 h-4 text-red-400" />
+                </div>
+                <div>
+                  <p className="text-white font-medium text-sm">Permanent Delete</p>
+                  <p className="text-slate-400 text-xs mt-1">
+                    Completely removes the template. Cannot be undone. Not available if template has been used for signing.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <DialogFooter className="flex-col sm:flex-row gap-2">
+            <Button 
+              variant="outline" 
+              onClick={() => setDeleteDialogOpen(false)}
+              disabled={deleting}
+              className="w-full sm:w-auto"
+            >
+              Cancel
+            </Button>
+            <Button 
+              variant="outline"
+              onClick={() => handleDeleteConfirm(false)}
+              disabled={deleting}
+              className="w-full sm:w-auto text-yellow-400 border-yellow-600 hover:border-yellow-500"
+            >
+              {deleting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <EyeOff className="w-4 h-4 mr-2" />}
+              Deactivate
+            </Button>
+            <Button 
+              variant="destructive"
+              onClick={() => handleDeleteConfirm(true)}
+              disabled={deleting}
+              className="w-full sm:w-auto bg-red-600 hover:bg-red-700"
+            >
+              {deleting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Trash2 className="w-4 h-4 mr-2" />}
+              Delete Forever
             </Button>
           </DialogFooter>
         </DialogContent>

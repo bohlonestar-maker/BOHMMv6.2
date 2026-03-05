@@ -175,24 +175,39 @@ async def update_document_template(
 @router.delete("/templates/{template_id}")
 async def delete_document_template(
     template_id: str,
+    permanent: bool = False,
     current_user: dict = Depends(get_current_user)
 ):
-    """Delete (deactivate) a document template"""
+    """Delete a document template (soft delete by default, permanent if specified)"""
     db = get_db()
     
     if current_user.get("role") != "admin":
         raise HTTPException(status_code=403, detail="Only admins can delete templates")
     
-    result = await db.document_templates.update_one(
-        {"id": template_id},
-        {"$set": {"is_active": False, "updated_at": datetime.now(timezone.utc).isoformat()}}
-    )
-    
-    if result.modified_count == 0:
+    template = await db.document_templates.find_one({"id": template_id})
+    if not template:
         raise HTTPException(status_code=404, detail="Template not found")
     
-    sys.stderr.write(f"[DOCS] Deactivated template '{template_id}' by {current_user.get('username')}\n")
-    return {"success": True, "message": "Template deactivated"}
+    if permanent:
+        # Check if template is in use by any signing requests
+        in_use = await db.signing_requests.find_one({"template_id": template_id})
+        if in_use:
+            raise HTTPException(
+                status_code=400, 
+                detail="Cannot permanently delete template that has been used for signing. Deactivate it instead."
+            )
+        
+        await db.document_templates.delete_one({"id": template_id})
+        sys.stderr.write(f"[DOCS] Permanently deleted template '{template['name']}' by {current_user.get('username')}\n")
+        return {"success": True, "message": "Template permanently deleted"}
+    else:
+        # Soft delete (deactivate)
+        await db.document_templates.update_one(
+            {"id": template_id},
+            {"$set": {"is_active": False, "updated_at": datetime.now(timezone.utc).isoformat()}}
+        )
+        sys.stderr.write(f"[DOCS] Deactivated template '{template['name']}' by {current_user.get('username')}\n")
+        return {"success": True, "message": "Template deactivated"}
 
 
 # =============================================================================
