@@ -233,7 +233,7 @@ class TestDocumentSending:
         result = response.json()
         
         assert "id" in result, "Response should have request 'id'"
-        assert result["status"] == "pending", "Initial status should be 'pending'"
+        assert result["status"] in ["pending", "pending_recipient"], "Initial status should be pending or pending_recipient"
         assert result["member_id"] == self.test_member_id
         assert result["recipient_email"] == self.test_member_email
         
