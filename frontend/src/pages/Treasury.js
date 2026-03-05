@@ -185,24 +185,24 @@ export default function Treasury() {
       <div className="max-w-7xl mx-auto p-4">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-5 bg-slate-800 mb-6">
-            <TabsTrigger value="overview" className="data-[state=active]:bg-green-600">
+            <TabsTrigger value="overview" className="text-slate-300 data-[state=active]:bg-green-600 data-[state=active]:text-white">
               <Wallet className="w-4 h-4 mr-2" />
               <span className="hidden sm:inline">Overview</span>
             </TabsTrigger>
-            <TabsTrigger value="transactions" className="data-[state=active]:bg-green-600">
+            <TabsTrigger value="transactions" className="text-slate-300 data-[state=active]:bg-green-600 data-[state=active]:text-white">
               <Receipt className="w-4 h-4 mr-2" />
               <span className="hidden sm:inline">Transactions</span>
             </TabsTrigger>
-            <TabsTrigger value="budgets" className="data-[state=active]:bg-green-600">
+            <TabsTrigger value="budgets" className="text-slate-300 data-[state=active]:bg-green-600 data-[state=active]:text-white">
               <PieChart className="w-4 h-4 mr-2" />
               <span className="hidden sm:inline">Budgets</span>
             </TabsTrigger>
-            <TabsTrigger value="reports" className="data-[state=active]:bg-green-600">
+            <TabsTrigger value="reports" className="text-slate-300 data-[state=active]:bg-green-600 data-[state=active]:text-white">
               <FileText className="w-4 h-4 mr-2" />
               <span className="hidden sm:inline">Reports</span>
             </TabsTrigger>
             {isAdmin && (
-              <TabsTrigger value="settings" className="data-[state=active]:bg-green-600">
+              <TabsTrigger value="settings" className="text-slate-300 data-[state=active]:bg-green-600 data-[state=active]:text-white">
                 <Settings className="w-4 h-4 mr-2" />
                 <span className="hidden sm:inline">Settings</span>
               </TabsTrigger>
