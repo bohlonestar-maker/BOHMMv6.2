@@ -33,6 +33,7 @@ import DocumentTemplates from "@/pages/DocumentTemplates";
 import TemplateEditor from "@/pages/TemplateEditor";
 import SignDocument from "@/pages/SignDocument";
 import Treasury from "@/pages/Treasury";
+import NFCManager from "@/pages/NFCManager";
 import ChatBot from "@/components/ChatBot";
 import { Toaster } from "@/components/ui/sonner";
 
@@ -568,6 +569,16 @@ function App() {
             element={
               isAuthenticated ? (
                 <Treasury />
+              ) : (
+                <Navigate to="/" replace />
+              )
+            }
+          />
+          <Route
+            path="/nfc"
+            element={
+              isAuthenticated ? (
+                <NFCManager />
               ) : (
                 <Navigate to="/" replace />
               )

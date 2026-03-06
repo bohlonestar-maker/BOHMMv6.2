@@ -131,6 +131,19 @@ Build a member management application with attendance tracking, dues management,
   - Touch-friendly buttons and tap targets on mobile
   - Proper text hierarchy with responsive font sizes
 
+### March 6, 2026 - NFC Card Manager (New Feature)
+- [x] **NFC Card Programming Page (`/app/frontend/src/pages/NFCManager.js`):**
+  - Program NTAG215 NFC cards with URLs for digital business cards
+  - Uses Web NFC API (Chrome on Android only)
+  - **Read Card**: Scan any NFC card to view its contents (serial number, stored data)
+  - **Write Card**: Program cards with member profile URLs or custom URLs
+  - Select from member list to auto-generate profile URL
+  - Visual feedback during NFC operations (animated scanning indicator)
+  - Browser compatibility detection with helpful instructions
+  - Responsive design for mobile-first use (since NFC requires Android)
+  - Route: `/nfc` (admin only access)
+  - Dashboard menu integration for admin users
+
 #### March 4, 2026 - In-House Document Signing System (Replaces SignNow)
 - [x] **Complete E-Signature Solution:**
   - Document template management (PDF upload or text-based templates)

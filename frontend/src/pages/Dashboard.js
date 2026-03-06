@@ -43,7 +43,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { LogOut, Plus, Pencil, Trash2, Download, Users, Mail, Phone, MapPin, MessageCircle, Clock, LifeBuoy, FileText, Calendar, Star, DollarSign, Headphones, Settings, Menu, Key, Database, Lightbulb, Shield, Send, ChevronUp, ChevronDown, X, Eye } from "lucide-react";
+import { LogOut, Plus, Pencil, Trash2, Download, Users, Mail, Phone, MapPin, MessageCircle, Clock, LifeBuoy, FileText, Calendar, Star, DollarSign, Headphones, Settings, Menu, Key, Database, Lightbulb, Shield, Send, ChevronUp, ChevronDown, X, Eye, CreditCard } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 
@@ -1362,6 +1362,17 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
                         >
                           <DollarSign className="w-4 h-4 mr-2" />
                           Treasury
+                        </DropdownMenuItem>
+                      )}
+                      
+                      {/* NFC Card Manager - Admin only */}
+                      {userRole === 'admin' && (
+                        <DropdownMenuItem 
+                          onSelect={(e) => { e.preventDefault(); navigate("/nfc"); }} 
+                          className="text-red-400 focus:bg-red-900/30 focus:text-red-300 cursor-pointer"
+                        >
+                          <CreditCard className="w-4 h-4 mr-2" />
+                          NFC Cards
                         </DropdownMenuItem>
                       )}
                       
