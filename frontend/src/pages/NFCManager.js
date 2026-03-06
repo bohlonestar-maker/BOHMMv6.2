@@ -1,8 +1,13 @@
 /**
  * NFC Card Manager Page
  * 
- * Program NTAG215 NFC cards with member profile URLs
+ * Program NTAG213/215/216 NFC cards with member profile URLs
  * for digital business cards. Uses Web NFC API (Chrome Android).
+ * 
+ * Supported Tags:
+ * - NTAG213: 144 bytes (137 usable) - Short URLs
+ * - NTAG215: 504 bytes (489 usable) - Standard URLs  
+ * - NTAG216: 888 bytes (872 usable) - Long URLs + data
  */
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -16,10 +21,17 @@ import { toast } from 'sonner';
 import { 
   ArrowLeft, Smartphone, Wifi, WifiOff, CheckCircle2, 
   XCircle, Loader2, CreditCard, User, Link2, 
-  AlertTriangle, Scan, PenTool, RefreshCw
+  AlertTriangle, Scan, PenTool, RefreshCw, Info
 } from 'lucide-react';
 
 const API = process.env.REACT_APP_BACKEND_URL + '/api';
+
+// NTAG capacity info (usable NDEF bytes)
+const NTAG_INFO = {
+  'NTAG213': { capacity: 137, description: 'Short URLs, basic data' },
+  'NTAG215': { capacity: 489, description: 'Standard URLs, most use cases' },
+  'NTAG216': { capacity: 872, description: 'Long URLs, extended data' }
+};
 
 export default function NFCManager() {
   const navigate = useNavigate();
@@ -92,6 +104,25 @@ export default function NFCManager() {
     // Generate the public profile URL for the member
     const baseUrl = window.location.origin;
     return `${baseUrl}/member/${memberId}`;
+  };
+
+  // Calculate approximate NDEF record size for a URL
+  const getUrlByteSize = (url) => {
+    if (!url) return 0;
+    // NDEF URL record overhead is approximately 5-7 bytes + URL length
+    // Using UTF-8, most URLs are 1 byte per character
+    return url.length + 7;
+  };
+
+  // Check if URL fits in tag
+  const getTagCompatibility = (url) => {
+    const size = getUrlByteSize(url);
+    return {
+      size,
+      ntag213: size <= NTAG_INFO['NTAG213'].capacity,
+      ntag215: size <= NTAG_INFO['NTAG215'].capacity,
+      ntag216: size <= NTAG_INFO['NTAG216'].capacity
+    };
   };
 
   const handleReadNFC = async () => {
@@ -314,7 +345,7 @@ export default function NFCManager() {
                 <CreditCard className="w-5 h-5 sm:w-6 sm:h-6 text-blue-400" />
                 NFC Card Manager
               </h1>
-              <p className="text-slate-400 text-xs sm:text-sm">Program digital business cards</p>
+              <p className="text-slate-400 text-xs sm:text-sm">Program NTAG213/215/216 digital business cards</p>
             </div>
           </div>
         </div>
@@ -518,13 +549,32 @@ export default function NFCManager() {
                       </Select>
 
                       {selectedMemberData && (
-                        <div className="bg-slate-700/50 rounded-lg p-3 text-sm">
+                        <div className="bg-slate-700/50 rounded-lg p-3 text-sm space-y-2">
                           <p className="text-white font-medium">
                             {selectedMemberData.firstName} {selectedMemberData.lastName}
                           </p>
-                          <p className="text-slate-400 text-xs mt-1 break-all">
+                          <p className="text-slate-400 text-xs break-all">
                             URL: {getMemberProfileUrl(selectedMember)}
                           </p>
+                          {/* Tag Compatibility */}
+                          {(() => {
+                            const compat = getTagCompatibility(getMemberProfileUrl(selectedMember));
+                            return (
+                              <div className="flex items-center gap-2 pt-2 border-t border-slate-600">
+                                <span className="text-slate-400 text-xs">Size: {compat.size} bytes</span>
+                                <span className="text-slate-500">•</span>
+                                <span className={`text-xs ${compat.ntag213 ? 'text-green-400' : 'text-red-400'}`}>
+                                  213 {compat.ntag213 ? '✓' : '✗'}
+                                </span>
+                                <span className={`text-xs ${compat.ntag215 ? 'text-green-400' : 'text-red-400'}`}>
+                                  215 {compat.ntag215 ? '✓' : '✗'}
+                                </span>
+                                <span className={`text-xs ${compat.ntag216 ? 'text-green-400' : 'text-red-400'}`}>
+                                  216 {compat.ntag216 ? '✓' : '✗'}
+                                </span>
+                              </div>
+                            );
+                          })()}
                         </div>
                       )}
                     </div>
@@ -537,6 +587,28 @@ export default function NFCManager() {
                         placeholder="https://example.com/profile"
                         className="bg-slate-700 border-slate-600"
                       />
+                      {customUrl && (
+                        <div className="flex items-center gap-2">
+                          {(() => {
+                            const compat = getTagCompatibility(customUrl.startsWith('http') ? customUrl : `https://${customUrl}`);
+                            return (
+                              <>
+                                <span className="text-slate-400 text-xs">Size: {compat.size} bytes</span>
+                                <span className="text-slate-500">•</span>
+                                <span className={`text-xs ${compat.ntag213 ? 'text-green-400' : 'text-red-400'}`}>
+                                  213 {compat.ntag213 ? '✓' : '✗'}
+                                </span>
+                                <span className={`text-xs ${compat.ntag215 ? 'text-green-400' : 'text-red-400'}`}>
+                                  215 {compat.ntag215 ? '✓' : '✗'}
+                                </span>
+                                <span className={`text-xs ${compat.ntag216 ? 'text-green-400' : 'text-red-400'}`}>
+                                  216 {compat.ntag216 ? '✓' : '✗'}
+                                </span>
+                              </>
+                            );
+                          })()}
+                        </div>
+                      )}
                       <p className="text-slate-500 text-xs">
                         Enter any URL to program onto the card
                       </p>
@@ -635,9 +707,40 @@ export default function NFCManager() {
             <li>• Keep the card still until the operation completes</li>
             <li>• NFC antenna is usually in the upper half of the phone</li>
             <li>• Remove any phone case if having trouble</li>
-            <li>• NTAG215 cards support up to 504 bytes of data</li>
           </ul>
         </div>
+
+        {/* Supported Tags Info */}
+        <Card className="bg-slate-800 border-slate-700">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-white text-base flex items-center gap-2">
+              <Info className="w-4 h-4 text-blue-400" />
+              Supported NFC Tags
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {Object.entries(NTAG_INFO).map(([tag, info]) => (
+                <div key={tag} className="bg-slate-700/50 rounded-lg p-3">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-white font-medium text-sm">{tag}</span>
+                    <span className="text-xs text-slate-400">{info.capacity} bytes</span>
+                  </div>
+                  <p className="text-slate-400 text-xs">{info.description}</p>
+                  <div className="mt-2 h-1.5 bg-slate-600 rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-gradient-to-r from-blue-500 to-cyan-400 rounded-full"
+                      style={{ width: `${(info.capacity / 872) * 100}%` }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+            <p className="text-slate-500 text-xs mt-3">
+              All NTAG21x tags are fully compatible. A typical URL uses 50-100 bytes.
+            </p>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

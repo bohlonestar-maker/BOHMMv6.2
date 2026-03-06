@@ -133,14 +133,20 @@ Build a member management application with attendance tracking, dues management,
 
 ### March 6, 2026 - NFC Card Manager (New Feature)
 - [x] **NFC Card Programming Page (`/app/frontend/src/pages/NFCManager.js`):**
-  - Program NTAG215 NFC cards with URLs for digital business cards
+  - Program NTAG213/215/216 NFC cards with URLs for digital business cards
   - Uses Web NFC API (Chrome on Android only)
+  - **Supported Tags:**
+    - NTAG213: 137 bytes - Short URLs, basic data
+    - NTAG215: 489 bytes - Standard URLs, most use cases
+    - NTAG216: 872 bytes - Long URLs, extended data
   - **Read Card**: Scan any NFC card to view its contents (serial number, stored data)
   - **Write Card**: Program cards with member profile URLs or custom URLs
+  - **Tag Compatibility Indicator**: Shows URL byte size and which tags it fits on (213 ✓/✗, 215 ✓/✗, 216 ✓/✗)
   - Select from member list to auto-generate profile URL
   - Visual feedback during NFC operations (animated scanning indicator)
   - Browser compatibility detection with helpful instructions
   - Responsive design for mobile-first use (since NFC requires Android)
+  - Supported tags comparison chart with capacity visualization
   - Route: `/nfc` (admin only access)
   - Dashboard menu integration for admin users
 
