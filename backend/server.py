@@ -2515,8 +2515,15 @@ async def login(login_data: LoginRequest):
         "admin_actions": False
     })
     
-    # Combine both permission sets
-    all_permissions = {**static_permissions, **dynamic_permissions}
+    # Combine both permission sets - static permissions take priority
+    # This ensures user-level permissions (like admin's) aren't overridden
+    all_permissions = {**dynamic_permissions, **static_permissions}
+    
+    # Admin role gets ALL permissions regardless of title-based permissions
+    if user["role"] == "admin":
+        for perm in AVAILABLE_PERMISSIONS:
+            all_permissions[perm["key"]] = True
+        all_permissions["admin_actions"] = True
     
     # Trigger Square catalog sync in background (non-blocking)
     # Only runs if user is a store admin (doesn't matter, sync is idempotent)
@@ -2557,8 +2564,14 @@ async def verify(current_user: dict = Depends(verify_token)):
         "admin_actions": False
     })
     
-    # Combine both permission sets
-    all_permissions = {**static_permissions, **dynamic_permissions}
+    # Combine both permission sets - static permissions take priority
+    all_permissions = {**dynamic_permissions, **static_permissions}
+    
+    # Admin role gets ALL permissions regardless of title-based permissions
+    if user["role"] == "admin":
+        for perm in AVAILABLE_PERMISSIONS:
+            all_permissions[perm["key"]] = True
+        all_permissions["admin_actions"] = True
     
     return {
         "username": user["username"],
