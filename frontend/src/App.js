@@ -403,10 +403,10 @@ function App() {
           <Route
             path="/export-view"
             element={
-              isAuthenticated ? (
+              isAuthenticated && (userRole === 'admin' || userPermissions?.view_export) ? (
                 <CSVExportView />
               ) : (
-                <Navigate to="/login" replace />
+                <Navigate to="/" replace />
               )
             }
           />

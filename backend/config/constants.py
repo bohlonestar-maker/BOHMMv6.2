@@ -52,4 +52,5 @@ AVAILABLE_PERMISSIONS = [
     {"key": "manage_system_users", "label": "Manage System Users", "description": "Can add/edit system user accounts"},
     {"key": "manage_dues_reminders", "label": "Manage Dues Reminders", "description": "Can view/edit dues reminder emails and run checks"},
     {"key": "send_documents", "label": "Send Documents", "description": "Can send SignNow documents for signing to members"},
+    {"key": "view_export", "label": "View Export", "description": "Can access CSV Export page to export member data"},
 ]
