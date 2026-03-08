@@ -1,5 +1,56 @@
 # BOH Hub Changelog
 
+## Version 2.5.0 - March 8, 2026
+
+### New Features
+- **Treasury Module** (Complete Financial Management System)
+  - **Account Management**: Multiple account types (checking, savings, cash, other)
+  - **Transaction Tracking**: Full CRUD for income/expenses with categories
+  - **Receipt Management**: Upload and view receipts (images/PDFs) for transactions
+  - **Dynamic Categories**: Add income/expense categories on-the-fly
+  - **Dashboard Overview**: Total balance, monthly summaries, top income/expense sources
+  - **AES-256 Encryption**: All sensitive financial data encrypted at rest (Fernet)
+  - **Audit Logging**: Complete activity history for compliance and accountability
+  - **Permission-based Access**: view_treasury, manage_treasury, treasury_admin roles
+  - Route: `/treasury`
+
+- **NFC Card Manager** (Digital Business Cards)
+  - Program NTAG213/215/216 NFC cards with URLs
+  - Read NFC cards to view contents and serial number
+  - Write member profile URLs or custom URLs to cards
+  - Tag compatibility indicator (shows which tags fit your URL)
+  - Supported tag info with capacity visualization
+  - Uses Web NFC API (Chrome on Android only)
+  - Route: `/nfc` (Admin only)
+
+- **Document Management Enhancements**
+  - Permanent deletion of document templates
+  - Confirmation dialogs for deactivate and delete actions
+  - Fixed mobile button icon visibility
+
+### UI/UX Improvements
+- **Treasury Responsive Design**
+  - All Treasury pages optimized for smartphone (375px), tablet (768px), and laptop (1440px+)
+  - Mobile: Single column, icon-only tabs, stacked filters, compact cards
+  - Tablet: 2-column grids, full tab labels
+  - Desktop: 4-column grids, full horizontal layouts
+
+### Bug Fixes
+- **Discord Analytics Fixed**
+  - Fixed "DiscordAnalytics is not defined" error
+  - Added missing import for DiscordAnalytics Pydantic model in server.py
+
+### Technical Improvements
+- **Backend Refactoring**
+  - Documents module refactored from monolithic to modular package (`/backend/routes/documents/`)
+  - Treasury module built with modular architecture (`/backend/routes/treasury/`)
+  
+- **Security Enhancements**
+  - Fernet (AES-256) encryption for Treasury sensitive fields
+  - Encrypted fields: account names/descriptions, transaction descriptions/vendors/notes
+
+---
+
 ## February 1, 2026
 
 ### New Features
