@@ -109,6 +109,7 @@ from models import (
     SupportRequest,
     # Discord models
     DiscordLinkRequest, UpdateRolesRequest, UpdateNicknameRequest,
+    DiscordAnalytics,
     # Store models
     StoreProduct, StoreProductCreate, StoreProductUpdate,
     CartItem, ShoppingCart, StoreOrder, PaymentRequest,
