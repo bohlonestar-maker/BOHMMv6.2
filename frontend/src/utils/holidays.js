@@ -263,7 +263,17 @@ export const getCurrentHoliday = () => {
     }
   ];
 
-  // Check each holiday
+  // Group holidays by month to determine if month has single or multiple holidays
+  const holidaysByMonth = {};
+  holidays.forEach(holiday => {
+    const holidayMonth = holiday.date.getMonth();
+    if (!holidaysByMonth[holidayMonth]) {
+      holidaysByMonth[holidayMonth] = [];
+    }
+    holidaysByMonth[holidayMonth].push(holiday);
+  });
+
+  // Check for exact day matches first (always takes priority)
   for (const holiday of holidays) {
     if (isSameDay(today, holiday.date)) {
       return holiday;
@@ -295,6 +305,17 @@ export const getCurrentHoliday = () => {
         glow: "shadow-purple-500/20"
       },
       decorations: ["🎉", "🎊", "✨", "🥂", "⏰"]
+    };
+  }
+
+  // If current month has only ONE holiday, show decorations all month
+  const currentMonthHolidays = holidaysByMonth[month] || [];
+  if (currentMonthHolidays.length === 1) {
+    const holiday = currentMonthHolidays[0];
+    // Return the holiday with a slightly modified greeting for "month mode"
+    return {
+      ...holiday,
+      greeting: holiday.greeting // Keep original greeting
     };
   }
 

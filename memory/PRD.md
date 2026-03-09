@@ -75,6 +75,9 @@ Build a member management application with attendance tracking, dues management,
   - Valentine's Day: Pink/red romantic theme, ❤️💕💘🌹💝💖 decorations
   - St. Patrick's Day: Green/emerald Irish theme, ☘️🍀🌈🪙🎩💚 decorations
   - Halloween: Purple/orange spooky theme, 🎃👻🦇🕷️🕸️💀 decorations
+- [x] **Month-Long Display Logic:**
+  - Single-holiday months show decorations ALL month (March, May, June, July, September)
+  - Multi-holiday months show decorations only on the specific day
 - [x] **Files Created/Modified:**
   - `/app/frontend/src/utils/holidays.js` - Holiday detection and components
   - `/app/frontend/src/App.css` - Animation keyframes
