@@ -59,6 +59,7 @@ Build a member management application with attendance tracking, dues management,
 #### March 9, 2026 - Holiday Decoration System (New Feature)
 - [x] **Holiday Detection System:**
   - Auto-detects all 11 US federal holidays (New Year's, MLK Day, Presidents' Day, Memorial Day, Juneteenth, Independence Day, Labor Day, Columbus Day, Veterans Day, Thanksgiving, Christmas)
+  - Also detects popular holidays: Valentine's Day (Feb 14), St. Patrick's Day (Mar 17)
   - Also detects Christmas Eve and New Year's Eve as extended celebration days
   - Handles "observed" dates when holidays fall on weekends
 - [x] **Dynamic Theme Application:**
@@ -71,6 +72,8 @@ Build a member management application with attendance tracking, dues management,
   - New Year's: Purple/gold festive theme, 🎆🎇✨🥂🎊 decorations
   - Thanksgiving: Orange/amber warm theme, 🦃🍂🌽🥧🍁 decorations
   - Veterans Day: Patriotic blue/red, 🇺🇸🎖️⭐🦅🏅 decorations
+  - Valentine's Day: Pink/red romantic theme, ❤️💕💘🌹💝💖 decorations
+  - St. Patrick's Day: Green/emerald Irish theme, ☘️🍀🌈🪙🎩💚 decorations
 - [x] **Files Created/Modified:**
   - `/app/frontend/src/utils/holidays.js` - Holiday detection and components
   - `/app/frontend/src/App.css` - Animation keyframes

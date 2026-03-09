@@ -49,7 +49,7 @@ export const getCurrentHoliday = () => {
   const month = today.getMonth();
   const date = today.getDate();
   
-  // Define all US Federal holidays
+  // Define all US holidays (Federal + popular)
   const holidays = [
     {
       name: "New Year's Day",
@@ -82,6 +82,21 @@ export const getCurrentHoliday = () => {
       decorations: ["✊", "🕊️", "💫", "🌟"]
     },
     {
+      name: "Valentine's Day",
+      key: "valentines",
+      date: new Date(year, 1, 14), // February 14
+      greeting: "Happy Valentine's Day!",
+      emoji: "❤️",
+      colors: {
+        primary: "from-pink-500 to-red-500",
+        accent: "text-pink-400",
+        bg: "bg-gradient-to-br from-slate-900 via-pink-950 to-red-950",
+        border: "border-pink-500/30",
+        glow: "shadow-pink-500/20"
+      },
+      decorations: ["❤️", "💕", "💘", "🌹", "💝", "💖"]
+    },
+    {
       name: "Presidents' Day",
       key: "presidents",
       date: getNthWeekdayOfMonth(year, 1, 1, 3), // Third Monday of February
@@ -95,6 +110,21 @@ export const getCurrentHoliday = () => {
         glow: "shadow-red-500/20"
       },
       decorations: ["🇺🇸", "⭐", "🦅", "🗽"]
+    },
+    {
+      name: "St. Patrick's Day",
+      key: "stpatricks",
+      date: new Date(year, 2, 17), // March 17
+      greeting: "Happy St. Patrick's Day!",
+      emoji: "☘️",
+      colors: {
+        primary: "from-green-500 to-emerald-600",
+        accent: "text-green-400",
+        bg: "bg-gradient-to-br from-slate-900 via-green-950 to-emerald-950",
+        border: "border-green-500/30",
+        glow: "shadow-green-500/20"
+      },
+      decorations: ["☘️", "🍀", "🌈", "🪙", "🎩", "💚"]
     },
     {
       name: "Memorial Day",
