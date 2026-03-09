@@ -16362,7 +16362,8 @@ async def get_store_settings(current_user: dict = Depends(verify_token)):
             "supporter_store_open": True,
             "member_store_open": True,
             "supporter_store_message": "Under Construction - Check back soon!",
-            "member_store_message": "Under Construction - Check back soon!"
+            "member_store_message": "Under Construction - Check back soon!",
+            "holiday_decorations_enabled": True
         }
     
     # Check if user can bypass store closure (National Prez, VP, SEC)
@@ -16384,14 +16385,16 @@ async def get_store_settings_public():
             "supporter_store_open": True,
             "member_store_open": True,
             "supporter_store_message": "Under Construction - Check back soon!",
-            "member_store_message": "Under Construction - Check back soon!"
+            "member_store_message": "Under Construction - Check back soon!",
+            "holiday_decorations_enabled": True
         }
     
     return {
         "supporter_store_open": settings.get("supporter_store_open", True),
         "member_store_open": settings.get("member_store_open", True),
         "supporter_store_message": settings.get("supporter_store_message", "Under Construction - Check back soon!"),
-        "member_store_message": settings.get("member_store_message", "Under Construction - Check back soon!")
+        "member_store_message": settings.get("member_store_message", "Under Construction - Check back soon!"),
+        "holiday_decorations_enabled": settings.get("holiday_decorations_enabled", True)
     }
 
 @api_router.get("/stats/experience")
@@ -16432,6 +16435,7 @@ async def update_store_settings(
     member_store_open: bool = None,
     supporter_store_message: str = None,
     member_store_message: str = None,
+    holiday_decorations_enabled: bool = None,
     current_user: dict = Depends(verify_token)
 ):
     """Update store settings - only National Prez, VP, SEC can update"""
@@ -16447,7 +16451,8 @@ async def update_store_settings(
             "supporter_store_open": True,
             "member_store_open": True,
             "supporter_store_message": "Under Construction - Check back soon!",
-            "member_store_message": "Under Construction - Check back soon!"
+            "member_store_message": "Under Construction - Check back soon!",
+            "holiday_decorations_enabled": True
         }
     
     # Update only provided fields
@@ -16459,6 +16464,8 @@ async def update_store_settings(
         settings["supporter_store_message"] = supporter_store_message
     if member_store_message is not None:
         settings["member_store_message"] = member_store_message
+    if holiday_decorations_enabled is not None:
+        settings["holiday_decorations_enabled"] = holiday_decorations_enabled
     
     settings["updated_at"] = datetime.now(timezone.utc).isoformat()
     settings["updated_by"] = current_user.get("username", "unknown")
@@ -16476,6 +16483,8 @@ async def update_store_settings(
         changes.append(f"Supporter Store: {'Open' if supporter_store_open else 'Closed'}")
     if member_store_open is not None:
         changes.append(f"Member Store: {'Open' if member_store_open else 'Closed'}")
+    if holiday_decorations_enabled is not None:
+        changes.append(f"Holiday Decorations: {'Enabled' if holiday_decorations_enabled else 'Disabled'}")
     
     await log_activity(
         current_user["username"],

@@ -54,7 +54,7 @@ import {
   CheckCircle2,
   ExternalLink,
 } from "lucide-react";
-import { UserPlus, Users, Shield, UserMinus, Store as StoreIcon, Lock, Unlock } from "lucide-react";
+import { UserPlus, Users, Shield, UserMinus, Store as StoreIcon, Lock, Unlock, Sparkles } from "lucide-react";
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 const SQUARE_APP_ID = process.env.REACT_APP_SQUARE_APPLICATION_ID;
@@ -92,6 +92,7 @@ export default function Store({ userRole, userChapter, userTitle }) {
   const [storeSettings, setStoreSettings] = useState({
     supporter_store_open: true,
     member_store_open: true,
+    holiday_decorations_enabled: true,
     can_bypass: false
   });
   const [updatingSettings, setUpdatingSettings] = useState(false);
@@ -1190,15 +1191,43 @@ export default function Store({ userRole, userChapter, userTitle }) {
                         </button>
                       </div>
                       
+                      {/* Holiday Decorations Toggle */}
+                      <div className="flex items-center justify-between p-3 bg-slate-700/50 rounded-lg">
+                        <div className="flex items-center gap-3">
+                          <Sparkles className={`w-5 h-5 ${storeSettings.holiday_decorations_enabled ? 'text-yellow-400' : 'text-slate-500'}`} />
+                          <div>
+                            <div className="text-white font-medium text-sm">Holiday Decorations</div>
+                            <div className="text-slate-400 text-xs">Festive themes on login page</div>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => updateStoreSettings('holiday_decorations_enabled', !storeSettings.holiday_decorations_enabled)}
+                          disabled={updatingSettings}
+                          className={`relative w-12 h-6 rounded-full transition-colors flex-shrink-0 ${
+                            storeSettings.holiday_decorations_enabled ? 'bg-green-600' : 'bg-red-600'
+                          } ${updatingSettings ? 'opacity-50' : ''}`}
+                        >
+                          <span 
+                            className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${
+                              storeSettings.holiday_decorations_enabled ? 'translate-x-6' : 'translate-x-0'
+                            }`} 
+                          />
+                        </button>
+                      </div>
+                      
                       {/* Status Summary */}
                       <div className="text-xs text-slate-500 pt-2 border-t border-slate-700">
                         <div className="flex items-center gap-2 mb-1">
                           <span className={`w-2 h-2 rounded-full ${storeSettings.supporter_store_open ? 'bg-green-500' : 'bg-red-500'}`}></span>
                           <span>Supporter Store is {storeSettings.supporter_store_open ? 'OPEN' : 'CLOSED'}</span>
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 mb-1">
                           <span className={`w-2 h-2 rounded-full ${storeSettings.member_store_open ? 'bg-green-500' : 'bg-red-500'}`}></span>
                           <span>Member Store is {storeSettings.member_store_open ? 'OPEN' : 'CLOSED'}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className={`w-2 h-2 rounded-full ${storeSettings.holiday_decorations_enabled ? 'bg-yellow-500' : 'bg-slate-500'}`}></span>
+                          <span>Holiday Decorations {storeSettings.holiday_decorations_enabled ? 'ON' : 'OFF'}</span>
                         </div>
                       </div>
                     </CardContent>

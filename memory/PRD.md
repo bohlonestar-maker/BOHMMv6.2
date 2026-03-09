@@ -75,6 +75,11 @@ Build a member management application with attendance tracking, dues management,
   - Valentine's Day: Pink/red romantic theme, ❤️💕💘🌹💝💖 decorations
   - St. Patrick's Day: Green/emerald Irish theme, ☘️🍀🌈🪙🎩💚 decorations
   - Halloween: Purple/orange spooky theme, 🎃👻🦇🕷️🕸️💀 decorations
+- [x] **Admin Toggle Control:**
+  - Holiday decorations can be turned ON/OFF by admins
+  - Toggle located in Store > Settings tab
+  - Setting stored in database (`store_settings.holiday_decorations_enabled`)
+  - Only National Prez, VP, SEC can modify
 - [x] **Month-Long Display Logic:**
   - Single-holiday months show decorations ALL month (March, May, June, July, September)
   - Multi-holiday months show decorations only on the specific day

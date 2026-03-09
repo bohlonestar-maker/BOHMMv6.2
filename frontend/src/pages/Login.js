@@ -55,6 +55,7 @@ export default function Login({ onLogin }) {
 
   // Holiday detection
   const [currentHoliday, setCurrentHoliday] = useState(null);
+  const [holidayDecorationsEnabled, setHolidayDecorationsEnabled] = useState(true);
 
   // Fetch store settings and experience stats on mount
   useEffect(() => {
@@ -69,6 +70,7 @@ export default function Login({ onLogin }) {
           axios.get(`${API}/stats/experience`)
         ]);
         setSupporterStoreOpen(storeResponse.data.supporter_store_open);
+        setHolidayDecorationsEnabled(storeResponse.data.holiday_decorations_enabled !== false);
         setTotalExperience(experienceResponse.data);
       } catch (error) {
         console.error("Error fetching data:", error);
@@ -246,16 +248,19 @@ export default function Login({ onLogin }) {
     setResetError("");
   };
 
+  // Determine if we should show holiday decorations
+  const showHoliday = currentHoliday && holidayDecorationsEnabled;
+
   return (
-    <div className={`min-h-screen flex flex-col items-center justify-center px-4 py-6 relative ${currentHoliday ? currentHoliday.colors.bg : 'bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900'}`}>
+    <div className={`min-h-screen flex flex-col items-center justify-center px-4 py-6 relative ${showHoliday ? currentHoliday.colors.bg : 'bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900'}`}>
       {/* Holiday Decorations */}
-      <HolidayDecorations holiday={currentHoliday} />
+      {showHoliday && <HolidayDecorations holiday={currentHoliday} />}
       
       <div className="w-full max-w-sm relative z-10">
         {/* Holiday Banner */}
-        <HolidayBanner holiday={currentHoliday} />
+        {showHoliday && <HolidayBanner holiday={currentHoliday} />}
         
-        <div className={`bg-slate-800 rounded-2xl shadow-2xl p-5 sm:p-6 border ${currentHoliday ? currentHoliday.colors.border : 'border-slate-700'} ${currentHoliday ? currentHoliday.colors.glow : ''}`}>
+        <div className={`bg-slate-800 rounded-2xl shadow-2xl p-5 sm:p-6 border ${showHoliday ? currentHoliday.colors.border : 'border-slate-700'} ${showHoliday ? currentHoliday.colors.glow : ''}`}>
           {/* Logo - Compact for laptop */}
           <div className="flex justify-center mb-3">
             <img 
