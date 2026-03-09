@@ -202,6 +202,21 @@ export const getCurrentHoliday = () => {
       decorations: ["⛵", "🌊", "🗺️", "🧭"]
     },
     {
+      name: "Halloween",
+      key: "halloween",
+      date: new Date(year, 9, 31), // October 31
+      greeting: "Happy Halloween!",
+      emoji: "🎃",
+      colors: {
+        primary: "from-orange-500 to-purple-600",
+        accent: "text-orange-400",
+        bg: "bg-gradient-to-br from-slate-900 via-purple-950 to-orange-950",
+        border: "border-orange-500/30",
+        glow: "shadow-orange-500/20"
+      },
+      decorations: ["🎃", "👻", "🦇", "🕷️", "🕸️", "💀"]
+    },
+    {
       name: "Veterans Day",
       key: "veterans",
       date: getObservedDate(new Date(year, 10, 11)),
