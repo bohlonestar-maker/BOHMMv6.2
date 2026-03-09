@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { HelpCircle, Send, X, ShoppingBag, Truck, Eye, EyeOff, KeyRound, Mail } from "lucide-react";
+import { getCurrentHoliday, HolidayDecorations, HolidayBanner } from "@/utils/holidays";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -52,8 +53,15 @@ export default function Login({ onLogin }) {
   const [resetLoading, setResetLoading] = useState(false);
   const [resetError, setResetError] = useState("");
 
+  // Holiday detection
+  const [currentHoliday, setCurrentHoliday] = useState(null);
+
   // Fetch store settings and experience stats on mount
   useEffect(() => {
+    // Check for holiday
+    const holiday = getCurrentHoliday();
+    setCurrentHoliday(holiday);
+    
     const fetchData = async () => {
       try {
         const [storeResponse, experienceResponse] = await Promise.all([
@@ -239,9 +247,15 @@ export default function Login({ onLogin }) {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 px-4 py-6">
-      <div className="w-full max-w-sm">
-        <div className="bg-slate-800 rounded-2xl shadow-2xl p-5 sm:p-6 border border-slate-700">
+    <div className={`min-h-screen flex flex-col items-center justify-center px-4 py-6 relative ${currentHoliday ? currentHoliday.colors.bg : 'bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900'}`}>
+      {/* Holiday Decorations */}
+      <HolidayDecorations holiday={currentHoliday} />
+      
+      <div className="w-full max-w-sm relative z-10">
+        {/* Holiday Banner */}
+        <HolidayBanner holiday={currentHoliday} />
+        
+        <div className={`bg-slate-800 rounded-2xl shadow-2xl p-5 sm:p-6 border ${currentHoliday ? currentHoliday.colors.border : 'border-slate-700'} ${currentHoliday ? currentHoliday.colors.glow : ''}`}>
           {/* Logo - Compact for laptop */}
           <div className="flex justify-center mb-3">
             <img 

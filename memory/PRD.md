@@ -56,6 +56,26 @@ Build a member management application with attendance tracking, dues management,
 
 ### What's Been Implemented
 
+#### March 9, 2026 - Holiday Decoration System (New Feature)
+- [x] **Holiday Detection System:**
+  - Auto-detects all 11 US federal holidays (New Year's, MLK Day, Presidents' Day, Memorial Day, Juneteenth, Independence Day, Labor Day, Columbus Day, Veterans Day, Thanksgiving, Christmas)
+  - Also detects Christmas Eve and New Year's Eve as extended celebration days
+  - Handles "observed" dates when holidays fall on weekends
+- [x] **Dynamic Theme Application:**
+  - Each holiday has unique theme: background gradient, banner, border glow
+  - Floating emoji decorations relevant to each holiday
+  - Smooth CSS animations for decorations (float, sparkle effects)
+- [x] **Holiday Themes Tested:**
+  - Christmas: Red/green gradient, 🎄🎅🎁⭐❄️🔔 decorations
+  - Independence Day: Red/white/blue patriotic theme, 🇺🇸🎆🎇⭐🦅🗽 decorations
+  - New Year's: Purple/gold festive theme, 🎆🎇✨🥂🎊 decorations
+  - Thanksgiving: Orange/amber warm theme, 🦃🍂🌽🥧🍁 decorations
+  - Veterans Day: Patriotic blue/red, 🇺🇸🎖️⭐🦅🏅 decorations
+- [x] **Files Created/Modified:**
+  - `/app/frontend/src/utils/holidays.js` - Holiday detection and components
+  - `/app/frontend/src/App.css` - Animation keyframes
+  - `/app/frontend/src/pages/Login.js` - Theme integration
+
 #### March 5, 2026 - Document Signing System Refactor (bohsign)
 - [x] **Backend Refactored to Modular Structure:**
   - Original `documents.py` (~1500 lines) split into 7 focused modules:

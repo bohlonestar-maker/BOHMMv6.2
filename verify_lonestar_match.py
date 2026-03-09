@@ -10,7 +10,7 @@ import urllib3
 # Suppress SSL warnings
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-BASE_URL = "https://treasury-encrypt.preview.emergentagent.com/api"
+BASE_URL = "https://themed-login-build.preview.emergentagent.com/api"
 
 def login():
     """Login and get token"""
