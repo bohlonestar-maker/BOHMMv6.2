@@ -14922,7 +14922,9 @@ async def try_match_external_payment_to_dues(payment: dict, payment_id: str, amo
                 "member_id": matched_member["id"],
                 "year": int(year),
                 "month": month,
-                "month_name": month_names[month]
+                "month_name": month_names[month],
+                "amount": amount,
+                "payment_method": "Square"
             }
             
             await update_member_dues_from_webhook(dues_info)
@@ -15037,6 +15039,8 @@ async def update_member_dues_from_webhook(dues_info: dict):
         member_id = dues_info.get("member_id")
         year = str(dues_info.get("year"))
         month = dues_info.get("month")
+        amount = dues_info.get("amount", 0)
+        payment_method = dues_info.get("payment_method", "Square")
         month_names = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
         
         if not member_id:
@@ -15049,7 +15053,12 @@ async def update_member_dues_from_webhook(dues_info: dict):
         
         dues = member.get("dues", {})
         now = datetime.now(timezone.utc)
-        payment_note = f"Paid via Square on {now.strftime('%Y-%m-%d')}"
+        
+        # Include amount in payment note
+        if amount:
+            payment_note = f"Paid ${amount:.2f} via {payment_method} on {now.strftime('%Y-%m-%d')}"
+        else:
+            payment_note = f"Paid via {payment_method} on {now.strftime('%Y-%m-%d')}"
         
         # Initialize year if not exists
         if year not in dues:
@@ -15596,8 +15605,8 @@ async def sync_subscriptions_to_dues(current_user: dict = Depends(verify_token))
                                 target_month -= 12
                                 target_year += 1
                             
-                            # Update dues for this month
-                            payment_note = f"Paid via Square on {payment_dt.strftime('%Y-%m-%d')}"
+                            # Update dues for this month - include amount in note
+                            payment_note = f"Paid ${amount:.2f} via Square on {payment_dt.strftime('%Y-%m-%d')}"
                             if payment_id:
                                 payment_note += f" (Trans: {payment_id[:12]}...)"
                             
@@ -15827,7 +15836,8 @@ async def sync_payment_links_to_dues(current_user: dict = Depends(verify_token))
                         target_month -= 12
                         target_year += 1
                     
-                    payment_note = f"Paid via Square on {payment_dt.strftime('%Y-%m-%d')}"
+                    # Include amount in payment note
+                    payment_note = f"Paid ${total_amount:.2f} via Square on {payment_dt.strftime('%Y-%m-%d')}"
                     if payment_id:
                         payment_note += f" (Trans: {payment_id[:12]}...)"
                     
@@ -16056,11 +16066,13 @@ async def reapply_payment_notes(current_user: dict = Depends(verify_token)):
                         target_year += 1
                     
                     month_str = f"{month_names[target_month]}_{target_year}"
-                    payment_note = f"Paid via Square on {payment_dt.strftime('%Y-%m-%d')}"
+                    # Include amount at the start for consistency
+                    if amount:
+                        payment_note = f"Paid ${amount:.2f} via Square on {payment_dt.strftime('%Y-%m-%d')}"
+                    else:
+                        payment_note = f"Paid via Square on {payment_dt.strftime('%Y-%m-%d')}"
                     if payment_id:
                         payment_note += f" (Trans: {payment_id[:12]}...)"
-                    if amount:
-                        payment_note += f" - ${amount:.2f}"
                     
                     # Find and update officer_dues record
                     existing = await db.officer_dues.find_one({
@@ -16461,11 +16473,13 @@ async def match_payment_to_member(
     
     month_names = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
     
-    # Update dues
+    # Update dues - include amount from payment
     dues_info = {
         "member_id": member_id,
         "year": year,
-        "month": month
+        "month": month,
+        "amount": payment.get("amount", 0),
+        "payment_method": "Square"
     }
     await update_member_dues_from_webhook(dues_info)
     
