@@ -36,6 +36,13 @@ class Member(BaseModel):
         str(datetime.now(timezone.utc).year): [{"status": 0, "note": ""} for _ in range(24)]
     })
     can_edit: Optional[bool] = None
+    # Dues balance/credit system
+    dues_balance: Optional[float] = 0.0
+    dues_suspended: Optional[bool] = False
+    dues_suspended_at: Optional[str] = None
+    dues_arrangements_made: Optional[bool] = False
+    dues_arrangements_date: Optional[str] = None
+    dues_arrangements_by: Optional[str] = None
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 

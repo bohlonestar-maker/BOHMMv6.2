@@ -61,6 +61,7 @@ Build a member management application with attendance tracking, dues management,
   - Members can now have a credit balance for dues
   - Partial payments are tracked and rolled over
   - $30/month dues rate configured
+  - Payments apply to FIRST unpaid month (oldest debt first)
 - [x] **Payment Recording Dialog:**
   - New "Record Payment" button in dues dialog
   - Enter payment amount with real-time calculation preview
@@ -68,20 +69,27 @@ Build a member management application with attendance tracking, dues management,
   - Shows remaining amount as credit balance
   - Payment method options: Cash, Check, Square, Other
   - Optional notes field
-- [x] **Balance Display:**
-  - Credit balance shown in Dues History dialog
-  - Balance persisted in member record (`dues_balance` field)
+- [x] **Balance & Arrangements Display:**
+  - New "Balance" column in dues table (shows credit in green)
+  - "ARRANGEMENTS" badge next to member name when they've made a payment
+  - Row highlighted with green tint for members with arrangements
+  - Balance and arrangements status shown in Dues History dialog
+- [x] **Automatic Cleanup:**
+  - Recording a payment automatically revokes active extensions
+  - Clears suspension status
+  - Sets "arrangements_made" flag to prevent future suspension
 - [x] **Backend Endpoints:**
   - `POST /api/dues/payment` - Record payment with auto-calculation
-  - `GET /api/dues/balance/{member_id}` - Get member's balance
+  - `GET /api/dues/balance/{member_id}` - Get member's balance & arrangements status
   - `PUT /api/dues/balance/{member_id}` - Manual balance adjustment
   - `GET /api/dues/payments/{member_id}` - Payment history
 - [x] **Audit Trail:**
   - All payments recorded in `dues_payments` collection
   - Activity logging for payment actions
 - [x] **Files Modified:**
-  - `/app/backend/server.py` - Added payment endpoints
-  - `/app/frontend/src/pages/OfficerTracking.js` - Added payment dialog UI
+  - `/app/backend/server.py` - Added payment endpoints, updated member endpoints
+  - `/app/backend/models/member.py` - Added dues_balance, arrangements fields
+  - `/app/frontend/src/pages/OfficerTracking.js` - Added payment dialog, balance column, arrangements badge
 
 #### March 9, 2026 - Holiday Decoration System (New Feature)
 - [x] **Holiday Detection System:**

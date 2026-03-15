@@ -1079,6 +1079,7 @@ function OfficerTracking() {
                         <TableHead className="text-slate-400">Member</TableHead>
                         <TableHead className="text-slate-400">Title</TableHead>
                         <TableHead className="text-slate-400">Current Month Status</TableHead>
+                        <TableHead className="text-slate-400">Balance</TableHead>
                         <TableHead className="text-slate-400">History</TableHead>
                         {canEditDues && <TableHead className="text-slate-400">Quick Update</TableHead>}
                         {canEditDues && <TableHead className="text-slate-400">Notes</TableHead>}
@@ -1090,14 +1091,21 @@ function OfficerTracking() {
                         const isExempt = member.non_dues_paying;
                         const isSuspended = member.dues_suspended;
                         const extension = getMemberExtension(member.id);
+                        const hasBalance = member.dues_balance > 0;
+                        const hasArrangements = member.dues_arrangements_made;
                         
                         return (
-                          <TableRow key={member.id} className={`border-slate-700 ${isSuspended ? 'bg-red-900/20' : ''}`}>
+                          <TableRow key={member.id} className={`border-slate-700 ${isSuspended ? 'bg-red-900/20' : ''} ${hasArrangements ? 'bg-green-900/10' : ''}`}>
                             <TableCell 
                               className="font-medium text-blue-400 hover:text-blue-300 cursor-pointer underline"
                               onClick={() => openDuesHistoryDialog(member)}
                             >
                               {member.handle}
+                              {hasArrangements && (
+                                <span className="ml-2 px-1.5 py-0.5 text-[10px] bg-green-600/30 text-green-400 rounded">
+                                  ARRANGEMENTS
+                                </span>
+                              )}
                               {isSuspended && (
                                 <Badge className="ml-2 bg-red-600 text-white text-xs">Suspended</Badge>
                               )}
@@ -1127,6 +1135,15 @@ function OfficerTracking() {
                                   <Badge variant="outline">Not Recorded</Badge>
                                 )}
                               </div>
+                            </TableCell>
+                            <TableCell>
+                              {hasBalance ? (
+                                <span className="text-green-400 font-mono text-sm">
+                                  ${member.dues_balance.toFixed(2)}
+                                </span>
+                              ) : (
+                                <span className="text-slate-500 text-sm">-</span>
+                              )}
                             </TableCell>
                             <TableCell>
                               <Button

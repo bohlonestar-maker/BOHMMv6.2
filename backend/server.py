@@ -9168,7 +9168,10 @@ async def get_members_by_chapter(current_user: dict = Depends(verify_token)):
             "email": m.get("email"),
             "meeting_attendance": m.get("meeting_attendance", []),
             "dues_history": m.get("dues_history", []),
-            "non_dues_paying": m.get("non_dues_paying", False)
+            "non_dues_paying": m.get("non_dues_paying", False),
+            "dues_balance": m.get("dues_balance", 0.0),
+            "dues_suspended": m.get("dues_suspended", False),
+            "dues_arrangements_made": m.get("dues_arrangements_made", False)
         } for m in members]
     
     return result
@@ -9604,7 +9607,7 @@ class DuesPaymentRecord(BaseModel):
 
 @api_router.get("/dues/balance/{member_id}")
 async def get_member_dues_balance(member_id: str, current_user: dict = Depends(verify_token)):
-    """Get member's dues balance/credit"""
+    """Get member's dues balance/credit and arrangement status"""
     if not await check_ad_access(current_user):
         raise HTTPException(status_code=403, detail="You don't have permission to view dues")
     
@@ -9617,7 +9620,10 @@ async def get_member_dues_balance(member_id: str, current_user: dict = Depends(v
         "member_id": member_id,
         "handle": member.get("handle", "Unknown"),
         "balance": balance,
-        "monthly_amount": MONTHLY_DUES_AMOUNT
+        "monthly_amount": MONTHLY_DUES_AMOUNT,
+        "arrangements_made": member.get("dues_arrangements_made", False),
+        "arrangements_date": member.get("dues_arrangements_date"),
+        "suspended": member.get("dues_suspended", False)
     }
 
 @api_router.post("/dues/payment")
@@ -9650,14 +9656,38 @@ async def record_dues_payment(payment: DuesPaymentRecord, current_user: dict = D
     
     # Get or initialize dues structure
     dues = member.get('dues', {})
+    
+    # Find the FIRST unpaid month across all years (starting from earliest)
+    # This ensures payments are applied to oldest debt first
+    def find_first_unpaid_month(dues_data):
+        """Find the earliest unpaid month in the dues structure"""
+        years = sorted([int(y) for y in dues_data.keys() if y.isdigit()])
+        for year in years:
+            yr_str = str(year)
+            year_dues = dues_data.get(yr_str, [])
+            if not isinstance(year_dues, list):
+                continue
+            for month_idx, month_data in enumerate(year_dues):
+                if isinstance(month_data, dict):
+                    status = month_data.get("status", "unpaid")
+                else:
+                    status = "paid" if month_data else "unpaid"
+                if status in ["unpaid", "late", "partial", "extended"]:
+                    return year, month_idx
+        # If no unpaid found in existing years, start from current month
+        return current_year, current_month_idx
+    
+    # Initialize current year if needed
     year_str = str(current_year)
     if year_str not in dues or not isinstance(dues.get(year_str), list) or len(dues.get(year_str, [])) < 12:
         dues[year_str] = [{"status": "unpaid", "note": ""} for _ in range(12)]
     
-    # Find unpaid months starting from current month
+    # Find first unpaid month
+    start_year, start_month_idx = find_first_unpaid_month(dues)
+    
     months_paid = []
-    month_idx = current_month_idx
-    year_to_process = current_year
+    month_idx = start_month_idx
+    year_to_process = start_year
     months_to_mark = full_months
     
     month_names = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
@@ -9672,11 +9702,12 @@ async def record_dues_payment(payment: DuesPaymentRecord, current_user: dict = D
         # Ensure valid dict structure for each month
         for i in range(12):
             if not isinstance(dues[yr_str][i], dict):
-                dues[yr_str][i] = {"status": "unpaid", "note": ""}
+                old_val = dues[yr_str][i]
+                dues[yr_str][i] = {"status": "paid" if old_val else "unpaid", "note": ""}
         
-        # Check if this month is unpaid
+        # Check if this month is unpaid, late, partial, or extended
         month_data = dues[yr_str][month_idx]
-        if month_data.get("status") in ["unpaid", "late", "partial"]:
+        if month_data.get("status") in ["unpaid", "late", "partial", "extended"]:
             # Mark as paid
             dues[yr_str][month_idx] = {
                 "status": "paid",
@@ -9740,11 +9771,14 @@ async def record_dues_payment(payment: DuesPaymentRecord, current_user: dict = D
     update_doc = {
         "dues": dues,
         "dues_balance": remaining_balance,
-        "updated_at": now.isoformat()
+        "updated_at": now.isoformat(),
+        "dues_arrangements_made": True,  # Flag to show member has made payment arrangements
+        "dues_arrangements_date": now.isoformat(),
+        "dues_arrangements_by": current_user.get('username')
     }
     
-    # Clear suspension if any month was paid
-    if months_paid:
+    # Clear suspension and extension if any month was paid or credit added
+    if months_paid or remaining_balance > 0:
         update_doc["dues_suspended"] = False
         update_doc["dues_suspended_at"] = None
     
@@ -9752,6 +9786,13 @@ async def record_dues_payment(payment: DuesPaymentRecord, current_user: dict = D
         {"id": payment.member_id},
         {"$set": update_doc}
     )
+    
+    # Also revoke any active extension for this member since they've paid
+    if months_paid:
+        await db.dues_extensions.update_many(
+            {"member_id": payment.member_id, "is_active": True},
+            {"$set": {"is_active": False, "revoked_at": now.isoformat(), "revoked_by": current_user.get('username'), "revoke_reason": "Payment received"}}
+        )
     
     # Log activity
     await log_activity(
