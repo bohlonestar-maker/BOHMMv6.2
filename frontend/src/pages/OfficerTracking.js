@@ -1102,11 +1102,11 @@ function OfficerTracking() {
                             >
                               {member.handle}
                               {hasArrangements && (
-                                <span className="ml-2 px-1.5 py-0.5 text-[10px] bg-green-600/30 text-green-400 rounded">
-                                  ARRANGEMENTS
-                                </span>
+                                <Badge className="ml-2 bg-green-600 text-white text-xs animate-pulse">
+                                  ✓ ARRANGEMENT
+                                </Badge>
                               )}
-                              {isSuspended && (
+                              {isSuspended && !hasArrangements && (
                                 <Badge className="ml-2 bg-red-600 text-white text-xs">Suspended</Badge>
                               )}
                               {isExempt && (

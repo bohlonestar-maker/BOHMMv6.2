@@ -10744,6 +10744,10 @@ async def get_dues_reminder_status(current_user: dict = Depends(verify_token)):
         if member.get("non_dues_paying", False):
             continue
         
+        # Skip members with payment arrangements
+        if member.get("dues_arrangements_made", False):
+            continue
+        
         dues = member.get("dues", {})
         year_str = str(year)
         month_idx = month - 1
@@ -11500,6 +11504,12 @@ async def check_and_send_dues_reminders():
         # Skip non-dues paying members (honorary, exempt, etc.)
         if member.get("non_dues_paying", False):
             sys.stderr.write(f"⏭️ [DUES] Skipping {member.get('handle')} - non-dues paying member\n")
+            sys.stderr.flush()
+            continue
+        
+        # Skip members who have made payment arrangements
+        if member.get("dues_arrangements_made", False):
+            sys.stderr.write(f"⏭️ [DUES] Skipping {member.get('handle')} - has payment arrangements\n")
             sys.stderr.flush()
             continue
         
@@ -15052,10 +15062,13 @@ async def update_member_dues_from_webhook(dues_info: dict):
             logger.warning(f"Member not found for dues update: {member_id}")
             return
         
+        now = datetime.now(timezone.utc)
+        
         # DUPLICATE DETECTION: Check if a similar payment was recorded recently
-        # This prevents double-counting when manual entry precedes Square sync
+        # Still record the Square payment for audit, but don't double-count dues
+        duplicate_found = False
         if amount > 0:
-            recent_cutoff = datetime.now(timezone.utc) - timedelta(hours=48)
+            recent_cutoff = now - timedelta(hours=72)
             recent_payments = await db.dues_payments.find({
                 "member_id": member_id,
                 "created_at": {"$gte": recent_cutoff.isoformat()}
@@ -15065,12 +15078,42 @@ async def update_member_dues_from_webhook(dues_info: dict):
                 recent_amount = recent.get("amount", 0)
                 # Check if amounts match (within $1 tolerance for fees)
                 if abs(recent_amount - amount) <= 1.0:
-                    logger.info(f"DUPLICATE DETECTED: Skipping Square payment ${amount} for {member.get('handle')} - "
-                               f"already recorded ${recent_amount} on {recent.get('created_at')[:10]}")
-                    return  # Skip this payment as it's already recorded
+                    duplicate_found = True
+                    logger.info(f"DUPLICATE DETECTED: Square payment ${amount} for {member.get('handle')} - "
+                               f"matches recent payment ${recent_amount}. Recording for audit but not marking dues.")
+                    
+                    # Record the Square payment for audit purposes (linked to the existing payment)
+                    await db.dues_payments.insert_one({
+                        "id": str(uuid.uuid4()),
+                        "member_id": member_id,
+                        "amount": amount,
+                        "payment_method": "Square (linked)",
+                        "notes": f"Square confirmation for payment already recorded. Trans: {square_transaction_id or 'N/A'}",
+                        "months_applied": [],  # No additional months - already applied
+                        "linked_to_payment": recent.get("id"),
+                        "previous_balance": member.get("dues_balance", 0),
+                        "new_balance": member.get("dues_balance", 0),  # No change
+                        "created_at": now.isoformat(),
+                        "created_by": "square_sync"
+                    })
+                    
+                    # Update member to show arrangements and link Square transaction
+                    await db.members.update_one(
+                        {"id": member_id},
+                        {"$set": {
+                            "dues_arrangements_made": True,
+                            "dues_arrangements_date": now.isoformat(),
+                            "dues_suspended": False,
+                            "last_square_payment": {
+                                "amount": amount,
+                                "date": now.isoformat(),
+                                "transaction_id": square_transaction_id
+                            }
+                        }}
+                    )
+                    return  # Don't mark additional dues as paid
         
         dues = member.get("dues", {})
-        now = datetime.now(timezone.utc)
         
         # Include amount in payment note
         if amount:
