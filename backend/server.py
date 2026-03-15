@@ -15041,6 +15041,7 @@ async def update_member_dues_from_webhook(dues_info: dict):
         month = dues_info.get("month")
         amount = dues_info.get("amount", 0)
         payment_method = dues_info.get("payment_method", "Square")
+        square_transaction_id = dues_info.get("transaction_id")
         month_names = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
         
         if not member_id:
@@ -15050,6 +15051,23 @@ async def update_member_dues_from_webhook(dues_info: dict):
         if not member:
             logger.warning(f"Member not found for dues update: {member_id}")
             return
+        
+        # DUPLICATE DETECTION: Check if a similar payment was recorded recently
+        # This prevents double-counting when manual entry precedes Square sync
+        if amount > 0:
+            recent_cutoff = datetime.now(timezone.utc) - timedelta(hours=48)
+            recent_payments = await db.dues_payments.find({
+                "member_id": member_id,
+                "created_at": {"$gte": recent_cutoff.isoformat()}
+            }).to_list(length=10)
+            
+            for recent in recent_payments:
+                recent_amount = recent.get("amount", 0)
+                # Check if amounts match (within $1 tolerance for fees)
+                if abs(recent_amount - amount) <= 1.0:
+                    logger.info(f"DUPLICATE DETECTED: Skipping Square payment ${amount} for {member.get('handle')} - "
+                               f"already recorded ${recent_amount} on {recent.get('created_at')[:10]}")
+                    return  # Skip this payment as it's already recorded
         
         dues = member.get("dues", {})
         now = datetime.now(timezone.utc)
