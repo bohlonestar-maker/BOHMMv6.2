@@ -109,6 +109,16 @@ function OfficerTracking() {
   });
   const [memberExtension, setMemberExtension] = useState(null);
   
+  // Payment Dialog - for recording payments with amount
+  const [paymentDialog, setPaymentDialog] = useState(false);
+  const [paymentForm, setPaymentForm] = useState({
+    amount: '',
+    payment_method: 'cash',
+    notes: ''
+  });
+  const [memberBalance, setMemberBalance] = useState(0);
+  const [paymentLoading, setPaymentLoading] = useState(false);
+  
   // Bulk Dues Correction Dialog
   const [bulkCorrectionDialog, setBulkCorrectionDialog] = useState(false);
   const [bulkCorrectionForm, setBulkCorrectionForm] = useState({
@@ -251,10 +261,20 @@ function OfficerTracking() {
     setDuesHistoryData(null);
     
     try {
-      const response = await axios.get(`${BACKEND_URL}/api/officer-tracking/dues/history/${member.id}`, {
-        headers: { Authorization: `Bearer ${token}` }
+      // Fetch both history and balance in parallel
+      const [historyResponse, balanceResponse] = await Promise.all([
+        axios.get(`${BACKEND_URL}/api/officer-tracking/dues/history/${member.id}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        }),
+        axios.get(`${BACKEND_URL}/api/dues/balance/${member.id}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        }).catch(() => ({ data: { balance: 0 } }))
+      ]);
+      
+      setDuesHistoryData({
+        ...historyResponse.data,
+        balance: balanceResponse.data.balance || 0
       });
-      setDuesHistoryData(response.data);
     } catch (error) {
       toast.error(error.response?.data?.detail || "Failed to load dues history");
     } finally {
@@ -575,6 +595,64 @@ function OfficerTracking() {
     }
     
     setDuesDialog(true);
+  };
+
+  // Open payment dialog to record a payment with amount
+  const openPaymentDialog = async (member) => {
+    setSelectedMember(member);
+    setPaymentForm({ amount: '', payment_method: 'cash', notes: '' });
+    
+    // Fetch member's current balance
+    try {
+      const response = await axios.get(`${BACKEND_URL}/api/dues/balance/${member.id}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setMemberBalance(response.data.balance || 0);
+    } catch (error) {
+      console.error("Failed to fetch balance:", error);
+      setMemberBalance(0);
+    }
+    
+    setPaymentDialog(true);
+  };
+
+  // Handle payment submission
+  const handlePaymentSubmit = async () => {
+    if (!paymentForm.amount || parseFloat(paymentForm.amount) <= 0) {
+      toast.error("Please enter a valid payment amount");
+      return;
+    }
+    
+    setPaymentLoading(true);
+    try {
+      const response = await axios.post(`${BACKEND_URL}/api/dues/payment`, {
+        member_id: selectedMember.id,
+        amount: parseFloat(paymentForm.amount),
+        payment_method: paymentForm.payment_method,
+        notes: paymentForm.notes
+      }, { headers: { Authorization: `Bearer ${token}` } });
+      
+      const result = response.data;
+      const monthsPaid = result.months_paid?.length || 0;
+      const balance = result.remaining_balance || 0;
+      
+      let message = `Payment of $${paymentForm.amount} recorded.`;
+      if (monthsPaid > 0) {
+        message += ` ${monthsPaid} month(s) marked as paid.`;
+      }
+      if (balance > 0) {
+        message += ` Credit balance: $${balance}`;
+      }
+      
+      toast.success(message);
+      setPaymentDialog(false);
+      fetchData();
+    } catch (error) {
+      console.error("Failed to record payment:", error);
+      toast.error(error.response?.data?.detail || "Failed to record payment");
+    } finally {
+      setPaymentLoading(false);
+    }
   };
 
   const handleAttendanceSubmit = async () => {
@@ -1620,6 +1698,18 @@ function OfficerTracking() {
               variant="outline" 
               onClick={() => {
                 setDuesDialog(false);
+                openPaymentDialog(selectedMember);
+              }} 
+              className="w-full sm:w-auto border-green-600 text-green-300 hover:bg-green-900/30"
+              data-testid="record-payment-btn"
+            >
+              <DollarSign className="w-4 h-4 mr-1" />
+              Record Payment
+            </Button>
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setDuesDialog(false);
                 openBulkCorrectionDialog(selectedMember);
               }} 
               className="w-full sm:w-auto border-amber-600 text-amber-300 hover:bg-amber-900/30"
@@ -1750,6 +1840,106 @@ function OfficerTracking() {
         </DialogContent>
       </Dialog>
 
+      {/* Payment Recording Dialog */}
+      <Dialog open={paymentDialog} onOpenChange={setPaymentDialog}>
+        <DialogContent className="bg-slate-800 border-slate-700 max-w-[95vw] sm:max-w-md mx-2 sm:mx-auto p-4 sm:p-6">
+          <DialogHeader className="pb-2">
+            <DialogTitle className="text-white text-lg flex items-center gap-2">
+              <DollarSign className="w-5 h-5 text-green-400" />
+              Record Dues Payment
+            </DialogTitle>
+            <DialogDescription className="text-sm">
+              Record a payment for {selectedMember?.handle}
+              {memberBalance > 0 && (
+                <span className="block mt-1 text-green-400">
+                  Current credit balance: ${memberBalance.toFixed(2)}
+                </span>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            {/* Payment Amount */}
+            <div className="space-y-2">
+              <Label className="text-slate-300 text-sm">Payment Amount ($)</Label>
+              <Input
+                type="number"
+                step="0.01"
+                min="0"
+                placeholder="e.g., 45.00"
+                value={paymentForm.amount}
+                onChange={(e) => setPaymentForm({...paymentForm, amount: e.target.value})}
+                className="bg-slate-700 border-slate-600 text-white text-lg font-mono"
+                data-testid="payment-amount-input"
+              />
+              {paymentForm.amount && parseFloat(paymentForm.amount) > 0 && (
+                <div className="text-xs text-slate-400 p-2 bg-slate-700/50 rounded">
+                  {(() => {
+                    const total = (memberBalance || 0) + parseFloat(paymentForm.amount || 0);
+                    const months = Math.floor(total / 30);
+                    const remainder = (total % 30).toFixed(2);
+                    return (
+                      <>
+                        <div className="text-green-400">
+                          {months > 0 ? `${months} month(s) will be marked as paid` : 'Credit towards next month'}
+                        </div>
+                        {remainder > 0 && months > 0 && (
+                          <div className="text-blue-400">
+                            ${remainder} will be added as credit balance
+                          </div>
+                        )}
+                      </>
+                    );
+                  })()}
+                </div>
+              )}
+            </div>
+
+            {/* Payment Method */}
+            <div className="space-y-2">
+              <Label className="text-slate-300 text-sm">Payment Method</Label>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                {['cash', 'check', 'square', 'other'].map(method => (
+                  <Button
+                    key={method}
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    className={`${paymentForm.payment_method === method ? 'bg-green-600 border-green-600 text-white' : 'border-slate-600 text-slate-300'}`}
+                    onClick={() => setPaymentForm({...paymentForm, payment_method: method})}
+                  >
+                    {method.charAt(0).toUpperCase() + method.slice(1)}
+                  </Button>
+                ))}
+              </div>
+            </div>
+
+            {/* Notes */}
+            <div className="space-y-2">
+              <Label className="text-slate-300 text-sm">Notes (Optional)</Label>
+              <Textarea
+                value={paymentForm.notes}
+                onChange={(e) => setPaymentForm({...paymentForm, notes: e.target.value})}
+                placeholder="Any additional notes about this payment..."
+                className="bg-slate-700 border-slate-600 text-white text-sm min-h-[60px]"
+              />
+            </div>
+          </div>
+          <DialogFooter className="flex-col-reverse sm:flex-row gap-2 pt-4">
+            <Button variant="outline" onClick={() => setPaymentDialog(false)} className="w-full sm:w-auto border-slate-600 text-slate-300">
+              Cancel
+            </Button>
+            <Button 
+              onClick={handlePaymentSubmit} 
+              className="w-full sm:w-auto bg-green-600 hover:bg-green-700"
+              disabled={paymentLoading || !paymentForm.amount || parseFloat(paymentForm.amount) <= 0}
+              data-testid="submit-payment-btn"
+            >
+              {paymentLoading ? 'Processing...' : 'Record Payment'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* View Member Meetings Dialog */}
       <Dialog open={viewMeetingsDialog} onOpenChange={setViewMeetingsDialog}>
         <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto bg-slate-800 border-slate-700 mx-2 sm:mx-auto">
@@ -1874,6 +2064,15 @@ function OfficerTracking() {
             </div>
           ) : duesHistoryData ? (
             <div className="space-y-6">
+              {/* Credit Balance */}
+              {duesHistoryData.balance > 0 && (
+                <div className="bg-green-900/30 rounded-lg p-4 border border-green-700/50">
+                  <h3 className="font-semibold text-green-300 mb-1">Credit Balance</h3>
+                  <div className="text-2xl font-bold text-green-400">${duesHistoryData.balance.toFixed(2)}</div>
+                  <p className="text-xs text-green-400/70 mt-1">This credit will be applied to the next unpaid month</p>
+                </div>
+              )}
+
               {/* Last Paid Summary */}
               <div className="bg-slate-700/50 rounded-lg p-4 border border-slate-600">
                 <h3 className="font-semibold text-white mb-2">Last Payment</h3>

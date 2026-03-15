@@ -56,6 +56,33 @@ Build a member management application with attendance tracking, dues management,
 
 ### What's Been Implemented
 
+#### March 15, 2026 - Dues Payment with Balance/Credit System (New Feature)
+- [x] **Running Balance System:**
+  - Members can now have a credit balance for dues
+  - Partial payments are tracked and rolled over
+  - $30/month dues rate configured
+- [x] **Payment Recording Dialog:**
+  - New "Record Payment" button in dues dialog
+  - Enter payment amount with real-time calculation preview
+  - Shows how many months will be marked as paid
+  - Shows remaining amount as credit balance
+  - Payment method options: Cash, Check, Square, Other
+  - Optional notes field
+- [x] **Balance Display:**
+  - Credit balance shown in Dues History dialog
+  - Balance persisted in member record (`dues_balance` field)
+- [x] **Backend Endpoints:**
+  - `POST /api/dues/payment` - Record payment with auto-calculation
+  - `GET /api/dues/balance/{member_id}` - Get member's balance
+  - `PUT /api/dues/balance/{member_id}` - Manual balance adjustment
+  - `GET /api/dues/payments/{member_id}` - Payment history
+- [x] **Audit Trail:**
+  - All payments recorded in `dues_payments` collection
+  - Activity logging for payment actions
+- [x] **Files Modified:**
+  - `/app/backend/server.py` - Added payment endpoints
+  - `/app/frontend/src/pages/OfficerTracking.js` - Added payment dialog UI
+
 #### March 9, 2026 - Holiday Decoration System (New Feature)
 - [x] **Holiday Detection System:**
   - Auto-detects all 11 US federal holidays (New Year's, MLK Day, Presidents' Day, Memorial Day, Juneteenth, Independence Day, Labor Day, Columbus Day, Veterans Day, Thanksgiving, Christmas)

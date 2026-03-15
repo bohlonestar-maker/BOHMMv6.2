@@ -9592,6 +9592,234 @@ async def record_dues(record: DuesRecord, current_user: dict = Depends(verify_to
     return {"message": "Dues recorded and member updated", "id": record_data["id"]}
 
 
+# ============ DUES PAYMENT WITH BALANCE/CREDIT SYSTEM ============
+
+MONTHLY_DUES_AMOUNT = 30.0  # Monthly dues amount in dollars
+
+class DuesPaymentRecord(BaseModel):
+    member_id: str
+    amount: float
+    payment_method: str = "cash"  # cash, check, square, other
+    notes: str = ""
+
+@api_router.get("/dues/balance/{member_id}")
+async def get_member_dues_balance(member_id: str, current_user: dict = Depends(verify_token)):
+    """Get member's dues balance/credit"""
+    if not await check_ad_access(current_user):
+        raise HTTPException(status_code=403, detail="You don't have permission to view dues")
+    
+    member = await db.members.find_one({"id": member_id}, {"_id": 0})
+    if not member:
+        raise HTTPException(status_code=404, detail="Member not found")
+    
+    balance = member.get("dues_balance", 0.0)
+    return {
+        "member_id": member_id,
+        "handle": member.get("handle", "Unknown"),
+        "balance": balance,
+        "monthly_amount": MONTHLY_DUES_AMOUNT
+    }
+
+@api_router.post("/dues/payment")
+async def record_dues_payment(payment: DuesPaymentRecord, current_user: dict = Depends(verify_token)):
+    """
+    Record a dues payment and apply it to months.
+    - Full months get marked as 'paid'
+    - Any remainder becomes a credit balance for the next month
+    """
+    has_permission = await check_edit_dues_permission(current_user)
+    if not has_permission and not is_secretary(current_user):
+        raise HTTPException(status_code=403, detail="You don't have permission to record payments")
+    
+    member = await db.members.find_one({"id": payment.member_id})
+    if not member:
+        raise HTTPException(status_code=404, detail="Member not found")
+    
+    # Get current balance and add payment
+    current_balance = member.get("dues_balance", 0.0)
+    total_available = current_balance + payment.amount
+    
+    # Calculate how many full months this covers
+    full_months = int(total_available // MONTHLY_DUES_AMOUNT)
+    remaining_balance = round(total_available % MONTHLY_DUES_AMOUNT, 2)
+    
+    # Get current date info
+    now = datetime.now(timezone.utc)
+    current_year = now.year
+    current_month_idx = now.month - 1  # 0-indexed
+    
+    # Get or initialize dues structure
+    dues = member.get('dues', {})
+    year_str = str(current_year)
+    if year_str not in dues or not isinstance(dues.get(year_str), list) or len(dues.get(year_str, [])) < 12:
+        dues[year_str] = [{"status": "unpaid", "note": ""} for _ in range(12)]
+    
+    # Find unpaid months starting from current month
+    months_paid = []
+    month_idx = current_month_idx
+    year_to_process = current_year
+    months_to_mark = full_months
+    
+    month_names = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+    
+    while months_to_mark > 0:
+        yr_str = str(year_to_process)
+        
+        # Initialize year if needed
+        if yr_str not in dues or not isinstance(dues.get(yr_str), list) or len(dues.get(yr_str, [])) < 12:
+            dues[yr_str] = [{"status": "unpaid", "note": ""} for _ in range(12)]
+        
+        # Ensure valid dict structure for each month
+        for i in range(12):
+            if not isinstance(dues[yr_str][i], dict):
+                dues[yr_str][i] = {"status": "unpaid", "note": ""}
+        
+        # Check if this month is unpaid
+        month_data = dues[yr_str][month_idx]
+        if month_data.get("status") in ["unpaid", "late", "partial"]:
+            # Mark as paid
+            dues[yr_str][month_idx] = {
+                "status": "paid",
+                "note": f"Payment ${payment.amount} via {payment.payment_method}" + (f" - {payment.notes}" if payment.notes else ""),
+                "paid_at": now.isoformat(),
+                "paid_by": current_user.get('username')
+            }
+            months_paid.append(f"{month_names[month_idx]}_{yr_str}")
+            months_to_mark -= 1
+            
+            # Also record in officer_dues collection
+            record_data = {
+                "id": str(uuid.uuid4()),
+                "member_id": payment.member_id,
+                "month": f"{month_names[month_idx]}_{yr_str}",
+                "status": "paid",
+                "notes": f"Payment ${payment.amount} via {payment.payment_method}" + (f" - {payment.notes}" if payment.notes else ""),
+                "created_at": now.isoformat(),
+                "created_by": current_user.get('username'),
+                "updated_at": now.isoformat(),
+                "updated_by": current_user.get('username'),
+                "payment_amount": payment.amount,
+                "payment_method": payment.payment_method
+            }
+            
+            # Check for existing and update or insert
+            existing = await db.officer_dues.find_one({
+                "member_id": payment.member_id,
+                "month": f"{month_names[month_idx]}_{yr_str}"
+            })
+            if existing:
+                await db.officer_dues.update_one(
+                    {"id": existing.get("id")},
+                    {"$set": record_data}
+                )
+            else:
+                await db.officer_dues.insert_one(record_data)
+        
+        # Move to next month
+        month_idx += 1
+        if month_idx >= 12:
+            month_idx = 0
+            year_to_process += 1
+    
+    # Record the payment in dues_payments collection for audit
+    payment_record = {
+        "id": str(uuid.uuid4()),
+        "member_id": payment.member_id,
+        "amount": payment.amount,
+        "payment_method": payment.payment_method,
+        "notes": payment.notes,
+        "months_applied": months_paid,
+        "previous_balance": current_balance,
+        "new_balance": remaining_balance,
+        "created_at": now.isoformat(),
+        "created_by": current_user.get('username')
+    }
+    await db.dues_payments.insert_one(payment_record)
+    
+    # Update member with new dues and balance
+    update_doc = {
+        "dues": dues,
+        "dues_balance": remaining_balance,
+        "updated_at": now.isoformat()
+    }
+    
+    # Clear suspension if any month was paid
+    if months_paid:
+        update_doc["dues_suspended"] = False
+        update_doc["dues_suspended_at"] = None
+    
+    await db.members.update_one(
+        {"id": payment.member_id},
+        {"$set": update_doc}
+    )
+    
+    # Log activity
+    await log_activity(
+        current_user.get('username'),
+        "dues_payment",
+        f"Recorded ${payment.amount} payment for {member.get('handle')}. Months paid: {', '.join(months_paid) or 'None (credit only)'}. Balance: ${remaining_balance}"
+    )
+    
+    return {
+        "message": "Payment recorded successfully",
+        "payment_id": payment_record["id"],
+        "amount": payment.amount,
+        "months_paid": months_paid,
+        "full_months_covered": full_months,
+        "remaining_balance": remaining_balance,
+        "monthly_dues": MONTHLY_DUES_AMOUNT
+    }
+
+@api_router.get("/dues/payments/{member_id}")
+async def get_member_payment_history(member_id: str, current_user: dict = Depends(verify_token)):
+    """Get payment history for a member"""
+    if not await check_ad_access(current_user):
+        raise HTTPException(status_code=403, detail="You don't have permission to view payments")
+    
+    payments = await db.dues_payments.find(
+        {"member_id": member_id},
+        {"_id": 0}
+    ).sort("created_at", -1).to_list(100)
+    
+    return {"payments": payments}
+
+@api_router.put("/dues/balance/{member_id}")
+async def adjust_dues_balance(member_id: str, adjustment: dict, current_user: dict = Depends(verify_token)):
+    """Manually adjust a member's dues balance (admin only)"""
+    has_permission = await check_edit_dues_permission(current_user)
+    if not has_permission and not is_secretary(current_user):
+        raise HTTPException(status_code=403, detail="You don't have permission to adjust balance")
+    
+    member = await db.members.find_one({"id": member_id})
+    if not member:
+        raise HTTPException(status_code=404, detail="Member not found")
+    
+    new_balance = adjustment.get("balance", 0.0)
+    reason = adjustment.get("reason", "Manual adjustment")
+    
+    # Record the adjustment
+    now = datetime.now(timezone.utc)
+    await db.dues_payments.insert_one({
+        "id": str(uuid.uuid4()),
+        "member_id": member_id,
+        "amount": new_balance - member.get("dues_balance", 0.0),
+        "payment_method": "adjustment",
+        "notes": reason,
+        "months_applied": [],
+        "previous_balance": member.get("dues_balance", 0.0),
+        "new_balance": new_balance,
+        "created_at": now.isoformat(),
+        "created_by": current_user.get('username')
+    })
+    
+    await db.members.update_one(
+        {"id": member_id},
+        {"$set": {"dues_balance": new_balance, "updated_at": now.isoformat()}}
+    )
+    
+    return {"message": "Balance adjusted", "new_balance": new_balance}
+
+
 @api_router.get("/officer-tracking/dues/history/{member_id}")
 async def get_member_dues_history(member_id: str, current_user: dict = Depends(verify_token)):
     """Get dues payment history for a member including Square transaction info"""
