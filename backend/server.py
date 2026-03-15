@@ -9861,6 +9861,52 @@ async def adjust_dues_balance(member_id: str, adjustment: dict, current_user: di
     return {"message": "Balance adjusted", "new_balance": new_balance}
 
 
+@api_router.post("/dues/fix-exempt-suspensions")
+async def fix_exempt_suspensions(current_user: dict = Depends(verify_token)):
+    """Fix incorrect suspensions for exempt and extended members"""
+    if current_user.get('role') != 'admin':
+        raise HTTPException(status_code=403, detail="Admin only")
+    
+    now = datetime.now(timezone.utc)
+    today_str = now.strftime("%Y-%m-%d")
+    
+    # Get ALL extensions and filter by date
+    all_extensions = await db.dues_extensions.find({}).to_list(length=None)
+    
+    # Filter to extensions that haven't expired
+    extended_member_ids = []
+    for ext in all_extensions:
+        ext_until = ext.get("extension_until", "")
+        # Handle various date formats
+        if ext_until:
+            # Extract just the date part (first 10 chars)
+            ext_date = ext_until[:10] if len(ext_until) >= 10 else ext_until
+            if ext_date >= today_str:
+                extended_member_ids.append(ext.get("member_id"))
+    
+    # Find and fix exempt members (non_dues_paying = true) who are suspended
+    exempt_fixed = await db.members.update_many(
+        {"non_dues_paying": True, "dues_suspended": True},
+        {"$set": {"dues_suspended": False, "dues_suspended_at": None}}
+    )
+    
+    # Find and fix extended members who are suspended
+    extended_fixed = 0
+    if extended_member_ids:
+        result = await db.members.update_many(
+            {"id": {"$in": extended_member_ids}, "dues_suspended": True},
+            {"$set": {"dues_suspended": False, "dues_suspended_at": None}}
+        )
+        extended_fixed = result.modified_count
+    
+    return {
+        "message": "Fixed exempt and extended member suspensions",
+        "exempt_fixed": exempt_fixed.modified_count,
+        "extended_fixed": extended_fixed,
+        "extended_members_found": len(extended_member_ids)
+    }
+
+
 @api_router.get("/officer-tracking/dues/history/{member_id}")
 async def get_member_dues_history(member_id: str, current_user: dict = Depends(verify_token)):
     """Get dues payment history for a member including Square transaction info"""
