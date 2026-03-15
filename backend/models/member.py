@@ -94,6 +94,10 @@ class MemberUpdate(BaseModel):
     non_dues_paying: Optional[bool] = None
     dues: Optional[dict] = None
     meeting_attendance: Optional[dict] = None
+    # Dues arrangement fields
+    dues_arrangements_made: Optional[bool] = None
+    dues_arrangements_date: Optional[str] = None
+    dues_suspended: Optional[bool] = None
 
 
 class Hangaround(BaseModel):

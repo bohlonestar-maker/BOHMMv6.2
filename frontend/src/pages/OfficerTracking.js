@@ -575,13 +575,15 @@ function OfficerTracking() {
         setDuesForm({
           status: preselectedStatus || existing?.status || 'extended',
           notes: existing?.notes || '',
-          extensionDate: extDate
+          extensionDate: extDate,
+          hasArrangement: member.dues_arrangements_made || false
         });
       } else {
         setDuesForm({
           status: preselectedStatus || existing?.status || 'paid',
           notes: existing?.notes || '',
-          extensionDate: ''
+          extensionDate: '',
+          hasArrangement: member.dues_arrangements_made || false
         });
       }
     } catch (error) {
@@ -590,7 +592,8 @@ function OfficerTracking() {
       setDuesForm({
         status: preselectedStatus || existing?.status || 'paid',
         notes: existing?.notes || '',
-        extensionDate: ''
+        extensionDate: '',
+        hasArrangement: member.dues_arrangements_made || false
       });
     }
     
@@ -1658,6 +1661,59 @@ function OfficerTracking() {
               {selectedMember?.non_dues_paying && (
                 <p className="text-xs text-amber-300 mt-2 ml-6">
                   This member will not receive dues reminders and is excluded from dues tracking.
+                </p>
+              )}
+            </div>
+
+            {/* Arrangement Toggle */}
+            <div className="p-3 bg-green-900/30 rounded-lg border border-green-700">
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="arrangement-member"
+                  checked={duesForm.hasArrangement || false}
+                  onCheckedChange={async (checked) => {
+                    try {
+                      await axios.put(`${BACKEND_URL}/api/members/${selectedMember.id}`, 
+                        { 
+                          dues_arrangements_made: checked,
+                          dues_arrangements_date: checked ? new Date().toISOString() : null,
+                          dues_suspended: checked ? false : selectedMember.dues_suspended
+                        },
+                        { headers: { Authorization: `Bearer ${token}` } }
+                      );
+                      // Update local state
+                      setMembers(prev => {
+                        const updated = { ...prev };
+                        const chapter = selectedMember.chapter;
+                        updated[chapter] = updated[chapter].map(m => 
+                          m.id === selectedMember.id ? { 
+                            ...m, 
+                            dues_arrangements_made: checked,
+                            dues_suspended: checked ? false : m.dues_suspended
+                          } : m
+                        );
+                        return updated;
+                      });
+                      setSelectedMember(prev => ({ 
+                        ...prev, 
+                        dues_arrangements_made: checked,
+                        dues_suspended: checked ? false : prev.dues_suspended
+                      }));
+                      setDuesForm(prev => ({ ...prev, hasArrangement: checked }));
+                      toast.success(checked ? 'Member marked as having arrangement - will not be suspended' : 'Arrangement status removed');
+                    } catch (error) {
+                      toast.error(error.response?.data?.detail || 'Failed to update arrangement status');
+                    }
+                  }}
+                  data-testid="arrangement-member-checkbox"
+                />
+                <label htmlFor="arrangement-member" className="text-sm text-green-200 cursor-pointer font-medium">
+                  Has Payment Arrangement (Will Not Be Suspended)
+                </label>
+              </div>
+              {duesForm.hasArrangement && (
+                <p className="text-xs text-green-300 mt-2 ml-6">
+                  This member has made payment arrangements and will not receive suspension reminders.
                 </p>
               )}
             </div>
