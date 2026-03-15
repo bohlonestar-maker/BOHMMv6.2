@@ -1125,8 +1125,10 @@ function OfficerTracking() {
                                 onClick={() => canEditDues && openDuesDialog(member)}
                                 title={canEditDues ? "Click to edit" : ""}
                               >
-                                {isSuspended ? (
+                                {isSuspended && !hasArrangements ? (
                                   <Badge className="bg-red-600">Suspended</Badge>
+                                ) : hasArrangements ? (
+                                  <Badge className="bg-green-600">✓ Arrangement</Badge>
                                 ) : isExempt ? (
                                   <Badge className="bg-amber-600">Non-Dues Paying</Badge>
                                 ) : extension ? (
