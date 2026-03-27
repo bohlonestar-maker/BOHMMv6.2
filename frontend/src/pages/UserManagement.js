@@ -90,6 +90,7 @@ export default function UserManagement({ onLogout }) {
   });
 
   const [editFormData, setEditFormData] = useState({
+    username: "",
     email: "",
     role: "member",
     chapter: "",
@@ -284,6 +285,7 @@ export default function UserManagement({ onLogout }) {
   const handleEdit = (user) => {
     setEditingUser(user);
     setEditFormData({
+      username: user.username || "",
       email: user.email || "",
       role: user.role,
       chapter: user.chapter || "",
@@ -993,6 +995,20 @@ export default function UserManagement({ onLogout }) {
                 <DialogTitle className="text-white">Edit User: {editingUser?.username}</DialogTitle>
               </DialogHeader>
               <form onSubmit={handleEditSubmit} className="space-y-4 mt-4">
+                <div>
+                  <Label className="text-white">Username</Label>
+                  <Input
+                    type="text"
+                    value={editFormData.username || ''}
+                    onChange={(e) =>
+                      setEditFormData({ ...editFormData, username: e.target.value })
+                    }
+                    required
+                    className="text-white bg-slate-700 border-slate-600"
+                    data-testid="edit-username-input"
+                  />
+                </div>
+
                 <div>
                   <Label className="text-white">Email</Label>
                   <Input

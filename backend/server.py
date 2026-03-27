@@ -5734,6 +5734,16 @@ async def update_user(user_id: str, user_data: UserUpdate, current_user: dict = 
         raise HTTPException(status_code=404, detail="User not found")
     
     update_data = {}
+    old_username = user.get('username')
+    
+    # Handle username change
+    if user_data.username and user_data.username != old_username:
+        # Check if username is already used by another user
+        existing_username = await db.users.find_one({"username": user_data.username, "id": {"$ne": user_id}})
+        if existing_username:
+            raise HTTPException(status_code=400, detail="Username already exists")
+        update_data['username'] = user_data.username
+    
     if user_data.email:
         # Check if email is already used by another user
         existing_email = await db.users.find_one({"email": user_data.email, "id": {"$ne": user_id}})
@@ -5756,6 +5766,8 @@ async def update_user(user_id: str, user_data: UserUpdate, current_user: dict = 
     
     # Log activity
     updates = []
+    if user_data.username and user_data.username != old_username:
+        updates.append(f"username from '{old_username}' to '{user_data.username}'")
     if user_data.email:
         updates.append(f"email to {user_data.email}")
     if user_data.password:
@@ -5772,7 +5784,7 @@ async def update_user(user_id: str, user_data: UserUpdate, current_user: dict = 
     await log_activity(
         username=current_user["username"],
         action="user_update",
-        details=f"Updated user: {user['username']} - changed: {', '.join(updates)}"
+        details=f"Updated user: {old_username} - changed: {', '.join(updates)}"
     )
     
     # Get updated user data to return
