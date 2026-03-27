@@ -56,6 +56,17 @@ Build a member management application with attendance tracking, dues management,
 
 ### What's Been Implemented
 
+#### March 27, 2026 - System Users Permission Control (Enhancement)
+- [x] **System Users Access Now Permission-Based:**
+  - Uses existing `manage_system_users` permission
+  - Removed admin role and admin_actions bypass from /users route
+  - Dashboard menu already used this permission
+- [x] **Files Modified:**
+  - `/app/frontend/src/App.js` - Updated /users route to check manage_system_users only
+- [x] **Default Permissions Configured:**
+  - National Prez, VP, SEC: manage_system_users enabled
+  - Other titles/chapters: No access by default (configurable via Permissions page)
+
 #### March 27, 2026 - NFC Card Permission Control (Enhancement)
 - [x] **Added NFC Permission to System:**
   - New permission: `manage_nfc` - "Manage NFC Cards"

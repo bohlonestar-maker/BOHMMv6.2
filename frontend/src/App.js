@@ -323,7 +323,7 @@ function App() {
           <Route
             path="/users"
             element={
-              isAuthenticated && (userRole === 'admin' || userPermissions?.admin_actions) ? (
+              isAuthenticated && userPermissions?.manage_system_users ? (
                 <UserManagement onLogout={handleLogout} />
               ) : (
                 <Navigate to="/" replace />
