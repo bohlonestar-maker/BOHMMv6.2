@@ -56,6 +56,22 @@ Build a member management application with attendance tracking, dues management,
 
 ### What's Been Implemented
 
+#### March 27, 2026 - Quick Attendance Access for Prospects (New Feature)
+- [x] **Attendance Column on Prospects List:**
+  - Added "Attendance" column to the Prospects table (between Name and Email)
+  - Shows compact attendance summary: "XP YE / Z" (Present, Excused, Total)
+  - Clickable to open quick-access attendance dialog
+- [x] **Prospect Attendance Dialog:**
+  - Opens directly from the list without entering individual prospect
+  - Year selector for viewing different years
+  - "Add Meeting" button with date, status, and note fields
+  - Click-to-cycle status buttons (Present → Excused → Absent)
+  - Note fields for each meeting
+  - Delete meeting functionality
+  - Save/Cancel buttons
+- [x] **Files Modified:**
+  - `/app/frontend/src/pages/Prospects.js` - Added attendance column, handlers, and dialog
+
 #### March 27, 2026 - Username Edit Feature (New Feature)
 - [x] **Edit Username in User Management:**
   - Added "Username" field to the Edit User dialog

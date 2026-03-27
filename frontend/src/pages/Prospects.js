@@ -28,7 +28,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { LogOut, Plus, Pencil, Trash2, Download, Users, Mail, Phone, MapPin, MessageCircle, UserPlus, FileText, UserCheck, Printer, ArrowUpCircle, BarChart3 } from "lucide-react";
+import { LogOut, Plus, Pencil, Trash2, Download, Users, Mail, Phone, MapPin, MessageCircle, UserPlus, FileText, UserCheck, Printer, ArrowUpCircle, BarChart3, CalendarDays } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import PageLayout from "@/components/PageLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -136,6 +136,16 @@ export default function Prospects({ onLogout, userRole, userChapter }) {
   const [hangaroundNewMeetingStatus, setHangaroundNewMeetingStatus] = useState(1);
   const [hangaroundNewMeetingNote, setHangaroundNewMeetingNote] = useState("");
   const [hangaroundAttendanceData, setHangaroundAttendanceData] = useState({});
+  
+  // Prospect Attendance State (quick access from list)
+  const [prospectAttendanceDialogOpen, setProspectAttendanceDialogOpen] = useState(false);
+  const [prospectAttendanceSelectedYear, setProspectAttendanceSelectedYear] = useState(new Date().getFullYear().toString());
+  const [prospectAddMeetingDialogOpen, setProspectAddMeetingDialogOpen] = useState(false);
+  const [prospectNewMeetingDate, setProspectNewMeetingDate] = useState("");
+  const [prospectNewMeetingStatus, setProspectNewMeetingStatus] = useState(1);
+  const [prospectNewMeetingNote, setProspectNewMeetingNote] = useState("");
+  const [prospectAttendanceData, setProspectAttendanceData] = useState({});
+  const [selectedProspectForAttendance, setSelectedProspectForAttendance] = useState(null);
   
   // Check if user can edit prospects - will be updated from API response
   // PM title has view-only access, so they cannot edit
@@ -995,6 +1005,123 @@ export default function Prospects({ onLogout, userRole, userChapter }) {
     return { total, present, excused };
   };
 
+  // Prospect Attendance Summary (for list display)
+  const getProspectAttendanceSummary = (prospect) => {
+    const currentYear = new Date().getFullYear().toString();
+    const meetings = prospect.meeting_attendance?.[currentYear] || [];
+    const total = meetings.length;
+    const present = meetings.filter(m => m?.status === 1).length;
+    const excused = meetings.filter(m => m?.status === 2).length;
+    return { total, present, excused };
+  };
+
+  // Prospect Attendance Handlers (quick access from list)
+  const handleOpenProspectAttendance = (prospect) => {
+    setSelectedProspectForAttendance(prospect);
+    const currentYear = new Date().getFullYear().toString();
+    let attendanceData = {};
+    
+    if (prospect.meeting_attendance) {
+      attendanceData = { ...prospect.meeting_attendance };
+    }
+    if (!attendanceData[currentYear]) {
+      attendanceData[currentYear] = [];
+    }
+    
+    setProspectAttendanceData(attendanceData);
+    setProspectAttendanceSelectedYear(currentYear);
+    setProspectAttendanceDialogOpen(true);
+  };
+
+  const handleProspectAttendanceToggle = (index) => {
+    const yearMeetings = prospectAttendanceData[prospectAttendanceSelectedYear] || [];
+    const meeting = yearMeetings[index];
+    if (!meeting) return;
+    
+    const currentStatus = meeting.status || 0;
+    const newStatus = currentStatus === 1 ? 2 : currentStatus === 2 ? 0 : 1;
+    const updatedMeetings = [...yearMeetings];
+    updatedMeetings[index] = { ...meeting, status: newStatus };
+    
+    setProspectAttendanceData({
+      ...prospectAttendanceData,
+      [prospectAttendanceSelectedYear]: updatedMeetings
+    });
+  };
+
+  const handleProspectAttendanceNoteChange = (index, note) => {
+    const yearMeetings = prospectAttendanceData[prospectAttendanceSelectedYear] || [];
+    const updatedMeetings = [...yearMeetings];
+    updatedMeetings[index] = { ...updatedMeetings[index], note };
+    
+    setProspectAttendanceData({
+      ...prospectAttendanceData,
+      [prospectAttendanceSelectedYear]: updatedMeetings
+    });
+  };
+
+  const handleProspectAddMeeting = () => {
+    if (!prospectNewMeetingDate) {
+      toast.error("Please select a meeting date");
+      return;
+    }
+    
+    const meetingYear = prospectNewMeetingDate.split('-')[0];
+    const yearMeetings = prospectAttendanceData[meetingYear] || [];
+    
+    // Check for duplicates
+    if (yearMeetings.some(m => m.date === prospectNewMeetingDate)) {
+      toast.error("A meeting already exists for this date");
+      return;
+    }
+    
+    const newMeeting = {
+      date: prospectNewMeetingDate,
+      status: prospectNewMeetingStatus,
+      note: prospectNewMeetingNote || ""
+    };
+    
+    const updatedMeetings = [...yearMeetings, newMeeting].sort((a, b) => 
+      new Date(a.date) - new Date(b.date)
+    );
+    
+    setProspectAttendanceData({
+      ...prospectAttendanceData,
+      [meetingYear]: updatedMeetings
+    });
+    
+    setProspectAddMeetingDialogOpen(false);
+    setProspectNewMeetingDate("");
+    setProspectNewMeetingStatus(1);
+    setProspectNewMeetingNote("");
+    setProspectAttendanceSelectedYear(meetingYear);
+  };
+
+  const handleProspectDeleteMeeting = (meetingIndex) => {
+    const yearMeetings = prospectAttendanceData[prospectAttendanceSelectedYear] || [];
+    const newMeetings = yearMeetings.filter((_, idx) => idx !== meetingIndex);
+    
+    setProspectAttendanceData({
+      ...prospectAttendanceData,
+      [prospectAttendanceSelectedYear]: newMeetings
+    });
+  };
+
+  const handleSaveProspectAttendance = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      await axios.put(`${API}/prospects/${selectedProspectForAttendance.id}`, 
+        { meeting_attendance: prospectAttendanceData },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      toast.success("Attendance saved successfully");
+      fetchProspects();
+      setProspectAttendanceDialogOpen(false);
+    } catch (error) {
+      toast.error("Failed to save attendance");
+    }
+  };
+
   const filteredHangarounds = hangarounds.filter((hangaround) => {
     const search = hangaroundSearchTerm.toLowerCase();
     return (
@@ -1737,6 +1864,7 @@ export default function Prospects({ onLogout, userRole, userChapter }) {
                     </TableHead>
                     <TableHead>Handle</TableHead>
                     <TableHead>Name</TableHead>
+                    <TableHead>Attendance</TableHead>
                     <TableHead>Email</TableHead>
                     <TableHead>Phone</TableHead>
                     <TableHead>Address</TableHead>
@@ -1756,6 +1884,31 @@ export default function Prospects({ onLogout, userRole, userChapter }) {
                       </TableCell>
                       <TableCell className="text-white">{prospect.handle}</TableCell>
                       <TableCell className="text-white">{prospect.name}</TableCell>
+                      <TableCell>
+                        {(() => {
+                          const attendance = getProspectAttendanceSummary(prospect);
+                          return (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => handleOpenProspectAttendance(prospect)}
+                              className="text-slate-300 hover:text-white hover:bg-slate-600 p-1 h-auto"
+                              title="Click to view/edit attendance"
+                              data-testid={`prospect-attendance-${prospect.id}`}
+                            >
+                              {attendance.total > 0 ? (
+                                <div className="flex gap-1 items-center text-xs">
+                                  <span className="text-green-400">{attendance.present}P</span>
+                                  <span className="text-orange-400">{attendance.excused}E</span>
+                                  <span className="text-slate-400">/ {attendance.total}</span>
+                                </div>
+                              ) : (
+                                <span className="text-xs text-slate-500">No meetings</span>
+                              )}
+                            </Button>
+                          );
+                        })()}
+                      </TableCell>
                       <TableCell>
                         <a
                           href={`mailto:${prospect.email}`}
@@ -2701,6 +2854,196 @@ export default function Prospects({ onLogout, userRole, userChapter }) {
                     type="button"
                     onClick={handleSaveHangaroundAttendance}
                     className="bg-green-600 hover:bg-green-700"
+                  >
+                    Save Attendance
+                  </Button>
+                )}
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Prospect Attendance Dialog (Quick Access) */}
+      <Dialog open={prospectAttendanceDialogOpen} onOpenChange={setProspectAttendanceDialogOpen}>
+        <DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto bg-slate-800 border-slate-700">
+          <DialogHeader>
+            <DialogTitle className="text-lg sm:text-xl text-white">
+              Meeting Attendance - {selectedProspectForAttendance?.handle}
+            </DialogTitle>
+          </DialogHeader>
+          {selectedProspectForAttendance && (
+            <div className="space-y-4 mt-4">
+              {/* Year Selector and Add Meeting Button */}
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-slate-400">Year:</span>
+                  <select
+                    value={prospectAttendanceSelectedYear}
+                    onChange={(e) => setProspectAttendanceSelectedYear(e.target.value)}
+                    className="bg-slate-700 border border-slate-600 text-white text-sm rounded px-2 py-1"
+                  >
+                    {[new Date().getFullYear().toString(), ...Object.keys(prospectAttendanceData).filter(k => k !== new Date().getFullYear().toString() && k.match(/^\d{4}$/))].sort((a, b) => b - a).map(year => (
+                      <option key={year} value={year}>{year}</option>
+                    ))}
+                  </select>
+                </div>
+                {canEditProspects && (
+                  <Dialog open={prospectAddMeetingDialogOpen} onOpenChange={setProspectAddMeetingDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button
+                        size="sm"
+                        className="bg-blue-600 hover:bg-blue-700 text-sm"
+                        data-testid="add-prospect-meeting-btn"
+                      >
+                        <Plus className="w-4 h-4 mr-1" />
+                        Add Meeting
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-md bg-slate-800 border-slate-700">
+                      <DialogHeader>
+                        <DialogTitle className="text-white">Add Meeting</DialogTitle>
+                      </DialogHeader>
+                      <div className="space-y-4 mt-4">
+                        <div>
+                          <Label className="text-white">Meeting Date</Label>
+                          <Input
+                            type="date"
+                            value={prospectNewMeetingDate}
+                            onChange={(e) => setProspectNewMeetingDate(e.target.value)}
+                            className="mt-1 bg-slate-700 border-slate-600 text-white"
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-white">Status</Label>
+                          <Select
+                            value={prospectNewMeetingStatus.toString()}
+                            onValueChange={(value) => setProspectNewMeetingStatus(parseInt(value))}
+                          >
+                            <SelectTrigger className="mt-1 bg-slate-700 border-slate-600 text-white">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent className="bg-slate-800 border-slate-600">
+                              <SelectItem value="1" className="text-white hover:bg-slate-700">Present</SelectItem>
+                              <SelectItem value="2" className="text-white hover:bg-slate-700">Excused</SelectItem>
+                              <SelectItem value="0" className="text-white hover:bg-slate-700">Absent</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <Label className="text-white">Note (optional)</Label>
+                          <Input
+                            value={prospectNewMeetingNote}
+                            onChange={(e) => setProspectNewMeetingNote(e.target.value)}
+                            placeholder="e.g., reason for absence"
+                            className="mt-1 bg-slate-700 border-slate-600 text-white"
+                          />
+                        </div>
+                        <div className="flex gap-3 justify-end pt-2">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => setProspectAddMeetingDialogOpen(false)}
+                            className="border-slate-600 text-white hover:bg-slate-700"
+                          >
+                            Cancel
+                          </Button>
+                          <Button
+                            type="button"
+                            onClick={handleProspectAddMeeting}
+                            className="bg-blue-600 hover:bg-blue-700"
+                          >
+                            Add Meeting
+                          </Button>
+                        </div>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                )}
+              </div>
+
+              {/* Attendance Summary */}
+              {(() => {
+                const yearMeetings = prospectAttendanceData[prospectAttendanceSelectedYear] || [];
+                const total = yearMeetings.length;
+                const present = yearMeetings.filter(m => m?.status === 1).length;
+                const excused = yearMeetings.filter(m => m?.status === 2).length;
+                const absent = yearMeetings.filter(m => m?.status === 0).length;
+                return (
+                  <div className="flex gap-2 text-sm flex-wrap">
+                    <span className="px-2 py-0.5 bg-slate-600 text-white rounded">{total} total</span>
+                    <span className="px-2 py-0.5 bg-green-600 text-white rounded">{present} Present</span>
+                    <span className="px-2 py-0.5 bg-orange-500 text-white rounded">{excused} Excused</span>
+                    <span className="px-2 py-0.5 bg-red-600/80 text-white rounded">{absent} Absent</span>
+                  </div>
+                );
+              })()}
+
+              {/* Legend */}
+              <div className="flex justify-between items-center text-xs">
+                <span className="text-slate-400">Click status to cycle: Present → Excused → Absent</span>
+              </div>
+
+              {/* Meetings List */}
+              <div className="space-y-2 max-h-64 overflow-y-auto">
+                {(prospectAttendanceData[prospectAttendanceSelectedYear] || []).length === 0 ? (
+                  <p className="text-center text-slate-400 py-4">No meetings recorded for {prospectAttendanceSelectedYear}</p>
+                ) : (
+                  (prospectAttendanceData[prospectAttendanceSelectedYear] || []).map((meeting, idx) => (
+                    <div key={idx} className="flex items-center gap-3 p-2 bg-slate-700/50 rounded-lg">
+                      <span className="text-sm text-slate-300 w-24">{meeting.date}</span>
+                      <button
+                        type="button"
+                        onClick={() => canEditProspects && handleProspectAttendanceToggle(idx)}
+                        className={`w-20 py-1 rounded text-xs font-medium ${
+                          meeting.status === 1 ? 'bg-green-600 text-white' :
+                          meeting.status === 2 ? 'bg-orange-500 text-white' :
+                          'bg-red-600/80 text-white'
+                        } ${canEditProspects ? 'cursor-pointer hover:opacity-80' : 'cursor-default'}`}
+                      >
+                        {meeting.status === 1 ? 'Present' : meeting.status === 2 ? 'Excused' : 'Absent'}
+                      </button>
+                      {canEditProspects ? (
+                        <Input
+                          value={meeting.note || ''}
+                          onChange={(e) => handleProspectAttendanceNoteChange(idx, e.target.value)}
+                          placeholder="Note..."
+                          className="flex-1 h-8 text-sm bg-slate-700 border-slate-600 text-white"
+                        />
+                      ) : (
+                        <span className="flex-1 text-sm text-slate-400">{meeting.note || '-'}</span>
+                      )}
+                      {canEditProspects && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleProspectDeleteMeeting(idx)}
+                          className="text-red-400 hover:text-red-300 h-8 w-8 p-0"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      )}
+                    </div>
+                  ))
+                )}
+              </div>
+
+              {/* Save Button */}
+              <div className="flex gap-3 justify-end pt-4 border-t border-slate-700">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setProspectAttendanceDialogOpen(false)}
+                  className="border-slate-600 text-white hover:bg-slate-700"
+                >
+                  Cancel
+                </Button>
+                {canEditProspects && (
+                  <Button
+                    type="button"
+                    onClick={handleSaveProspectAttendance}
+                    className="bg-green-600 hover:bg-green-700"
+                    data-testid="save-prospect-attendance-btn"
                   >
                     Save Attendance
                   </Button>
