@@ -56,6 +56,17 @@ Build a member management application with attendance tracking, dues management,
 
 ### What's Been Implemented
 
+#### March 27, 2026 - Username Edit Feature (New Feature)
+- [x] **Edit Username in User Management:**
+  - Added "Username" field to the Edit User dialog
+  - National Prez, VP, and SEC can now change existing system usernames
+  - Backend validation prevents duplicate usernames
+  - Audit logging tracks username changes
+- [x] **Files Modified:**
+  - `/app/backend/models/user.py` - Added `username` to `UserUpdate` model
+  - `/app/backend/server.py` - Updated `update_user` endpoint with username change logic
+  - `/app/frontend/src/pages/UserManagement.js` - Added username input to edit form
+
 #### March 15, 2026 - Dues Payment with Balance/Credit System (New Feature)
 - [x] **Running Balance System:**
   - Members can now have a credit balance for dues
