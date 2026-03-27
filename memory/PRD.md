@@ -56,6 +56,19 @@ Build a member management application with attendance tracking, dues management,
 
 ### What's Been Implemented
 
+#### March 27, 2026 - NFC Card Permission Control (Enhancement)
+- [x] **Added NFC Permission to System:**
+  - New permission: `manage_nfc` - "Manage NFC Cards"
+  - NFC Card Manager access now controlled via Permissions page
+  - Removed admin role bypass
+- [x] **Files Modified:**
+  - `/app/backend/server.py` - Added manage_nfc to AVAILABLE_PERMISSIONS
+  - `/app/frontend/src/App.js` - Updated /nfc route to check manage_nfc permission
+  - `/app/frontend/src/pages/Dashboard.js` - Updated NFC menu item visibility
+- [x] **Default NFC Permissions Configured:**
+  - National Prez, VP, SEC, COO, MD: manage_nfc enabled
+  - Other titles/chapters: No NFC access by default (configurable via Permissions page)
+
 #### March 27, 2026 - Treasury Permission Control (Enhancement)
 - [x] **Removed Admin Role Bypass for Treasury:**
   - Treasury access is now strictly controlled by treasury permissions

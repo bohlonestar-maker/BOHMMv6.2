@@ -1365,8 +1365,8 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
                         </DropdownMenuItem>
                       )}
                       
-                      {/* NFC Card Manager - Admin only */}
-                      {userRole === 'admin' && (
+                      {/* NFC Card Manager - Permission based */}
+                      {userPermissions?.manage_nfc && (
                         <DropdownMenuItem 
                           onSelect={(e) => { e.preventDefault(); navigate("/nfc"); }} 
                           className="text-red-400 focus:bg-red-900/30 focus:text-red-300 cursor-pointer"

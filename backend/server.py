@@ -10507,6 +10507,7 @@ AVAILABLE_PERMISSIONS = [
     {"key": "manage_treasury", "label": "Manage Treasury", "description": "Can add/edit/delete treasury transactions"},
     {"key": "treasury_admin", "label": "Treasury Admin", "description": "Full treasury access including settings, budgets, and reports"},
     {"key": "view_export", "label": "View Export", "description": "Can access CSV Export page to export member data"},
+    {"key": "manage_nfc", "label": "Manage NFC Cards", "description": "Can program NFC cards for digital business cards"},
 ]
 
 # All manageable titles

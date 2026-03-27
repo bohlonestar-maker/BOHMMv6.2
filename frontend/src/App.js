@@ -577,7 +577,7 @@ function App() {
           <Route
             path="/nfc"
             element={
-              isAuthenticated ? (
+              isAuthenticated && userPermissions?.manage_nfc ? (
                 <NFCManager />
               ) : (
                 <Navigate to="/" replace />
