@@ -567,7 +567,7 @@ function App() {
           <Route
             path="/treasury"
             element={
-              isAuthenticated ? (
+              isAuthenticated && (userPermissions?.view_treasury || userPermissions?.manage_treasury || userPermissions?.treasury_admin) ? (
                 <Treasury />
               ) : (
                 <Navigate to="/" replace />

@@ -1354,8 +1354,8 @@ export default function Dashboard({ onLogout, userRole, userPermissions, userCha
                         </DropdownMenuItem>
                       )}
                       
-                      {/* Treasury - Treasury permissions or admin */}
-                      {(userPermissions?.view_treasury || userPermissions?.manage_treasury || userPermissions?.treasury_admin || userRole === 'admin') && (
+                      {/* Treasury - Treasury permissions only (no admin bypass) */}
+                      {(userPermissions?.view_treasury || userPermissions?.manage_treasury || userPermissions?.treasury_admin) && (
                         <DropdownMenuItem 
                           onSelect={(e) => { e.preventDefault(); navigate("/treasury"); }} 
                           className="text-red-400 focus:bg-red-900/30 focus:text-red-300 cursor-pointer"

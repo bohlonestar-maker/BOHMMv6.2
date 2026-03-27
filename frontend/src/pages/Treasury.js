@@ -58,8 +58,8 @@ export default function Treasury() {
       const user = userRes.data;
       const permissions = user.permissions || {};
       
-      // Check treasury permissions (admin has all)
-      if (user.role === 'admin' || permissions.treasury_admin) {
+      // Check treasury permissions (no admin role bypass - use permission system)
+      if (permissions.treasury_admin) {
         setPermissionLevel('admin');
         setHasPermission(true);
       } else if (permissions.manage_treasury) {

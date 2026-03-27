@@ -56,6 +56,24 @@ Build a member management application with attendance tracking, dues management,
 
 ### What's Been Implemented
 
+#### March 27, 2026 - Treasury Permission Control (Enhancement)
+- [x] **Removed Admin Role Bypass for Treasury:**
+  - Treasury access is now strictly controlled by treasury permissions
+  - Users must have `view_treasury`, `manage_treasury`, or `treasury_admin` permission
+  - The "admin" role no longer grants automatic Treasury access
+- [x] **Files Modified:**
+  - `/app/frontend/src/App.js` - Removed admin role bypass from /treasury route
+  - `/app/frontend/src/pages/Dashboard.js` - Removed admin role bypass from Treasury menu item
+  - `/app/frontend/src/pages/Treasury.js` - Removed admin role bypass from permission check
+- [x] **Default Treasury Permissions Configured:**
+  - National Prez: treasury_admin (full access)
+  - National T (Treasurer): treasury_admin (full access)
+  - National VP: manage_treasury
+  - National SEC: manage_treasury
+  - National COO: view_treasury
+  - National S@A: view_treasury
+  - Other titles/chapters: No treasury access by default (configurable via Permissions page)
+
 #### March 27, 2026 - Quick Attendance Access for Prospects (New Feature)
 - [x] **Attendance Column on Prospects List:**
   - Added "Attendance" column to the Prospects table (between Name and Email)
